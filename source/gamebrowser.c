@@ -352,13 +352,13 @@ static int GameBrowse (void)
 			{
 			if (*p != '\0' && strlen(p))
 				{
-				Debug ("GameBrowse [add %d:%s]", i, p);
+				//Debug ("GameBrowse [add %d:%s]", i, p);
 				// Add name
 				games[i].name = malloc (strlen(p));
 				strcpy (games[i].name, p);
 				p += (strlen(p) + 1);
 				
-				Debug ("GameBrowse [add %d:%s]", i, p);
+				//Debug ("GameBrowse [add %d:%s]", i, p);
 				// Add id
 				strcpy (games[i].asciiId, p);
 				p += (strlen(p) + 1);
@@ -743,8 +743,8 @@ static void ShowNandOptions (void)
 	buff[0] = '\0';
 	
 	strcat (buff, "Download covers...##10||");
-	strcat (buff, "Rebuild game list: neek2o standard mode (reboot required)...##9|");
-	strcat (buff, "Rebuild game list: <desc>[id].wbs mode (reboot required)...##12|");
+	strcat (buff, "Rebuild game list: postLoader wbfs mode (reboot)...##12||");
+	strcat (buff, "Rebuild game list: neek2o offical mode (reboot)...##9|");
 	strcat (buff, "Reset configuration files...##11||");
 	strcat (buff, "Cancel##-1");
 		

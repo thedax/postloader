@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include "neek.h"
+#include "fsop/fsop.h"
 #include "globals.h"
 
 #define DI_CONFIG_SIZE         0x10
@@ -209,7 +210,7 @@ char* neek_GetDIGames(void)
 	for (i = 0; i < DICfg->Gamecount; i++)
 		{
 		p = (char*)&DICfg->GameInfo[i];
-		Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[DI_GAME_ID_OFF], &p[DI_GAME_NAME_OFF]);
+		// Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[DI_GAME_ID_OFF], &p[DI_GAME_NAME_OFF]);
 		obsize += (strlen(&p[DI_GAME_NAME_OFF]) + strlen (&p[DI_GAME_ID_OFF]) + 2); // 2 is len of the two "|" "|"
 		}
 		
@@ -491,77 +492,104 @@ bool neek_PLNandInfoKill (void) // Remove nandcfg.pl... postloader do this when 
 	}
 	
 // This will require obcd extensions
-bool neek_CreateCDIConfig (void)
+
+#define CDIINITALGAMECOUNT 1024
+
+bool neek_CreateCDIConfigBrowse (CDIConfig *DICfg, u32 *count, char *path)
 	{
 	DIR *pdir;
 	struct dirent *pent;
-	char path[128];
-	char fn[128];
-	int idx = 0;
-	u32 cfgSize = 0;
 	FILE* f = NULL;
+	char fn[128];
+	char tmp[128];
+	int offset;
 	
+	Debug ("neek_CreateCDIConfigBrowse: [PATH] %s", path);
+	
+	sprintf (fn, "%s://wbfs/", vars.mount[DEV_USB]);
+	offset = strlen (fn);
 
-	sprintf (path, "%s://wbfs", vars.mount[DEV_USB]);	
-	
 	pdir=opendir(path);
 	while ((pent=readdir(pdir)) != NULL) 
 		{
-		Debug ("neek_CreateCDIConfig: [DIR] %s", pent->d_name);
-		if (strstr (pent->d_name, ".wbfs") || strstr (pent->d_name, ".WBFS"))
-			idx++;
-		}
-	closedir(pdir);
-	
-	if (idx == 0) return FALSE;
-	
-	cfgSize = (idx * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
-	CDIConfig *DICfg = (CDIConfig*) malloc(cfgSize);
-	
-    // Init struct
-	DICfg->SlotID = 0;
-    DICfg->Region = 2;
-    DICfg->Gamecount = idx;
-    DICfg->Config = 0;
-	
-	// Ok, we can scan games
-    idx = 0;
-	pdir=opendir(path);
-	while ((pent=readdir(pdir)) != NULL) 
-		{
-		if (strstr (pent->d_name, ".wbfs") || strstr (pent->d_name, ".WBFS"))
+		sprintf (fn, "%s/%s", path, pent->d_name);
+		
+		// Let's check if it is a folder
+		if (strcmp (pent->d_name, ".") != 0 && strcmp (pent->d_name, "..") != 0 && fsop_DirExist (fn))
 			{
-			sprintf (fn, "%s/%s", path, pent->d_name);
-			Debug ("neek_CreateCDIConfig: [PATH] %s", fn);
+			// recurse it
+			neek_CreateCDIConfigBrowse (DICfg, count, fn);
+			}
+		else if (strstr (pent->d_name, ".wbfs") || strstr (pent->d_name, ".WBFS"))
+			{
+			strcpy (tmp, pent->d_name);
+			tmp[24] = '\0';
+			Video_WaitPanel (TEX_HGL, "%d|%s", (*count)+1, tmp);
+			
+			Debug ("neek_CreateCDIConfigBrowse: [FN] %s", fn);
 			
 			f = fopen(fn, "rb");
 			if (!f) continue;
 			
 			//Get file size
 			fseek( f, 0x200, SEEK_SET);
-			fread( DICfg->GameInfo[idx], 1, CDI_GAMEINFO_SIZE, f);
+			fread( DICfg->GameInfo[*count], 1, CDI_GAMEINFO_SIZE, f);
 			fclose (f);
 			
 			// Set the flag
-			memcpy (&DICfg->GameInfo[idx][0x1C], "WBFS", 4);
+			memcpy (&DICfg->GameInfo[*count][0x1C], "WBFS", 4);
 			
 			// Add filename
-			strcpy ((char*)&DICfg->GameInfo[idx][0x60], fn);
+			strcpy ((char*)&DICfg->GameInfo[*count][0x60], &fn[offset]);
 			
-			idx++;
+			(*count)++;
 			}
 		}
 	closedir(pdir);
 	
-	// Let's write diconfig.bin
-    DICfg->Gamecount = idx;
-	cfgSize = (idx * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
-
-	sprintf (fn, "%s://sneek/diconfig.bin", vars.mount[DEV_USB]);	
-	f = fopen(fn, "wb");
-	fwrite( DICfg, 1, cfgSize, f);
-	fclose (f);
+	return TRUE;
+	}
 	
+bool neek_CreateCDIConfig (void)
+	{
+	char path[128];
+	u32 count = 0;
+	u32 cfgSize = 0;
+	
+	sprintf (path, "%s://wbfs", vars.mount[DEV_USB]);	
+	
+	// Create a (big) CDIConfig
+	cfgSize = (CDIINITALGAMECOUNT * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
+	CDIConfig *DICfg = (CDIConfig*) malloc(cfgSize);
+	
+    // Init struct
+	DICfg->SlotID = 0;
+    DICfg->Region = 2;
+    DICfg->Gamecount = count;
+    DICfg->Config = 0;
+	
+	// Ok, we can scan games
+    count = 0;
+	neek_CreateCDIConfigBrowse (DICfg, &count, path);
+	
+	Debug ("neek_CreateCDIConfig: found %d games", count);
+	
+	if (count == 0)
+		return FALSE;
+	
+	// Let's write diconfig.bin
+    DICfg->Gamecount = count;
+	cfgSize = (count * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
+
+	sprintf (path, "%s://sneek/diconfig.bin", vars.mount[DEV_USB]);	
+	FILE *f = fopen(path, "wb");
+	fwrite( DICfg, 1, cfgSize, f);
+	count = 0x00; // This is from a bugs of neek2o
+	fwrite( &count, 1, sizeof(u32), f);
+	count = 0x123456; // This is to check if it fixed
+	fwrite( &count, 1, sizeof(u32), f);
+	fclose (f);
+
 	free (DICfg);
 	
 	return TRUE;

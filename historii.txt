@@ -2,7 +2,15 @@
 PLOADER - HISTORII
 ====================
 
-postLoader 3.45.1
+postLoader 3.46.2
+ 
+* neek2o: postLoader is now capable to rebuild all wbfs folder/file structure. Still missing fst format
+* added progress dialog when rebuilding diconfig.bin
+* postloader.dol is now available as apps/postloader/boot.dol
+* meta.xml reflect now the real version
+* postLoader have it's page in google code
+
+postLoader 3.45.3
  
 * Added support for usb homebrew access on neek2o (READ NOTES)
 * Corrected a crash introduced in 3.44.3 if neek2o nand is in the root
