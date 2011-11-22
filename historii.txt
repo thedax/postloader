@@ -2,6 +2,43 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.45.1
+ 
+* Added support for usb homebrew access on neek2o (READ NOTES)
+* Corrected a crash introduced in 3.44.3 if neek2o nand is in the root
+* PARTIAL built in game cache rebuilder (READ NOTES)
+* Updated readmii to v1.2
+ 
+NOTES:
+ 
+usb homebrew access
+-------------------
+postLoader thanks to the "magic code" from obcd can now access directly to usb hdd under neek2o. This is enabled with just 2 line of code. KEEP IN MIND, that even
+if postLoader will launch any hb, launched hb will not work correctly if relay on data in usb hdd. Every hb like postloader must be updated to run under neek2o like
+postloader do. I hope that a lot of homebrew makers will integrate this modification in their applications.
+ 
+Built in game cache rebuilder
+-----------------------------
+postLoader can now rebuild diconfig.bin by internal function only (ONLY) for the following kind of file structure
+ 
+/wbfs/<gamedescription>[gameid].wbfs
+or
+/wbfs/<anycharacter>.wbfs
+ 
+it is really much faster then neek2o. Reboot seems to be required.
+ 
+ 
+Known issues/todo (in sparse order)
+ 
+* TODO: Adding patching options to uneek games
+* TODO: priibooter gui
+* TODO: multy splash screen support
+* TODO: patch uid.sys under neek
+* TODO: more theme options
+* TODO: runtime theme switch
+* ISSUE: if a channel png is corrupted, postloader may crash
+
+
 postLoader 3.44.3
 
 * Corrected icon layout for homebrews
@@ -12,29 +49,6 @@ postLoader 3.44.3
 * postLoader now keep a channels cache file separated for any nand
 * added neek2o availability and current nand folder on screen
 * appbrowser can now manage up to 256 different homebrews.
-
-NOTES:
-postloader support automatically 4 different nands. nands can be selected for any game. Press (B) on the game cover
-
-/nands/pl_eu for euro pal nand
-/nands/pl_us for usa nand
-/nands/pl_jp for japan nand
-/nands/pl_kr for korean nand
-
-IMPORTANT: priiloader must be present on the nand. There is non need to configure it.
-
-If the region if different from default, postloader install as "installed file" in priiloader on the selected nand n2oswitch.dol that will run the disc, and on return to menu (or power off/on) will restore old settings.
-Even if the four roms can be used for any porpouse, I suggest to leave them light, without any additional channel to keep high switching speed
-
-Known issues/todo (in sparse order)
-
-* TODO: Adding patching options to uneek games
-* TODO: priibooter gui
-* TODO: multy splash screen support
-* TODO: patch uid.sys under neek
-* TODO: more theme options
-* TODO: runtime theme switch
-* ISSUE: if a channel png is corrupted, postloader may crash
 
 postLoader 3.43.1
 

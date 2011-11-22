@@ -10,6 +10,7 @@
 #include "hbcstub.h"
 #include "identify.h"
 #include "neek.h"
+#include "uneek_fs.h"
 
 int Disc (void);
 int AutoUpdate (void);
@@ -67,6 +68,11 @@ void Shutdown(bool doNotKillHBC)
 		
 	// Also modify it
 	Set_Stub (((u64)(1) << 32) | (2));
+	
+	if (vars.neek != NEEK_NONE) // We are not working under neek
+		{
+		exit_uneek_fs ();
+		}
 	}
 
 int Initialize(void)
@@ -150,8 +156,10 @@ void CheckNeek (void)
 	if (boot2version >= 5) 
 		{
 		vars.neek = NEEK_USB;
-		vars.usbtime = 0;
+		vars.usbtime = 1;
 		vars.ios = ios_ReloadIOS (-1, &vars.ahbprot); // Let's try to reload
+		
+		init_uneek_fs (ISFS_OPEN_READ|ISFS_OPEN_WRITE);
 		}
 	}
 	

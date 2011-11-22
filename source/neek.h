@@ -31,3 +31,5 @@ int neek_NandConfigSelect (char *nand);
 
 bool neek_PLNandInfo (int mode, u32 *idx, u32 *status); // mode 0 = read, mode 1 = write;
 bool neek_PLNandInfoKill (void); // Remove nandcfg.pl... postloader do this when it start
+
+bool neek_CreateCDIConfig (void);

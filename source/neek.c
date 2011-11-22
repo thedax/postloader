@@ -4,6 +4,7 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include "neek.h"
 #include "globals.h"
 
@@ -487,4 +488,81 @@ bool neek_PLNandInfoKill (void) // Remove nandcfg.pl... postloader do this when 
 	ISFS_Deinitialize ();
 
 	return true;
+	}
+	
+// This will require obcd extensions
+bool neek_CreateCDIConfig (void)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	char path[128];
+	char fn[128];
+	int idx = 0;
+	u32 cfgSize = 0;
+	FILE* f = NULL;
+	
+
+	sprintf (path, "%s://wbfs", vars.mount[DEV_USB]);	
+	
+	pdir=opendir(path);
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		Debug ("neek_CreateCDIConfig: [DIR] %s", pent->d_name);
+		if (strstr (pent->d_name, ".wbfs") || strstr (pent->d_name, ".WBFS"))
+			idx++;
+		}
+	closedir(pdir);
+	
+	if (idx == 0) return FALSE;
+	
+	cfgSize = (idx * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
+	CDIConfig *DICfg = (CDIConfig*) malloc(cfgSize);
+	
+    // Init struct
+	DICfg->SlotID = 0;
+    DICfg->Region = 2;
+    DICfg->Gamecount = idx;
+    DICfg->Config = 0;
+	
+	// Ok, we can scan games
+    idx = 0;
+	pdir=opendir(path);
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		if (strstr (pent->d_name, ".wbfs") || strstr (pent->d_name, ".WBFS"))
+			{
+			sprintf (fn, "%s/%s", path, pent->d_name);
+			Debug ("neek_CreateCDIConfig: [PATH] %s", fn);
+			
+			f = fopen(fn, "rb");
+			if (!f) continue;
+			
+			//Get file size
+			fseek( f, 0x200, SEEK_SET);
+			fread( DICfg->GameInfo[idx], 1, CDI_GAMEINFO_SIZE, f);
+			fclose (f);
+			
+			// Set the flag
+			memcpy (&DICfg->GameInfo[idx][0x1C], "WBFS", 4);
+			
+			// Add filename
+			strcpy ((char*)&DICfg->GameInfo[idx][0x60], fn);
+			
+			idx++;
+			}
+		}
+	closedir(pdir);
+	
+	// Let's write diconfig.bin
+    DICfg->Gamecount = idx;
+	cfgSize = (idx * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
+
+	sprintf (fn, "%s://sneek/diconfig.bin", vars.mount[DEV_USB]);	
+	f = fopen(fn, "wb");
+	fwrite( DICfg, 1, cfgSize, f);
+	fclose (f);
+	
+	free (DICfg);
+	
+	return TRUE;
 	}

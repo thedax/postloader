@@ -12,6 +12,7 @@
 #include "microsneek.h"
 #include "identify.h"
 #include "gui.h"
+#include "neek.h"
 
 #define CHNMAX 1024
 
@@ -742,7 +743,8 @@ static void ShowNandOptions (void)
 	buff[0] = '\0';
 	
 	strcat (buff, "Download covers...##10||");
-	strcat (buff, "Rebuild game list (reboot required)...##9|");
+	strcat (buff, "Rebuild game list: neek2o standard mode (reboot required)...##9|");
+	strcat (buff, "Rebuild game list: <desc>[id].wbs mode (reboot required)...##12|");
 	strcat (buff, "Reset configuration files...##11||");
 	strcat (buff, "Cancel##-1");
 		
@@ -758,6 +760,13 @@ static void ShowNandOptions (void)
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		}
 
+	if (item == 12)
+		{
+		neek_CreateCDIConfig ();
+		Shutdown (0);
+		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+		}
+		
 	if (item == 10)
 		{
 		DownloadCovers();
