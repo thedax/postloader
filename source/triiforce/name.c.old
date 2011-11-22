@@ -1,0 +1,278 @@
+#include <gccore.h>
+#include <string.h>
+#include <malloc.h>
+#include <stdio.h>
+
+#include "tools.h"
+#include "isfs.h"
+
+
+bool check_text(char *s) 
+{
+    int i = 0;
+    for(i=0; i < strlen(s); i++)
+    {
+        if (s[i] < 32 || s[i] > 165)
+		{
+			s[i] = '?';
+			//return false;
+		}
+	}  
+
+	return true;
+}
+
+char *get_name_from_banner_buffer(u8 *buffer)
+{
+	char *out;
+	u32 length;
+	u32 i = 0;
+	while (buffer[0x21 + i*2] != 0x00)
+	{
+		i++;
+	}
+	length = i;
+	out = malloc(length+12);
+	if(out == NULL)
+	{
+		Print("Allocating memory for buffer failed\n");
+		return NULL;
+	}
+	memset(out, 0x00, length+12);
+	
+	i = 0;
+	while (buffer[0x21 + i*2] != 0x00)
+	{
+		out[i] = (char) buffer[0x21 + i*2];
+		i++;
+	}
+	return out;
+}
+
+int find_string_in_buffer (u8 *buff, int buffsize, char *string)
+	{
+	int i, l;
+	
+	l = strlen(string);
+	for (i = 0; i < buffsize-i; i++)
+		{
+		if (memcmp(&buff[i], string, l) == 0)
+			return i;
+		}
+	return -1;
+	}
+	
+// to identify title we should lock of 0x00 0x00 0x00 0x00 0x00 [Printable char]
+char *find_title_name (u8 *buff, int buffsize)
+	{
+	char printable[] = "1234567890QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm ";
+	char pattern[] = {'\0', '\0', '\0', '\0', '\0', '\0'};
+	char tempbuff[256];
+	char *outbuff = NULL;
+	
+	int printableLen = sizeof(printable);
+	int patternLen = sizeof(pattern);
+	int pid = patternLen-1;
+	
+	int i,j;
+	
+	i = find_string_in_buffer (buff, buffsize, "IMET");
+	if (i < 0) return NULL;
+	
+	buff += i;
+	buffsize = (buffsize - i) - (patternLen); // +2 as we espect 0x00 0x00 to end the string
+	if (buffsize < 1) return NULL;
+	
+	for (i = 0; i < buffsize; i++)
+		{
+		for (j = 0; j < printableLen; j++)
+			{
+			pattern[pid] = printable[j];
+		
+			if (memcmp(&buff[i], pattern, patternLen) == 0)
+				{
+				int k, pos;
+				
+				// We have found something valid
+				k = i + patternLen;
+				pos = 0;
+				while (pos < sizeof(tempbuff) - 1 && k < buffsize)
+					{
+					if (buff[k] < 32)
+						{
+						pos = 0;
+						break;
+						}
+					tempbuff[pos] = buff[k];
+					k += 2;
+					pos++;
+					}
+				if (pos >= sizeof(tempbuff))
+					pos = 0;
+					
+				tempbuff[pos] = 0;
+				
+				if (pos > 5) // mmm... may not be valid
+					{
+					outbuff = malloc (pos + 1);
+					strcpy (outbuff, tempbuff);
+					return outbuff;
+					}
+				}
+			}
+		}
+	return NULL;
+	}
+
+char *read_name_from_banner_app(u64 titleid)
+{
+    s32 ret;
+	u32 num;
+	dirent_t *list = NULL;
+    char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+    u32 cnt = 0;
+	u8 *buffer = allocate_memory(368);
+	if (buffer == NULL)
+	{
+		Print("Allocating memory for buffer failed\n");
+		return NULL;
+	}
+   
+	sprintf(path, "/title/%08x/%08x/content", TITLE_UPPER(titleid), TITLE_LOWER(titleid));
+	
+    ret = getdir(path, &list, &num);
+    if (ret < 0)
+	{
+		Print("Reading folder of the title failed\n");
+		free(buffer);
+		return NULL;
+	}
+	
+	u8 imet[4] = {0x49, 0x4D, 0x45, 0x54};
+	for (cnt=0; cnt < num; cnt++)
+    {        
+        if (strstr(list[cnt].name, ".app") != NULL || strstr(list[cnt].name, ".APP") != NULL) 
+        {
+            sprintf(path, "/title/%08x/%08x/content/%s", TITLE_UPPER(titleid), TITLE_LOWER(titleid), list[cnt].name);
+  
+            ret = read_file_from_nand(path, buffer, 368);
+	        if (ret < 0)
+	        {
+		        // Error is printed in read_file_from_nand already
+				continue;
+	        }
+			// XXXXXXXXX
+			if (memcmp((buffer+0x80), imet, 4) == 0)
+			{
+				char *out = get_name_from_banner_buffer((void *)((u32)buffer+208));
+				if (out == NULL)
+				{
+					free(buffer);
+					free(list);
+					return NULL;
+				}
+				
+				free(buffer);
+				free(list);
+				
+				return out;
+			}   
+        }
+    }
+	
+	free(buffer);
+	free(list);
+	
+	return NULL;
+}
+
+char *read_name_from_banner_bin(u64 titleid)
+{
+    s32 ret;
+    char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	u8 *buffer = allocate_memory(160);
+	if (buffer == NULL)
+	{
+		Print("Allocating memory for buffer failed\n");
+		return NULL;
+	}
+   
+	sprintf(path, "/title/%08x/%08x/data/banner.bin", TITLE_UPPER(titleid), TITLE_LOWER(titleid));
+  
+	ret = read_file_from_nand(path, buffer, 160);
+    if (ret < 0)
+    {
+        // Error is printed in read_file_from_nand already
+		free(buffer);
+		return NULL;
+	}
+
+	char *out = get_name_from_banner_buffer(buffer);
+	if (out == NULL)
+	{
+		free(buffer);
+		return NULL;
+	}
+	
+	free(buffer);
+
+	return out;		
+}
+
+char *get_name(u64 titleid)
+{
+	char *temp;
+	u32 low;
+	low = TITLE_LOWER(titleid);
+
+	temp = read_name_from_banner_bin(titleid);
+	if (temp == NULL)
+	{
+		temp = read_name_from_banner_app(titleid);
+	}
+	
+	if (temp != NULL)
+	{
+		check_text(temp);
+
+		if (*(char *)&low == 'W')
+		{
+			return temp;
+		}
+		switch(low & 0xFF)
+		{
+			case 'E':
+				memcpy(temp+strlen(temp), " (NTSC-U)", 9);
+				break;
+			case 'P':
+				memcpy(temp+strlen(temp), " (PAL)", 6);
+				break;
+			case 'J':
+				memcpy(temp+strlen(temp), " (NTSC-J)", 9);
+				break;	
+			case 'L':
+				memcpy(temp+strlen(temp), " (PAL)", 6);
+				break;	
+			case 'N':
+				memcpy(temp+strlen(temp), " (NTSC-U)", 9);
+				break;		
+			case 'M':
+				memcpy(temp+strlen(temp), " (PAL)", 6);
+				break;
+			case 'K':
+				memcpy(temp+strlen(temp), " (NTSC)", 7);
+				break;
+			default:
+				break;				
+		}
+	}
+	
+	if (temp == NULL)
+	{
+		temp = malloc(6);
+		memset(temp, 0, 6);
+		memcpy(temp, (char *)(&low), 4);
+	}
+	
+	return temp;
+}

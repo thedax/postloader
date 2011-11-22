@@ -1,0 +1,420 @@
+====================
+PLOADER - HISTORII
+====================
+
+postLoader 3.44.3
+
+* Corrected icon layout for homebrews
+* Corrected possible crash when drawing themes (for example with dimension theme)
+* Corrected some little graphic problems with themes
+* n2oswitch now support any priiloader version and change only needed options (autoboot and ReturnTo) leaving all the other option with they original values
+* postLoader can now switch to any neek2o nand ([HOME] -> Options... ->Change current neek2o nand")
+* postLoader now keep a channels cache file separated for any nand
+* added neek2o availability and current nand folder on screen
+* appbrowser can now manage up to 256 different homebrews.
+
+NOTES:
+postloader support automatically 4 different nands. nands can be selected for any game. Press (B) on the game cover
+
+/nands/pl_eu for euro pal nand
+/nands/pl_us for usa nand
+/nands/pl_jp for japan nand
+/nands/pl_kr for korean nand
+
+IMPORTANT: priiloader must be present on the nand. There is non need to configure it.
+
+If the region if different from default, postloader install as "installed file" in priiloader on the selected nand n2oswitch.dol that will run the disc, and on return to menu (or power off/on) will restore old settings.
+Even if the four roms can be used for any porpouse, I suggest to leave them light, without any additional channel to keep high switching speed
+
+Known issues/todo (in sparse order)
+
+* TODO: Adding patching options to uneek games
+* TODO: priibooter gui
+* TODO: multy splash screen support
+* TODO: patch uid.sys under neek
+* TODO: more theme options
+* TODO: runtime theme switch
+* ISSUE: if a channel png is corrupted, postloader may crash
+
+postLoader 3.43.1
+
+* Corrected a bug caused by "strange" diconfig.bin (thx cippazza)
+* Corrected a typo error (thx zfa)
+* Added n2oswitch.dol in ploader folder. This file must be present in sd:/ploader/ folder to enable neek2o nand autoswitch feature
+
+postLoader 3.42.0
+
+* Corrected cover display for wiiware
+* Changed in dist ploader/channels.png to covers
+
+postLoader 3.41.4
+
+* Corrected a drawing problem on games icons, when no icon is available
+* Corrected a bug on parsing diconfig.bin when character "|" where present on title
+* priibooter 1.8: disabled usb root nand checking for better compatibility with neek2o
+* added primordial per game nand reload. A lot of more work is needed to complete this functionality
+
+postLoader 3.40.2
+
+* Corrected theme support
+* Corrected an (old) bug on deletion of all (games/channels) configuration files
+* Moved "Clean channel/games configuration files..." option to "Options menu'"
+* Corrected games hiding/sorting (configuration files must be cleaned, before it works)
+* Removed filter menu from games browser
+
+postLoader 3.39.8
+
+* Uneek game browser with cover support. Support +cDI (thx obcd) and +DI (untested but should work). Unespected results for non cDI/DI versions
+* Rewritten disc boot code (now works under neek)
+* Fix for DVD homebrew access (thx tueidj, now WiiMC shoud work with internal dvd... waiting for reports)
+* postLoader can detect NEEK without the need of "neek" argument in xml
+* Completely rewritten gui layout engine
+* Now titles png have the right proportion (reduced titles x pages, from 16 to 12) 
+* New icon (sorry joostin, I'm feeling creative :P)
+* changed /ploader/channels.png to /ploader/covers: If you want to keep old covers you should rename that folder
+* changed /ploader/channels.cfg to /ploader/config: If you want to keep old covers you should rename that folder
+* Added gpl.txt license to sources (link, as usual, in readmii.txt)
+
+postLoader 2.38.1
+
+* Postloader can now boot currently inserted disc. (press home "run disc")
+* Corrected REAL NAND titles access without using ios249 (if AHBROT is available)
+* Adjusted some ui messages
+* Corrected wiiload functionality after cover download
+* Only new covers are downloaded
+* If priibooter fail to mount usb, postloader do not try again (priibooter 1.7 required).
+* priibooter updated to version 1.7
+* Support for wiiload args was disabled in 2.37.7 (just a mistake)
+* Corrected a bugs that was keeping wiiload thread in receiving state if communication is interrupted/broken
+* readmii.txt update and now have it's own version number
+
+postLoader 2.37.7
+
+* If AHBROT is available, no more need to fall into ios249 to browse (and execute) REAL NAND titles.
+* WiiLoad support (straight, compressed dol, zip archieve)
+* If you send postLoader.dol via wiiload, postloader installation will be updated (after confirmation).
+* Cover download can be safely interrupted pressing (B)
+* New library for http download (derived from wiiXplorer). Now cover download is much more faster
+* A lot of code clean
+* Now arg.commandLine is also moved in mem2
+* HB applications can be uninstalled
+* Corrected some bugs on microsneek support. Anyway microsneek must be considered experimental.
+* priibooter: updated to 1.6
+* priibooter: corrected a bug on HBC selection
+* priibooter: postloader is searched also on usb
+* Updated grlib gui library to 1.2
+* Changed version number convention <master rev>.<major build no>.<minor build no>
+
+postLoader2 b36
+
+* microsneek technology (yah, I love useless fancy names :P) - READ READMII.TXT
+* Added caching to debugging mode
+* Updated readmii.txt
+
+postLoader2 b35
+
+* plneek merged with priibooter (now priibooter 1.4). Install this version under priiloader
+* priibooter (if an sd is available) can run postloader/neek/system menu/hbc. It remeber last setting
+* pl2: if you create on the root of sd the file postloader.log, postloader start in debugging mode. It drammatically slow. Debugging message are only partially implemented
+* fixed dimension theme (you need to re-download the theme pack)
+
+postLoader2 b34
+
+* plneek: update to v1.3 (only code clean)
+* pl2: added fix for old app with "crash on exit" issue. It is per-app setting, so press B on the app (like ftpii) and enable "Fix crash on exit" option.
+* pl2: hide/show application (and folders) now works as it should.
+* to keep dist smaller, postloader boot.dol is no more in apps folder. You must copy manually postLoader.dol to apps/postloader/boot.dol
+
+postLoader2 b33
+
+* plneek: reduced wait time from 5 to 3 second
+* plneek: also SNEEK folder is moved with nands
+* plneek: after a nand change, the availble nand folders list in postloader where wrong until next reboot
+* plneek: now show only dots when moving folders
+* prii/neek booter: updated .dol search order and arg passing method
+* pl2: added some error message if something fails when selecting a new neek nand.
+* pl2: corrected screen redraw after channels filter selection
+* pl2: corrected a buffer overflow when working under neek (?) :(
+
+!!! IMPORTANT: as USB://SNEEK folder is moved with the rest of the nand, make sure that you have one in all nand folders before updating
+
+
+postLoader2 b32
+
+* postLoader/nandbooter will try to search the nand on the first 4 partition of an hdd. It can't selected interactively, the first valid fat32 found will be mounted. 
+* plneek.dol: added nand switching utilty to package.
+* Corrected a bug intruduced in the past that was preventing the possibility to disable usb initialization (mainly usefull under uneek)
+* pl: Added to option menu, neek nand selection and reboot items.
+
+postLoader2 b31
+
+* pl: corrected nand folder argument passed to nandbooter (this was preventing booting titles from alternate nand folders, thx to zfa for his help in debugging)
+* nandbooter: is now able to write a log file to sd (sd://nb.log) if fails to boot a title
+* nandbooter: changed ISFS_Initialize position (after enabling emu...)
+* nandbooter: better debug messages output
+* updated priibooter.dol to support future plneek.dol (that will be the neek nand switcher)
+
+postLoader2 b30
+
+* Changed detection folder for the nand (now is title/00000001)
+* Changed how ahbprot is patched on ios reload (thx daveboal)
+* Added support for nand folders (see NOTES on readmii.txt)
+* Changed channels home menu'. Added "NAND Source" for selecting nand, NAND option for rebuild cache, download covers, reset configuration
+* Changed the time for displaying errors in nandbooter (from 5 seconds to 2)
+
+postLoader2 b29
+
+* Corrected a bug in the channel browser that caused wrong page number after channel's propriety menu is displayed
+* Added two new themes to the package: Horizon and Dimension. Thx darkangel84
+* Added totally new version of priibooter/neekbooter, completely rewritten and now based on app_booter.
+* Themes are now in separate package
+
+postLoader2 b28
+
+* Corrected a bug introduced in b27 that prevents nand cache to be read back
+* Implemented online update ( [Home]->options->Check online for updates )
+* Corrected missing screen redraw on hiding a channel title
+
+postLoader2 b27
+
+* Corrected arg managment (now WiiSX works)
+* Devices passed as args are now lowercase (like hbc)
+* postLoader now path che hbc stub to force the return to System Menu title (priiloader) thx to giantpune for his code
+
+postLoader2 b26
+
+* Corrected stack dump when no meta.xml is found and (B) is pressed on app
+
+postLoader2 b25
+
+* Adopted app_booter r214 from wiiXplorer (thank's dimok). postLoader size reduced by about 100Kb
+* Adjusted code (hb and triiforce interface) to be compatible with app_booter
+* Corrected arguments passing... now if no args are found, arg struct will not be created. This solve problems related to dollz that was solved with a not-so-skilled trick in b20.
+* Elf args should be supported (untested)
+* hb without meta.xml now are named as folder name (before thay was shown as <unknown>)
+* Now classic controller can change page with +/- and shoulder buttons
+* Corrected a bug on homebrew browser when hiding an application.
+* update downloadable sources to b25
+
+postLoader2 b24
+
+* Added "Reset configuration files" to NAND menu. This will clear per-title configurations file. Suggested on upgrade to b24
+* Corrected choopy classic controller
+* nandbooter: Changed default boot mode to "normal boot method"
+* nandbooter: Now if an error is detected it pause execution for a while to let user read it
+* nandbooter: some minor changes
+* nandbooter: partially update to triiforce r92
+
+
+postLoader2 b23
+
+* Corrected bug that if ahpbrot wasn't availble on startup, pl fails to init usb
+* Corrected a bug that could cause double of items if no valid items are available in 00010002 nand folder (to be confirmed!)
+* Corrected a bug on spawn of nandbooter that could prevent reload of correct ios (249)
+* A lot of code clean in nandbooter
+* Corrected reload ios strategy on nandbooter
+* Reduced console output of nandbooter
+* Added a message on ios reload when updating title cache
+
+postLoader2 b22
+
+* Change the way titles name are read from channels. Now also 'U' Loadstructor names are detected correctly.
+* Changed a bit usb storage initialization.
+
+postLoader2 b21
+
+* Now for executing titles from real nands, WII_LaunchTitle function is used. This solve compatibility with loadstructor channels (U).
+* Removed tweak options for titles where running under real nand.
+
+NOTE: Actually cannot get titles names from crap channels. Only ID will be displayed
+
+postLoader2 b20
+
+* Corrected dollz code. A stupid error caused also args to no more passed to hb
+* Corrected internal build number
+
+postLoader2 b19
+
+* U channels are now scanned
+
+postLoader2 b18
+
+* Corrected a (sure) memory corruption after refreshing titles cache
+
+postLoader2 b17
+
+* Implemented davebaol (thx for share this !!!) AHBPROT fix. Started from priiloader, postLoader gains AHBPROT and is capable to spawn homebrew with full hardware access. (tested with MMM 13.4)
+* Added information on current ios and AHBPROT status on gui
+* Changed a bit menus... only first line of header is drawn with normal font... other lines are drawn with small one
+* Implemented "Other" channels titles. This will show titles with starting letter != HWFECJLMNPQ
+* Corrected wrong color inversion on some built-in textures
+* Disabled remount of devices when nand menu is choosen.
+* Corrected a bug on displaying icons after nand browse.
+* Updated appbooter with code suggested by FIX94
+* Dollz supported
+* Corrected a bug introduced in b16 that could not enable correctly emulation
+
+postLoader2 b16
+
+* HB: AHBPROT flag is now checked. If found and current ios is 58, no reload is executed. Anyway IOS249 will be loaded when updating channels or executing them.
+* HB: if <no_ios_reload/> is found in xml and AHBPROT flag is on, no reload is executed
+* Full theme support. Maybe there is something more to do...
+* embedded textures reflects fontBMF_reverse setting (see theme.cfg & readmii.txt)
+* Minor changes on screen layout
+* Optimized screen redraw when menu' are showed (much faster, especially when ios is != 249)
+* Updated readmii.txt with information about theming
+
+postLoader2 b15
+
+* Corrected bug on last item of the menu. This prevents the selection of turbografx16CD and generally any last item of the menus.
+* Now postLoader remember last page visited
+* Added title type in the info area (bottom of the screen)
+* Last executed title will not be dimmed.
+* Console switch: Power off do power off (yeaaa that's incredible !!!)... Reset took you to system menu
+* Added experimental theming. See "ploader\theme" in distribution
+* A lot of code cleanup
+
+postLoader2 b14
+
+* N64 VC were showed instead of NES (thx GartimusPrime)
+
+postLoader2 b13
+
+* Corrected regression on emulated nand
+
+postLoader2 b12
+
+* FXXX vc (NES) filter was missing (thx DEFIANT)
+* Added support for "Classic" controller
+* Checking screen limits when moving cursor with sticks
+
+postLoader2 b11
+
+* Added support for neek environment (see readmii.txt for details)
+  > corrected lockup on some nand dump
+  > now ploader when run in neek has it own configuration files
+* Separated version history from readmii.txt (added historii.txt)
+* Changed GRRLIB init to allow VIDEO_Init to be external (need for lockup under neek)
+* Added support for GC controllers
+* Added support for nunchuk stick
+* (internal) Updated user interface library
+  > new helpers functions for drawing menu'
+
+postLoader2 b10
+
+* Channel browser: Icons are shown correctly and (almost) immediately
+* HB browser: Speedup on applciation seraching
+* Minor changes on user interface
+* Ocarina codes are working again (tested from SD)
+
+postLoader2 b9
+
+* Channel browser: Changed again cert.sys support. Maybe this time works...
+* Channel browser: Modified nand selection menu.
+* Channel browser: Modified the way cache rebuild is needed
+* Corrected internal build version (was b6 for b7 e b8)
+
+postLoader2 b8
+
+* Channel browser: Full caching of title... no more wait time on change to real/emu_sd/emu_usb. Cache must be rebuilded manually
+* Now icons are loaded in background
+* Other minor fix
+
+postLoader2 b7 (unreleased)
+
+* CH: Cert.sys missing may be have fixed (must be checked)
+* CH: codes loading may be fixed
+* HB: Fixed overlap of subfolders descriptions
+* Corrected custom splash screen issue.
+
+postLoader2 b6
+
+* Fix the star showing the autoboot application (thx Wever)
+* Totally changed the triiforce implementation
+* Added priibooter.dol mini-forwader
+* Corrected a bug on wiimote sync
+* Corrected a bug on reloading channel configuration of emulated nand
+* Changed a bit the timout on autoboot
+* Some minor changes
+* Changed "About postoloader" to "Options..."
+* Corrected distribution zip
+
+postLoader2 b5
+
+* Semplified graphics (yea, also before was very simple :P)
+* Adjusted user interface
+* Added icon magnify when selected
+* Changed fonts
+* Integrated triiforce, with support for 
+* Corrected bss on dol loading (txk oggzee)
+* a lot more... to add
+
+postLoader1 b4
+
+* Limited the lines displayed for xml long description
+* On popup menues, (B) act as cancel button
+* Changed a lot of things in internal libraries
+* Added option: "Disable autorun on current device"
+* Added option "Enable/Disable boot time USB initialization" when the device is an SD.
+* Add support for custom logo from (and only) SD.
+* Added support for applications without icon.png or meta.xml (anyway the last will be created)
+* During sorting you can mark the same application more than once. Corrected
+* Disabled access to menu during sorting
+
+postLoader1 b3
+
+* MMM 13.4: Derived bootdol.dol from app_booter.dol (by dimok). Now It runs...
+* Added on screen menu'. Press Home in interactive.
+* Added application description.
+* Pressing (B) on application, will open application menu, with full description (from xml)
+* Changed a bit the interactive interface
+* Faster interactive page change
+* Updated readmii.txt
+
+postLoader1 b2
+
+* Corrected a memory's related bugs that can lead to code-dump if no icon is present for an HB Application
+* Added support for subfolders
+* Changed some displayed information in interactive mode
+* Corrected a bug that cause failure on usb mount if configuration file is not present
+* Corrected a bug that cause no directory listing if no sd card is inserted
+* Corrected a bug on argv creating
+* Added application path with sd/usb identifier to argv[0]
+* Rewritten readmii.txt
+
+postLoader1 b1
+
+* Added arg parsing from meta.xml
+* Now postLoader save its setting in meta.xml <ploader>config</ploader>
+* Ad more checking on some buffers
+
+postLoader1 b0 (beta) - First public release
+
+
+============================================================
+TODO
+============================================================
+
+* Export of not-found icons
+* Export of hidden channels
+* Support power button and reset button on the console.
+
+
+============================================================
+KNOWN BUGS (current release)
+============================================================
+
+* none known
+
+
+============================================================
+nandBooter (based on triiforce r92)
+============================================================
+
+b1
+
+* Added no ios reload under neek
+
+b0
+* Changed usbstorage interface
+* Changed the way cert.sys is managed
