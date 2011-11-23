@@ -9,7 +9,6 @@
 #include "sys/errno.h"
 #include "http.h"
 #include "ios.h"
-#include "microsneek.h"
 #include "identify.h"
 #include "gui.h"
 #include "neek.h"
@@ -338,8 +337,6 @@ static int GameBrowse (void)
 		char *titles;
 		char *p;
 		
-		//UNEEK_GetGameCountb ( &cnt );
-		
 		titles = neek_GetGames ();
 		if (!titles) return 0;
 		
@@ -352,17 +349,16 @@ static int GameBrowse (void)
 			{
 			if (*p != '\0' && strlen(p))
 				{
-				//Debug ("GameBrowse [add %d:%s]", i, p);
 				// Add name
 				games[i].name = malloc (strlen(p));
 				strcpy (games[i].name, p);
 				p += (strlen(p) + 1);
 				
-				//Debug ("GameBrowse [add %d:%s]", i, p);
 				// Add id
 				strcpy (games[i].asciiId, p);
 				p += (strlen(p) + 1);
-				
+
+				// Setup slot
 				games[i].slot = i;
 				
 				ReadGameConfig (i);
@@ -743,8 +739,8 @@ static void ShowNandOptions (void)
 	buff[0] = '\0';
 	
 	strcat (buff, "Download covers...##10||");
-	strcat (buff, "Rebuild game list: postLoader wbfs mode (reboot)...##12||");
-	strcat (buff, "Rebuild game list: neek2o offical mode (reboot)...##9|");
+	strcat (buff, "Rebuild game list: postLoader wbfs mode (reboot)...##12|");
+	strcat (buff, "Rebuild game list: neek2o offical mode (reboot)...##9||");
 	strcat (buff, "Reset configuration files...##11||");
 	strcat (buff, "Cancel##-1");
 		

@@ -7,11 +7,15 @@
 #include <sys/unistd.h>
 #include "common.h"
 
-#define VER "[1.8]"
+#define VER "[1.9]"
 #define BASEPATH "usb://nands"
+#define PRII_WII_MENU 0x50756E65
+
 #define POSTLOADER_SD "sd://postloader.dol"
 #define POSTLOADER_USB "usb://postloader.dol"
-#define PRII_WII_MENU 0x50756E65
+
+#define POSTLOADER_SDAPP "sd://apps/postloader/boot.dol"
+#define POSTLOADER_USBAPP "usb://apps/postloader/boot.dol"
 
 bool LoadExecFile (char *path, char *args);
 bool BootExecFile (void);
@@ -23,6 +27,10 @@ void green_fix(void); //GREENSCREEN FIX
 static char *nandSource;
 int errors = 0;
 s_plneek pln; //pln=plneek
+
+static int pl_sd = 0;
+static int pl_usb = 0;
+static int keypressed = 0;
 
 #define NANDSUBS 10
 static char nandsubs[NANDSUBS][32] = 
@@ -247,7 +255,7 @@ bool WaitForAnyKey (void)
 			pressed = true;
 			break;
 			}
-		usleep (40 * 1000);
+		usleep (20 * 1000);
 		}
 	printd ("---------------------------------------------------------------------------\n");
 	
@@ -334,7 +342,7 @@ void Boot (void)
 	if (pln.bootMode == PLN_BOOT_HBC)
 		printd ("     You are in HomeBrewChannel mode: Press any key NOW for boot options\n");
 
-	if (WaitForAnyKey ())
+	if (keypressed || WaitForAnyKey ())
 		{
 		ChooseNewMode ();
 		}
@@ -354,11 +362,14 @@ void Boot (void)
 		green_fix ();
 		IOS_ReloadIOS (254); 
 		}
+
 	if (pln.bootMode == PLN_BOOT_REAL)
 		{
-		if (!LoadExecFile ("sd://postloader.dol", "priibooter"))
-			if (!LoadExecFile ("usb://postloader.dol", "priibooter"))
-				BootToMenu ();
+		if (pl_sd && !LoadExecFile (POSTLOADER_SD, "priibooter"))
+			if (pl_sd && !LoadExecFile (POSTLOADER_SDAPP, "priibooter"))
+				if (pl_usb && !LoadExecFile (POSTLOADER_USB, "priibooter"))
+					if (pl_usb && !LoadExecFile (POSTLOADER_USBAPP, "priibooter"))
+						BootToMenu ();
 				
 		Fat_Unmount ();
 		green_fix ();
@@ -406,8 +417,8 @@ int main(int argc, char **argv)
 	// Let's mount devices
 	int sd,usb;
 	
-	sd = Fat_Mount (DEV_SD);
-	usb = Fat_Mount (DEV_USB);
+	sd = Fat_Mount (DEV_SD, &keypressed);
+	usb = Fat_Mount (DEV_USB, &keypressed);
 	
 	if (sd == 0 && usb == 0)
 		{
@@ -416,32 +427,18 @@ int main(int argc, char **argv)
 		BootToMenu ();
 		}
 
-	int pl_sd = 0;
-	int pl_usb = 0;
-	
 	if (sd && FileExist (POSTLOADER_SD))
+		pl_sd = 1;
+
+	if (sd && FileExist (POSTLOADER_SDAPP))
 		pl_sd = 1;
 
 	if (usb && FileExist (POSTLOADER_USB))
 		pl_usb = 1;
 
-	if (pl_sd == 0 && pl_usb == 0)
-		{
-		printd ("postLoader.dol not found on sd/usb, booting to System Menu");
-		sleep(3);
-		BootToMenu ();
-		}
-	
-	if (usb == 0 || sd == 0)
-		{
-		printd ("USB not available, uneek will not run\n");
-		/*
-		if (LoadExecFile (POSTLOADER_SD, "priibooter") || LoadExecFile (POSTLOADER_USB, "priibooter"))
-			BootExecFile ();
-		else
-			BootToMenu();
-		*/
-		}
+	if (usb && FileExist (POSTLOADER_USBAPP))
+		pl_usb = 1;
+
 	
 	printf ("\n");
 	
@@ -449,6 +446,14 @@ int main(int argc, char **argv)
 		mkdir ("sd://ploader", S_IREAD | S_IWRITE);
 		
 	LoadPLN ();
+
+	if (pl_sd == 0 && pl_usb == 0)
+		{
+		printd ("postLoader.dol not found on sd/usb");
+		
+		if (pln.bootMode != PLN_BOOT_NEEK)
+			keypressed = 1;
+		}
 
 	// On the sd we should have plneek.dat... it will instruct us what to do
 	nandSource = NULL;

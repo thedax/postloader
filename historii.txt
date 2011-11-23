@@ -2,6 +2,27 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.47.0 (r8)
+ 
+* neek2o: postloader can now install neekbooter in priiloader and configure it for autorun
+* corrected game options menu alignment
+* changed some menu labels
+* removed experimental microsneek feature
+
+> priibooter 1.9
+* if postloader isn't found and you are not in neek mode, selection screen is force
+* now search also sd:/appps/postloader/boot.dol and usb:/appps/postloader/boot.dol
+* wiimote buttons can be press to enter in interactive mode also during device initialization
+* wait-time reduced
+
+> neekbooter 1.1
+* if something goes wrong, an error message appear.
+* corrected crash if postloader isn't found
+* added sd:/appps/postloader/boot.dol to search path
+* added ISFS/appps/postloader/boot.dol to search path (so we can read postloader from usb, compatible with neek2o and uneek)
+  note that this make sense only under neek2o as postloader3 is capable to access usb to store data and sd can be removed.
+  under neek an sd is required for data.
+
 postLoader 3.46.2
  
 * neek2o: postLoader is now capable to rebuild all wbfs folder/file structure. Still missing fst format
@@ -17,25 +38,6 @@ postLoader 3.45.3
 * PARTIAL built in game cache rebuilder (READ NOTES)
 * Updated readmii to v1.2
  
-NOTES:
- 
-usb homebrew access
--------------------
-postLoader thanks to the "magic code" from obcd can now access directly to usb hdd under neek2o. This is enabled with just 2 line of code. KEEP IN MIND, that even
-if postLoader will launch any hb, launched hb will not work correctly if relay on data in usb hdd. Every hb like postloader must be updated to run under neek2o like
-postloader do. I hope that a lot of homebrew makers will integrate this modification in their applications.
- 
-Built in game cache rebuilder
------------------------------
-postLoader can now rebuild diconfig.bin by internal function only (ONLY) for the following kind of file structure
- 
-/wbfs/<gamedescription>[gameid].wbfs
-or
-/wbfs/<anycharacter>.wbfs
- 
-it is really much faster then neek2o. Reboot seems to be required.
- 
- 
 Known issues/todo (in sparse order)
  
 * TODO: Adding patching options to uneek games
@@ -45,7 +47,6 @@ Known issues/todo (in sparse order)
 * TODO: more theme options
 * TODO: runtime theme switch
 * ISSUE: if a channel png is corrupted, postloader may crash
-
 
 postLoader 3.44.3
 

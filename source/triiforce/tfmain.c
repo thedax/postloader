@@ -32,7 +32,6 @@
 
 #include <ogc/machine/processor.h>
 #include "../globals.h"
-#include "../microsneek.h"
 #include "../ios.h"
 #include "bin2o.h"
 
@@ -277,102 +276,6 @@ s32 search_and_read_dol(u64 titleid, u8 **contentBuf, u32 *contentSize, bool ski
 	}
 }
 
-static void cbMicrosneek (void)
-	{
-	if (fsop.flag1)
-		MasterInterface (0, 0, 2, "Preparing microsneek title\n%s: %d/%d", fsop.op, fsop.bytes, fsop.size);
-	else
-		MasterInterface (0, 0, 2, "Retriving microsneek title savefiles data\n%s: %d/%d", fsop.op, fsop.bytes, fsop.size);
-	}
-
-void Microsneek (s_run *run, int enable) // If enable, the title is installed in sneek, if not, it is removed
-	{
-	s_microsneek ms;
-	
-	fsop.flag1 = enable;
-	
-	if (enable == 0)
-		{
-		FILE *f;
-		char target[256], source[256];
-		
-		// store id on sneek shared1
-		sprintf (target, "%s://shared1/title.dat", vars.mount[DEV_SD]);
-		
-		f = fopen(target, "rb");
-		if (!f) return;
-		
-		fread (&ms, 1, sizeof(s_microsneek), f );
-		fclose(f);
-		
-		// Select the right microsneek kernel
-		sprintf (source, "%s://sneek/kernel.unk", vars.mount[DEV_SD]);
-		sprintf (target, "%s://sneek/kernel.bin", vars.mount[DEV_SD]);
-		unlink (target);
-		
-		fsop_CopyFile (source, target, cbMicrosneek);
-		
-		// Copy back data folder to savegame
-		
-		sprintf (source, "%s/data", ms.target);
-		sprintf (target, "%s/data", ms.source);
-		
-		fsop_CopyFolder (source, target, cbMicrosneek);
-		
-		sprintf (target, "%s://shared1/title.dat", vars.mount[DEV_SD]);
-		unlink (target);
-		
-		fsop_KillFolderTree (ms.target, cbMicrosneek);
-		return;
-		}
-	
-	// Title must exist for sure, but make check the upper
-	sprintf(ms.target, "%s://title/%08x", vars.mount[DEV_SD],TITLE_UPPER(run->channel.titleId));
-	if (!fsop_DirExist (ms.source)) // Make it
-		{
-		fsop_MakeFolder(ms.target);
-		}
-		
-	sprintf(ms.source, "%s:/%s/title/%08x/%08x", vars.mount[run->nand-1], run->nandPath, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
-	sprintf(ms.target, "%s://title/%08x/%08x", vars.mount[DEV_SD], TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
-	ms.titleId = run->channel.titleId;
-	ms.status = MICROSNEEK_TOEXEC;
-
-	// todo... if target exist, do not copy
-	*fsop.op = '\0';
-	if (fsop_CopyFolder (ms.source, ms.target, cbMicrosneek))
-		{
-		FILE *f;
-		char target[64], source[64];
-
-		// copy ticket
-		sprintf (target, "%s://ticket/%08x", vars.mount[DEV_SD], TITLE_UPPER(run->channel.titleId));
-		fsop_MakeFolder(target);
-		
-		sprintf(source, "%s:/%s/ticket/%08x/%08x.tik", vars.mount[run->nand-1], run->nandPath, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
-		sprintf(target, "%s://ticket/%08x/%08x.tik", vars.mount[DEV_SD], TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
-		fsop_CopyFile (source, target, cbMicrosneek);
-
-		// store id on sneek shared1
-		sprintf (target, "%s://shared1/title.dat", vars.mount[DEV_SD]);
-		
-		f = fopen(target, "wb");
-		fwrite (&ms, 1, sizeof(s_microsneek), f );
-		fclose(f);
-		
-		// Select the right microsneek kernel
-		sprintf (source, "%s://sneek/kernel.msn", vars.mount[DEV_SD]);
-		sprintf (target, "%s://sneek/kernel.bin", vars.mount[DEV_SD]);
-		unlink (target);
-		
-		fsop_CopyFile (source, target, cbMicrosneek);
-		
-		Shutdown (0);
-		IOS_ReloadIOS(254);
-		}
-	
-	}
-
 int tfboot(s_run *run)
 	{
 	s_nandbooter nb;
@@ -385,12 +288,6 @@ int tfboot(s_run *run)
 		WII_Initialize();
 		WII_LaunchTitle((u64)(run->channel.titleId));
 		exit(0);  // Use exit() to exit a program, do not use 'return' from main()
-		}
-	
-	if (run->channel.ios == 7) // Microsneek
-		{
-		Microsneek (run, 1);
-		exit(0);
 		}
 	
 	// Copy the triiforce image

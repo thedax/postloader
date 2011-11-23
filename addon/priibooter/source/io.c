@@ -12,8 +12,10 @@
 const DISC_INTERFACE* interface[DEVMAX] = {NULL,NULL};
 char mount[DEVMAX][16];
 
-s32 Fat_Mount(int dev)
+s32 Fat_Mount(int dev, int *keypressed)
 	{
+	u32  wbtn, gcbtn;
+
 	time_t t, ct, lt = 0;
 	char m[5];
 	
@@ -42,6 +44,18 @@ s32 Fat_Mount(int dev)
 		if (ct != lt)
 			{
 			printf ("."); // let user know we are live !
+
+			WPAD_ScanPads();  // Scan the Wiimotes
+			wbtn = WPAD_ButtonsDown(0);
+
+			PAD_ScanPads();
+			gcbtn = PAD_ButtonsDown(0);
+			
+			if (wbtn || gcbtn)
+				{
+				*keypressed = 1;
+				printf ("keypress");
+				}
 		
 			if (interface[dev]->startup() &fatMountSimple(m, interface[dev]))
 				{

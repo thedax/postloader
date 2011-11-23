@@ -9,7 +9,6 @@
 #include "sys/errno.h"
 #include "http.h"
 #include "ios.h"
-#include "microsneek.h"
 #include "identify.h"
 #include "gui.h"
 
@@ -667,7 +666,7 @@ static int FindSpot (void)
 	return chansSelected;
 	}
 	
-#define CHOPT_IOS 8
+#define CHOPT_IOS 7
 #define CHOPT_VID 8
 #define CHOPT_VIDP 4
 #define CHOPT_LANG 11
@@ -683,7 +682,7 @@ static void ShowAppMenu (int ai)
 	
 	int opt[7] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_BOOT};
 	
-	char *ios[CHOPT_IOS] = { "Default", "247" , "248", "249", "250", "251", "252", "microsneek"};
+	char *ios[CHOPT_IOS] = { "Default", "247" , "248", "249", "250", "251", "252"};
 	char *videooptions[CHOPT_VID] = { "Default Video Mode", "Force NTSC480i", "Force NTSC480p", "Force PAL480i", "Force PAL480p", "Force PAL576i", "Force MPAL480i", "Force MPAL480p" };
 	char *videopatchoptions[CHOPT_VIDP] = { "No Video patches", "Smart Video patching", "More Video patching", "Full Video patching" };
 	char *languageoptions[CHOPT_LANG] = { "Default Language", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
@@ -714,24 +713,12 @@ static void ShowAppMenu (int ai)
 			strcat (buff, "||");
 			strcat (buff, "IOS: "); strcat (buff, ios[chnConf.ios]); strcat (buff, "##100|");
 			
-			if (chnConf.ios != MICROSNEEK_IOS)
-				{
-				strcat (buff, "Video: "); strcat (buff, videooptions[chnConf.vmode]); strcat (buff, "##101|");
-				strcat (buff, "Video Patch: "); strcat (buff, videopatchoptions[chnConf.vpatch]); strcat (buff, "##102|");
-				strcat (buff, "Language: "); strcat (buff, languageoptions[chnConf.language]); strcat (buff, "##103|");
-				strcat (buff, "Hook type: "); strcat (buff, hooktypeoptions[chnConf.hook]); strcat (buff, "##104|");
-				strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[chnConf.ocarina]); strcat (buff, "##105|");
-				strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
-				}
-			else
-				{
-				strcat (buff, "Video: n/a##200|");
-				strcat (buff, "Video Patch: n/a##200|");
-				strcat (buff, "Language: n/a##200|");
-				strcat (buff, "Hook type: n/a##200|");
-				strcat (buff, "Ocarina: n/a##200|");
-				strcat (buff, "Boot method: n/a##200|");
-				}
+			strcat (buff, "Video: "); strcat (buff, videooptions[chnConf.vmode]); strcat (buff, "##101|");
+			strcat (buff, "Video Patch: "); strcat (buff, videopatchoptions[chnConf.vpatch]); strcat (buff, "##102|");
+			strcat (buff, "Language: "); strcat (buff, languageoptions[chnConf.language]); strcat (buff, "##103|");
+			strcat (buff, "Hook type: "); strcat (buff, hooktypeoptions[chnConf.hook]); strcat (buff, "##104|");
+			strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[chnConf.ocarina]); strcat (buff, "##105|");
+			strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
 			}
 		strcat (buff, "|");
 		strcat (buff, "Close##-1");

@@ -10,7 +10,7 @@
 // Global functions
 
 // io.c
-s32 Fat_Mount(int dev);
+s32 Fat_Mount(int dev, int *keypressed);
 void Fat_Unmount(void);
 
 // utils.c

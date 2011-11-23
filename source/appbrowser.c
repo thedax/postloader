@@ -806,7 +806,7 @@ static void ShowAppMenu (int ai)
 		}
 	}
 
-static void ShowAdvancedMenu (void)
+static void SortDispMenu (void)
 	{
 	char buff[300];
 	
@@ -821,7 +821,7 @@ static void ShowAdvancedMenu (void)
 	strcat (buff, "|");
 	strcat (buff, "Cancel##-1");
 		
-	int item = grlib_menu ("Advanced menu", buff);
+	int item = grlib_menu ("Sort and display options...", buff);
 	
 	if (item == 4)
 		{
@@ -875,7 +875,7 @@ static void ShowMainMenu (void)
 	grlib_menuAddItem (buff, 20, "Run BOOTMII");
 	grlib_menuAddItem (buff, 21, "Run DISC");
 	grlib_menuAddSeparator (buff);
-	grlib_menuAddItem (buff,  6, "Advanced options...");
+	grlib_menuAddItem (buff,  6, "Sort and display options...");
 	grlib_menuAddItem (buff,  5, "Options...");
 	grlib_menuAddSeparator (buff);
 	grlib_menuAddItem (buff, -1, "Close");
@@ -921,7 +921,7 @@ static void ShowMainMenu (void)
 
 	if (item == 6)
 		{
-		ShowAdvancedMenu ();
+		SortDispMenu ();
 		}
 
 	}
