@@ -43,7 +43,7 @@ static int showHidden = 0;
 static s_grlib_iconSetting is;
 
 static void Redraw (void);
-static int GameBrowse (void);
+static int GameBrowse (int forcescan);
 
 char* neek_GetGames (void);
 void neek_KillDIConfig (void);
@@ -182,7 +182,7 @@ static void DownloadCovers (void)
 		
 	WiiLoad_Resume ();
 	
-	GameBrowse ();
+	GameBrowse (0);
 	}
 	
 static void ReadGameConfig (int ia)
@@ -304,7 +304,7 @@ static void AppsSort (void)
 	}
 	
 
-static int GameBrowse (void)
+static int GameBrowse (int forcescan)
 	{
 	char slot[8];
 	Debug ("begin GameBrowse");
@@ -322,7 +322,7 @@ static int GameBrowse (void)
 		if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
 			titles = neek_GetGames ();
 		else
-			titles = WBFSSCanner (0);
+			titles = WBFSSCanner (forcescan);
 			
 		if (!titles) return 0;
 		
@@ -577,7 +577,7 @@ static void ShowAppMenu (int ai)
 
 	WriteGameConfig (gamesSelected);
 	
-	GameBrowse ();
+	GameBrowse (0);
 	}
 
 static void ShowFilterMenu (void)
@@ -613,7 +613,7 @@ static void ShowFilterMenu (void)
 			}
 		}
 	while (item != -1);
-	GameBrowse ();
+	GameBrowse (0);
 	AppsSort ();
 	}
 
@@ -743,8 +743,15 @@ static void ShowGamesOptions (void)
 	buff[0] = '\0';
 	
 	strcat (buff, "Download covers...##10||");
-	strcat (buff, "Rebuild game list: postLoader wbfs mode (reboot)...##12|");
-	strcat (buff, "Rebuild game list: neek2o offical mode (reboot)...##9||");
+	if (vars.neek != NEEK_NONE)
+		{
+		strcat (buff, "Rebuild game list: postLoader wbfs mode (reboot)...##12|");
+		strcat (buff, "Rebuild game list: neek2o offical mode (reboot)...##9||");
+		}
+	else
+		{
+		strcat (buff, "Rebuild game list (wbfs/fat)...##13|");
+		}
 	strcat (buff, "Reset configuration files...##11||");
 	strcat (buff, "Cancel##-1");
 		
@@ -765,6 +772,11 @@ static void ShowGamesOptions (void)
 		neek_CreateCDIConfig ();
 		Shutdown (0);
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+		}
+
+	if (item == 13)
+		{
+		GameBrowse (1);
 		}
 		
 	if (item == 10)
@@ -1009,7 +1021,7 @@ int GameBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	
-	GameBrowse ();
+	GameBrowse (0);
 	
 	ConfigWrite ();
 
@@ -1100,7 +1112,7 @@ int GameBrowser (void)
 		
 		if (browse)
 			{
-			GameBrowse ();
+			GameBrowse (0);
 			browse = 0;
 			redraw = 1;
 			}

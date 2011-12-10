@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.48.2
+ 
+* WBFS Rescan function was missing
+
 postLoader 3.48.1
  
 * Added support for wbfs games in real nand. You must have cfg-loader in /apps/usbloader or /apps/USBLoader_cfg as CFG Loader is used to execute the game (thx oggezee to give me the permission to use it)
