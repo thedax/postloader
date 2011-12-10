@@ -7,7 +7,7 @@
 #include <sys/unistd.h>
 #include "common.h"
 
-#define VER "[1.9]"
+#define VER "v1.10"
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
 
@@ -365,16 +365,26 @@ void Boot (void)
 
 	if (pln.bootMode == PLN_BOOT_REAL)
 		{
-		if (pl_sd && !LoadExecFile (POSTLOADER_SD, "priibooter"))
-			if (pl_sd && !LoadExecFile (POSTLOADER_SDAPP, "priibooter"))
-				if (pl_usb && !LoadExecFile (POSTLOADER_USB, "priibooter"))
-					if (pl_usb && !LoadExecFile (POSTLOADER_USBAPP, "priibooter"))
-						BootToMenu ();
+		bool found = FALSE;
+		
+		if (pl_sd)
+			{
+			if (!found) found = LoadExecFile (POSTLOADER_SD, "priibooter");
+			if (!found) found = LoadExecFile (POSTLOADER_SDAPP, "priibooter");
+			}
+		if (pl_usb)
+			{
+			if (!found) found = LoadExecFile (POSTLOADER_USB, "priibooter");
+			if (!found) found = LoadExecFile (POSTLOADER_USBAPP, "priibooter");
+			}
+
+		if (!found) BootToMenu ();
 				
 		Fat_Unmount ();
 		green_fix ();
 		BootExecFile ();
 		}
+		
 	if (pln.bootMode == PLN_BOOT_SM)
 		{
 		green_fix ();
@@ -422,7 +432,7 @@ int main(int argc, char **argv)
 	
 	if (sd == 0 && usb == 0)
 		{
-		printd ("SD/USB not available, booting to System Menu\n");
+		printd ("SD & USB not available, booting to System Menu\n");
 		sleep(3);
 		BootToMenu ();
 		}

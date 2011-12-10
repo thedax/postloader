@@ -353,9 +353,17 @@ int main(int argc, char **argv)
 		BootToSystemMenu ();
 		}
 
-	if (ret == INTERACTIVE_RET_DISC || ret == INTERACTIVE_RET_GAMESEL) // Disk
+	if (ret == INTERACTIVE_RET_DISC)
 		{
 		Disc ();
+		}
+
+	if (ret == INTERACTIVE_RET_GAMESEL)
+		{
+		if (vars.neek != NEEK_NONE)
+			Disc ();
+		else
+			CFGLoader();
 		}
 
 	if (ret == INTERACTIVE_RET_WIILOAD) // boot a channel

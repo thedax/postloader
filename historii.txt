@@ -2,7 +2,18 @@
 PLOADER - HISTORII
 ====================
 
-postLoader 3.47.0 (r8)
+postLoader 3.48.1
+ 
+* Added support for wbfs games in real nand. You must have cfg-loader in /apps/usbloader or /apps/USBLoader_cfg as CFG Loader is used to execute the game (thx oggezee to give me the permission to use it)
+* Added wbfs games scanner function for real nand. FAT and NTFS partiotion are supported (thank FIX94 and his forwarder for its partition mounting functions)
+* Corrected some strings
+* Some code clean
+* Games and Channels vote system was not handling correctly [B] button
+* Games and Title browser do not remember correctly the last page visited. pl3 configuration file will be resetted when you upgrade to this version
+* priibooter 1.10
+  > update a bug if no sd was inside the wii
+
+postLoader 3.47.0
  
 * neek2o: postloader can now install neekbooter in priiloader and configure it for autorun
 * corrected game options menu alignment

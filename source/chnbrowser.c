@@ -773,7 +773,8 @@ static void ShowAppMenu (int ai)
 		{
 		int item;
 		item = grlib_menu ("Vote Title", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
-		chans[chansSelected].priority = 10-item;
+		if (item >= 0)
+			chans[chansSelected].priority = 10-item;
 		
 		WriteTitleConfig (chansSelected);
 		AppsSort ();
@@ -975,8 +976,7 @@ static void ShowMainMenu (void)
 	buff[0] = '\0';
 	
 	strcat (buff, "Switch to Homebrew mode##100|");
-	if (vars.neek)
-		strcat (buff, "Switch to Game mode##101|");
+	strcat (buff, "Switch to Game mode##101|");
 	strcat (buff, "|");
 	strcat (buff, "NAND Source##1|");
 	strcat (buff, "NAND Options##8|");

@@ -866,8 +866,7 @@ static void ShowMainMenu (void)
 	buff[0] = '\0';
 	
 	grlib_menuAddItem (buff, 100, "Switch to Channel mode");
-	if (vars.neek)
-		grlib_menuAddItem (buff, 101, "Switch to Game mode");
+	grlib_menuAddItem (buff, 101, "Switch to Game mode");
 	grlib_menuAddSeparator (buff);
 	grlib_menuAddItem (buff,  0, "Rescan devices");
 	grlib_menuAddSeparator (buff);

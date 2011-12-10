@@ -223,25 +223,6 @@ static void StructFree (void)
 	gamesCnt = 0;
 	}
 	
-static void SaveTitlesCache (void)
-	{
-	FILE* f = NULL;
-	char cfg[256];
-	char buff[256];
-	int i;
-	
-	sprintf (cfg, "%s://ploader/channels.txt", vars.defMount);
-	f = fopen(cfg, "wb");
-	if (!f) return;
-	
-	for (i = 0; i < gamesCnt; i++)
-		{
-		sprintf (buff, "%s:%s\n", games[i].asciiId, games[i].name);
-		fwrite (buff, 1, strlen(buff), f );
-		}
-	fclose(f);
-	}
-
 static bool CheckFilter (int ai)
 	{
 	return TRUE;
@@ -325,6 +306,7 @@ static void AppsSort (void)
 
 static int GameBrowse (void)
 	{
+	char slot[8];
 	Debug ("begin GameBrowse");
 	
 	gui.spotsIdx = 0;
@@ -337,7 +319,11 @@ static int GameBrowse (void)
 		char *titles;
 		char *p;
 		
-		titles = neek_GetGames ();
+		if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
+			titles = neek_GetGames ();
+		else
+			titles = WBFSSCanner (0);
+			
 		if (!titles) return 0;
 		
 		p = titles;
@@ -359,7 +345,16 @@ static int GameBrowse (void)
 				p += (strlen(p) + 1);
 
 				// Setup slot
-				games[i].slot = i;
+				if (vars.neek != NEEK_NONE)
+					games[i].slot = i;
+				else
+					{
+					// Add slot
+					strcpy (slot, p);
+					p += (strlen(p) + 1);
+
+					games[i].slot = atoi (slot); // PArtition number
+					}
 				
 				ReadGameConfig (i);
 				
@@ -394,7 +389,7 @@ static GRRLIB_texImg * GetTitleTexture (int ai)
 
 static int FindSpot (void)
 	{
-	int i,j;
+	int i;
 	static time_t t = 0;
 	char info[300];
 	
@@ -410,19 +405,26 @@ static int FindSpot (void)
 			gui.spots[i].ico.sel = true;
 			grlib_IconDraw (&is, &gui.spots[i].ico);
 
-			grlib_SetFontBMF (fonts[FNTNORM]);
-			grlib_printf (XMIDLEINFO, theme.ch_line1Y, GRLIB_ALIGNCENTER, 0, games[gamesSelected].name);
+			strcpy (info, games[gamesSelected].name);
 			
+			if (vars.neek == NEEK_NONE) // only on real nand
+				{
+				char part[32];
+				
+				if (games[gamesSelected].slot < 10)
+					sprintf (part, " (FAT%d)", games[gamesSelected].slot + 1);
+				else
+					sprintf (part, " (NTFS%d)", games[gamesSelected].slot - 10 + 1);
+					
+				strcat (info, part);
+				}
+			
+			grlib_SetFontBMF (fonts[FNTNORM]);
+			grlib_printf (XMIDLEINFO, theme.ch_line1Y, GRLIB_ALIGNCENTER, 0, info);
+
 			grlib_SetFontBMF (fonts[FNTSMALL]);
 			
 			*info = '\0';
-			for (j = 0; j < CHANNELS_MAXFILTERS; j++)
-				if (*games[gamesSelected].asciiId == *CHANNELS_NAMES[j])
-					{
-					sprintf (info, "%s ", &CHANNELS_NAMES[j][1]);
-					break;
-					}
-
 			strcat (info, "(");
 			strcat (info, games[gamesSelected].asciiId);
 			strcat (info, ")");
@@ -564,8 +566,10 @@ static void ShowAppMenu (int ai)
 	if (item == 4)
 		{
 		int item;
-		item = grlib_menu ("Vote Title", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
-		games[gamesSelected].priority = 10-item;
+		item = grlib_menu ("Vote Game", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
+		
+		if (item >= 0)
+			games[gamesSelected].priority = 10-item;
 		
 		WriteGameConfig (gamesSelected);
 		AppsSort ();
@@ -730,7 +734,7 @@ static void ShowNandMenu (void)
 	}
 
 	
-static void ShowNandOptions (void)
+static void ShowGamesOptions (void)
 	{
 	char buff[300];
 	
@@ -747,7 +751,7 @@ static void ShowNandOptions (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("NAND Options", buff);
+	int item = grlib_menu ("Games Options", buff);
 		
 	if (item == 9)
 		{
@@ -860,7 +864,7 @@ static void ShowMainMenu (void)
 	
 	if (item == 8)
 		{
-		ShowNandOptions();
+		ShowGamesOptions();
 		}
 	}
 
@@ -977,12 +981,12 @@ static void Overlay (void)
 int GameBrowser (void)
 	{
 	Debug ("GameBrowser");
-
+	/*
 	if (!vars.neek)
 		{
 		return INTERACTIVE_RET_TOHOMEBREW;
 		}
-	
+	*/
 	u32 btn;
 	u8 redraw = 1;
 
@@ -1009,8 +1013,8 @@ int GameBrowser (void)
 	
 	ConfigWrite ();
 
-	if (config.chnPage >= 0 && config.chnPage <= gamesPageMax)
-		gamesPage = config.chnPage;
+	if (config.gamePage >= 0 && config.gamePage <= gamesPageMax)
+		gamesPage = config.gamePage;
 	else
 		gamesPage = 0;
 	
@@ -1035,6 +1039,7 @@ int GameBrowser (void)
 				config.run.neekSlot = games[gamesSelected].slot;
 				//config.run.nand = config.chnBrowser.nand;
 				//strcpy (config.run.nandPath, config.chnBrowser.nandPath);
+				strcpy (config.run.asciiId, games[gamesSelected].asciiId);
 				
 				browserRet = INTERACTIVE_RET_GAMESEL;
 				break;
@@ -1123,10 +1128,8 @@ int GameBrowser (void)
 		}
 
 	// save current page
-	config.chnPage = gamesPage;
+	config.gamePage = gamesPage;
 
-	SaveTitlesCache ();
-	
 	// Clean up all data
 	StructFree ();
 	gui_Clean ();

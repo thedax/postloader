@@ -7,9 +7,9 @@
 
 //#define DOLPHINE
 
-#define BUILD 46
-#define VER "3.46.2"
-#define CFGVER "PLCFGV0005"
+#define BUILD 47
+#define VER "3.48.1"
+#define CFGVER "PLCFGV0006"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
 
@@ -203,7 +203,7 @@ s_channel;
 
 typedef struct
 	{
-	u32 slot;
+	u32 slot;				// under neeek, this is the slot, in real this is the partition
 	char asciiId[8];		// id in ascii format (6 needed)
 	char *name;				// name
 	u8 *png;				// Address of png in cache area
@@ -280,6 +280,7 @@ typedef struct
 	// appbrowser settings
 	int chnPage; 			// last page
 	int appPage;			// 
+	int gamePage;			// 
 
 	// channel browser settings
 	s_chnBrowser chnBrowser;
@@ -397,3 +398,7 @@ bool WiiloadPostloaderDolMenu (void);
 
 s32 menu_SwitchNandAddOption (char *menu);
 s32 menu_SwitchNand (void);
+
+// wbfsscanner
+char * WBFSSCanner (bool reset);
+void CFGLoader(void);

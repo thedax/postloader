@@ -40,7 +40,6 @@ CXXFLAGS	=	$(CFLAGS)
 #---------------------------------------------------------------------------------
 //LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80a00100
-#LDFLAGS	= -g $(MACHDEP) -mrvl -Wl,-Map,$(notdir $@).map -T../rvl.ld
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
@@ -49,7 +48,7 @@ LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80
 LIBS	:=
 LIBS	+= -lpng
 LIBS	+= -ljpeg 
-LIBS	+= -lz -lfat
+LIBS	+= -lz -lfat -lntfs
 LIBS	+= -lwiiuse
 LIBS	+= -lbte -logc -lm
 
