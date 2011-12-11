@@ -3,7 +3,7 @@
 #include <fat.h>
 #include <sys/stat.h> //for mkdir 
 #include <sdcard/wiisd_io.h>
-#include "ogc/usbstorage.h"
+#include <ogc/usbstorage.h>
 #include "usbstorage.h"
 #include "globals.h"
 

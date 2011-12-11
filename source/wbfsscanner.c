@@ -4,12 +4,15 @@
 #include <fat.h>
 #include <ntfs.h>
 #include <dirent.h>
+#include "usbstorage.h"
 
 #include "globals.h"
 
 //these are the only stable and speed is good
 #define CACHE 8
 #define SECTORS 64
+
+const DISC_INTERFACE* storage = NULL;
 
 #define le32(i) (((((u32) i) & 0xFF) << 24) | ((((u32) i) & 0xFF00) << 8) | \
                 ((((u32) i) & 0xFF0000) >> 8) | ((((u32) i) & 0xFF000000) >> 24))
@@ -25,6 +28,7 @@ enum
 };
 
 static int partinfo[MAXDEVICES] = {0}; // Part num, or part num + 10 for ntfs
+static int mounted[MAXDEVICES] = {0}; // Part num, or part num + 10 for ntfs
 
 static const char DeviceName[MAXDEVICES][6] =
 {
@@ -55,22 +59,22 @@ static int USBDevice_Init()
 {
     time_t start = time(0);
 
-    while(start-time(0) < 10) // 10 sec
+    while (time(0) - start < 5) // 5 sec
     {
-        if(__io_usbstorage.startup() && __io_usbstorage.isInserted())
+        if(storage->startup() && storage->isInserted())
             break;
 
         usleep(200000); // 1/5 sec
     }
 
-    if(!__io_usbstorage.startup() || !__io_usbstorage.isInserted())
+    if(!storage->startup() || !storage->isInserted())
         return -1;
 
     int i;
     MASTER_BOOT_RECORD mbr;
     char BootSector[512];
 
-    __io_usbstorage.readSectors(0, 1, &mbr);
+    storage->readSectors(0, 1, &mbr);
 	
 	int partnfs = 0, partfat = 0;
 
@@ -79,25 +83,33 @@ static int USBDevice_Init()
         if(mbr.partitions[i].type == 0)
             continue;
 
-        __io_usbstorage.readSectors(le32(mbr.partitions[i].lba_start), 1, BootSector);
+        storage->readSectors(le32(mbr.partitions[i].lba_start), 1, BootSector);
 
         if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
         {
             //! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
             if(memcmp(BootSector + 0x36, "FAT", 3) == 0 || memcmp(BootSector + 0x52, "FAT", 3) == 0)
             {
-                fatMount(DeviceName[USB1+i], &__io_usbstorage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS);
-				partinfo[i] = partfat;
-				partfat++;
+                if (fatMount(DeviceName[USB1+i], storage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS))
+					{
+					partinfo[USB1+i] = partfat;
+					partfat++;
+					mounted[USB1+i] = 1;
+					}
             }
             else if (memcmp(BootSector + 0x03, "NTFS", 4) == 0)
             {
-                ntfsMount(DeviceName[USB1+i], &__io_usbstorage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE);
-				partinfo[i] = partnfs + 10;
-				partnfs++;
+				if (ntfsMount(DeviceName[USB1+i], storage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE))
+					{
+					partinfo[USB1+i] = partnfs + 10;
+					partnfs++;
+					mounted[USB1+i] = 1;
+					}
             }
         }
     }
+	
+	return partnfs + partfat;
 
 	return -1;
 }
@@ -115,7 +127,7 @@ static void USBDevice_deInit()
         //ext2Unmount(Name);
     }
 	//Let's not shutdown so it stays awake for the application
-	__io_usbstorage.shutdown();
+	storage->shutdown();
 	USB_Deinitialize();
 }
 
@@ -205,17 +217,26 @@ char * WBFSSCanner (bool reset)
 
 		Fat_Unmount ();
 
+		if (vars.ios == IOS_DEFAULT)
+			storage=(DISC_INTERFACE*)&__io_wiiums;
+		else
+			storage=(DISC_INTERFACE*)&__io_usbstorage;
+
 		// Mount every partitions on usb
 		USBDevice_Init ();
 		
-		part = partinfo[0];
-		ScanWBFS (ob, "usb1://wbfs");
-		part = partinfo[1];
-		ScanWBFS (ob, "usb2://wbfs");
-		part = partinfo[2];;
-		ScanWBFS (ob, "usb3://wbfs");
-		part = partinfo[3];
-		ScanWBFS (ob, "usb4://wbfs");
+		int i;
+		for (i = USB1; i <= USB4; i++)
+			{
+			if (mounted[i])
+				{
+				part = partinfo[i];
+				char path[64];
+				
+				sprintf (path, "usb%d://wbfs", i);
+				ScanWBFS (ob, path);
+				}
+			}
 		
 		USBDevice_deInit ();
 

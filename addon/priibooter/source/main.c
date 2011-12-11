@@ -7,7 +7,7 @@
 #include <sys/unistd.h>
 #include "common.h"
 
-#define VER "v1.10"
+#define VER "v1.11"
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
 
@@ -255,7 +255,7 @@ bool WaitForAnyKey (void)
 			pressed = true;
 			break;
 			}
-		usleep (20 * 1000);
+		usleep (10 * 1000);
 		}
 	printd ("---------------------------------------------------------------------------\n");
 	

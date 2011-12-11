@@ -2,6 +2,30 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.48.3
+ 
+* Little adjustment on ios reload function
+* Added support for ios249 to wbfs scanner
+* Only really found partitions are now scanned
+* cfg loader is now called with "intro=0" option (there is no output during game launch)
+* added "Powered by Configurable USB Loader" on game launch
+* removed alternate nand selection on game options when in real nand
+* priibooter 1.11
+  > reduced the delay for mode change. You must be very fast now ! (Anyway keypress is detected also during usb init...)
+
+Known issues/todo (in sparse order)
+ 
+* TODO: Adding patching options to uneek games
+* TODO: priibooter gui
+* TODO: multy splash screen support
+* TODO: patch uid.sys under neek
+* TODO: more theme options
+* TODO: runtime theme switch
+* TODO: give an option to force 480i/60Hz instead of 576i
+* TODO: add some options for cfg loader (ios, video patch, ocarina...)
+* TODO: add usb hdd keep live
+* ISSUE: if a channel png is corrupted, postloader may crash
+
 postLoader 3.48.2
  
 * WBFS Rescan function was missing
@@ -53,16 +77,6 @@ postLoader 3.45.3
 * PARTIAL built in game cache rebuilder (READ NOTES)
 * Updated readmii to v1.2
  
-Known issues/todo (in sparse order)
- 
-* TODO: Adding patching options to uneek games
-* TODO: priibooter gui
-* TODO: multy splash screen support
-* TODO: patch uid.sys under neek
-* TODO: more theme options
-* TODO: runtime theme switch
-* ISSUE: if a channel png is corrupted, postloader may crash
-
 postLoader 3.44.3
 
 * Corrected icon layout for homebrews

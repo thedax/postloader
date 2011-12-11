@@ -488,12 +488,16 @@ static void ShowAppMenu (int ai)
 		else
 			strcat (buff, "Hide this title ##3|");
 
-		sprintf (b, "Vote this title (%d/10)##4", games[gamesSelected].priority);
+		sprintf (b, "Vote this title (%d/10)##4|", games[gamesSelected].priority);
 		strcat (buff, b);
 
-		strcat (buff, "||");
-		strcat (buff, "NAND: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
+		if (vars.neek != NEEK_NONE)
+			{
+			strcat (buff, "|");
+			strcat (buff, "NAND: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
+			}
 		/*
+
 		if (config.chnBrowser.nand != NAND_REAL)
 			{
 			

@@ -79,9 +79,12 @@ int ios_ReloadIOS(int ios, int *ahbprot)
         /* Reload current IOS, typically IOS58 */
         IOS_ReloadIOS(ios);
 		
-		if (HAVE_AHBPROT && ahbprot != NULL) 
+		if (HAVE_AHBPROT) 
 			{
-			*ahbprot = 1;
+			if (ahbprot != NULL) *ahbprot = 1;
+
+			// Disable memory protection
+			write16(MEM2_PROT, 2);
 			mask32(HW_DIFLAGS, 0x200000, 0);			
 			}
 

@@ -195,9 +195,8 @@ int main(int argc, char **argv)
 		}
 #endif
 
-#ifdef DOLPHINE
-	vars.ios = IOS_GetVersion();
-#endif
+	if (vars.neek != NEEK_NONE) // We are working under neek
+		vars.ios = IOS_GetVersion();
 
 	ret = Initialize();
 	

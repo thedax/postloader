@@ -12,10 +12,10 @@ static u8 *CFGSearch (size_t *filesize)
 	{
 	u8 *buff = NULL;
 	
-	if (!buff) buff = ReadFile2Buffer ("sd://apps/USBLoader_cfg/boot.dol", filesize, NULL, 0);
-	if (!buff) buff = ReadFile2Buffer ("sd://apps/USBLoader/boot.dol", filesize, NULL, 0);
-	if (!buff) buff = ReadFile2Buffer ("usb://apps/USBLoader_cfg/boot.dol", filesize, NULL, 0);
-	if (!buff) buff = ReadFile2Buffer ("usb://apps/USBLoader/boot.dol", filesize, NULL, 0);
+	if (!buff) buff = ReadFile2Buffer ("sd://apps/USBLoader_cfg/boot.dol", filesize, NULL, 1);
+	if (!buff) buff = ReadFile2Buffer ("sd://apps/USBLoader/boot.dol", filesize, NULL, 1);
+	if (!buff) buff = ReadFile2Buffer ("usb://apps/USBLoader_cfg/boot.dol", filesize, NULL, 1);
+	if (!buff) buff = ReadFile2Buffer ("usb://apps/USBLoader/boot.dol", filesize, NULL, 1);
 	
 	return buff;
 	}
@@ -36,7 +36,8 @@ void CFGLoader(void)
 	if (vars.neek != NEEK_NONE)
 		return;
 		
-	MasterInterface (1, 0, TEX_DVD, "Loading...");
+	MasterInterface (1, 0, TEX_DVD, "Starting game\nPowered by Configurable USB Loader...");
+	sleep (1);
 	
 	buff = CFGSearch (&filesize);
 	if (buff);
@@ -50,11 +51,7 @@ void CFGLoader(void)
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 	
 	memset (argb, 0, sizeof(argb));
-	sprintf (argb, "boot.dol;%s;partition=%s;intro=1;", config.run.asciiId, part);
-	//sprintf (argb, "path;%s;", config.run.asciiId);
-	
-	//grlib_SetFontBMF (fonts[FNTNORM]);
-	//grlib_dosm (argb);
+	sprintf (argb, "boot.dol;%s;partition=%s;intro=0;theme=pl", config.run.asciiId, part);
 	
 	struct __argv arg;
  	memset (&arg, 0, sizeof(struct __argv)); 
@@ -77,7 +74,7 @@ void CFGLoader(void)
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
 	
 	// Shutdown all system
-	// grlibSettings.doNotCall_GRRLIB_Exit = true;
+	//grlibSettings.doNotCall_GRRLIB_Exit = true;
 	Shutdown (0);
 	
 	// bootit !
