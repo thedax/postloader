@@ -362,7 +362,7 @@ int main(int argc, char **argv)
 		if (vars.neek != NEEK_NONE)
 			Disc ();
 		else
-			CFGLoader();
+			RunLoader();
 		}
 
 	if (ret == INTERACTIVE_RET_WIILOAD) // boot a channel

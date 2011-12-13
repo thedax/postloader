@@ -824,14 +824,14 @@ static void ShowFilterMenu (void)
 
 // Nand folder can be only root child...
 #define MAXNANDFOLDERS 16
-static int ScanForNandFolders (char **nf, int idx, char *device)
+static int ScanForNandFolders (char **nf, int idx, char *device, char *nandpath)
 	{
 	DIR *pdir;
 	struct dirent *pent;
 	char path[300];
 	char nand[300];
 
-	sprintf (path, "%s://", device);
+	sprintf (path, "%s://%s", device, nandpath);
 	
 	pdir=opendir(path);
 	if (!pdir) return idx;
@@ -840,13 +840,17 @@ static int ScanForNandFolders (char **nf, int idx, char *device)
 		{
 		if (idx == MAXNANDFOLDERS) break;
 		
-		sprintf (nand, "%s://%s/title/00000001", device, pent->d_name);
+		sprintf (nand, "%s/%s/title/00000001", path, pent->d_name);
 
 		if (fsop_DirExist(nand))
 			{
 			//grlib_dosm (nand);
 			
-			sprintf (nand, "%s://%s", device, pent->d_name);
+			if (strlen(nandpath))
+				sprintf (nand, "%s/%s", path, pent->d_name);
+			else
+				sprintf (nand, "%s%s", path, pent->d_name);
+
 			nf[idx] = malloc (strlen(nand)+1);
 			strcpy (nf[idx], nand); // Store to the list
 			idx++;
@@ -877,8 +881,9 @@ static void ShowNandMenu (void)
 		if (NandExits(DEV_USB))
 			grlib_menuAddItem (buff, 102, "usb://");
 
-		nandFodersCnt = ScanForNandFolders (nandFolders, nandFodersCnt, "sd");
-		nandFodersCnt = ScanForNandFolders (nandFolders, nandFodersCnt, "usb");
+		nandFodersCnt = ScanForNandFolders (nandFolders, nandFodersCnt, "sd", "");
+		nandFodersCnt = ScanForNandFolders (nandFolders, nandFodersCnt, "usb", "");
+		nandFodersCnt = ScanForNandFolders (nandFolders, nandFodersCnt, "usb", "nands");
 
 		int i, id = 200;
 		for (i = 0;  i < nandFodersCnt; i++)

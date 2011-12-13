@@ -178,6 +178,7 @@ char *read_name_from_banner_app(u64 titleid)
     ret = getdir(path, &list, &num);
     if (ret < 0)
 		{
+		//grlib_dosm ("read_name_from_banner_app (getdir)=%d", ret);
 		free(buffer);
 		return NULL;
 		}
@@ -191,6 +192,7 @@ char *read_name_from_banner_app(u64 titleid)
             ret = read_file_from_nand(path, buffer, 368);
 	        if (ret < 0)
 				{
+				//grlib_dosm ("read_name_from_banner_app (rffn)=%d\n%s (%d)", ret,path, strlen(path));
 		        // Error is printed in read_file_from_nand already
 				continue;
 				}
@@ -227,6 +229,8 @@ char *read_name_from_banner_bin(u64 titleid)
 	ret = read_file_from_nand(path, buffer, 160);
     if (ret < 0)
     {
+		//grlib_dosm ("read_file_from_nand=%d", ret);
+		
         // Error is printed in read_file_from_nand already
 		free(buffer);
 		return NULL;

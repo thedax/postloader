@@ -1,4 +1,4 @@
-postLoader3 (readmii.txt 1.2)
+postLoader3 (readmii.txt 1.3)
 
 ========================================
 What postLoader is:
@@ -182,7 +182,7 @@ priibooter.dol:
 
 priibooter is a little console application intended to be installed under priiloader. It allow to
 * Boot (remembering last operation [sd needed])
-  > postloader.dol from sd:// or usb://
+  > postloader from sd://apps/postloader/boot.dol or usb://apps/postloader/boot.dol
   > HBC
   > system menu
   > neek (bootmii)
@@ -190,7 +190,7 @@ priibooter is a little console application intended to be installed under priilo
 
 neekbooter.dol:
 
-To be installed in priiloader under neek. It will run postloader.dol from sd and inform it that it is running under neek.
+To be installed in priiloader under neek. It will run postloader from sd://apps/postloader/boot.dol or ISFS://apps/postloader/boot.dol
 
 NAND Folders:
 

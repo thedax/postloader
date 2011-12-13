@@ -158,13 +158,14 @@ s32 read_file_from_nand(char *filepath, u8 *buffer, u32 filesize)
 	if (Fd < 0)
 	{
 		return Fd;
+		//return -6;
 	}
 
 	fstats *status = allocate_memory(sizeof(fstats));
 	if (status == NULL)
 	{
 		ISFS_Close(Fd);
-		return -1;
+		return -2;
 	}
 	
 	ret = ISFS_GetFileStats(Fd, status);
@@ -172,14 +173,14 @@ s32 read_file_from_nand(char *filepath, u8 *buffer, u32 filesize)
 	{
 		ISFS_Close(Fd);
 		free(status);
-		return -1;
+		return -3;
 	}
 	
 	if (filesize > status->file_length)
 	{
 		ISFS_Close(Fd);
 		free(status);
-		return -1;
+		return -4;
 	}
 	
 	ret = ISFS_Read(Fd, buffer, filesize);
@@ -188,6 +189,7 @@ s32 read_file_from_nand(char *filepath, u8 *buffer, u32 filesize)
 		ISFS_Close(Fd);
 		free(status);
 		return ret;
+		//return -5;
 	}
 	ISFS_Close(Fd);
 

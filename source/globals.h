@@ -8,7 +8,7 @@
 //#define DOLPHINE
 
 #define BUILD 48
-#define VER "3.48.3"
+#define VER "3.49.1"
 #define CFGVER "PLCFGV0006"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -172,6 +172,9 @@ typedef struct
 	u8 vpatch;	 	// 0 No Video patches	1 Smart Video patching	2 More Video patching	3 Full Video patching
 	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
 	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
+	
+	u8 nand;		// neek nand index  0:"Default", "USA" , "EURO", "JAP", "Korean"
+	u8 loader;		// 0 cfg, 1 gx, 2 wiiflow
 	}
 s_gameConfig;
 
@@ -401,4 +404,4 @@ s32 menu_SwitchNand (void);
 
 // wbfsscanner
 char * WBFSSCanner (bool reset);
-void CFGLoader(void);
+void RunLoader(void);

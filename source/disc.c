@@ -192,12 +192,12 @@ void Disc(void)
 		sleep (1);
 		}
 		
-	if (config.run.game.ios == 0)
+	if (config.run.game.nand == 0)
 		MasterInterface (1, 0, TEX_DVD, "Starting disc...");
 	else
 		MasterInterface (1, 0, TEX_DVD, "Switching NAND and Starting disc...");
 	
-	if (vars.neek == NEEK_2o && config.run.game.ios > 0 && nandConfig)
+	if (vars.neek == NEEK_2o && config.run.game.nand > 0 && nandConfig)
 		{
 		u32 idx = nandConfig->NandSel;
 		u32 status = PLNANDSTATUS_NONE;
@@ -205,16 +205,16 @@ void Disc(void)
 		
 		neek_PLNandInfo (1, &idx, &status);
 		
-		if (config.run.game.ios == 1)
+		if (config.run.game.nand == 1)
 			strcpy (nand, "pl_us");
 
-		if (config.run.game.ios == 2)
+		if (config.run.game.nand == 2)
 			strcpy (nand, "pl_eu");
 		
-		if (config.run.game.ios == 3)
+		if (config.run.game.nand == 3)
 			strcpy (nand, "pl_jp");
 		
-		if (config.run.game.ios == 4)
+		if (config.run.game.nand == 4)
 			strcpy (nand, "pl_kr");
 		
 		int ni = -1;

@@ -450,12 +450,14 @@ static int FindSpot (void)
 	return gamesSelected;
 	}
 	
-#define CHOPT_IOS 5
+#define CHOPT_IOS 7
 #define CHOPT_VID 8
 #define CHOPT_VIDP 4
 #define CHOPT_LANG 11
 #define CHOPT_HOOK 8
 #define CHOPT_OCA 4
+#define CHOPT_NAND 5
+#define CHOPT_LOADER 3
 
 static void ShowAppMenu (int ai)
 	{
@@ -463,9 +465,11 @@ static void ShowAppMenu (int ai)
 	char b[64];
 	int item;
 	
-	int opt[6] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA};
+	int opt[8] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_NAND, CHOPT_LOADER};
 
-	char *ios[CHOPT_IOS] = { "Default", "USA" , "EURO", "JAP", "Korean"};
+	char *ios[CHOPT_IOS] = { "249", "250" , "222", "223", "248", "251", "252"};
+	char *nand[CHOPT_NAND] = { "Default", "USA" , "EURO", "JAP", "Korean"};
+	char *loader[CHOPT_NAND] = { "CFG", "GX", "WiiFlow"};
 	/*
 	char *videooptions[CHOPT_VID] = { "Default Video Mode", "Force NTSC480i", "Force NTSC480p", "Force PAL480i", "Force PAL480p", "Force PAL576i", "Force MPAL480i", "Force MPAL480p" };
 	char *videopatchoptions[CHOPT_VIDP] = { "No Video patches", "Smart Video patching", "More Video patching", "Full Video patching" };
@@ -494,7 +498,12 @@ static void ShowAppMenu (int ai)
 		if (vars.neek != NEEK_NONE)
 			{
 			strcat (buff, "|");
-			strcat (buff, "NAND: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
+			strcat (buff, "NAND: "); strcat (buff, nand[gameConf.nand]); strcat (buff, "##106|");
+			}
+		else
+			{
+			strcat (buff, "IOS: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
+			strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
 			}
 		/*
 
@@ -534,6 +543,8 @@ static void ShowAppMenu (int ai)
 			if (i == 3) { gameConf.language ++; if (gameConf.language >= opt[i]) gameConf.language = 0; }
 			if (i == 4) { gameConf.hook ++; if (gameConf.hook >= opt[i]) gameConf.hook = 0; }
 			if (i == 5) { gameConf.ocarina ++; if (gameConf.ocarina >= opt[i]) gameConf.ocarina = 0; }
+			if (i == 6) { gameConf.nand ++; if (gameConf.nand >= opt[i]) gameConf.nand = 0; }
+			if (i == 7) { gameConf.loader ++; if (gameConf.loader >= opt[i]) gameConf.loader = 0; }
 			}
 		}
 	while (TRUE);
@@ -890,8 +901,6 @@ static void Redraw (void)
 	int ai;	// Application index (corrected by the offset)
 	char sdev[64];
 	
-	Debug ("Redraw #1");
-
 	if (!theme.ok)
 		Video_DrawBackgroud (1);
 	else
@@ -930,10 +939,6 @@ static void Redraw (void)
 		
 	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", gamesPage+1, gamesPageMax+1);
 	
-	Debug ("chbrowser: Draw bk icons");
-	
-	Debug ("Redraw #2");
-
 	// Prepare black box
 	s_grlib_icon ico;
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -947,10 +952,7 @@ static void Redraw (void)
 		grlib_IconDraw (&is, &ico);
 		}
 	
-	Debug ("Redraw #3");
-
 	// Draw Icons
-	Debug ("chbrowser: Draw fg icons");
 	gui.spotsIdx = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
 		{

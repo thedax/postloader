@@ -2,6 +2,20 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.49.1
+ 
+* Added support for mounting usb://nands/* subfolders. Note that d2x v6 has 64 char filename limit. A standard path for a title .app file is 45 char long. So nands/<nandname> should be less then 19 chars. Note that if a title access to deeper path, and will fail. d2x v7 seem have raised filesystem path len to 256 char
+* Added per game selection for ios
+* Added per game selection for loader to use (CFG, GX and WiiFlow... note that wiiflow crash when passing arguments, so it will not work)
+* code clean
+* Corrected all references to postloader.dol in readmii.txt
+
+NOTE: searchpath for loaders. Both sd and usb are used
+/apps/usbloader_gx/boot.dol
+/apps/wiiflow/boot.dol
+/apps/USBLoader_cfg/boot.dol
+/apps/USBLoader/boot.dol
+
 postLoader 3.48.3
  
 * Little adjustment on ios reload function
@@ -15,15 +29,16 @@ postLoader 3.48.3
 
 Known issues/todo (in sparse order)
  
-* TODO: Adding patching options to uneek games
+* TODO: add some options for cfg loader (ios, video patch, ocarina...)
+* TODO: give an option to force 480i/60Hz instead of 576i
+* TODO: add theme support to Settings Editor GUI
 * TODO: priibooter gui
+* TODO: runtime theme switch
+* TODO: add usb hdd keep live
+* TODO: Adding patching options to uneek games
 * TODO: multy splash screen support
 * TODO: patch uid.sys under neek
 * TODO: more theme options
-* TODO: runtime theme switch
-* TODO: give an option to force 480i/60Hz instead of 576i
-* TODO: add some options for cfg loader (ios, video patch, ocarina...)
-* TODO: add usb hdd keep live
 * ISSUE: if a channel png is corrupted, postloader may crash
 
 postLoader 3.48.2
