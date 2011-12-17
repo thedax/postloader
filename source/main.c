@@ -73,16 +73,14 @@ void Shutdown(bool doNotKillHBC)
 		}
 	}
 
-int Initialize(void)
+int Initialize (int silent)
 	{
 	Video_Init ();
 	
 	// Prepare the background
-	MasterInterface (1, 0, 1, " ");
-	MasterInterface (1, 0, 1, " ");
-	MasterInterface (1, 0, 1, " ");
+	if (!silent) MasterInterface (1, 0, 1, " ");
 
-	return MountDevices (0);
+	return MountDevices (silent);
 	}
 	
 static void Redraw (void)
@@ -198,7 +196,9 @@ int main(int argc, char **argv)
 	if (vars.neek != NEEK_NONE) // We are working under neek
 		vars.ios = IOS_GetVersion();
 
-	ret = Initialize();
+	ret = Initialize((vars.usbtime == 1) ? 1:0);
+	
+	//grlib_dosm ("PL3");
 	
 	DebugStart ();
 	
@@ -283,15 +283,16 @@ int main(int argc, char **argv)
 		}
 		
 	Debug ("neek = %d", vars.neek);
+	if (vars.neek != NEEK_NONE && vars.neek != NEEK_2o)
+		plneek_GetNandName ();
 	
 	Debug ("Autoboot = %d", config.autoboot.enabled);
 	if (!config.autoboot.enabled) interactive = 1;
 
-	if (vars.neek != NEEK_NONE && vars.neek != NEEK_2o)
-		plneek_GetNandName ();
-
 	if (!interactive)
 		{
+		MasterInterface (1, 0, 1, " ");
+		
 		if (time(NULL) - t > 5)
 			tout = time(NULL) + 1;
 		else

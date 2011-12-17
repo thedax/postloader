@@ -1,4 +1,4 @@
-postLoader3 (readmii.txt 1.3)
+postLoader3 (readmii.txt 1.4)
 
 ========================================
 What postLoader is:
@@ -30,6 +30,12 @@ oneek2o advanced support
 Uneek+DI game browser (see historii.txt)
 * Support covers
 * Support title vote
+
+USB Loaders forwarder
+* Support cfg, gx and wiiflow (actually wiiflow crash)
+* Support covers
+* Support title vote
+* Support ios selection
 
 Homebrew:
 * HB Channel replacement: It can be used to browse homebrew application, with it own interface. 

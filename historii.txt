@@ -2,6 +2,19 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.50.1
+ 
+* Corrected some issue with GRRLIB video initializiation
+* Added priibooterGUI 0.2
+* postLoader when executed from priibooter(GUI) do not show more the device initialization screen (it assumes that they are already init)
+
+priibooterGUI notes:
+
+* can load it's own background png from <dev>://ploader/priibooter.png
+* backround if faded-in for about 5 second during usb init. If usb is already initialized fade-in will take 3 second. During this time you can interrupt and show boot menu pressing any key
+* the boot menu allow to select postLoader/neek/sm/hbc. The selection can be saved or just used one time
+* uses the same postloader's themes for menu.
+
 postLoader 3.49.1
  
 * Added support for mounting usb://nands/* subfolders. Note that d2x v6 has 64 char filename limit. A standard path for a title .app file is 45 char long. So nands/<nandname> should be less then 19 chars. Note that if a title access to deeper path, and will fail. d2x v7 seem have raised filesystem path len to 256 char

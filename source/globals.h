@@ -8,8 +8,8 @@
 //#define DOLPHINE
 
 #define BUILD 48
-#define VER "3.49.1"
-#define CFGVER "PLCFGV0006"
+#define VER "3.50.1"
+#define CFGVER "PLCFGV0007"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
 
@@ -157,6 +157,7 @@ typedef struct
 	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
 	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
 	u8 bootMode;	// 0 Normal boot method	1 Load apploader
+	int playcount;	// how many time this title has bin executed
 	}
 s_channelConfig;
 
@@ -175,6 +176,8 @@ typedef struct
 	
 	u8 nand;		// neek nand index  0:"Default", "USA" , "EURO", "JAP", "Korean"
 	u8 loader;		// 0 cfg, 1 gx, 2 wiiflow
+	u16 playcount;	// how many time this title has bin executed
+	u16 category;	// bitmask category
 	}
 s_gameConfig;
 
@@ -318,7 +321,7 @@ extern s_grlibSettings grlibSettings;
 
 // main.c
 void Subsystems (bool up);
-int Initialize(void);
+int Initialize(int silent);
 void Shutdown(bool doNotKillHBC);
 int MasterInterface (int full, int showCursor, int icon, const char *text, ...);	// icon 0 = none, 1 hdd, 2 hg
 void ShowAboutMenu (void);

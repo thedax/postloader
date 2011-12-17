@@ -196,7 +196,7 @@ int  GRRLIB_Init (int skipVideo) {
     // Initialise TTF
     // if (GRRLIB_InitTTF())  error_code = -3;
 	enable_output = 1;
-    //VIDEO_SetBlack(false);  // Enable video output (let do this to render subr)
+    //VIDEO_SetBlack(false);  // Enable video output
     return error_code;
 }
 
@@ -558,9 +558,10 @@ void  RawTo4x4RGBA (const u8 *src, void *dst,
  * @param my_img The JPEG, PNG or Bitmap buffer to load.
  * @return A GRRLIB_texImg structure filled with image information.
  */
+
 GRRLIB_texImg*  GRRLIB_LoadTexture (const u8 *my_img) {
-    if (my_img[0]==0xFF && my_img[1]==0xD8 && my_img[2]==0xFF)
-        return (GRRLIB_LoadTextureJPG(my_img));
+    if (my_img[0]==0xFF && my_img[1]==0xD8 && my_img[2]==0xFF);
+        //return (GRRLIB_LoadTextureJPG(my_img));
     else if (my_img[0]=='B' && my_img[1]=='M')
         return (GRRLIB_LoadTextureBMP(my_img));
     else
@@ -762,6 +763,7 @@ GRRLIB_texImg*  GRRLIB_LoadTextureBMP (const u8 *my_bmp) {
  * @param my_jpg The JPEG buffer to load.
  * @return A GRRLIB_texImg structure filled with image information.
  */
+ /*
 GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
     int n = 0;
 
@@ -776,7 +778,7 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
 
     return GRRLIB_LoadTextureJPGEx(my_jpg, n);
 }
-
+*/
 /**
  * Load a texture from a buffer.
  * @author DrTwox
@@ -784,6 +786,7 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
  * @param my_size Size of the JPEG buffer to load.
  * @return A GRRLIB_texImg structure filled with image information.
  */
+/*
 GRRLIB_texImg*  GRRLIB_LoadTextureJPGEx (const u8 *my_jpg, const int my_size) {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -809,16 +812,16 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPGEx (const u8 *my_jpg, const int my_size) {
     while (cinfo.output_scanline < cinfo.output_height) {
         jpeg_read_scanlines(&cinfo, row_pointer, 1);
         for (i = 0; i < cinfo.image_width * cinfo.output_components; i++) {
-            /* Put the decoded scanline into the tempBuffer */
+            // Put the decoded scanline into the tempBuffer
             tempBuffer[ location++ ] = row_pointer[0][i];
         }
     }
 
-    /* Create a buffer to hold the final texture */
+    // Create a buffer to hold the final texture
     my_texture->data = memalign(32, cinfo.output_width * cinfo.output_height * 4);
     RawTo4x4RGBA(tempBuffer, my_texture->data, cinfo.output_width, cinfo.output_height);
 
-    /* Done - Do cleanup and release allocated memory */
+    // Done - Do cleanup and release allocated memory
     jpeg_finish_decompress(&cinfo);
     jpeg_destroy_decompress(&cinfo);
     free(row_pointer[0]);
@@ -830,7 +833,7 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPGEx (const u8 *my_jpg, const int my_size) {
     GRRLIB_FlushTex( my_texture );
     return my_texture;
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // GRRLIB_snapshot
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1276,7 +1279,7 @@ void  GRRLIB_Render (void) {
     VIDEO_SetNextFramebuffer(xfb[fb]);  // Select eXternal Frame Buffer
     VIDEO_Flush();                      // Flush video buffer to screen
 	
-	if (enable_output) // stfour: this prevent strange behaveur on first frame
+	if (enable_output)
 		{
 		VIDEO_SetBlack(false);  // Enable video output
 		enable_output = 0;
@@ -1286,6 +1289,7 @@ void  GRRLIB_Render (void) {
     // Interlaced screens require two frames to update
     if (rmode->viTVMode &VI_NON_INTERLACE)  VIDEO_WaitVSync();
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // GRRLIB_print
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
