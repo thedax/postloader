@@ -2,6 +2,11 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.51.1
+
+* Added "Go to page" to channel/hb mode
+* "Go to page" was not showing last one
+
 postLoader 3.51.0
 
 * Added game filters (to disable filters, press (2) and (-) to unmark all)

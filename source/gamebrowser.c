@@ -397,7 +397,7 @@ static void AppsSort (void)
 	refreshPng = 1;
 	}
 	
-void GoToPage (void)
+static void GoToPage (void)
 	{
 	int col, i, page;
 	char buff[1024];
@@ -409,7 +409,7 @@ void GoToPage (void)
 		for (i = 0; i < gamesPageMax; i++)
 			{
 			page = col + (i * 10);
-			if (page < gamesPageMax)
+			if (page <= gamesPageMax)
 				grlib_menuAddItem (buff, page, "%d", page+1);
 			}
 		if (col < 9) grlib_menuAddColumn (buff);
@@ -1373,8 +1373,6 @@ int GameBrowser (void)
 			if (btn & WPAD_BUTTON_DOWN)
 				{
 				GoToPage ();
-				
-				//grlib_dosm ("%d", gamesPage);
 				redraw = 1;
 				}
 				

@@ -1162,6 +1162,27 @@ static void Overlay (void)
 	return;
 	}
 	
+static void GoToPage (void)
+	{
+	int col, i, page;
+	char buff[1024];
+	
+	*buff = '\0';
+	
+	for (col = 0; col < 10; col++)
+		{
+		for (i = 0; i < appsPageMax; i++)
+			{
+			page = col + (i * 10);
+			if (page <= appsPageMax)
+				grlib_menuAddItem (buff, page, "%d", page+1);
+			}
+		if (col < 9) grlib_menuAddColumn (buff);
+		}
+	int item = grlib_menu ("Go to page", buff);
+	if (item >= 0) appsPage = item;
+	}
+	
 int AppBrowser (void)
 	{
 	Debug ("AppBrowser");
@@ -1277,6 +1298,13 @@ int AppBrowser (void)
 				ShowAppMenu (appsSelected);
 				redraw = 1;
 				}
+				
+			if (btn & WPAD_BUTTON_DOWN)
+				{
+				GoToPage ();
+				redraw = 1;
+				}
+
 
 			/////////////////////////////////////////////////////////////////////////////////////////////
 			// If user press (B) stop sort mode

@@ -1192,7 +1192,28 @@ static void Overlay (void)
 	Video_DrawWIFI ();
 	return;
 	}
-		
+	
+static void GoToPage (void)
+	{
+	int col, i, page;
+	char buff[1024];
+	
+	*buff = '\0';
+	
+	for (col = 0; col < 10; col++)
+		{
+		for (i = 0; i < chansPageMax; i++)
+			{
+			page = col + (i * 10);
+			if (page <= chansPageMax)
+				grlib_menuAddItem (buff, page, "%d", page+1);
+			}
+		if (col < 9) grlib_menuAddColumn (buff);
+		}
+	int item = grlib_menu ("Go to page", buff);
+	if (item >= 0) chansPage = item;
+	}
+	
 int ChnBrowser (void)
 	{
 	u32 btn;
@@ -1274,7 +1295,13 @@ int ChnBrowser (void)
 				ConfigWrite ();
 				redraw = 1;
 				}
-
+				
+			if (btn & WPAD_BUTTON_DOWN)
+				{
+				GoToPage ();
+				redraw = 1;
+				}
+				
 			if (btn & WPAD_BUTTON_HOME)
 				{
 				ShowMainMenu ();
