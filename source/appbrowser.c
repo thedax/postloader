@@ -1205,9 +1205,12 @@ int AppBrowser (void)
 	else
 		appsPage = 0;
 
+   LiveCheck (1);
    // Loop forever
     while (browserRet == -1) 
 		{
+		LiveCheck (0);
+		
 		btn = grlib_GetUserInput();
 		
 		// If [HOME] was pressed on the first Wiimote, break out of the loop

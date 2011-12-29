@@ -8,7 +8,7 @@
 //#define DOLPHINE
 
 #define BUILD 48
-#define VER "3.50.1"
+#define VER "3.51.0"
 #define CFGVER "PLCFGV0007"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -19,8 +19,8 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define CFG_HOME_PRIILOADER 0x4461636F
-#define CFG_HOME_WII_MENU   0x50756E65
+#define CFG_HOME_PRIILOAER 0x4461636F
+#define PRIILOADER_TOMENU   0x50756E65
 
 #define DEV_NONE -1
 #define DEV_SD 0
@@ -73,6 +73,19 @@ typedef void (*entrypoint) (void);
 #define CHANNELS_MAXFILTERS 12
 
 #define DEVMAX 2 // sd, usb
+
+#define GAMEFLT_PLATFORM 		(1 <<  0)
+#define GAMEFLT_ACTION			(1 <<  1)
+#define GAMEFLT_SPORT			(1 <<  2)
+#define GAMEFLT_TRAINING		(1 <<  3)
+#define GAMEFLT_MUSIC			(1 <<  4)
+#define GAMEFLT_SURVIVAL		(1 <<  5)
+#define GAMEFLT_RACE			(1 <<  6)
+#define GAMEFLT_PARTY			(1 <<  7)
+#define GAMEFLT_SHOOTING		(1 <<  8)
+#define GAMEFLT_UDRAW			(1 <<  9)
+#define GAMEFLT_INSTRUMENT		(1 << 10)
+#define GAMEFLT_BALANCE			(1 << 11)
 
 enum {
 	TEX_CUR=0,
@@ -177,7 +190,8 @@ typedef struct
 	u8 nand;		// neek nand index  0:"Default", "USA" , "EURO", "JAP", "Korean"
 	u8 loader;		// 0 cfg, 1 gx, 2 wiiflow
 	u16 playcount;	// how many time this title has bin executed
-	u16 category;	// bitmask category
+	u32 category;	// bitmask category
+	u8 minPlayerAge; 
 	}
 s_gameConfig;
 
@@ -222,6 +236,8 @@ typedef struct
 	// These are updated from s_channelConfig when browsing
 	int priority;	// Vote !
 	bool hidden;	// if 1, this app will be not listed
+	u32 category;
+	u16 playcount;	// how many time this title has bin executed
 	}
 s_game;
 
@@ -268,8 +284,6 @@ s_run;
 
 typedef struct 
 	{
-	int page; 			// last page
-	int appIdx;			// index of last selected app
 	int nand;			// nandmode
 	char nandPath[64];		// Folder of the nand
 	u8 filter[CHANNELS_MAXFILTERS];	
@@ -287,6 +301,8 @@ typedef struct
 	int chnPage; 			// last page
 	int appPage;			// 
 	int gamePage;			// 
+	u32 gameFilter;			// 
+	u32 gameSort;			// 0 vote, 1 name, 2 playcount
 
 	// channel browser settings
 	s_chnBrowser chnBrowser;
@@ -345,6 +361,8 @@ void DebugStart (void);
 void Debug (const char *text, ...);
 
 bool IsPngBuff (u8 *buff, int size);
+
+void LiveCheck (int reset);
 
 // dol.c
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)

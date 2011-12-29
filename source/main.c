@@ -20,7 +20,7 @@ void BootToSystemMenu(void)
 	Shutdown (0);
 	
 	// Let's try to start system menu... use magic word, as we may have priiloader behind
-	*(vu32*)0x8132FFFB = CFG_HOME_WII_MENU;
+	*(vu32*)0x8132FFFB = PRIILOADER_TOMENU;
 	DCFlushRange((void*)0x8132FFFB,4);
 	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 	}

@@ -134,6 +134,8 @@ int ManageGameConfig (char *asciiId, int write, s_gameConfig *config)
 			{
 			config->priority = 5;
 			config->hidden = 0;
+			config->playcount = 0;
+			config->category = 0;
 			
 			config->ios = 0; 		// use current
 			config->vmode = 0;

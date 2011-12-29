@@ -30,6 +30,47 @@ static s_gameConfig gameConf;
 static int browse = 0;
 static int scanned = 0;
 
+#define CATN 32
+#define CATMAX 32
+
+static char *flt[CATN] = { 
+"Action",
+"Adventure",
+"Sport",
+"Racing",
+"Rhythm",
+"Simulation",
+"Platformer",
+"Party",
+
+"Music",
+"Puzzle",
+"Fighting",
+"Shooter",
+"Strategy",
+"RPG",
+"FPS",
+"TPS",
+
+"Online",
+"DS Connect",
+"ESRB M 3+",
+"ESRB E 6+",
+"ESRB E 10+",
+"ESRB T 13+",
+"ESRB M 17+",
+"ESRB A 18+",
+
+"uDraw", 		
+"Bal. board",    
+"Instrument", 	
+"Zapper", 		
+"Microphone", 	
+"Motion+",		
+"Wheel",
+"Dance Pad"
+};
+
 static s_game *games;
 static int gamesCnt;
 static int games2Disp;
@@ -40,6 +81,8 @@ static int gamesSelected = -1;	// Current selected app with wimote
 static int browserRet = 0;
 static int showHidden = 0;
 
+static int refreshPng = 0;
+
 static s_grlib_iconSetting is;
 
 static void Redraw (void);
@@ -47,6 +90,7 @@ static int GameBrowse (int forcescan);
 
 char* neek_GetGames (void);
 void neek_KillDIConfig (void);
+static bool IsFiltered (int ai);
 
 #define ICONW 80
 #define ICONH 150
@@ -169,6 +213,11 @@ static void DownloadCovers (void)
 				sprintf (buff, "http://art.gametdb.com/wii/cover/EN/%s.png", games[ia].asciiId);
 				ret = DownloadCovers_Get (path, buff);
 				}
+			if (!ret)
+				{
+				sprintf (buff, "http://art.gametdb.com/wii/cover/JA/%s.png", games[ia].asciiId);
+				ret = DownloadCovers_Get (path, buff);
+				}
 				
 			if (grlib_GetUserInput () == WPAD_BUTTON_B)
 				{
@@ -190,8 +239,11 @@ static void ReadGameConfig (int ia)
 	ManageGameConfig (games[ia].asciiId, 0, &gameConf);
 
 	//strcpy (games[ia].asciiId, gameConf.asciiId);
+	games[ia].category = gameConf.category;
 	games[ia].hidden = gameConf.hidden;
 	games[ia].priority = gameConf.priority;
+	games[ia].playcount = gameConf.playcount;
+	
 	}
 
 static void WriteGameConfig (int ia)
@@ -201,6 +253,8 @@ static void WriteGameConfig (int ia)
 	strcpy (gameConf.asciiId, games[ia].asciiId);
 	gameConf.hidden = games[ia].hidden;
 	gameConf.priority = games[ia].priority;
+	gameConf.category = games[ia].category;
+	gameConf.playcount = games[ia].playcount;
 	
 	ManageGameConfig (games[ia].asciiId, 1, &gameConf);
 	}
@@ -223,11 +277,6 @@ static void StructFree (void)
 	gamesCnt = 0;
 	}
 	
-static bool CheckFilter (int ai)
-	{
-	return TRUE;
-	}
-
 #define SKIP 10
 static void AppsSort (void)
 	{
@@ -239,10 +288,29 @@ static void AppsSort (void)
 	games2Disp = 0;
 	for (i = 0; i < gamesCnt; i++)
 		{
-		games[i].filterd = CheckFilter(i);
+		games[i].filterd = IsFiltered (i);
 		if (games[i].filterd && (!games[i].hidden || showHidden)) games2Disp++;
 		}
 	
+	// Sort by filter, use stupid algorithm...
+	do
+		{
+		mooved = 0;
+		
+		for (i = 0; i < gamesCnt - 1; i++)
+			{
+			if (games[i].filterd < games[i+1].filterd)
+				{
+				// swap
+				memcpy (&app, &games[i+1], sizeof(s_game));
+				memcpy (&games[i+1], &games[i], sizeof(s_game));
+				memcpy (&games[i], &app, sizeof(s_game));
+				mooved = 1;
+				}
+			}
+		}
+	while (mooved);
+
 	// Sort by hidden, use stupid algorithm...
 	do
 		{
@@ -282,25 +350,72 @@ static void AppsSort (void)
 	while (mooved);
 
 	// Sort by priority
-	do
+	if (config.gameSort == 0)
 		{
-		mooved = 0;
-		
-		for (i = 0; i < games2Disp - 1; i++)
+		do
 			{
-			if (games[i+1].priority > games[i].priority)
+			mooved = 0;
+			
+			for (i = 0; i < games2Disp - 1; i++)
 				{
-				// swap
-				memcpy (&app, &games[i+1], sizeof(s_game));
-				memcpy (&games[i+1], &games[i], sizeof(s_game));
-				memcpy (&games[i], &app, sizeof(s_game));
-				mooved = 1;
+				if (games[i+1].priority > games[i].priority)
+					{
+					// swap
+					memcpy (&app, &games[i+1], sizeof(s_game));
+					memcpy (&games[i+1], &games[i], sizeof(s_game));
+					memcpy (&games[i], &app, sizeof(s_game));
+					mooved = 1;
+					}
 				}
 			}
+		while (mooved);
 		}
-	while (mooved);
+
+	// Sort by priority
+	if (config.gameSort == 2)
+		{
+		do
+			{
+			mooved = 0;
+			
+			for (i = 0; i < games2Disp - 1; i++)
+				{
+				if (games[i+1].playcount > games[i].playcount)
+					{
+					// swap
+					memcpy (&app, &games[i+1], sizeof(s_game));
+					memcpy (&games[i+1], &games[i], sizeof(s_game));
+					memcpy (&games[i], &app, sizeof(s_game));
+					mooved = 1;
+					}
+				}
+			}
+		while (mooved);
+		}
 
 	gamesPageMax = games2Disp / gui.spotsXpage;
+	refreshPng = 1;
+	}
+	
+void GoToPage (void)
+	{
+	int col, i, page;
+	char buff[1024];
+	
+	*buff = '\0';
+	
+	for (col = 0; col < 10; col++)
+		{
+		for (i = 0; i < gamesPageMax; i++)
+			{
+			page = col + (i * 10);
+			if (page < gamesPageMax)
+				grlib_menuAddItem (buff, page, "%d", page+1);
+			}
+		if (col < 9) grlib_menuAddColumn (buff);
+		}
+	int item = grlib_menu ("Go to page", buff);
+	if (item >= 0) gamesPage = item;
 	}
 	
 
@@ -357,6 +472,7 @@ static int GameBrowse (int forcescan)
 					}
 				
 				ReadGameConfig (i);
+				//Debug ("Cfg read %d, %d, %s", i, games[i].category, games[i].name);
 				
 				i ++;
 				}
@@ -450,6 +566,148 @@ static int FindSpot (void)
 	return gamesSelected;
 	}
 	
+static void ShowGameFilterMenu (int idx)
+	{
+	char title[128];
+	char buff[512];
+	u8 f[CATN];
+	int i, item;
+
+	for (i = 0; i <CATN; i++)
+		f[i] = 0;
+	
+	for (i = 0; i < CATMAX; i++)
+		f[i] = (games[idx].category & (1 << i)) ? 1:0;
+	
+	do
+		{
+		buff[0] = '\0';
+		for (i = 0; i < CATMAX; i++) // Do not show uncat flag (always the last)
+			{
+			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
+			grlib_menuAddCheckItem (buff, 100 + i, f[i], flt[i]);
+			}
+			
+		sprintf (title, "Category: %s\nPress (B) to close, (+) Select all, (-) Deselect all", games[idx].name);
+		item = grlib_menu (title, buff);
+
+		if (item == MNUBTN_PLUS)
+			{
+			int i; 	for (i = 0; i < CATN; i++) f[i] = 1;
+			}
+
+		if (item == MNUBTN_MINUS)
+			{
+			int i; 	for (i = 0; i < CATN; i++) f[i] = 0;
+			}
+		
+		if (item >= 100)
+			{
+			int i = item - 100;
+			f[i] = !f[i];
+			}
+		}
+	while (item != -1);
+	
+	games[idx].category = 0;
+	for (i = 0; i < CATN; i++)
+		if (f[i]) games[idx].category |= (1 << i);
+	}
+
+static bool IsFiltered (int ai)
+	{
+	int i,j;
+	bool ret = false;
+	char f[128];
+	
+	if (config.gameFilter == 0) return true;
+	
+	memset (f, 0, sizeof(f));
+
+	j = 0;
+	for (i = 0; i < CATMAX-1; i++)
+		{
+		f[j++] = (config.gameFilter & (1 << i)) ? '1':'0';
+		f[j++] = (games[ai].category & (1 << i)) ? '1':'0';
+		f[j++] = ' ';
+		
+		if ((config.gameFilter & (1 << i)) && (games[ai].category & (1 << i)))
+			{
+			ret = true;
+			}
+		}
+		
+	return ret;
+	}
+	
+static void GetCatString (int idx, char *buff)
+	{
+	int i, first = 1;
+
+	*buff = '\0';
+	
+	for (i = 0; i < CATN; i++)
+		{
+		if ((games[idx].category & (1 << i)))
+			{
+			if (!first)
+				strcat (buff, ", ");
+				
+			strcat (buff, flt[i]);
+			first = 0;
+			}
+		}
+	}
+
+static void ShowFilterMenu (void)
+	{
+	char buff[512];
+	u8 f[CATN];
+	int i, item;
+
+	for (i = 0; i <CATN; i++)
+		f[i] = 0;
+	
+	for (i = 0; i < CATMAX; i++)
+		f[i] = (config.gameFilter & (1 << i)) ? 1:0;
+
+	do
+		{
+		buff[0] = '\0';
+		for (i = 0; i < CATMAX; i++)
+			{
+			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
+			grlib_menuAddCheckItem (buff, 100 + i, f[i], flt[i]);
+			}
+		
+		item = grlib_menu ("Filter menu'\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
+
+		if (item == MNUBTN_PLUS)
+			{
+			int i; 	for (i = 0; i < CATN; i++) f[i] = 1;
+			}
+
+		if (item == MNUBTN_MINUS)
+			{
+			int i; 	for (i = 0; i < CATN; i++) f[i] = 0;
+			}
+		
+		if (item >= 100)
+			{
+			int i = item - 100;
+			f[i] = !f[i];
+			}
+		}
+	while (item != -1);
+	
+	config.gameFilter = 0;
+	for (i = 0; i < CATN; i++)
+		if (f[i]) config.gameFilter |= (1 << i);
+	
+	GameBrowse (0);
+	AppsSort ();
+	}
+
 #define CHOPT_IOS 7
 #define CHOPT_VID 8
 #define CHOPT_VIDP 4
@@ -477,27 +735,44 @@ static void ShowAppMenu (int ai)
 	char *hooktypeoptions[CHOPT_HOOK] = { "No Ocarina&debugger", "Hooktype: VBI", "Hooktype: KPAD", "Hooktype: Joypad", "Hooktype: GXDraw", "Hooktype: GXFlush", "Hooktype: OSSleepThread", "Hooktype: AXNextFrame" };
 	char *ocarinaoptions[CHOPT_OCA] = { "No Ocarina", "Ocarina from NAND", "Ocarina from SD", "Ocarina from USB" };
 	*/
+	start:
+	
 	grlib_SetFontBMF(fonts[FNTNORM]);
 
-	ReadGameConfig (gamesSelected);
+	ReadGameConfig (ai);
 	gameConf.language ++; // umph... language in triiforce start at -1... not index friendly
 	do
 		{
 		
 		buff[0] = '\0';
-		//strcat (buff, "Set as autoboot##1|");
+
+		sprintf (b, "Played %d times##6|", games[ai].playcount);
+		strcat (buff, b);
+
+		char cat[128];
+		GetCatString (ai, cat);
+		if (strlen(cat) > 32)
+			{
+			cat[32] = 0;
+			strcat (cat, "...");
+			}
+		if (strlen (cat) == 0)
+			{
+			strcpy (cat, "<none>");
+			}
+
+		strcat (buff, "Category: "); strcat (buff, cat); strcat (buff, "##5|");
 		
-		if (games[gamesSelected].hidden)
+		sprintf (b, "Vote this title (%d/10)##4||", games[ai].priority);
+		strcat (buff, b);
+
+		if (games[ai].hidden)
 			strcat (buff, "Remove hide flag##2|");
 		else
 			strcat (buff, "Hide this title ##3|");
 
-		sprintf (b, "Vote this title (%d/10)##4|", games[gamesSelected].priority);
-		strcat (buff, b);
-
 		if (vars.neek != NEEK_NONE)
 			{
-			strcat (buff, "|");
 			strcat (buff, "NAND: "); strcat (buff, nand[gameConf.nand]); strcat (buff, "##106|");
 			}
 		else
@@ -528,11 +803,12 @@ static void ShowAppMenu (int ai)
 				}
 			}
 		*/
+
 		strcat (buff, "|");
 		strcat (buff, "Close##-1");
 		
 		item = grlib_menu (games[ai].name, buff);
-		if (item < 100) break;
+
 		if (item >= 100)
 			{
 			int i = item - 100;
@@ -546,6 +822,8 @@ static void ShowAppMenu (int ai)
 			if (i == 6) { gameConf.nand ++; if (gameConf.nand >= opt[i]) gameConf.nand = 0; }
 			if (i == 7) { gameConf.loader ++; if (gameConf.loader >= opt[i]) gameConf.loader = 0; }
 			}
+		else
+			break;
 		}
 	while (TRUE);
 	gameConf.language --;
@@ -559,22 +837,45 @@ static void ShowAppMenu (int ai)
 		config.autoboot.nand = config.chnBrowser.nand;
 		strcpy (config.autoboot.nandPath, config.chnBrowser.nandPath);
 
-		strcpy (config.autoboot.asciiId, games[gamesSelected].asciiId);
-		strcpy (config.autoboot.path, games[gamesSelected].name);
+		strcpy (config.autoboot.asciiId, games[ai].asciiId);
+		strcpy (config.autoboot.path, games[ai].name);
 		ConfigWrite();
+		}
+
+	if (item == 5)
+		{
+		ShowGameFilterMenu (ai);
+		WriteGameConfig (ai);
+		AppsSort ();
+
+		goto start;
+		}
+
+	if (item == 6)
+		{
+		int item;
+		item = grlib_menu ("Reset play count ?", "Yes~No");
+		
+		if (item == 0)
+			games[ai].playcount = 0;
+		
+		WriteGameConfig (ai);
+		AppsSort ();
+		
+		goto start;
 		}
 
 	if (item == 2)
 		{
-		games[gamesSelected].hidden = 0;
-		WriteGameConfig (gamesSelected);
+		games[ai].hidden = 0;
+		WriteGameConfig (ai);
 		AppsSort ();
 		}
 
 	if (item == 3)
 		{
-		games[gamesSelected].hidden = 1;
-		WriteGameConfig (gamesSelected);
+		games[ai].hidden = 1;
+		WriteGameConfig (ai);
 		AppsSort ();
 		}
 
@@ -584,52 +885,15 @@ static void ShowAppMenu (int ai)
 		item = grlib_menu ("Vote Game", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
 		
 		if (item >= 0)
-			games[gamesSelected].priority = 10-item;
+			games[ai].priority = 10-item;
 		
-		WriteGameConfig (gamesSelected);
+		WriteGameConfig (ai);
 		AppsSort ();
 		}
 
-	WriteGameConfig (gamesSelected);
+	WriteGameConfig (ai);
 	
 	GameBrowse (0);
-	}
-
-static void ShowFilterMenu (void)
-	{
-	u8 *f;
-	char buff[512];
-	int item;
-	
-	f = config.chnBrowser.filter;
-	
-	do
-		{
-		buff[0] = '\0';
-		for (item = 0; item < CHANNELS_MAXFILTERS; item++)
-			grlib_menuAddCheckItem (buff, 100 + item, f[item], &CHANNELS_NAMES[item][1]);
-		
-		item = grlib_menu ("Filter menu':\nPress (B) to close, (+) Select all, (-) Deselect all", buff);
-
-		if (item == MNUBTN_PLUS)
-			{
-			int i; 	for (i = 0; i < CHANNELS_MAXFILTERS; i++) f[i] = 1;
-			}
-
-		if (item == MNUBTN_MINUS)
-			{
-			int i; 	for (i = 0; i < CHANNELS_MAXFILTERS; i++) f[i] = 0;
-			}
-		
-		if (item >= 100)
-			{
-			int i = item - 100;
-			f[i] = !f[i];
-			}
-		}
-	while (item != -1);
-	GameBrowse (0);
-	AppsSort ();
 	}
 
 // Nand folder can be only root child...
@@ -765,7 +1029,7 @@ static void ShowGamesOptions (void)
 		}
 	else
 		{
-		strcat (buff, "Rebuild game list (wbfs/fat)...##13|");
+		strcat (buff, "Rebuild game list (ntfs/fat)...##13|");
 		}
 	strcat (buff, "Reset configuration files...##11||");
 	strcat (buff, "Cancel##-1");
@@ -805,10 +1069,11 @@ static void ShowGamesOptions (void)
 		}
 	}
 
-	
 static void ShowMainMenu (void)
 	{
 	char buff[300];
+	
+	start:
 	
 	buff[0] = '\0';
 	
@@ -816,8 +1081,16 @@ static void ShowMainMenu (void)
 	strcat (buff, "Switch to Channel mode##101|");
 	strcat (buff, "|");
 	strcat (buff, "Game options##8|");
-	//strcat (buff, "|");
-	//strcat (buff, "Select titles filter##3|");
+	strcat (buff, "|");
+	
+	if (config.gameSort == 0)
+		strcat (buff, "Sort by: vote##9|");
+	if (config.gameSort == 1)
+		strcat (buff, "Sort by: name##9|");
+	if (config.gameSort == 2)
+		strcat (buff, "Sort by: play count##9|");
+	
+	strcat (buff, "Select titles filter##3|");
 
 	if (showHidden)
 		strcat (buff, "Hide hidden titles##6|");
@@ -838,6 +1111,14 @@ static void ShowMainMenu (void)
 	
 	int item = grlib_menu ("Channel menu'", buff);
 		
+	if (item == 9)
+		{
+		config.gameSort ++;
+		if (config.gameSort > 2) config.gameSort = 0;
+		AppsSort ();
+		goto start;
+		}
+
 	if (item == 100)
 		{
 		browserRet = INTERACTIVE_RET_TOHOMEBREW;
@@ -850,6 +1131,7 @@ static void ShowMainMenu (void)
 	if (item == 3)
 		{
 		ShowFilterMenu ();
+		goto start;
 		}
 		
 	if (item == 4)
@@ -887,11 +1169,13 @@ static void ShowMainMenu (void)
 	if (item == 1)
 		{
 		ShowNandMenu();
+		goto start;
 		}
 	
 	if (item == 8)
 		{
 		ShowGamesOptions();
+		goto start;
 		}
 	}
 
@@ -961,7 +1245,7 @@ static void Redraw (void)
 		if (ai < gamesCnt && ai < games2Disp && gui.spotsIdx < SPOTSMAX)
 			{
 			// Draw application png
-			if (gui.spots[gui.spotsIdx].id != ai)
+			if (gui.spots[gui.spotsIdx].id != ai || refreshPng)
 				{
 				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
 				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
@@ -988,6 +1272,8 @@ static void Redraw (void)
 		grlib_DrawCenteredWindow ("No games found !", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
+		
+	refreshPng = 0;
 	}
 	
 static void Overlay (void)
@@ -1036,9 +1322,13 @@ int GameBrowser (void)
 	else
 		gamesPage = 0;
 	
+	LiveCheck (1);
+	
 	// Loop forever
     while (browserRet == -1) 
 		{
+		LiveCheck (0);
+		
 		btn = grlib_GetUserInput();
 		
 		// If [HOME] was pressed on the first Wiimote, break out of the loop
@@ -1052,6 +1342,8 @@ int GameBrowser (void)
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
 				{
 				ReadGameConfig (gamesSelected);
+				games[gamesSelected].playcount++;
+				WriteGameConfig (gamesSelected);
 				
 				memcpy (&config.run.game, &gameConf, sizeof(s_gameConfig));
 				config.run.neekSlot = games[gamesSelected].slot;
@@ -1073,13 +1365,19 @@ int GameBrowser (void)
 
 			if (btn & WPAD_BUTTON_2)
 				{
-				/*
 				ShowFilterMenu ();
 				ConfigWrite ();
 				redraw = 1;
-				*/
 				}
-
+				
+			if (btn & WPAD_BUTTON_DOWN)
+				{
+				GoToPage ();
+				
+				//grlib_dosm ("%d", gamesPage);
+				redraw = 1;
+				}
+				
 			if (btn & WPAD_BUTTON_HOME)
 				{
 				ShowMainMenu ();

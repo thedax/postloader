@@ -55,14 +55,14 @@ static bool  enable_output = 1;
  *         -    -3 : Failed to initialize the font engine.
  * @see GRRLIB_Exit
  */
-int  GRRLIB_Init (int skipVideo) {
+int  GRRLIB_Init (int skipVideo, int fixPal) {
     f32 yscale;
     u32 xfbHeight;
     Mtx44 perspective;
     s8 error_code = 0;
 
     // Ensure this function is only ever called once
-    //if (is_setup)  return 0;
+    if (is_setup)  return 0;
 
     // Initialise the video subsystem
 	if (!skipVideo)

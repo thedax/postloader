@@ -6,10 +6,12 @@
 // This contain extension to draw a menu on screen
 // (A) select item, (B) cancel
 
-#define MAXITEMS 16
+#define MAXITEMS 128
+#define MAXCOLS 12
 #define YSPACING 20
 #define YSPACINGFAKE 10
 #define YTITLE 20
+#define XCOLSPACING 10
 
 extern s_grlibSettings grlibSettings;
 
@@ -40,6 +42,14 @@ int grlib_menuAddSeparator (char *item)
 	if (item == NULL) return 0;
 
 	strcat (item, "|");
+	return 1;
+	}
+
+int grlib_menuAddColumn (char *item)
+	{
+	if (item == NULL) return 0;
+
+	strcat (item, "~");
 	return 1;
 	}
 
@@ -74,18 +84,23 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	{
 	int i,j;
 	int item = 0;
-	int itemsCnt, itemsCntReal, itemsCntFake;
+	int itemsCnt, itemsCntReal[MAXCOLS], itemsCntFake[MAXCOLS];
 	int titleh;
-	int linew, lineh;
+	int titlew, itemw, linew, lineh;
 	int halfx, halfy;
 	int winw, winh;
-	int y;
+	int x, y, yTop;
+	int columns = 0;
 	int titleLines;
 	char buff[1024];
 	char *line;
 	u32 btn;
+
+	int cols[MAXCOLS];
 	s_grlibobj goWindow, goItems[MAXITEMS];
 	int retcodes[MAXITEMS];
+	
+	memset (cols, 0, sizeof(cols));
 	
 	for (i = 0; i < MAXITEMS; i++) retcodes[i] = i;
 	
@@ -115,6 +130,8 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	line = calloc (1, strlen (title) + 1);
 	// Lets count tile lines
 	titleLines = 0;
+
+	titlew = 0;
 	linew = 0;
 	lineh = 0;
 	
@@ -131,7 +148,9 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 			grlib_GetFontMetrics (line, &l, &h);
 			if (h > lineh) lineh = h;
 			if (l > linew) linew = l;
+			if (l > titlew) titlew = l;
 			j = i + 1;
+			
 			titleLines++;
 			
 			// Switch to small fonts
@@ -144,16 +163,19 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	// Separate passed string to items array... also calculate max width and height in pixels for items
 	itemsCnt = 0;
 	
+	itemw = 0;
 	j = 0; // used to count item chars
-	itemsCntReal = 0;
-	itemsCntFake = 0;
+	memset (itemsCntReal, 0, sizeof (itemsCntReal));
+	memset (itemsCntFake, 0, sizeof (itemsCntFake));
 	for (i = 0; i <= strlen(buff); i++)
 		{
-		if (buff[i] == 0 || buff[i] == '|')
+		if (buff[i] == 0 || buff[i] == '|' || buff[i] == '~')
 			{
 			int l,h;
 			char *p;
 			
+			//if (buff[j] == '~') continue;
+
 			strncpy (goItems[itemsCnt].text, &buff[j], i - j);
 			goItems[itemsCnt].text[i - j] = 0;
 			
@@ -165,28 +187,68 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 				retcodes[itemsCnt] = atoi(p);
 				}
 			
-			grlib_GetFontMetrics (goItems[itemsCnt].text, &l, &h);
+			if (goItems[itemsCnt].text[0] == '^')
+				{
+				char buff[256];
+				
+				sprintf (buff, "[*] %s", &goItems[itemsCnt].text[2]);
+				grlib_GetFontMetrics (buff, &l, &h);
+				}
+			else
+				{
+				grlib_GetFontMetrics (goItems[itemsCnt].text, &l, &h);
+				}
+				
 			if (h > lineh) lineh = h;
 			if (l > linew) linew = l;
+			if (l > itemw) itemw = l;
 			
 			if (strlen (goItems[itemsCnt].text))
-				itemsCntReal ++;
+				itemsCntReal[columns] ++;
 			else
-				itemsCntFake ++;
+				itemsCntFake[columns] ++;
 				
-			itemsCnt ++;
+			itemsCnt++;
+				
+			cols[columns]++;
 			j = i + 1;
+			}
+		if (buff[i] == '~')
+			{
+			columns++;
+			//grlib_dosm ("c = %d", columns);
+			j = i + 1;
+			
+			strcpy (goItems[itemsCnt].text, "~");
+			retcodes[itemsCnt] = 0;
+			itemsCnt++;
 			}
 		if (itemsCnt == MAXITEMS) break;
 		}
+		
+	columns++;
 	
-	itemsCntFake--;
+	//grlib_dosm ("c = %d", columns);
+	
+	for (i = 0; i < columns; i++)
+		itemsCntFake[i]--;
+		
 	//if (itemsCntFake < 0) itemsCntFake = 0;
 	
 	titleh = ((titleLines+1) * (lineh + 5));
 	
-	winw = linew + 40;
-	winh = (itemsCntReal * (lineh + YSPACING)) + (itemsCntFake * YSPACINGFAKE) + titleh + YSPACINGFAKE;
+	itemw += 10;
+	winw = ((itemw+XCOLSPACING) * (columns)) + 40;
+	if (linew > winw)
+		winw = linew + 40;
+	
+	winh = 0;
+	for (i = 0; i < columns; i++)
+		{
+		j = (itemsCntReal[i] * (lineh + YSPACING)) + (itemsCntFake[i] * YSPACINGFAKE) + titleh + YSPACINGFAKE;
+		if (j > winh)
+			winh = j;
+		}
 	
 	halfx = rmode->fbWidth / 2;
 	halfy = rmode->efbHeight / 2;
@@ -212,7 +274,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	
 	// ... so, draw the title...
 	y = goWindow.y1 + 5;
-	j = 0; // used to count item chars
+	j = 0; // used to count item char
 	for (i = 0; i <= strlen(title); i++)
 		{
 		if (title[i] == 0 || title[i] == '\n')
@@ -237,13 +299,20 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	grlibSettings.fontBMF = grlibSettings.fontNormBMF;
 
 	y += YSPACINGFAKE;
-
+	yTop = y;
+	x = halfx - ((columns - 1) * ((itemw+10) / 2));
 	for (i = 0; i < itemsCnt; i++)
 		{
-		if (strlen(goItems[i].text))
+		if (strcmp (goItems[i].text, "~") == 0)
 			{
-			goItems[i].x1 = goWindow.x1 + 5;
-			goItems[i].x2 = goWindow.x2 - 5;
+			memset (&goItems[i], 0, sizeof (s_grlibobj));
+			x += (itemw + XCOLSPACING);
+			y = yTop;
+			}
+		else if (strlen(goItems[i].text))
+			{
+			goItems[i].x1 = x - (itemw / 2);
+			goItems[i].x2 = x + (itemw / 2);
 			goItems[i].y1 = y;
 			goItems[i].y2 = y + lineh + 10;
 			goItems[i].bcolor = RGBA (64, 64, 64, 128);

@@ -74,7 +74,7 @@ void grlib_Init (void)
 	VIDEO_WaitVSync();
 	VIDEO_WaitVSync();
 
-    GRRLIB_Init(1);
+    GRRLIB_Init(1,0);
 
 	WPAD_SetVRes(0, 640, 480);
 	WPAD_SetPowerButtonCallback( wmpower_cb );

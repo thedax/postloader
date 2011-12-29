@@ -2,6 +2,20 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.51.0
+
+* Added game filters (to disable filters, press (2) and (-) to unmark all)
+* Added game play count
+* Added sorting by name/vote/playcount
+* Added "Go to page" (press D-Pad down)
+* Added support for multi-column menu in grlib
+* Added usb live function. Every 30sec hdd is accessed to prevent sleeping
+* Japanese covers shoud be downloaded now
+* Added an option to GRRLIB to force PAL to 480i/480p. Not yet supported in pl3
+* Forgotten a flag in GRRLIB
+
+NOTE: maybe is required to clear all configuration files ( [home] -> Game options -> Reset config files )
+
 postLoader 3.50.1
  
 * Corrected some issue with GRRLIB video initializiation
