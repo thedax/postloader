@@ -11,7 +11,14 @@ static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
 
 void green_fix(void) //GREENSCREEN FIX
-	{     
+	{
+	if (rmode == NULL)
+		{
+		VIDEO_Init();
+		rmode = VIDEO_GetPreferredMode(NULL);
+		xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+		}
+		
     VIDEO_Configure(rmode);
     VIDEO_SetNextFramebuffer(xfb);
     VIDEO_SetBlack(TRUE);

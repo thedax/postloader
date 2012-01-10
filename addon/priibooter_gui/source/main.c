@@ -14,7 +14,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "0.2"
+#define VER "0.3"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -45,6 +45,7 @@ extern const u8 fnorm_bmf[];
 extern const u8 fsmall_bmf[];
 extern const u8 wiicursor_png[];
 
+int bkgFromFile = 0;
 GRRLIB_texImg *bkg;
 GRRLIB_texImg *cursor;
 GRRLIB_bytemapFont *fonts[2];
@@ -77,6 +78,11 @@ extern void __exception_setreload(int t); // In the event of a code dump, app wi
 
 static void Redraw (void) // Refresh screen
 	{
+	int fr;
+	
+	fr = grlibSettings.fontBMF_reverse;
+	if (!bkgFromFile) grlibSettings.fontBMF_reverse = 0;
+	
 	if (alphaback < 0) alphaback = 0;
 	if (alphaback > 255) alphaback = 255;
 	
@@ -118,7 +124,7 @@ static void Redraw (void) // Refresh screen
 			keypressed = 1;
 			}
 		}
-	
+	grlibSettings.fontBMF_reverse = fr;
 	}
 	
 void printd(const char *text, ...)
@@ -202,6 +208,7 @@ int ScanForTheme (int dev)
 		{
 		if (bkg != NULL) GRRLIB_FreeTexture (bkg);
 		bkg = GRRLIB_LoadTextureFromFile (path);
+		bkgFromFile = 1;
 		}
 	
 	sprintf (path, "%s://ploader/theme/button.png", mnt);

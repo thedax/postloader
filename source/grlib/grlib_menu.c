@@ -15,12 +15,12 @@
 
 extern s_grlibSettings grlibSettings;
 
-int grlib_menuAddItem (char *item, int id, const char *itemsstring, ...)
+int grlib_menuAddItem (char *menu, int id, const char *itemsstring, ...)
 	{
 	char buff[256];
 	char sid[16];
 	
-	if (item == NULL) return 0;
+	if (menu == NULL) return 0;
 
 	if (itemsstring != NULL)
 		{
@@ -30,35 +30,35 @@ int grlib_menuAddItem (char *item, int id, const char *itemsstring, ...)
 		va_end(argp);
 		}
 		
-	strcat (item, buff);
+	strcat (menu, buff);
 	sprintf (sid, "##%d|", id);
-	strcat (item, sid);
+	strcat (menu, sid);
 	
 	return 1;
 	}
 
-int grlib_menuAddSeparator (char *item)
+int grlib_menuAddSeparator (char *menu)
 	{
-	if (item == NULL) return 0;
+	if (menu == NULL) return 0;
 
-	strcat (item, "|");
+	strcat (menu, "|");
 	return 1;
 	}
 
-int grlib_menuAddColumn (char *item)
+int grlib_menuAddColumn (char *menu)
 	{
-	if (item == NULL) return 0;
+	if (menu == NULL) return 0;
 
-	strcat (item, "~");
+	strcat (menu, "~");
 	return 1;
 	}
 
-int grlib_menuAddCheckItem (char *item, int id, bool check, const char *itemsstring, ...)
+int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...)
 	{
 	char buff[256];
 	char sid[16];
 	
-	if (item == NULL) return 0;
+	if (menu == NULL) return 0;
 
 	if (itemsstring != NULL)
 		{
@@ -69,13 +69,13 @@ int grlib_menuAddCheckItem (char *item, int id, bool check, const char *itemsstr
 		}
 		
 	if (check)
-		strcat (item, "^+");
+		strcat (menu, "^+");
 	else
-		strcat (item, "^-");
+		strcat (menu, "^-");
 		
-	strcat (item, buff);
+	strcat (menu, buff);
 	sprintf (sid, "##%d|", id);
-	strcat (item, sid);
+	strcat (menu, sid);
 	
 	return 1;
 	}

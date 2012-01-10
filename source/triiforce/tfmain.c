@@ -22,6 +22,7 @@
 #include <fat.h>
 #include <ogc/lwp_watchdog.h>
 #include <wiiuse/wpad.h>
+#include <network.h>
 
 #include "tfmain.h"
 #include "tools.h"
@@ -281,7 +282,7 @@ int tfboot(s_run *run)
 	s_nandbooter nb;
 	u8 *tfb = (u8 *) 0x90000000;
 	
-	if (run->nand == NAND_REAL)
+	if (run->nand == NAND_REAL || vars.neek != NEEK_NONE)
 		{
 		Shutdown (0);
 		

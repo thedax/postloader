@@ -5,6 +5,6 @@
 typedef void (*entry_point)(void);
 
 /* Prototypes */
-s32 Apploader_Run(entry_point *, bool, u8, GXRModeObj *vmode, bool, bool, bool, const u8 *, u32, u8, u32, u8, char *altDolDir);
+s32 Apploader_Run(entry_point *entry, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, u8 patchVidModes);
 
 #endif

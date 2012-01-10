@@ -467,6 +467,7 @@ void WiiLoad_Stop(void)
 	// Clean old data, if any
 	if (wiiload.buff) free (wiiload.buff);
 	if (wiiload.args) free (wiiload.args);
+	
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;

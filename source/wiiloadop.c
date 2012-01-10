@@ -104,7 +104,7 @@ static int ZipCheck (char *path)	// Dols contains a list of found dols
 	return DU_NONE;
 	}
 
-static int ZipUnpack (char *path, char *target, char *dols)
+int ZipUnpack (char *path, char *target, char *dols)
 	{
 	int ioerr, err, bytes;
 	u8 *b;
@@ -179,7 +179,7 @@ static int ZipUnpack (char *path, char *target, char *dols)
 				{
 				do 
 					{
-					Video_WaitPanel (TEX_HGL, "Unpacking file %d", count);
+					Video_WaitPanel (TEX_HGL, "Unpacking file %d", count+1);
 					
 					bytes = unzReadCurrentFile (uf,b,bsize);
 					if (bytes < 0) 

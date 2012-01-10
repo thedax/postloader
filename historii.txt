@@ -2,6 +2,25 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.52.0
+
+* Added theme selector (theme package > 2.0 required, read readmii inside package), press [home]->options->change theme
+* Aligned disc launcher (di) module with latest wiiflow implementation
+* Added video fix to (di) module
+* Corrected WCF issue (neek2o)
+* Fixed some variables names for grlib menu functions
+* nandbooter to (b5)
+* priibootergui to 0.3: corrected font reverse when no background png is available
+* nandbooter aligned with triiforce (r96): Writing the title id to 0x80000000, might required for online WiiWare games (but online doesn't work)
+
+postLoader 3.52.4
+
+* Back to original appbooter. wiimc is instable also started from hbc (principally youtube).
+
+postLoader 3.52.3
+
+* Tested old appbooter with wiimc 1.2.
+
 postLoader 3.51.1
 
 * Added "Go to page" to channel/hb mode

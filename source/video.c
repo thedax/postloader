@@ -205,43 +205,33 @@ void Video_LoadTheme (int init)
 		memset (&theme, 0, sizeof (s_theme));
 		
 		sprintf (path, "%s://ploader/theme/bkg.png", vars.defMount);
-		Debug (path);
 		theme.bkg = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/frame.png", vars.defMount);
-		Debug (path);
 		theme.frame = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/frame_sel.png", vars.defMount);
-		Debug (path);
 		theme.frameSel = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/frame_back.png", vars.defMount);
-		Debug (path);
 		theme.frameBack = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/frame_mask.png", vars.defMount);
-		Debug (path);
 		theme.frameMask = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/button.png", vars.defMount);
-		Debug (path);
 		grlibSettings.theme.texButton = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/button_sel.png", vars.defMount);
-		Debug (path);
 		grlibSettings.theme.texButtonSel = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/window.png", vars.defMount);
-		Debug (path);
 		grlibSettings.theme.texWindow = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/windowbk.png", vars.defMount);
-		Debug (path);
 		grlibSettings.theme.texWindowBk = GRRLIB_LoadTextureFromFile (path);
 		
 		sprintf (path, "%s://ploader/theme/theme.cfg", vars.defMount);
-		Debug (path);
 		cfg = (char*)ReadFile2Buffer (path, NULL, NULL, true);
 		if (cfg)
 			{
@@ -262,8 +252,6 @@ void Video_LoadTheme (int init)
 			cfg_GetInt (cfg, "theme.ch_line1Y", &theme.ch_line1Y);
 			cfg_GetInt (cfg, "theme.ch_line2Y", &theme.ch_line2Y);
 
-			theme.ok = 1;
-			grlibSettings.theme.enabled = true;
 			free (cfg);
 			
 			if (grlibSettings.fontBMF_reverse) // we likely need to revert textures (skipping cursor)
@@ -276,6 +264,9 @@ void Video_LoadTheme (int init)
 				GRRLIB_BMFX_Invert (vars.tex[TEX_EXCL],vars.tex[TEX_EXCL]);
 				GRRLIB_BMFX_Invert (vars.tex[TEX_WIFI],vars.tex[TEX_WIFI]);
 				}
+
+			theme.ok = 1;
+			grlibSettings.theme.enabled = true;
 			}
 		else
 			{
@@ -293,6 +284,9 @@ void Video_LoadTheme (int init)
 		}
 	else
 		{
+		theme.ok = 0;
+		grlibSettings.theme.enabled = false;
+		
 		if (grlibSettings.fontBMF_reverse) // we likely need to revert textures (again)  (skipping cursor)
 			{
 			GRRLIB_BMFX_Invert (vars.tex[TEX_HDD],vars.tex[TEX_HDD]);

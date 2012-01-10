@@ -249,7 +249,14 @@ void Disc(void)
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
+	struct __argv arg;
+	memset (&arg, 0, sizeof(struct __argv));
+	memmove(ARGS_ADDR, &arg, sizeof(arg));
+	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
+
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
+
+	//entrypoint hbboot_ep = (entrypoint) load_dol(booter_dol, NULL);
 	
 	// Shutdown all system
 	grlibSettings.doNotCall_GRRLIB_Exit = true;

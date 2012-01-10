@@ -7,8 +7,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 51
-#define VER "3.51.1"
+#define BUILD 52
+#define VER "3.52.0"
 #define CFGVER "PLCFGV0007"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -20,7 +20,7 @@
 #define FNTSMALL 1
 
 #define CFG_HOME_PRIILOAER 0x4461636F
-#define PRIILOADER_TOMENU   0x50756E65
+#define PRIILOADER_TOMENU  0x50756E65
 
 #define DEV_NONE -1
 #define DEV_SD 0
@@ -133,6 +133,7 @@ typedef struct
 	
 	char tempPath[64]; 				// Temp folder
 	int usbtime;
+	int themeReloaded;				// Signal that a new theme was reloaded
 	}
 s_vars;
 
@@ -415,6 +416,7 @@ char *get_name(u64 titleid);
 void Microsneek (s_run *run, int enable); // If enable, the title is installed in sneek, if not, it is removed
 
 // wiiloadzip
+int ZipUnpack (char *path, char *target, char *dols);
 void WiiloadZipMenu (void);
 bool WiiloadPostloaderDolMenu (void);
 
@@ -426,3 +428,6 @@ s32 menu_SwitchNand (void);
 // wbfsscanner
 char * WBFSSCanner (bool reset);
 void RunLoader(void);
+
+// Themes
+int ThemeSelect (void);

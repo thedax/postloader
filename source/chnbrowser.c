@@ -1364,6 +1364,12 @@ int ChnBrowser (void)
 			break;
 			}
 		
+		if (vars.themeReloaded) // Restart the browser
+			{
+			vars.themeReloaded = 0;
+			browserRet = INTERACTIVE_RET_TOCHANNELS;
+			}
+
 		usleep (5000);
 		}
 

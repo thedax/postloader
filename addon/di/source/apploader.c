@@ -8,6 +8,15 @@
 #include "disc.h"
 #include "videopatch.h"
 
+/* Constants */
+#define APPLDR_OFFSET	0x2440
+#ifndef APPLOADER_START         /* Also defined in mem2.hpp */
+#define APPLOADER_START (void *)0x81200000
+#endif
+#ifndef APPLOADER_END           /* Also defined in mem2.hpp */
+#define APPLOADER_END (void *)0x81700000
+#endif
+
 typedef struct _SPatchCfg
 {
 	bool cheat;
@@ -25,18 +34,10 @@ typedef void  (*app_init)(void (*report)(const char *fmt, ...));
 typedef void *(*app_final)();
 typedef void  (*app_entry)(void (**init)(void (*report)(const char *fmt, ...)), int (**main)(), void *(**final)());
 
-/* Apploader pointers */
-static u8 *appldr = (u8 *)0x81200000;
-
-
-/* Constants */
-#define APPLDR_OFFSET	0x2440
-
 /* Variables */
 static u32 buffer[0x20] ATTRIBUTE_ALIGN(32);
 
-static void dolPatches(void *dst, int len, void *params);
-static void maindolpatches(void *dst, int len, bool cheat, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, bool err002fix, u8 patchVidModes, u8 patchDiscCheck);
+static bool maindolpatches(void *dst, int len, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, u8 patchVidModes);
 static bool Remove_001_Protection(void *Address, int Size);
 static void Anti_002_fix(void *Address, int Size);
 static bool PrinceOfPersiaPatch();
@@ -45,118 +46,69 @@ static void __noprint(const char *fmt, ...)
 {
 }
 
-s32 Apploader_Run(entry_point *entry, bool cheat, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, bool error002Fix, const u8 *altdol, u32 altdolLen, u8 patchVidModes, u32 rtrn, u8 patchDiscCheck, char *altDolDir)
+s32 Apploader_Run(entry_point *entry, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, u8 patchVidModes)
 {
-	void *dst = NULL;
-	int len = 0;
-	int offset = 0;
-	app_entry appldr_entry;
-	app_init  appldr_init;
-	app_main  appldr_main;
-	app_final appldr_final;
+        void *dst = NULL;
+        int len = 0;
+        int offset = 0;
+        app_init  appldr_init;
+        app_main  appldr_main;
+        app_final appldr_final;
 
-	u32 appldr_len;
-	s32 ret;
-	
-	printd("Apploader_Run #1\n");
+        /* Read apploader header */
+        s32 ret = WDVD_Read(buffer, 0x20, APPLDR_OFFSET);
+        if (ret < 0) return ret;
 
-	SYS_SetArena1Hi((void *)0x816FFFF0);
-	/* Read apploader header */
-	ret = WDVD_Read(buffer, 0x20, APPLDR_OFFSET);
-	if (ret < 0) return ret;
-	
-	printd("Apploader_Run #2\n");
+        /* Calculate apploader length */
+        u32 appldr_len = buffer[5] + buffer[6];
 
-	/* Calculate apploader length */
-	appldr_len = buffer[5] + buffer[6];
+        SYS_SetArena1Hi(APPLOADER_END);
 
-	/* Read apploader code */
-	// Either you limit memory usage or you don't touch the heap after that, because this is writing at 0x1200000
-	ret = WDVD_Read(appldr, appldr_len, APPLDR_OFFSET + 0x20);
-	if (ret < 0) return ret;
+        /* Read apploader code */
+        // Either you limit memory usage or you don't touch the heap after that, because this is writing at 0x1200000
+        ret = WDVD_Read(APPLOADER_START, appldr_len, APPLDR_OFFSET + 0x20);
+        if (ret < 0) return ret;
 
-	DCFlushRange(appldr, appldr_len);
-	
-	printd("Apploader_Run #3\n");
+        DCFlushRange(APPLOADER_START, appldr_len);
 
-	/* Set apploader entry function */
-	appldr_entry = (app_entry)buffer[4];
+        /* Set apploader entry function */
+        app_entry appldr_entry = (app_entry)buffer[4];
 
-	/* Call apploader entry */
-	appldr_entry(&appldr_init, &appldr_main, &appldr_final);
+        /* Call apploader entry */
+        appldr_entry(&appldr_init, &appldr_main, &appldr_final);
 
-	/* Initialize apploader */
-	appldr_init(__noprint);
+        /* Initialize apploader */
+        appldr_init(__noprint);
+        
+        bool hookpatched = false;
 
-	u32 dolStart = 0x90000000;
-	u32 dolEnd = 0;
-	
-	printd("Apploader_Run #4\n");
-	
-	while (appldr_main(&dst, &len, &offset))
-	{
-		/* Read data from DVD */
-		WDVD_Read(dst, len, (u64)(offset << 2));
-		//maindolpatches(dst, len, cheat, vidMode, vmode, vipatch, countryString, error002Fix, patchVidModes, patchDiscCheck);
-		
-		printd("Apploader_Run (reading)\n");
-		
-		if ((u32) dst < dolStart) dolStart = (u32) dst;
-		if ((u32) dst + len > dolEnd) dolEnd = (u32) dst + len;
-	}
+        while (appldr_main(&dst, &len, &offset))
+        {
+                /* Read data from DVD */
+                WDVD_Read(dst, len, (u64)(offset << 2));
+                if(maindolpatches(dst, len, vidMode, vmode, vipatch, countryString, patchVidModes))
+                        hookpatched = true;
+        }
 
-	printd("Apploader_Run #5\n");
-	PrinceOfPersiaPatch();
+        if (hooktype != 0 && !hookpatched)
+        {
+                //gprintf("Error: Could not patch the hook\n");
+                //gprintf("Ocarina and debugger won't work\n");
+        }
+        
+        PrinceOfPersiaPatch();
 
-	/* Alternative dol */
-	/*
-	if (altdol != 0)
-	{
-		//wip_reset_counter();
-	
-		SPatchCfg patchCfg;
-		patchCfg.cheat = cheat;
-		patchCfg.vidMode = vidMode;
-		patchCfg.vmode = vmode;
-		patchCfg.vipatch = vipatch;
-		patchCfg.countryString = countryString;
-		patchCfg.patchVidModes = patchVidModes;
-		patchCfg.patchDiscCheck = patchDiscCheck;
-		void *altEntry = (void *)load_dol(altdol, altdolLen, dolPatches, &patchCfg);
-		if (altEntry == 0) return -1;
-		*entry = altEntry;
-		
-		if(rtrn) PatchReturnTo((void *) altdol, altdolLen, rtrn);
-	}
-	else
-	*/
-	printd("Apploader_Run #6\n");
-	{
-		/* Set entry point from apploader */
-		*entry = appldr_final();
+        /* Set entry point from apploader */
+        *entry = appldr_final();
+        
+        // IOSReloadBlock(IOS_GetVersion());
+        *(vu32 *)0x80003140 = *(vu32 *)0x80003188; // IOS Version Check
+        *(vu32 *)0x80003180 = *(vu32 *)0x80000000; // Game ID Online Check
+        *(vu32 *)0x80003184 = 0x80000000;
 
-		/* This patch should be run on the entire dol at 1 time */
-		if (rtrn) PatchReturnTo((void *) dolStart, dolEnd - dolStart, rtrn);
-	}
-	
-	printd("Apploader_Run #7\n");
+        DCFlushRange((void*)0x80000000, 0x3f00);
 
-	/* ERROR 002 fix (WiiPower) */
-	if (error002Fix) *(u32 *)0x80003140 = *(u32 *)0x80003188;
-	
-	printd("Apploader_Run #8\n");
-			
-	DCFlushRange((void*)0x80000000, 0x3f00);
-
-	return 0;
-}
-
-static void dolPatches(void *dst, int len, void *params)
-{
-	const SPatchCfg *p = (const SPatchCfg *)params;
-
-	maindolpatches(dst, len, p->cheat, p->vidMode, p->vmode, p->vipatch, p->countryString, false, p->patchVidModes, p->patchDiscCheck);
-	DCFlushRange(dst, len);
+        return 0;
 }
 
 static void PatchCountryStrings(void *Address, int Size)
@@ -314,33 +266,30 @@ bool NewSuperMarioBrosPatch(void *Address, int Size)
 	return false;
 }
 
-static void maindolpatches(void *dst, int len, bool cheat, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, bool err002fix, u8 patchVidModes, u8 patchDiscCheck)
+
+static bool maindolpatches(void *dst, int len, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, u8 patchVidModes)
 {
-	DCFlushRange(dst, len);
-	
-	// Patch NoDiscInDrive only for IOS 249 < rev13 or IOS 222/223/224
-	/*
-	if (patchDiscCheck && 
-		((is_ios_type(IOS_TYPE_WANIN) && IOS_GetRevision() < 13) ||
-	    (is_ios_type(IOS_TYPE_HERMES))))
-		patch_NoDiscinDrive(dst, len);
-	*/
-	patchVideoModes(dst, len, vidMode, vmode, patchVidModes);
+        bool ret = false;
 
-	if (cheat) dogamehooks(dst, len);
-	if (vipatch) vidolpatcher(dst, len);
-	if (configbytes[0] != 0xCD) langpatcher(dst, len);
-	if (err002fix && ((IOS_GetVersion() == 249 && IOS_GetRevision() < 13) || IOS_GetVersion() == 250)) Anti_002_fix(dst, len);
-	if (countryString) PatchCountryStrings(dst, len); // Country Patch by WiiPower
+        DCFlushRange(dst, len);
 
-	Remove_001_Protection(dst, len);
-	
-	// NSMB Patch by WiiPower
-	NewSuperMarioBrosPatch(dst,len);
+        patchVideoModes(dst, len, vidMode, vmode, patchVidModes);
 
-	//do_wip_code((u8 *) dst, len);
-	
-	DCFlushRange(dst, len);
+        if (hooktype != 0) ret = dogamehooks(dst, len);
+        if (vipatch) vidolpatcher(dst, len);
+        if (configbytes[0] != 0xCD) langpatcher(dst, len);
+        if (countryString) PatchCountryStrings(dst, len); // Country Patch by WiiPower
+
+        Remove_001_Protection(dst, len);
+
+        // NSMB Patch by WiiPower
+        NewSuperMarioBrosPatch(dst,len);
+
+        //do_wip_code((u8 *) dst, len);
+
+        DCFlushRange(dst, len);
+
+        return ret;
 }
 
 static bool Remove_001_Protection(void *Address, int Size)

@@ -43,40 +43,31 @@ static u8	Tmd_Buffer[0x49e4 + 0x1C] ALIGNED(32);
 #define        Bus_Speed		((u32*)0x800000f8)
 #define        CPU_Speed		((u32*)0x800000fc)
 
-void __Disc_SetLowMem(bool dvd)
+void __Disc_SetLowMem()
 {
-	/* Setup low memory */
-	*(vu32 *)0x80000030 = 0x00000000; // Arena Low
-	*(vu32 *)0x80000060 = 0x38A00040;
-	*(vu32 *)0x800000E4 = 0x80431A80;
-	*(vu32 *)0x800000EC = 0x81800000; // Dev Debugger Monitor Address
-	*(vu32 *)0x800000F0 = 0x01800000; // Simulated Memory Size
-	*(vu32 *)0x800000F4 = 0x817E5480;
-	*(vu32 *)0x800000F8 = 0x0E7BE2C0; // bus speed
-	*(vu32 *)0x800000FC = 0x2B73A840; // cpu speed
-	*(vu32 *)0xCD00643C = 0x00000000; // 32Mhz on Bus
+        *(vu32 *)0x80000060 = 0x38A00040; // Dev Debugger Hook
+        *(vu32 *)0x800000E4 = 0x80431A80;
+        *(vu32 *)0x800000EC = 0x81800000; // Dev Debugger Monitor Address
+        *(vu32 *)0x800000F0 = 0x01800000; // Simulated Memory Size
+        *(vu32 *)0xCD00643C = 0x00000000; // 32Mhz on Bus
 
-	/* Copy disc ID (online check) */
-	memcpy((void *)0x80003180, (void *)0x80000000, 4);
+        *Sys_Magic      = 0x0d15ea5e;
+        *Version        = 1;
+        *Arena_L        = 0x00000000;
+        *BI2            = 0x817E5480;
+        *Bus_Speed      = 0x0E7BE2C0;
+        *CPU_Speed      = 0x2B73A840;
 
-	// Patch in info missing from apploader reads
-	*Sys_Magic	= 0x0d15ea5e;
-	*Version	= 1;
-	*Arena_L	= 0x00000000;
-	*Bus_Speed	= 0x0E7BE2C0;
-	*CPU_Speed	= 0x2B73A840;
+        *(vu32 *)0x800030F0 = 0x0000001C; // Dol Args
+        *(vu32 *)0x8000318C = 0x00000000; // Launch Code
+        *(vu32 *)0x80003190 = 0x00000000; // Return Code
 
-	// From NeoGamme R4 (WiiPower)
-	*(vu32 *)0x800030F0 = 0x0000001C;
-	*(vu32 *)0x8000318C = 0x00000000;
-	*(vu32 *)0x80003190 = 0x00000000;
-	// Fix for Sam & Max (WiiPower)
-	// (only works if started from DVD)
-	// Readded by Dr. Clipper
-	if (dvd) *(vu32*)0x80003184	= 0x80000000;	// Game ID Address
+        *(vu32 *)0x80003140 = *(vu32 *)0x80003188; // IOS Version Check
+        *(vu32 *)0x80003180 = *(vu32 *)0x80000000; // Game ID Online Check
+        *(vu32 *)0x80003184 = 0x80000000;
 
-	/* Flush cache */
-	DCFlushRange((void *)0x80000000, 0x3F00);
+        /* Flush cache */
+        DCFlushRange((void *)0x80000000, 0x3F00);
 }
 
 void __Disc_SelectVMode(u8 videoselected)
@@ -347,97 +338,88 @@ s32 Disc_IsGC(void)
 	return Disc_Type(1);
 }
 
-s32 Disc_BootPartition(u64 offset, u8 vidMode, const u8 *cheat, u32 cheatSize, bool vipatch, bool countryString, bool error002Fix, const u8 *altdol, u32 altdolLen, u8 patchVidMode, u32 rtrn, u8 patchDiscCheck, bool dvd, char *altDolDir, u32 wdm_parameter)
+s32 Disc_BootPartition(u64 offset, u8 vidMode, bool vipatch, bool countryString, u8 patchVidMode)
 {
-	entry_point p_entry;
-	
-	printd("Disc_BootPartition (begin)\n");
+        entry_point p_entry;
 
-	s32 ret = WDVD_OpenPartition(offset, 0, 0, 0, Tmd_Buffer);
-	printd("WDVD_OpenPartition: %d\n", ret);
-	if (ret < 0) return ret;
+        s32 ret = WDVD_OpenPartition(offset, 0, 0, 0, Tmd_Buffer);
+        if (ret < 0) return ret;
 
-	/* Disconnect Wiimotes */
-	//Close_Inputs();
-	
-	/* Setup low memory */;
-	__Disc_SetLowMem(dvd);
+        /* Select an appropriate video mode */
+        __Disc_SelectVMode(vidMode);
 
-	/* Select an appropriate video mode */
-	__Disc_SelectVMode(vidMode);
+        /* Setup low memory */;
+        __Disc_SetLowMem();
 
-	/* Run apploader */
-	ret = Apploader_Run(&p_entry, cheat != 0, vidMode, vmode, vipatch, countryString, error002Fix, altdol, altdolLen, patchVidMode, rtrn, patchDiscCheck, altDolDir);
-	//free_wip();
-	printd("Apploader_Run: %d\n", ret);
-	if (ret < 0) return ret;
+        /* Run apploader */
+        ret = Apploader_Run(&p_entry, vidMode, vmode, vipatch, countryString, patchVidMode);
+        
+		// free_wip();
+        if (ret < 0) return ret;
 
-	/*
-	do_bca_code();
-	if (cheat != 0 && hooktype != 0)
-		ocarina_do_code();
-	*/
+/*        
+		if (hooktype != 0)
+                ocarina_do_code();
 
-//	DCFlushRange((void*)0x80000000, 0xA00000);
+		gprintf("\n\nEntry Point is: %0x8\n", p_entry);
+		gprintf("Lowmem:\n\n");
+//      ghexdump((void*)0x80000000, 0x3f00);
+*/
 
-	/* Set time */
-	__Disc_SetTime();
+        /* Set time */
+        __Disc_SetTime();
 
-	/* Set an appropriate video mode */
-	__Disc_SetVMode();
+        /* Set an appropriate video mode */
+        __Disc_SetVMode();
 
-	VIDEO_SetBlack(TRUE);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	VIDEO_WaitVSync();
+        u8 temp_data[4];
 
-	usleep(100 * 1000);
+        // fix for PeppaPig
+        memcpy((char *) &temp_data, (void*)0x800000F4,4);
 
-	u8 temp_data[4];
+        usleep(100 * 1000);
 
-	// fix for PeppaPig
-	memcpy((char *) &temp_data, (void*)0x800000F4,4);
+        /* Shutdown IOS subsystems */
+        SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 
-	/* Shutdown IOS subsystems */
-	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
-	/*IRQ_Disable(); //Seems to break start of other games !?
-	__IOS_ShutdownSubsystems();
-	__exception_closeall();*/ 
+         /* Originally from tueidj - taken from NeoGamme (thx) */
+        *(vu32*)0xCC003024 = 1;
+        
+        // fix for PeppaPig
+        memcpy((void*)0x800000F4,(char *) &temp_data, 4);
 
-	// fix for PeppaPig
-	memcpy((void*)0x800000F4,(char *) &temp_data, 4);
+        appentrypoint = (u32) p_entry;
+        
+        //gprintf("Jumping to entrypoint\n");
+        
+        if (hooktype != 0)
+        {
+                __asm__(
+                        "lis %r3, appentrypoint@h\n"
+                        "ori %r3, %r3, appentrypoint@l\n"
+                        "lwz %r3, 0(%r3)\n"
+                        "mtlr %r3\n"
+                        "nop\n"
+                        "lis %r3, 0x8000\n"
+                        "nop\n"
+                        "ori %r3, %r3, 0x18A8\n"
+                        "nop\n"
+                        "mtctr %r3\n"
+                        "bctr\n"
+                );
+        }
+        else
+        {
+                __asm__(
+                        "lis %r3, appentrypoint@h\n"
+                        "ori %r3, %r3, appentrypoint@l\n"
+                        "lwz %r3, 0(%r3)\n"
+                        "mtlr %r3\n"
+                        "blr\n"
+                );
+        }
 
-	//*(u32*)0xCC003024 = wdm_parameter; /* Originally from tueidj */
-
-	appentrypoint = (u32) p_entry;
-	
-	printd("Jumping to entrypoint\n");
-	
-	if (cheat != 0)
-	{
-		__asm__(
-			"lis %r3, appentrypoint@h\n"
-			"ori %r3, %r3, appentrypoint@l\n"
-			"lwz %r3, 0(%r3)\n"
-			"mtlr %r3\n"
-			"lis %r3, 0x8000\n"
-			"ori %r3, %r3, 0x18A8\n"
-			"mtctr %r3\n"
-			"bctr\n"
-		);
-	}
-	else
-	{
-		__asm__(
-			"lis %r3, appentrypoint@h\n"
-			"ori %r3, %r3, appentrypoint@l\n"
-			"lwz %r3, 0(%r3)\n"
-			"mtlr %r3\n"
-			"blr\n"
-		);
-	}
-
-	return 0;
+        return 0;
 }
 
 s32 Disc_OpenPartition(u8 *id)
@@ -451,14 +433,14 @@ s32 Disc_OpenPartition(u8 *id)
 	return 0;
 }
 
-s32 Disc_WiiBoot(bool dvd, u8 vidMode, const u8 *cheat, u32 cheatSize, bool vipatch, bool countryString, bool error002Fix, const u8 *altdol, u32 altdolLen, u8 patchVidModes, u32 rtrn, u8 patchDiscCheck, char *altDolDir, u32 wdm_parameter)
+s32 Disc_WiiBoot(u8 vidMode, bool vipatch, bool countryString, u8 patchVidModes)
 {
-	u64 offset;
+        u64 offset;
 
-	/* Find game partition offset */
-	s32 ret = __Disc_FindPartition(&offset);
-	if (ret < 0) return ret;
+        /* Find game partition offset */
+        s32 ret = __Disc_FindPartition(&offset);
+        if (ret < 0) return ret;
 
-	/* Boot partition */
-	return Disc_BootPartition(offset, vidMode, cheat, cheatSize, vipatch, countryString, error002Fix, altdol, altdolLen, patchVidModes, rtrn, patchDiscCheck, dvd, altDolDir, wdm_parameter);
+        /* Boot partition */
+        return Disc_BootPartition(offset, vidMode, vipatch, countryString, patchVidModes);
 }

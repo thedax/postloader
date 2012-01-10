@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gccore.h>
+#include <network.h>
 #include <wiiuse/wpad.h>
 #include <sys/unistd.h>
 #include "disc.h"
+#include "patchcode.h"
 
-#define VER "[0.1]"
+#define VER "[0.3]"
 #define POSTLOADER_SD "sd://postloader.dol"
 #define POSTLOADER_USB "usb://postloader.dol"
 #define PRII_WII_MENU 0x50756E65
@@ -20,6 +22,14 @@ void green_fix(void); //GREENSCREEN FIX
 int main(int argc, char **argv) 
 	{
 	//InitVideo ();
+	
+	VIDEO_Init();
+	VIDEO_SetBlack(true);  // Disable video output during initialisation
+
+	net_wc24cleanup();
+
+	configbytes[0] = 0xCD;
+	//configbytes[0] = 0;
 
 	printd ("\n");
 	printd ("---------------------------------------------------------------------------\n");
@@ -44,7 +54,9 @@ int main(int argc, char **argv)
 	rr = Disc_ReadHeader(header);
 	printd("Disc_ReadHeader() returned: %d\n", rr);
 
-	Disc_WiiBoot (true, 0, NULL, 0, FALSE, FALSE, TRUE, NULL, 0, 0, 0, 0, 0, 0);
+	//green_fix ();
+	Disc_WiiBoot (0, FALSE, TRUE, 0);
+	//Disc_WiiBoot (0, TRUE, TRUE, 0);
 	
 	exit (0);
 	}

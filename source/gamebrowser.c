@@ -1437,6 +1437,12 @@ int GameBrowser (void)
 			redraw = 1;
 			break;
 			}
+			
+		if (vars.themeReloaded) // Restart the browser
+			{
+			vars.themeReloaded = 0;
+			browserRet = INTERACTIVE_RET_TOGAMES;
+			}
 		
 		usleep (5000);
 		}

@@ -1390,6 +1390,12 @@ int AppBrowser (void)
 			break;
 			}
 		
+		if (vars.themeReloaded) // Restart the browser
+			{
+			vars.themeReloaded = 0;
+			browserRet = INTERACTIVE_RET_TOHOMEBREW;
+			}
+
 		usleep (5000);
 		}
 

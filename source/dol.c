@@ -172,11 +172,13 @@ int DolBootPrepare (s_run *run)
 void DolBoot (s_run *run)
 	{
 	u32 level;
-
+	
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
+	
+	//entrypoint hbboot_ep = (entrypoint) load_dol(booter_dol, NULL);
 
 	int fix = 0;
 	if (run) 

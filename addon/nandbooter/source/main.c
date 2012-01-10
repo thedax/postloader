@@ -791,6 +791,10 @@ void bootTitle(u64 titleid)
 	// Set the clock
 	settime(secs_to_ticks(time(NULL) - 946684800));
 
+	// Should be required by online play..
+	*(u32 *)0x80000000 = TITLE_LOWER(titleid);
+	DCFlushRange((void*)0x80000000, 32);
+
 	// Memory setup when booting the main.dol
 	if (entryPoint != 0x3400)
 	{

@@ -172,10 +172,10 @@ void grlib_DrawIRCursor (void);
 
 int grlib_dosm (const char *text, ...);
 
-int grlib_menuAddItem (char *item, int id, const char *itemsstring, ...);
-int grlib_menuAddSeparator (char *item);
-int grlib_menuAddColumn (char *item);
-int grlib_menuAddCheckItem (char *item, int id, bool check, const char *itemsstring, ...);
+int grlib_menuAddItem (char *menu, int id, const char *itemsstring, ...);
+int grlib_menuAddSeparator (char *menu);
+int grlib_menuAddColumn (char *menu);
+int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...);
 int grlib_menu (char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
 
 void grlib_Message (const char *text, ...);

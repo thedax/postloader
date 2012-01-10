@@ -30,6 +30,8 @@ s32 Nand_Mount(nandDevice *dev)
     fd = IOS_Open(fat, 0);
     if (fd < 0)
         return fd;
+		
+	Print ("Nand_Mount: ios_rev = %d\n", rev);
 
     /* Prepare vector */
     if(rev >= 21 && rev < 30000)
@@ -54,6 +56,8 @@ s32 Nand_Mount(nandDevice *dev)
 
     /* Mount device */
     ret = IOS_Ioctlv(fd, dev->mountCmd, inlen, 0, vector);
+
+	Print ("Nand_Mount: IOS_Ioctlv = %d\n", ret);
 
     /* Close FAT module */
     IOS_Close(fd);
@@ -146,9 +150,15 @@ s32 Nand_Enable(nandDevice *dev, char *path)
 		ret = IOS_Ioctlv(fd, 100, 2, 0, (ioctlv *)buffer); 
 		
 		free (buffer);
+		
+		Print ("Nand_Enable IOS_Ioctlv = %d\n", ret);
 		}
 	else
+		{
 		ret = IOS_Ioctl(fd, 100, inbuf, sizeof(inbuf), NULL, 0);
+		
+		Print ("Nand_Enable IOS_Ioctl = %d\n", ret);
+		}
 
 	/* Close /dev/fs */
 	IOS_Close(fd);
@@ -230,6 +240,8 @@ s32 Enable_Emu(int selection, char *path)
 
 	if (ret < 0) 
 		return ret;
+		
+	Print ("Enabling Nand\n");
 
 	ret = Nand_Enable(ndev, path);
 	if (ret < 0) 
@@ -237,6 +249,8 @@ s32 Enable_Emu(int selection, char *path)
 		Nand_Unmount(ndev);
 		return ret;
 	}
+	
+	Print ("Nand Mounted= %d\n", ret);
 
 	mounted = selection;
 	return 0;

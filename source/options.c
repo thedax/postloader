@@ -160,6 +160,7 @@ void ShowAboutMenu (void)
 	grlib_menuAddItem (options, 2,  "Check online for updates");
 	grlib_menuAddItem (options, 11,  "Reboot...");
 	grlib_menuAddItem (options, 12,  "Clean channel/games configuration files...");
+	grlib_menuAddItem (options, 14,  "Change theme...");
 	
 	if (vars.neek == NEEK_2o && IsDevValid (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 		grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
@@ -215,6 +216,11 @@ void ShowAboutMenu (void)
 			grlib_menu ("Succesfully installed", "OK");
 		else
 			grlib_menu ("Something gone wrong. Is priiloader installed in nand ?", "OK");
+		}
+
+	if (item == 14)
+		{
+		ThemeSelect();
 		}
 
 	if (item == MENU_CHANGENEEK2o)
