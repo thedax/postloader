@@ -2,6 +2,21 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.53.2
+
+* Changed sneek/uneek/neek2o detection routine
+* pl3 configuration is written before running the game.
+* DML: when pal is selected, video mode should be forced to 576i
+* corrected some typos (thx zfa)
+
+postLoader 3.53.1
+
+* Added sram video patch options
+
+postLoader 3.53.0
+
+* Added support for DML (thx to wiipower&neogamma for source code example)
+
 postLoader 3.52.0
 
 * Added theme selector (theme package > 2.0 required, read readmii inside package), press [home]->options->change theme

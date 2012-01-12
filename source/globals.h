@@ -7,8 +7,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 52
-#define VER "3.52.0"
+#define BUILD 53
+#define VER "3.53.2"
 #define CFGVER "PLCFGV0007"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -25,6 +25,9 @@
 #define DEV_NONE -1
 #define DEV_SD 0
 #define DEV_USB 1
+
+#define DMLVIDEOMODE_NTSC 0
+#define DMLVIDEOMODE_PAL 1
 
 enum {
 	INTERACTIVE_RET_NONE=0,
@@ -310,6 +313,8 @@ typedef struct
 	
 	bool showHidden; 		// if TRUE, apps marcked hidden will be showed
 	char pwd[PWDMAXLEN+1];	// Classic wii pwd RLUD12AB, up to 8 chars
+	
+	u32 dmlvideomode;		// Current video mode for dml
 	}
 s_config;
 
@@ -431,3 +436,6 @@ void RunLoader(void);
 
 // Themes
 int ThemeSelect (void);
+
+// DML
+int DMLSelect (void);

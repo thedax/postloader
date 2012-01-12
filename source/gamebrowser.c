@@ -680,7 +680,7 @@ static void ShowFilterMenu (void)
 			grlib_menuAddCheckItem (buff, 100 + i, f[i], flt[i]);
 			}
 		
-		item = grlib_menu ("Filter menu'\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
+		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
 
 		if (item == MNUBTN_PLUS)
 			{
@@ -1109,7 +1109,7 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Channel menu'", buff);
+	int item = grlib_menu ("Channel menu", buff);
 		
 	if (item == 9)
 		{
@@ -1376,6 +1376,12 @@ int GameBrowser (void)
 				redraw = 1;
 				}
 				
+			if (btn & WPAD_BUTTON_UP)
+				{
+				DMLSelect ();
+				redraw = 1;
+				}
+
 			if (btn & WPAD_BUTTON_HOME)
 				{
 				ShowMainMenu ();

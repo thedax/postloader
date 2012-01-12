@@ -136,10 +136,28 @@ int MasterInterface (int full, int showCursor, int icon, const char *text, ...)
 	return 0;
 	}
 	
+bool SenseSneek (bool isfsinit)
+	{
+	bool ret = true;
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	strcpy (path, "/SNEEK/kernel.bin");
+	
+	if (isfsinit) ISFS_Initialize ();
+	
+	s32 fd = ISFS_Open(path, ISFS_OPEN_READ);
+	if (fd < 0)
+		ret = false;
+	else
+		ISFS_Close (fd);
+	
+	if (isfsinit) ISFS_Deinitialize ();
+	
+	return ret;
+	}
+	
 void CheckNeek (void)
 	{
-	u32 boot2version;
-
 #ifdef DOLPHINE	
 	vars.neek = 1;
 	vars.usbtime = 1;
@@ -148,8 +166,7 @@ void CheckNeek (void)
 
 	vars.usbtime = 15;
 
-	ES_GetBoot2Version(&boot2version);
-	if (boot2version >= 5) 
+	if (SenseSneek(true)) 
 		{
 		vars.neek = NEEK_USB;
 		vars.usbtime = 1;
@@ -248,7 +265,7 @@ int main(int argc, char **argv)
 		
 		grlib_SetRedrawCallback (Redraw, NULL);
 		
-		strcpy (buff, "Boot to WiiMenu'##0");
+		strcpy (buff, "Boot to WiiMenu##0");
 		
 		if (IsDevValid(DEV_SD)) strcat (buff, "|Create on SD and start postLoader##1");
 		if (IsDevValid(DEV_USB)) strcat (buff, "|Create on USB and start postLoader##2");
@@ -306,7 +323,7 @@ int main(int argc, char **argv)
 			if (interactive || (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) break;
 			}
 		}
-
+		
 	sprintf (vars.tempPath, "%s://ploader/temp", vars.defMount);
 	
 	ret = INTERACTIVE_RET_NONE;
@@ -355,6 +372,13 @@ int main(int argc, char **argv)
 
 	if (ret == INTERACTIVE_RET_DISC)
 		{
+		// Tell DML to boot the game from sd card
+		*(u32 *)0x80001800 = 0xB002D105;
+		DCFlushRange((void *)(0x80001800), 4);
+		ICInvalidateRange((void *)(0x80001800), 4);			
+		
+		*(volatile unsigned int *)0xCC003024 |= 7;
+		
 		Disc ();
 		}
 

@@ -879,7 +879,7 @@ static void ShowMainMenu (void)
 	grlib_menuAddSeparator (buff);
 	grlib_menuAddItem (buff, -1, "Close");
 		
-	int item = grlib_menu ("Homebrew menu'", buff);
+	int item = grlib_menu ("Homebrew menu", buff);
 		
 	if (item == 0)
 		{

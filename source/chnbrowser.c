@@ -799,7 +799,7 @@ static void ShowFilterMenu (void)
 		for (item = 0; item < CHANNELS_MAXFILTERS; item++)
 			grlib_menuAddCheckItem (buff, 100 + item, f[item], &CHANNELS_NAMES[item][1]);
 		
-		item = grlib_menu ("Filter menu':\nPress (B) to close, (+) Select all, (-) Deselect all", buff);
+		item = grlib_menu ("Filter menu:\nPress (B) to close, (+) Select all, (-) Deselect all", buff);
 
 		if (item == MNUBTN_PLUS)
 			{
@@ -1005,7 +1005,7 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Channel menu'", buff);
+	int item = grlib_menu ("Channel menu", buff);
 		
 	if (item == 100)
 		{

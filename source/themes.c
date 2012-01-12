@@ -1,5 +1,5 @@
 /*
-Themes selection menu'
+Themes selection menu
 */
 
 #include <stdarg.h>
