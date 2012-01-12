@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.53.3
+
+* Added DML to game menu [home]->Game options->Show DML menu (or press UP on d-pad)
+
 postLoader 3.53.2
 
 * Changed sneek/uneek/neek2o detection routine

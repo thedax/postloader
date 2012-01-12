@@ -1021,6 +1021,8 @@ static void ShowGamesOptions (void)
 	
 	buff[0] = '\0';
 	
+	strcat (buff, "Show DML menu...##14||");
+	
 	strcat (buff, "Download covers...##10||");
 	if (vars.neek != NEEK_NONE)
 		{
@@ -1067,6 +1069,12 @@ static void ShowGamesOptions (void)
 		{
 		CleanTitleConfiguration();
 		}
+	
+	if (item == 14)
+		{
+		DMLSelect ();
+		}
+		
 	}
 
 static void ShowMainMenu (void)
