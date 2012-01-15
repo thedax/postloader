@@ -6,29 +6,25 @@
 #include <ogc/video_types.h>
 #include <dirent.h>
 #include "globals.h"
+#include "bin2o.h"
 
-static bool Play (char * fn) // return true interrupt
+static bool Play (char * fn) // return true interrupt the screensaver
 	{
+	static int xs = 0;
 	GRRLIB_texImg *img;
-
-	img = GRRLIB_LoadTextureFromFile (fn);
 	
-	//grlib_dosm ("%s: 0x%X", fn, img);
+	if (fn == NULL)
+		img = GRRLIB_LoadTexturePNG (icon_png);
+	else
+		img = GRRLIB_LoadTextureFromFile (fn);
 
-	if (!img) return;
+	if (!img) return false;
 	
 	int x = (rand () % 500) + 70;
 	int y = (rand () % 300) + 90;
 
-	int xt = (rand () % 400) + 140;
-	int yt = (rand () % 400) + 40;
-
 	GRRLIB_Rectangle (0, 0, 640, 480, RGBA (0,0,0,255), 1 );
-	grlib_printf (xt,yt-5, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
 	grlib_PushScreen ();
-	
-	//x = 320;
-	//y = 200;
 	
 	int i;
 	float z = 0;
@@ -39,18 +35,50 @@ static bool Play (char * fn) // return true interrupt
 
 	for (i = 360; i >= 0; i-=4)
 		{
-		//grlib_dosm ("%d", i);
 		grlib_PopScreen ();
 		grlib_DrawImgCenter (x, y, z, z/ratio, img, (float)i, RGBA(255,255,255,255));
+		
+		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
+		if (xs > 1000) xs = -360;
 		
 		grlib_Render ();
 		usleep (1000);
 		
-		if (grlib_GetUserInput()) return true;
+		if (grlib_GetUserInput() || grlibSettings.wiiswitch_reset || grlibSettings.wiiswitch_poweroff) return true;
 		
-		z++;
+		if (fn == NULL)
+			z += 5;
+		else
+			z += 3;
 		}
-	usleep (1000 * 1000);
+	
+	for (i = 0; i < 100; i++)
+		{
+		grlib_PopScreen ();
+		grlib_DrawImgCenter (x, y, z, z/ratio, img, 0, RGBA(255,255,255,255));
+		
+		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
+		if (xs > 1000) xs = -360;
+		
+		grlib_Render ();
+		usleep (1000);
+		
+		if (grlib_GetUserInput() || grlibSettings.wiiswitch_reset || grlibSettings.wiiswitch_poweroff) return true;
+		}
+
+	for (i = 255; i >= 0; i -= 5)
+		{
+		grlib_PopScreen ();
+		grlib_DrawImgCenter (x, y, z, z/ratio, img, 0, RGBA(255,255,255,i));
+		
+		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
+		if (xs > 1000) xs = -360;
+		
+		grlib_Render ();
+		usleep (1000);
+		
+		if (grlib_GetUserInput() || grlibSettings.wiiswitch_reset || grlibSettings.wiiswitch_poweroff) return true;
+		}
 
 	GRRLIB_FreeTexture (img);
 	
@@ -59,7 +87,7 @@ static bool Play (char * fn) // return true interrupt
 
 static bool ScreenSaver (void)
 	{
-	bool ret;
+	bool ret = false;
 	DIR *pdir;
 	struct dirent *pent;
 	int fr;
@@ -72,18 +100,25 @@ static bool ScreenSaver (void)
 	
 	sprintf (path, "%s://ploader/covers", vars.mount[DEV_SD]);
 		
-	pdir=opendir(path);
-	
-	while ((pent=readdir(pdir)) != NULL) 
+	do
 		{
-		if (strstr (pent->d_name, ".png") != NULL || strstr (pent->d_name, ".PNG") != NULL)
+		pdir=opendir(path);
+		
+		while ((pent=readdir(pdir)) != NULL) 
 			{
-			sprintf (fn, "%s/%s", path, pent->d_name);
-			
-			ret = Play (fn);
-			if (ret) break;
+			if (strstr (pent->d_name, ".png") != NULL || strstr (pent->d_name, ".PNG") != NULL)
+				{
+				sprintf (fn, "%s/%s", path, pent->d_name);
+				
+				ret = Play (fn);
+				if (ret) break;
+				
+				ret = Play (NULL);
+				if (ret) break;
+				}
 			}
 		}
+	while (!ret);
 		
 	closedir(pdir);
 	

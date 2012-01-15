@@ -65,12 +65,10 @@ typedef struct
 	
 	bool wiiswitch_reset;		// true if user press reset
 	bool wiiswitch_poweroff;	// true if user use wiimote or button on the console
-	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
 	
+	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
 	u32 autoCloseMenu;			// 0 disabled, otherwise num of second after whitch it will be closed
-
-	u32 buttonActivity;			// Every time a button is pressed this is incremented
-
+	u32 buttonActivity;			// Every time a button is pressed this is incremented, usefull to track activity
 	
 	// Theme managment
 	s_grlibTheme theme;
