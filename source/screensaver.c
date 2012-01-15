@@ -116,7 +116,7 @@ bool LiveCheck (int reset)
 			ss ++;
 			}
 			
-		if (ss > 2)
+		if (ss > 60)
 			return ScreenSaver ();
 		}
 	else
