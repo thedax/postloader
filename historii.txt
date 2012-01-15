@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.54.3
+
+* Forgot to update internal build number
+
 postLoader 3.54.2
 
 * Added support for reset and power off buttons during screen saver
