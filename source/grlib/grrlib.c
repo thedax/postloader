@@ -38,6 +38,8 @@ THE SOFTWARE.
 
 #define DEFAULT_FIFO_SIZE (256 * 1024) /**< GX fifo buffer size. */
 
+#define ENABLE_JPEG
+
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
 
@@ -90,7 +92,9 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
     switch (rmode->viTVMode) {
         case VI_DEBUG_PAL:  // PAL 50hz 576i
             //rmode = &TVPal574IntDfScale;
-            rmode = &TVPal528IntDf; // BC ...this is still wrong, but "less bad" for now
+            // rmode = &TVPal528IntDf; // BC ...this is still wrong, but "less bad" for now
+			//rmode = &TVPal528Int;
+			rmode = &TVPal574IntDfScale;
             break;
     }
 	
@@ -784,6 +788,7 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
  * @param my_size Size of the JPEG buffer to load.
  * @return A GRRLIB_texImg structure filled with image information.
  */
+ #ifdef ENABLE_JPEG
 GRRLIB_texImg*  GRRLIB_LoadTextureJPGEx (const u8 *my_jpg, const int my_size) {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -830,6 +835,7 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPGEx (const u8 *my_jpg, const int my_size) {
     GRRLIB_FlushTex( my_texture );
     return my_texture;
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // GRRLIB_snapshot

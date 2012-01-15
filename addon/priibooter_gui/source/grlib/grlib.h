@@ -16,6 +16,7 @@
 #define MNUBTN_B -1	// cancel
 #define MNUBTN_PLUS -2
 #define MNUBTN_MINUS -3
+#define MNUBTN_TOUT -4	// Menu has gone in timeout
 
 // THEMED FLAGS
 #define DSTF_NONE 0x0
@@ -65,6 +66,8 @@ typedef struct
 	bool wiiswitch_reset;		// true if user press reset
 	bool wiiswitch_poweroff;	// true if user use wiimote or button on the console
 	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
+	
+	u32 autoCloseMenu;			// 0 disabled, otherwise num of second after whitch it will be closed
 	
 	// Theme managment
 	s_grlibTheme theme;
@@ -172,9 +175,10 @@ void grlib_DrawIRCursor (void);
 
 int grlib_dosm (const char *text, ...);
 
-int grlib_menuAddItem (char *item, int id, const char *itemsstring, ...);
-int grlib_menuAddSeparator (char *item);
-int grlib_menuAddCheckItem (char *item, int id, bool check, const char *itemsstring, ...);
+int grlib_menuAddItem (char *menu, int id, const char *itemsstring, ...);
+int grlib_menuAddSeparator (char *menu);
+int grlib_menuAddColumn (char *menu);
+int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...);
 int grlib_menu (char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
 
 void grlib_Message (const char *text, ...);

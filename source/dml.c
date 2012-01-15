@@ -92,10 +92,15 @@ static void SetGCVideoMode (void)
 		VIDEO_SetBlack(TRUE);
 		VIDEO_Configure(rmode);
 		xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+
 		VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
 		VIDEO_SetNextFramebuffer(xfb);
 
 		VIDEO_Flush();
+		VIDEO_WaitVSync();
+		if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+
+		VIDEO_SetBlack(FALSE);
 		VIDEO_WaitVSync();
 		if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
 		}
@@ -151,6 +156,30 @@ static void GetName (char *id, char *name)
 	name[31] = 0;
 	}
 
+static int VideoModeMenu (void)
+	{
+	int ret;
+	char menu[256];
+
+	do
+		{
+		*menu = '\0';
+		grlib_menuAddCheckItem (menu, 100, 1 - config.dmlvideomode, "NTSC mode");
+		grlib_menuAddCheckItem (menu, 101, config.dmlvideomode, "PAL 576i mode");
+
+		ret = grlib_menu ("DML options\n\nPress (+/-) to return to game list\nPress (B) to close", menu);
+		
+		if (ret == -1) return 0;
+		if (ret == MNUBTN_PLUS || ret == MNUBTN_MINUS) return 1;
+		
+		if (ret == 100)	config.dmlvideomode = DMLVIDEOMODE_NTSC;
+		if (ret == 101)	config.dmlvideomode = DMLVIDEOMODE_PAL;
+		}
+	while (ret >= 100 || ret < 0);
+	
+	return 1;
+	}
+
 int DMLSelect (void)
 	{
 	int ret;
@@ -203,19 +232,26 @@ int DMLSelect (void)
 			
 		closedir(pdir);
 
+#ifndef DOLPHINE
 		if (i == 0)
 			{
 			grlib_menu ("No GC Games found", "OK");
 			return 0;
 			}
+#else
+		grlib_menuAddItem (menu, i, "fake game 1");
+		grlib_menuAddItem (menu, i, "fake game 2");
+		grlib_menuAddItem (menu, i, "fake game 3");
+
+#endif
 		
-		grlib_menuAddColumn (menu);
-		
-		grlib_menuAddCheckItem (menu, 100, 1 - config.dmlvideomode, "NTSC mode");
-		grlib_menuAddCheckItem (menu, 101, config.dmlvideomode, "PAL 576i mode");
-		
-		ret = grlib_menu ("Please select a GC Games\n\nPress (B) to close", menu);
+		ret = grlib_menu ("Please select a GameCube Game\n\nPress (+/-) to show options\nPress (B) to close", menu);
 		if (ret == -1) return 0;
+		if (ret == MNUBTN_PLUS || ret == MNUBTN_MINUS)
+			{
+			if (!VideoModeMenu ()) break;
+			}
+
 		if (ret == 100)	config.dmlvideomode = DMLVIDEOMODE_NTSC;
 		if (ret == 101)	config.dmlvideomode = DMLVIDEOMODE_PAL;
 		}

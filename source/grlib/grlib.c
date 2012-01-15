@@ -411,6 +411,24 @@ int grlib_DrawCenteredWindow (char * title, int w, int h, bool grayoutBackground
 
 	return 0;
 	}
+
+void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color)
+	{
+	f32 zx, zy;
+	
+	if (!tex) return;
+	
+	zx = (f32)w / tex->w;
+	zy = (f32)h / tex->h;
+	
+	GRRLIB_SetHandle (tex, tex->w / 2, tex->h / 2);
+	//GRRLIB_SetHandle (tex, 0,0);
+	
+	x -= tex->w/2;
+	y -= tex->w/2;
+	
+	GRRLIB_DrawImg (x, y, tex, angle, zx, zy, color ); 
+	}
 	
 void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color)
 	{
@@ -540,6 +558,7 @@ int grlib_GetUserInput (void)
 	// As usual wiimotes will have priority
 	if (wbtn)
 		{
+		grlibSettings.buttonActivity ++;
 		// Wait until button is released
 		
 		while (WPAD_ButtonsDown(0)) WPAD_ScanPads();
@@ -549,6 +568,8 @@ int grlib_GetUserInput (void)
 	// Then gc
 	if (gcbtn)
 		{
+		grlibSettings.buttonActivity ++;
+		
 		// Wait until button is released
 		
 		while (PAD_ButtonsDown(0)) PAD_ScanPads();
@@ -567,6 +588,8 @@ int grlib_GetUserInput (void)
 	// Classic
 	if (cbtn)
 		{
+		grlibSettings.buttonActivity ++;
+		
 		while (e.classic.btns)
 			{
 			WPAD_ScanPads();  // Scan the Wiimotes

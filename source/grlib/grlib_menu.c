@@ -95,7 +95,8 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	char buff[1024];
 	char *line;
 	u32 btn;
-
+	time_t t;
+	
 	int cols[MAXCOLS];
 	s_grlibobj goWindow, goItems[MAXITEMS];
 	int retcodes[MAXITEMS];
@@ -332,9 +333,13 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 		
 	grlib_PushScreen ();
 	grlib_Render ();
-
+	
+	t = time(NULL) + grlibSettings.autoCloseMenu;
 	do 
 		{
+		if (grlibSettings.autoCloseMenu > 0 && t < time(NULL))
+			{item = MNUBTN_TOUT; break;}
+		
 		grlib_PopScreen ();
 		
 		// Check for menu

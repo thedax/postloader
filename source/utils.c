@@ -367,25 +367,3 @@ bool IsPngBuff (u8 *buff, int size)
 	return true;
 	}
 	
-// Do burnin checking and hdd live
-void LiveCheck (int reset)
-	{
-	static time_t t = 0;
-	
-	if (reset)
-		t = time(NULL);
-		
-	if ((time(NULL) - t) > 30 && IsDevValid(DEV_USB))
-		{
-		t = time(NULL);
-		
-		FILE *f;
-		char path[PATHMAX];
-		sprintf (path, "%s://pllive.dat", vars.mount[DEV_USB]);
-		f = fopen (path, "wb");
-		fwrite (f, 1, sizeof(FILE), f);
-		fclose (f);
-		
-		unlink (path);
-		}
-	}

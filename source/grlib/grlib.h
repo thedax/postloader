@@ -16,6 +16,7 @@
 #define MNUBTN_B -1	// cancel
 #define MNUBTN_PLUS -2
 #define MNUBTN_MINUS -3
+#define MNUBTN_TOUT -4	// Menu has gone in timeout
 
 // THEMED FLAGS
 #define DSTF_NONE 0x0
@@ -65,6 +66,11 @@ typedef struct
 	bool wiiswitch_reset;		// true if user press reset
 	bool wiiswitch_poweroff;	// true if user use wiimote or button on the console
 	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
+	
+	u32 autoCloseMenu;			// 0 disabled, otherwise num of second after whitch it will be closed
+
+	u32 buttonActivity;			// Every time a button is pressed this is incremented
+
 	
 	// Theme managment
 	s_grlibTheme theme;
@@ -162,6 +168,7 @@ void grlib_DrawBoldEmptySquare ( s_grlibobj *b );
 
 void grlib_MagObject ( s_grlibobj *bt, s_grlibobj *bs, f32 magx, f32 magy);
 
+void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color);
 void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color);
 void grlib_DrawTile (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color, int frame);
 void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th, GRRLIB_texImg * tex, f32 angle, u32 color);

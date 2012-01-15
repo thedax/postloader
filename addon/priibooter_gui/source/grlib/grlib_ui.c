@@ -105,11 +105,13 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 					GRLIB_ALIGNCENTER, 0, text
 					);
 	else
+		{
 		grlib_printf (
-					b->x1 + 10, 
+					b->x1 + 5, 
 					b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, 
 					GRLIB_ALIGNLEFT, 0, text
 					);
+		}
 	}
 	
 void grlib_Message (const char *text, ...) // ab > 0 show and wait ab second, otherwhise, wait a or b press

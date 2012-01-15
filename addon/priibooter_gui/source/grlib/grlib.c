@@ -69,14 +69,13 @@ void grlib_Init (void)
     WPAD_Init();
 	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS_ACC_IR);
 
-	GRRLIB_Init(0);
-
-	/*
 	VIDEO_Init();
 	VIDEO_SetBlack(true);  // Disable video output during initialisation
-    GRRLIB_Init(1);
-	*/
-	
+	VIDEO_WaitVSync();
+	VIDEO_WaitVSync();
+
+    GRRLIB_Init(1,0);
+
 	WPAD_SetVRes(0, 640, 480);
 	WPAD_SetPowerButtonCallback( wmpower_cb );
 	

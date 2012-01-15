@@ -15,7 +15,7 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 #include <sdcard/wiisd_io.h>
 #include "../build/bin2o.h"
 
-#define VER "1.1"
+#define VER "1.2"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -122,7 +122,18 @@ bool GetFileToBoot (void)
 	{
 	bool ret = false;
 	
-	if (fatMountSimple("fat", &__io_wiisd))
+	if (ret == false && fatMountSimple("fat", &__io_wiisd))
+		{
+		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
+		if (ret == false) ret = LoadFile("fat://postloader.dol");
+		if (ret == false) ret = LoadFile("fat://boot.dol");
+		if (ret == false) ret = LoadFile("fat://boot.elf");
+		
+		fatUnmount("fat:/");
+		__io_wiisd.shutdown();
+		}
+
+	if (ret == false && fatMountSimple("fat", &__io_usbstorage))
 		{
 		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
 		if (ret == false) ret = LoadFile("fat://postloader.dol");

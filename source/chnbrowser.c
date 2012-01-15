@@ -660,7 +660,7 @@ static int FindSpot (void)
 	else
 		if (time(NULL) - t > 0 && chansSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Run title (B) Title menu (1) to HB mode (2) Filters");
+			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Title menu (1) Switch mode (2) Filters");
 			}
 	
 	return chansSelected;
@@ -1086,10 +1086,7 @@ static void Redraw (void)
 	
 	Debug ("chbrowser: begin Redraw");
 
-	if (!theme.ok)
-		Video_DrawBackgroud (1);
-	else
-		GRRLIB_DrawImg( 0, 0, theme.bkg, 0, 1, 1, RGBA(255, 255, 255, 255) ); 
+	Video_DrawBackgroud (1);
 	
 	if (config.chnBrowser.nand == NAND_REAL)
 		strcpy (sdev, "Real NAND");
@@ -1257,7 +1254,7 @@ int ChnBrowser (void)
 	// Loop forever
     while (browserRet == -1) 
 		{
-		LiveCheck (0);
+		if (LiveCheck (0)) redraw = 1;
 		
 		btn = grlib_GetUserInput();
 		

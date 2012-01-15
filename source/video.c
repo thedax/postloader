@@ -79,7 +79,13 @@ void Video_Deinit (void)
 
 void Video_DrawBackgroud (int type)
 	{
-	GRRLIB_DrawImg( 0, 0, bkg[type], 0, 1, 1, RGBA(255, 255, 255, 255) ); 
+	if (type == 1 && theme.ok)
+		{
+		//GRRLIB_DrawImg( 0, 0, theme.bkg, 0, 1, 1, RGBA(255, 255, 255, 255) ); 
+		grlib_DrawImg ( 0, 0, theme.bkg->w, theme.bkg->h - 10, theme.bkg, 0, RGBA(255, 255, 255, 255) ); 
+		}
+	else
+		GRRLIB_DrawImg( 0, 0, bkg[type], 0, 1, 1, RGBA(255, 255, 255, 255) ); 
 	}
 
 void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy)
@@ -281,6 +287,16 @@ void Video_LoadTheme (int init)
 			
 			grlibSettings.fontBMF_reverse = 0;
 			}
+			
+		if (rmode->viTVMode == VI_DEBUG_PAL)
+			{
+			theme.hb_line1Y /= 1.01;
+			theme.hb_line2Y /= 1.01;
+			theme.hb_line3Y /= 1.01;
+			
+			theme.ch_line1Y /= 1.01;
+			theme.ch_line2Y /= 1.01;
+			}
 		}
 	else
 		{
@@ -310,4 +326,3 @@ void Video_LoadTheme (int init)
 		GRRLIB_FreeTexture (grlibSettings.theme.texWindowBk);
 		}
 	}
-	

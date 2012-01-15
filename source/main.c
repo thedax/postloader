@@ -328,6 +328,8 @@ int main(int argc, char **argv)
 	
 	ret = INTERACTIVE_RET_NONE;
 	
+	grlibSettings.autoCloseMenu = 60;
+	
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && interactive)
 		{
 		Video_LoadTheme (1);

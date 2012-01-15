@@ -2,6 +2,22 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.54.0
+
+* Corrected PAL 576i video output.
+* Corrected for hb mode the display of text about application name and other info.
+* Fixed a lot of texts.
+* neekbooter 1.2: Added the support for usb other then sd/isfs. This will be the base for the new forwarder.
+* DML If a wii game is started, returning to postloader without shutting down the wii, will prevent to show video for dml games. Fixed.
+* DML video options are now accessible from DML menu' pressing +/-.
+* Added timed auto close menu (needed for future screensaver and for priibootergui)
+* Modified GRRLIB to disable jpeg support if needed (smaller code output, used for priibootergui)
+* added a very (VERY) basic screensever (triggered after 60 seconds of inactivity, this time will be modificable in future)
+* priibootergui 0.4->1.0 (it is stable)
+	> priibootergui: user can now press "reset" on the console to go directly to SM. This is usefull if user is lost with controllers out of sync.
+	> priibootergui: if menu is open it will autoclosed after 20 second.
+* Some code clean.
+
 postLoader 3.53.3
 
 * Added DML to game menu [home]->Game options->Show DML menu (or press UP on d-pad)

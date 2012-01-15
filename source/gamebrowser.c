@@ -500,7 +500,6 @@ static GRRLIB_texImg * GetTitleTexture (int ai)
 	
 	sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
 	return GRRLIB_LoadTextureFromFile (path);
-	return NULL;
 	}
 
 static int FindSpot (void)
@@ -560,7 +559,7 @@ static int FindSpot (void)
 	else
 		if (time(NULL) - t > 0 && gamesSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Run title (B) Title menu (1) to HB mode (2) Filters");
+			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (1) Switch mode (2) Filters (UP) dml (DW) goto page");
 			}
 	
 	return gamesSelected;
@@ -1193,10 +1192,7 @@ static void Redraw (void)
 	int ai;	// Application index (corrected by the offset)
 	char sdev[64];
 	
-	if (!theme.ok)
-		Video_DrawBackgroud (1);
-	else
-		GRRLIB_DrawImg( 0, 0, theme.bkg, 0, 1, 1, RGBA(255, 255, 255, 255) ); 
+	Video_DrawBackgroud (1);
 	
 	if (config.chnBrowser.nand == NAND_REAL)
 		strcpy (sdev, "Real NAND");
@@ -1335,7 +1331,7 @@ int GameBrowser (void)
 	// Loop forever
     while (browserRet == -1) 
 		{
-		LiveCheck (0);
+		if (LiveCheck (0)) redraw = 1;
 		
 		btn = grlib_GetUserInput();
 		

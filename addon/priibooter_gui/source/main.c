@@ -14,7 +14,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "0.3"
+#define VER "1.0"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -120,6 +120,11 @@ static void Redraw (void) // Refresh screen
 		{
 		grlib_Render();
 		if (grlib_GetUserInput())
+			{
+			keypressed = 1;
+			}
+			
+		if (grlibSettings.wiiswitch_reset)
 			{
 			keypressed = 1;
 			}
@@ -509,8 +514,12 @@ void Boot (void)
 	{
 	if (keypressed)
 		{
+		grlibSettings.wiiswitch_reset = 0;
 		if (ChooseNewMode () == 2) SavePLN ();
 		}
+		
+	if (grlibSettings.wiiswitch_reset)
+		pln.bootMode = PLN_BOOT_SM;
 	
 	fadeOut(); // Fade out in an orgy of awesomeness
 
@@ -574,7 +583,7 @@ int main(int argc, char **argv)
 	
 	__exception_setreload(3);
 	
-	
+	grlibSettings.autoCloseMenu = 20;
 	grlib_SetRedrawCallback (Redraw, NULL);
 	Redraw ();
 	

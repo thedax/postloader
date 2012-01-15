@@ -7,8 +7,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 53
-#define VER "3.53.3"
+#define BUILD 54
+#define VER "3.54.0"
 #define CFGVER "PLCFGV0007"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -368,8 +368,6 @@ void Debug (const char *text, ...);
 
 bool IsPngBuff (u8 *buff, int size);
 
-void LiveCheck (int reset);
-
 // dol.c
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -439,3 +437,6 @@ int ThemeSelect (void);
 
 // DML
 int DMLSelect (void);
+
+// ScreenSaver
+bool LiveCheck (int reset);

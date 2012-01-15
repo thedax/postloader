@@ -928,7 +928,6 @@ static void ShowMainMenu (void)
 static int FindSpot (void)
 	{
 	int i;
-	static time_t t = 0;
 	
 	appsSelected = -1;
 	spotSelected = -1;
@@ -942,43 +941,55 @@ static int FindSpot (void)
 			// Ok, we have the point
 			appsSelected = gui.spots[i].id;
 			spotSelected = i;
-			/*
-			gui.spots[i].ico.sel = true;
-			grlib_IconDraw (&is, &gui.spots[i].ico);
-			*/
-			
-			grlib_SetFontBMF (fonts[FNTNORM]);
-			
-			if (apps[appsSelected].desc)
-				{
-				grlib_printf (XMIDLEINFO, theme.hb_line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
-				grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
-				}
-			else
-				grlib_printf (XMIDLEINFO, theme.hb_line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
 				
-			grlib_SetFontBMF (fonts[FNTSMALL]);
-			
-			if (apps[appsSelected].type != AT_FOLDERUP)
-				{
-				if (theme.hb_line3Y > 0)
-					{
-					char rld[32];
-					
-					if (apps[appsSelected].iosReload)
-						strcpy (rld, "");
-					else
-						strcpy (rld, " <no_ios_reload/>");
-					
-					if (apps[appsSelected].args != NULL)
-						grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s (%s)%s",subpath, apps[appsSelected].path, apps[appsSelected].args, rld);
-					else
-						grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s%s",subpath, apps[appsSelected].path, rld);
-					}
-				}
-			
-			t = time(NULL);
 			break;
+			}
+		}
+	
+	if (spotSelectedLast != spotSelected)
+		redraw = 1;
+		
+	spotSelectedLast = spotSelected;
+	
+	return appsSelected;
+	}
+	
+void DrawInfo (void)
+	{
+	static time_t t = 0;
+
+	if (appsSelected != -1)
+		{
+		t = time(NULL);
+
+		grlib_SetFontBMF (fonts[FNTNORM]);
+		
+		if (apps[appsSelected].desc)
+			{
+			grlib_printf (XMIDLEINFO, theme.hb_line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
+			grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
+			}
+		else
+			grlib_printf (XMIDLEINFO, theme.hb_line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
+
+		grlib_SetFontBMF (fonts[FNTSMALL]);
+		
+		if (apps[appsSelected].type != AT_FOLDERUP)
+			{
+			if (theme.hb_line3Y > 0)
+				{
+				char rld[32];
+				
+				if (apps[appsSelected].iosReload)
+					strcpy (rld, "");
+				else
+					strcpy (rld, " <no_ios_reload/>");
+				
+				if (apps[appsSelected].args != NULL)
+					grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s (%s)%s",subpath, apps[appsSelected].path, apps[appsSelected].args, rld);
+				else
+					grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s%s",subpath, apps[appsSelected].path, rld);
+				}
 			}
 		}
 	
@@ -988,18 +999,14 @@ static int FindSpot (void)
 		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");		
 		}
 	else
+		{
 		if (time(NULL) - t > 0 && appsSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Run application (B) App. menu (1) to channel mode");
+			grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) App. menu (1) Switch mode");
 			}
-	
-	if (spotSelectedLast != spotSelected)
-		redraw = 1;
-		
-	spotSelectedLast = spotSelected;
-	
-	return appsSelected;
+		}
 	}
+
 
 static void Redraw (void)
 	{
@@ -1007,12 +1014,7 @@ static void Redraw (void)
 	int ai;	// Application index (corrected by the offset)
 	char sdev[64];
 
-	Debug ("Redraw [begin]");
-
-	if (!theme.ok)
-		Video_DrawBackgroud (1);
-	else
-		GRRLIB_DrawImg( 0, 0, theme.bkg, 0, 1, 1, RGBA(255, 255, 255, 255) ); 
+	Video_DrawBackgroud (1);
 
 	if (!subpath[0])
 		{
@@ -1230,7 +1232,7 @@ int AppBrowser (void)
    // Loop forever
     while (browserRet == -1) 
 		{
-		LiveCheck (0);
+		if (LiveCheck (0)) redraw = 1;
 		
 		btn = grlib_GetUserInput();
 		
@@ -1365,6 +1367,7 @@ int AppBrowser (void)
 		
 		grlib_PopScreen ();
 		Overlay ();
+		DrawInfo ();
 		grlib_DrawIRCursor ();
 		//grlib_printf (10,450,GRLIB_ALIGNLEFT, 0, "ticks: %u", get_msec(false));
 
