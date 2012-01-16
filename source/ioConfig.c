@@ -144,6 +144,13 @@ int ManageGameConfig (char *asciiId, int write, s_gameConfig *config)
 			config->ocarina = 0;
 			config->hook = 0;
 			
+			int wiiregion = CONF_GetRegion();
+			
+			if (wiiregion == CONF_REGION_EU)
+				config->dmlvideomode = DMLVIDEOMODE_PAL;
+			else
+				config->dmlvideomode = DMLVIDEOMODE_NTSC;
+			
 			return -1;
 			}
 		

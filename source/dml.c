@@ -6,6 +6,8 @@
 #include <dirent.h>
 #include "globals.h"
 
+#define SEP 0xFF
+
 #define BC 0x0000000100000100ULL
 #define MIOS 0x0000000100000101ULL
 
@@ -190,7 +192,7 @@ int DMLSelect (void)
 	char menu[2048];
 	char files[MAXGAMES][64];
 	char buff[64];
-	char name[32];
+	char name[64];
 	
 	if (!IsDevValid(DEV_SD)) return 0;
 	
@@ -275,4 +277,68 @@ int DMLSelect (void)
 	StartMIOS ();
 	
 	return 1;
+	}
+	
+int DMLRun (char *id)
+	{
+	char path[128];
+
+	if (!IsDevValid(DEV_SD)) return 0;
+	
+	sprintf (path, "%s://games/boot.bin", vars.mount[DEV_SD]);
+	
+	FILE *f;
+	f = fopen(path, "wb");
+	if (!f)	return -1;
+	fwrite(id, 1, 6, f);
+	fclose(f);
+	
+ 	memcpy ((char *)0x80000000, id, 6);
+	
+	ConfigWrite ();
+	
+	Shutdown (0);
+	
+	StartMIOS ();
+	return 1;
+	}
+	
+char * DMLScanner (void)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	char path[128];
+	char name[32];
+	char b[128];
+	char *buff = malloc (8192); // Yes, we are wasting space...
+	int dev = 0;
+	
+	*buff = 0;
+	
+	if (!IsDevValid(DEV_SD)) return 0;
+	
+	sprintf (path, "%s://games", vars.mount[DEV_SD]);
+	
+	pdir=opendir(path);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		if (strlen (pent->d_name) ==  6)
+			{
+			GetName (pent->d_name, name);
+			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, dev, SEP);
+			strcat (buff, b);
+			}
+		}
+		
+	closedir(pdir);
+
+	int i, l;
+	
+	l = strlen (buff);
+	for (i = 0; i < l; i++)
+		if (buff[i] == SEP)
+			buff[i] = 0;
+
+	return buff;
 	}

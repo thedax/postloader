@@ -7,9 +7,9 @@
 
 //#define DOLPHINE
 
-#define BUILD 54
-#define VER "3.54.2"
-#define CFGVER "PLCFGV0007"
+#define BUILD 55
+#define VER "3.55.0"
+#define CFGVER "PLCFGV0008"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
 
@@ -28,6 +28,9 @@
 
 #define DMLVIDEOMODE_NTSC 0
 #define DMLVIDEOMODE_PAL 1
+
+#define GM_WII 0
+#define GM_DML 1
 
 enum {
 	INTERACTIVE_RET_NONE=0,
@@ -195,7 +198,9 @@ typedef struct
 	u8 loader;		// 0 cfg, 1 gx, 2 wiiflow
 	u16 playcount;	// how many time this title has bin executed
 	u32 category;	// bitmask category
-	u8 minPlayerAge; 
+	u8 minPlayerAge;
+	
+	u32 dmlvideomode;		// Current video mode for dml
 	}
 s_gameConfig;
 
@@ -227,7 +232,7 @@ s_channel;
 
 typedef struct
 	{
-	u32 slot;				// under neeek, this is the slot, in real this is the partition
+	u32 slot;				// under neeek, this is the slot, in real this is the partition, in dml if 1 it is on usb device
 	char asciiId[8];		// id in ascii format (6 needed)
 	char *name;				// name
 	u8 *png;				// Address of png in cache area
@@ -238,10 +243,12 @@ typedef struct
 	bool checked;
 
 	// These are updated from s_channelConfig when browsing
-	int priority;	// Vote !
-	bool hidden;	// if 1, this app will be not listed
+	int priority;			// Vote !
+	bool hidden;			// if 1, this app will be not listed
 	u32 category;
-	u16 playcount;	// how many time this title has bin executed
+	u16 playcount;			// how many time this title has bin executed
+	
+	bool dml;				// if true we are executing a dml game
 	}
 s_game;
 
@@ -307,6 +314,7 @@ typedef struct
 	int gamePage;			// 
 	u32 gameFilter;			// 
 	u32 gameSort;			// 0 vote, 1 name, 2 playcount
+	u32 gameMode;			// GM_WII, GM_DML
 
 	// channel browser settings
 	s_chnBrowser chnBrowser;
@@ -437,6 +445,8 @@ int ThemeSelect (void);
 
 // DML
 int DMLSelect (void);
+char * DMLScanner (void);
+int DMLRun (char *id);
 
 // ScreenSaver
 bool LiveCheck (int reset);

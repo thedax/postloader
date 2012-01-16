@@ -428,16 +428,20 @@ static int GameBrowse (int forcescan)
 	gui_Clean ();
 	StructFree ();
 
-	//if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
 		{
 		int i;
 		char *titles;
 		char *p;
 		
-		if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
-			titles = neek_GetGames ();
+		if (config.gameMode == GM_WII)
+			{
+			if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
+				titles = neek_GetGames ();
+			else
+				titles = WBFSSCanner (forcescan);
+			}
 		else
-			titles = WBFSSCanner (forcescan);
+			titles = DMLScanner ();
 			
 		if (!titles) return 0;
 		
@@ -459,20 +463,29 @@ static int GameBrowse (int forcescan)
 				strcpy (games[i].asciiId, p);
 				p += (strlen(p) + 1);
 
-				// Setup slot
-				if (vars.neek != NEEK_NONE)
-					games[i].slot = i;
+				if (config.gameMode == GM_WII)
+					{
+					// Setup slot
+					if (vars.neek != NEEK_NONE)
+						games[i].slot = i;
+					else
+						{
+						// Add slot
+						strcpy (slot, p);
+						p += (strlen(p) + 1);
+
+						games[i].slot = atoi (slot); // PArtition number
+						}
+					}
 				else
 					{
-					// Add slot
 					strcpy (slot, p);
 					p += (strlen(p) + 1);
 
-					games[i].slot = atoi (slot); // PArtition number
+					games[i].slot = atoi (slot); // sd = 0 / usb = 1 ?
 					}
 				
 				ReadGameConfig (i);
-				//Debug ("Cfg read %d, %d, %s", i, games[i].category, games[i].name);
 				
 				i ++;
 				}
@@ -559,7 +572,7 @@ static int FindSpot (void)
 	else
 		if (time(NULL) - t > 0 && gamesSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (1) Switch mode (2) Filters (UP) dml (DW) goto page");
+			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (1) Switch mode (2) Filters (UP) wii/dml (DW) goto page");
 			}
 	
 	return gamesSelected;
@@ -770,14 +783,22 @@ static void ShowAppMenu (int ai)
 		else
 			strcat (buff, "Hide this title ##3|");
 
-		if (vars.neek != NEEK_NONE)
+		if (config.gameMode == GM_WII)
 			{
-			strcat (buff, "NAND: "); strcat (buff, nand[gameConf.nand]); strcat (buff, "##106|");
+			if (vars.neek != NEEK_NONE)
+				{
+				strcat (buff, "NAND: "); strcat (buff, nand[gameConf.nand]); strcat (buff, "##106|");
+				}
+			else
+				{
+				strcat (buff, "IOS: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
+				strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
+				}
 			}
 		else
 			{
-			strcat (buff, "IOS: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
-			strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
+			grlib_menuAddCheckItem (buff, 108, 1 - gameConf.dmlvideomode, "NTSC mode");
+			grlib_menuAddCheckItem (buff, 109, gameConf.dmlvideomode, "PAL 576i mode");
 			}
 		/*
 
@@ -820,6 +841,8 @@ static void ShowAppMenu (int ai)
 			if (i == 5) { gameConf.ocarina ++; if (gameConf.ocarina >= opt[i]) gameConf.ocarina = 0; }
 			if (i == 6) { gameConf.nand ++; if (gameConf.nand >= opt[i]) gameConf.nand = 0; }
 			if (i == 7) { gameConf.loader ++; if (gameConf.loader >= opt[i]) gameConf.loader = 0; }
+			if (i == 8)	gameConf.dmlvideomode = DMLVIDEOMODE_NTSC;
+			if (i == 9)	gameConf.dmlvideomode = DMLVIDEOMODE_PAL;
 			}
 		else
 			break;
@@ -1020,7 +1043,7 @@ static void ShowGamesOptions (void)
 	
 	buff[0] = '\0';
 	
-	strcat (buff, "Show DML menu...##14||");
+	strcat (buff, "Switch Wii/GC(DML) mode...##14||");
 	
 	strcat (buff, "Download covers...##10||");
 	if (vars.neek != NEEK_NONE)
@@ -1071,7 +1094,9 @@ static void ShowGamesOptions (void)
 	
 	if (item == 14)
 		{
-		DMLSelect ();
+		//DMLSelect ();
+		config.gameMode = 1 - config.gameMode;//DMLSelect ();
+		browserRet = INTERACTIVE_RET_TOGAMES;
 		}
 		
 	}
@@ -1182,6 +1207,7 @@ static void ShowMainMenu (void)
 	if (item == 8)
 		{
 		ShowGamesOptions();
+		if (browserRet) return;
 		goto start;
 		}
 	}
@@ -1194,13 +1220,25 @@ static void Redraw (void)
 	
 	Video_DrawBackgroud (1);
 	
-	if (config.chnBrowser.nand == NAND_REAL)
-		strcpy (sdev, "Real NAND");
-	else if (config.chnBrowser.nand == NAND_EMUSD)
-		sprintf (sdev, "EmuNAND [SD] %s", config.chnBrowser.nandPath);
-	else if (config.chnBrowser.nand == NAND_EMUUSB)
-		sprintf (sdev, "EmuNAND [USB] %s", config.chnBrowser.nandPath);
-	
+	if (config.gameMode == GM_WII)
+		{
+		if (config.chnBrowser.nand == NAND_REAL)
+			strcpy (sdev, "WII Games - Real NAND");
+		else if (config.chnBrowser.nand == NAND_EMUSD)
+			sprintf (sdev, "WII Games - EmuNAND [SD] %s", config.chnBrowser.nandPath);
+		else if (config.chnBrowser.nand == NAND_EMUUSB)
+			sprintf (sdev, "WII Games - EmuNAND [USB] %s", config.chnBrowser.nandPath);
+		}
+	else
+		{
+		if (config.chnBrowser.nand == NAND_REAL)
+			strcpy (sdev, "GC Games(DML) - Real NAND");
+		else if (config.chnBrowser.nand == NAND_EMUSD)
+			sprintf (sdev, "GC Games(DML) - EmuNAND [SD] %s", config.chnBrowser.nandPath);
+		else if (config.chnBrowser.nand == NAND_EMUUSB)
+			sprintf (sdev, "GC Games(DML) - EmuNAND [USB] %s", config.chnBrowser.nandPath);
+		}
+
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	char ahpbrot[16];
 	if (vars.ahbprot)
@@ -1345,17 +1383,26 @@ int GameBrowser (void)
 			
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
 				{
-				ReadGameConfig (gamesSelected);
-				games[gamesSelected].playcount++;
-				WriteGameConfig (gamesSelected);
-				
-				memcpy (&config.run.game, &gameConf, sizeof(s_gameConfig));
-				config.run.neekSlot = games[gamesSelected].slot;
-				//config.run.nand = config.chnBrowser.nand;
-				//strcpy (config.run.nandPath, config.chnBrowser.nandPath);
-				strcpy (config.run.asciiId, games[gamesSelected].asciiId);
-				
-				browserRet = INTERACTIVE_RET_GAMESEL;
+				if (config.gameMode == GM_WII)
+					{
+					ReadGameConfig (gamesSelected);
+					games[gamesSelected].playcount++;
+					WriteGameConfig (gamesSelected);
+					
+					memcpy (&config.run.game, &gameConf, sizeof(s_gameConfig));
+					config.run.neekSlot = games[gamesSelected].slot;
+					//config.run.nand = config.chnBrowser.nand;
+					//strcpy (config.run.nandPath, config.chnBrowser.nandPath);
+					strcpy (config.run.asciiId, games[gamesSelected].asciiId);
+					
+					browserRet = INTERACTIVE_RET_GAMESEL;
+					}
+				else
+					{
+					ReadGameConfig (gamesSelected);
+					config.dmlvideomode = gameConf.dmlvideomode;
+					DMLRun (games[gamesSelected].asciiId);
+					}
 				break;
 				}
 				
@@ -1382,8 +1429,8 @@ int GameBrowser (void)
 				
 			if (btn & WPAD_BUTTON_UP)
 				{
-				DMLSelect ();
-				redraw = 1;
+				config.gameMode = 1 - config.gameMode;//DMLSelect ();
+				browserRet = INTERACTIVE_RET_TOGAMES;
 				}
 
 			if (btn & WPAD_BUTTON_HOME)

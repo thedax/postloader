@@ -2,6 +2,11 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.55.0
+
+* In game mode, d-pad [UP] will switch WII/GC(DML) mode (also [HOME]->Game options->Switch Wii/GC(DML) mode)
+* now dml video mode (pal/ntsc) must be configured from game menu' (press [B] on a game)
+
 postLoader 3.54.3
 
 * Forgot to update internal build number
