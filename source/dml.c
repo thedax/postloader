@@ -5,6 +5,7 @@
 #include <ogc/video_types.h>
 #include <dirent.h>
 #include "globals.h"
+#include "fsop/fsop.h"
 
 #define SEP 0xFF
 
@@ -134,14 +135,17 @@ s32 StartMIOS (void)
 	}
 	
 	
-#define MAXGAMES 20
+#define MAXGAMES 30
 #define MAXROW 10
 
-static void GetName (char *id, char *name)
+static void GetName (int dev, char *id, char *name)
 	{
 	char path[128];
 	
-	sprintf (path, "%s://games/%s/game.iso", vars.mount[DEV_SD], id);
+	if (dev == DEV_SD)
+		sprintf (path, "%s://games/%s/game.iso", vars.mount[dev], id);
+	else
+		sprintf (path, "%s://ngc/%s/game.iso", vars.mount[dev], id);
 	
 	FILE *f;
 	f = fopen(path, "rb");
@@ -213,7 +217,7 @@ int DMLSelect (void)
 				strcpy (buff, pent->d_name);
 				strcpy (files[i], buff);
 				
-				GetName (files[i], name);
+				GetName (DEV_SD, files[i], name);
 				grlib_menuAddItem (menu, i, "%s", name);
 				
 				i++;
@@ -311,13 +315,18 @@ char * DMLScanner (void)
 	char name[32];
 	char b[128];
 	char *buff = malloc (8192); // Yes, we are wasting space...
-	int dev = 0;
 	
 	*buff = 0;
 	
 	if (!IsDevValid(DEV_SD)) return 0;
 	
+	//sprintf (path, "%s://", vars.mount[DEV_SD]);
+	
 	sprintf (path, "%s://games", vars.mount[DEV_SD]);
+	
+	fsop_GetFolderKb (path, 0);
+	
+	Debug ("DML: scanning %s", path);
 	
 	pdir=opendir(path);
 	
@@ -325,8 +334,28 @@ char * DMLScanner (void)
 		{
 		if (strlen (pent->d_name) ==  6)
 			{
-			GetName (pent->d_name, name);
-			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, dev, SEP);
+			GetName (DEV_SD, pent->d_name, name);
+			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
+			strcat (buff, b);
+			}
+		}
+		
+	closedir(pdir);
+
+	if (!IsDevValid(DEV_USB)) return 0;
+	
+	sprintf (path, "%s://ngc", vars.mount[DEV_USB]);
+	
+	Debug ("DML: scanning %s", path);
+	
+	pdir=opendir(path);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		if (strlen (pent->d_name) ==  6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+			{
+			GetName (DEV_USB, pent->d_name, name);
+			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
 			strcat (buff, b);
 			}
 		}
@@ -342,3 +371,90 @@ char * DMLScanner (void)
 
 	return buff;
 	}
+	
+/*
+
+DMLRemove will prompt to remove same games from sd to give space to new one
+
+*/
+
+int DMLInstall (size_t reqKb)
+	{
+	int ret;
+	int i = 0, j;
+	DIR *pdir;
+	struct dirent *pent;
+	char path[128];
+	char menu[2048];
+	char buff[64];
+	char name[64];
+	char title[128];
+	
+	char files[MAXGAMES][64];
+	size_t sizes[MAXGAMES];
+
+	size_t devKb = 0;
+
+	if (!IsDevValid(DEV_SD)) return 0;
+	
+	sprintf (path, "%s://games", vars.mount[DEV_SD]);
+	devKb = fsop_GetFreeSpaceKb (path);
+	
+	while (devKb < reqKb)
+		{
+		*menu = '\0';
+		i = 0;
+		j = 0;
+		
+		pdir=opendir(path);
+		
+		while ((pent=readdir(pdir)) != NULL) 
+			{
+			if (strlen (pent->d_name) ==  6)
+				{
+				strcpy (files[i], pent->d_name);
+				
+				GetName (DEV_SD, files[i], name);
+				sprintf (buff, "%s/%s", path, files[i]);
+				sizes[i] = fsop_GetFolderKb (buff, NULL);
+				grlib_menuAddItem (menu, i, "%s (%d Mb)", name, sizes[i] / 1000);
+				
+				i++;
+				j++;
+			
+				if (j == MAXROW)
+					{
+					grlib_menuAddColumn (menu);
+					j = 0;
+					}
+				
+				if (i == MAXGAMES)
+					{
+					break;
+					}
+				}
+			}
+			
+		closedir(pdir);
+		
+		sprintf (title, "You must free %u Mb to install a new game\nClick on game to remove it from SD\nPress (B) to close", (reqKb - devKb) / 1000);
+
+		ret = grlib_menu (title, menu);
+		if (ret == -1) return 0;
+		if (ret >= 0)
+			{
+			char gamepath[128];
+			sprintf (gamepath, "%s://games/%s", vars.mount[DEV_SD], files[ret]);
+			
+			Debug ("Trying to delete '%s'", gamepath);
+			fsop_KillFolderTree (gamepath, NULL);
+			}
+			
+		devKb = fsop_GetFreeSpaceKb (path);
+				
+		if (devKb > reqKb) return 1; // We have the space
+		}
+	
+	return 0;
+	}
+	

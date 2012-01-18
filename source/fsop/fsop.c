@@ -10,14 +10,104 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 #include <stdarg.h>
 #include <string.h>
 #include <malloc.h>
+#include <math.h>
 #include <ogcsys.h>
+
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h> //for mkdir 
+#include <sys/statvfs.h>
 
 #include "fsop.h"
 
 s_fsop fsop;
+
+// return false if the file doesn't exist
+bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_size report always 0 :(
+	{
+	FILE *f;
+	size_t size;
+	
+	f = fopen(path, "rb");
+	if (!f)
+		{
+		return false;
+		}
+
+	//Get file size
+	fseek( f, 0, SEEK_END);
+	size = ftell(f);
+	if (filesize) *filesize = size;
+	
+	fclose (f);
+	
+	return true;
+	}
+
+/*
+Recursive copyfolder
+*/
+u32 fsop_GetFolderKb (char *source, fsopCallback vc)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	char newSource[300];
+	u32 kb = 0;
+	
+	pdir=opendir(source);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		// Skip it
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
+			continue;
+			
+		sprintf (newSource, "%s/%s", source, pent->d_name);
+		
+		// If it is a folder... recurse...
+		if (fsop_DirExist (newSource))
+			{
+			kb += fsop_GetFolderKb (newSource, vc);
+			}
+		else	// It is a file !
+			{
+			sprintf (fsop.op, "Removing %s ", pent->d_name);
+			
+			size_t s;
+			fsop_GetFileSizeBytes(newSource, &s);
+			
+			kb += round ((double)s / 1000.0);
+			Debug ("%s %u", newSource, s);
+			}
+		}
+	
+	closedir(pdir);
+	
+	unlink (source);
+
+	Debug ("%s folder %u Kb", source, kb);
+	
+	return kb;
+	}
+
+u32 fsop_GetFreeSpaceKb (char *path) // Return free kb on the device passed
+	{
+	struct statvfs s;
+	
+	statvfs (path, &s);
+	
+	/*
+	Debug ("f_bsize = %d", s.f_bsize);
+	Debug ("f_frsize = %d", s.f_frsize);
+	Debug ("f_bfree = %d", s.f_bfree);
+	Debug ("f_bavail = %d", s.f_bavail);
+	Debug ("f_files = %d", s.f_files);
+	Debug ("f_ffree = %d", s.f_ffree);
+	Debug ("f_favail = %d", s.f_favail);
+	*/
+	return round( ((double)s.f_bfree / 1000.0) * s.f_bsize) ;
+	}
+
 
 bool fsop_StoreBuffer (char *fn, u8 *buff, int size, fsopCallback vc)
 	{
@@ -63,7 +153,8 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	u8 *buff = NULL;
 	int size;
 	int bytes, rb;
-	int block = 65536*4; // (256Kb)
+	//int block = 65536*4; // (256Kb)
+	int block = 71680;
 	FILE *fs = NULL, *ft = NULL;
 	
 	ft = fopen(target, "wt");
@@ -75,7 +166,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		return FALSE;
 
 	//Get file size
-	fseek( fs, 0, SEEK_END);
+	fseek ( fs, 0, SEEK_END);
 	size = ftell(fs);
 
 	fsop.size = size;
@@ -194,6 +285,7 @@ bool fsop_KillFolderTree (char *source, fsopCallback vc)
 			{
 			sprintf (fsop.op, "Removing %s", pent->d_name);
 			unlink (newSource);
+			Debug ("fsop_KillFolderTree: removing '%s'", newSource);
 			}
 		}
 	

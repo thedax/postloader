@@ -10,6 +10,7 @@ typedef struct
 	int bytes;
 	
 	int flag1;		// user defined flag
+	bool breakop;	// allow to stop a long operation
 	}
 s_fsop;
 
@@ -24,5 +25,8 @@ bool fsop_CopyFolder (char *source, char *target, fsopCallback vc);
 bool fsop_KillFolderTree (char *source, fsopCallback vc);
 bool fsop_CreateFolderTree (char *path);
 int fsop_CountFolderTree (char *path);
+
+u32 fsop_GetFolderKb (char *source, fsopCallback vc);
+u32 fsop_GetFreeSpaceKb (char *path);
 
 #endif

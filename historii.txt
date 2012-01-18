@@ -2,6 +2,18 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.56.0
+
+* postLoader can now move ngc iso from usb to sd (see notes)
+* Updated fileop library
+* Added usb gecko output
+
+notes: ngc iso (already converted with DiscEX) must be copied in usb://ngc folder (primary FAT32 part). 
+postLoader will take care to copy to sd://games when required
+Games icon from usb games are dimmed. Copying process is slow, do not interrupt in this test version or the image will be corrupted (on sd)
+If there is no space on sd, postLoader will ask to delete some games.
+Note that this is a TEST VERSION.
+
 postLoader 3.55.0
 
 * In game mode, d-pad [UP] will switch WII/GC(DML) mode (also [HOME]->Game options->Switch Wii/GC(DML) mode)

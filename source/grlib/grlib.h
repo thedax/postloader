@@ -100,6 +100,7 @@ typedef struct
 	{
 	bool sel;	// If sel
 	bool noIcon;	// If true, no icon will be draw (also iconFake)
+	u8 transparency;
 	
 	f32 x, y, w, h;	// Icon position (centered)
 	

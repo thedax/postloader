@@ -417,7 +417,6 @@ static void GoToPage (void)
 	int item = grlib_menu ("Go to page", buff);
 	if (item >= 0) gamesPage = item;
 	}
-	
 
 static int GameBrowse (int forcescan)
 	{
@@ -539,10 +538,20 @@ static int FindSpot (void)
 				{
 				char part[32];
 				
-				if (games[gamesSelected].slot < 10)
-					sprintf (part, " (FAT%d)", games[gamesSelected].slot + 1);
+				if (config.gameMode == GM_WII)
+					{
+					if (games[gamesSelected].slot < 10)
+						sprintf (part, " (FAT%d)", games[gamesSelected].slot + 1);
+					else
+						sprintf (part, " (NTFS%d)", games[gamesSelected].slot - 10 + 1);
+					}
 				else
-					sprintf (part, " (NTFS%d)", games[gamesSelected].slot - 10 + 1);
+					{
+					if (games[gamesSelected].slot == DEV_SD)
+						sprintf (part, " (SD)");
+					else
+						sprintf (part, " (USB)");
+					}
 					
 				strcat (info, part);
 				}
@@ -1298,6 +1307,11 @@ static void Redraw (void)
 			else
 				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
 
+			if (games[ai].slot)
+				gui.spots[gui.spotsIdx].ico.transparency = 128;
+			else
+				gui.spots[gui.spotsIdx].ico.transparency = 255;
+				
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 
 			// Let's add the spot points, to reconize the icon pointed by wiimote
@@ -1323,7 +1337,39 @@ static void Overlay (void)
 	Video_DrawWIFI ();
 	return;
 	}
-		
+
+static void fcb (void)
+	{
+	static int i = 0;
+	
+	i++;
+	if (i > 5)
+		{
+		Video_WaitPanel (TEX_HGL, "Please wait...|Copying %u of %u Mb", fsop.bytes/1000/1000, fsop.size/1000/1000);
+		i = 0;
+		}
+	}
+
+
+static size_t GetGCGameUsbKb (int ai)
+	{
+	char path[300];
+	
+	sprintf (path, "usb://ngc/%s", games[ai].asciiId);
+	return fsop_GetFolderKb (path, NULL);
+	}
+
+int MoveGCGame (int ai)
+	{
+	char source[300];
+	char target[300];
+
+	sprintf (source, "usb://ngc/%s", games[ai].asciiId);
+	sprintf (target, "sd://games/%s", games[ai].asciiId);
+
+	return fsop_CopyFolder (source, target, fcb);
+	}
+	
 int GameBrowser (void)
 	{
 	Debug ("GameBrowser");
@@ -1399,11 +1445,25 @@ int GameBrowser (void)
 					}
 				else
 					{
-					ReadGameConfig (gamesSelected);
-					config.dmlvideomode = gameConf.dmlvideomode;
-					DMLRun (games[gamesSelected].asciiId);
+					bool err = false;
+					
+					if (games[gamesSelected].slot)
+						{
+						Debug ("DMLInstall");
+						if (DMLInstall (GetGCGameUsbKb(gamesSelected)))
+							MoveGCGame (gamesSelected);
+						else
+							err = true;
+						}
+					
+					if (!err)
+						{
+						Debug ("DMLRun");
+						ReadGameConfig (gamesSelected);
+						config.dmlvideomode = gameConf.dmlvideomode;
+						DMLRun (games[gamesSelected].asciiId);
+						}
 					}
-				break;
 				}
 				
 			/////////////////////////////////////////////////////////////////////////////////////////////

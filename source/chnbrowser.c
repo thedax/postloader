@@ -88,6 +88,8 @@ static void InitializeGui (void)
 	il = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
 		{
+		grlib_IconInit (&gui.spots[i].ico, NULL);
+		
 		gui.spots[i].ico.x = x;
 		gui.spots[i].ico.y = y;
 		gui.spots[i].ico.w = ICONW;

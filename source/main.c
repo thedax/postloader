@@ -217,9 +217,9 @@ int main(int argc, char **argv)
 	
 	//grlib_dosm ("PL3");
 	
-	DebugStart ();
+	DebugStart (true, "sd://ploader.log");
 	
-	Debug ("-----[PL:"VER"]--------------------------------------------------------------------");
+	Debug ("-----[postLoader "VER"]-----");
 	Debug ("Initialization done !");
 
 	if (vars.neek)

@@ -4,11 +4,12 @@
 
 #include "grlib/grlib.h"
 #include "plneek.h"
+#include "debug.h"
 
 //#define DOLPHINE
 
-#define BUILD 55
-#define VER "3.55.0"
+#define BUILD 56
+#define VER "3.56.0"
 #define CFGVER "PLCFGV0008"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -371,8 +372,6 @@ int HexAscii2Bin (char *ascii, u8 *buff);
 
 int cfg_GetString (char *buff, char *tag, char *string);
 int cfg_GetInt (char *buff, char *tag, int *ival);
-void DebugStart (void);
-void Debug (const char *text, ...);
 
 bool IsPngBuff (u8 *buff, int size);
 
@@ -447,6 +446,7 @@ int ThemeSelect (void);
 int DMLSelect (void);
 char * DMLScanner (void);
 int DMLRun (char *id);
+int DMLInstall (size_t reqKb);
 
 // ScreenSaver
 bool LiveCheck (int reset);

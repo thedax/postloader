@@ -11,7 +11,10 @@ void grlib_IconInit (s_grlib_icon *icon, s_grlib_icon *parentIcon)
 	if (parentIcon)
 		memcpy (icon, parentIcon, sizeof(s_grlib_icon));
 	else
+		{
 		memset (icon, 0, sizeof(s_grlib_icon));
+		icon->transparency = 255;
+		}
 	}
 	
 void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
@@ -73,7 +76,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		else
 			tex = is->iconFake;
 		
-		grlib_DrawImg (gro.x1, gro.y1, w, h, tex, 0, RGBA(255, 255, 255, 255));
+		grlib_DrawImg (gro.x1, gro.y1, w, h, tex, 0, RGBA(255, 255, 255, icon->transparency));
 		}
 		
 	// Draw text
