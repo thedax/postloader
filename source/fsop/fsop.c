@@ -19,6 +19,7 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 #include <sys/statvfs.h>
 
 #include "fsop.h"
+#include "../debug.h"
 
 s_fsop fsop;
 
@@ -26,11 +27,12 @@ s_fsop fsop;
 bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_size report always 0 :(
 	{
 	FILE *f;
-	size_t size;
+	size_t size = 0;
 	
 	f = fopen(path, "rb");
 	if (!f)
 		{
+		if (filesize) *filesize = size;
 		return false;
 		}
 
@@ -38,7 +40,6 @@ bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_siz
 	fseek( f, 0, SEEK_END);
 	size = ftell(f);
 	if (filesize) *filesize = size;
-	
 	fclose (f);
 	
 	return true;
@@ -47,12 +48,12 @@ bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_siz
 /*
 Recursive copyfolder
 */
-u32 fsop_GetFolderKb (char *source, fsopCallback vc)
+u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 	{
 	DIR *pdir;
 	struct dirent *pent;
 	char newSource[300];
-	u32 kb = 0;
+	u64 bytes = 0;
 	
 	pdir=opendir(source);
 	
@@ -67,17 +68,15 @@ u32 fsop_GetFolderKb (char *source, fsopCallback vc)
 		// If it is a folder... recurse...
 		if (fsop_DirExist (newSource))
 			{
-			kb += fsop_GetFolderKb (newSource, vc);
+			bytes += fsop_GetFolderBytes (newSource, vc);
 			}
 		else	// It is a file !
 			{
-			sprintf (fsop.op, "Removing %s ", pent->d_name);
-			
 			size_t s;
-			fsop_GetFileSizeBytes(newSource, &s);
-			
-			kb += round ((double)s / 1000.0);
-			Debug ("%s %u", newSource, s);
+			fsop_GetFileSizeBytes (newSource, &s);
+			bytes += s;
+
+			//Debug ("fsop_GetFileSizeBytes (%s) = %u %llu", newSource, s, bytes);
 			}
 		}
 	
@@ -85,9 +84,14 @@ u32 fsop_GetFolderKb (char *source, fsopCallback vc)
 	
 	unlink (source);
 
-	Debug ("%s folder %u Kb", source, kb);
+	//Debug ("fsop_GetFolderBytes '%s' = %llu bytes", source, bytes);
 	
-	return kb;
+	return bytes;
+	}
+
+u32 fsop_GetFolderKb (char *source, fsopCallback vc)
+	{
+	return round ((double)fsop_GetFolderBytes (source, vc) / 1000.0);
 	}
 
 u32 fsop_GetFreeSpaceKb (char *path) // Return free kb on the device passed
@@ -96,15 +100,6 @@ u32 fsop_GetFreeSpaceKb (char *path) // Return free kb on the device passed
 	
 	statvfs (path, &s);
 	
-	/*
-	Debug ("f_bsize = %d", s.f_bsize);
-	Debug ("f_frsize = %d", s.f_frsize);
-	Debug ("f_bfree = %d", s.f_bfree);
-	Debug ("f_bavail = %d", s.f_bavail);
-	Debug ("f_files = %d", s.f_files);
-	Debug ("f_ffree = %d", s.f_ffree);
-	Debug ("f_favail = %d", s.f_favail);
-	*/
 	return round( ((double)s.f_bfree / 1000.0) * s.f_bsize) ;
 	}
 
@@ -115,12 +110,12 @@ bool fsop_StoreBuffer (char *fn, u8 *buff, int size, fsopCallback vc)
 	int bytes;
 	
 	f = fopen(fn, "wb");
-	if (!f) return FALSE;
+	if (!f) return false;
 	
 	bytes = fwrite (buff, 1, size, f);
 	fclose(f);
 	
-	if (bytes == size) return TRUE;
+	if (bytes == size) return true;
 	
 	return false;
 	}
@@ -129,9 +124,9 @@ bool fsop_FileExist (char *fn)
 	{
 	FILE * f;
 	f = fopen(fn, "rb");
-	if (!f) return FALSE;
+	if (!f) return false;
 	fclose(f);
-	return TRUE;
+	return true;
 	}
 	
 bool fsop_DirExist (char *path)
@@ -142,28 +137,31 @@ bool fsop_DirExist (char *path)
 	if (dir)
 		{
 		closedir(dir);
-		return TRUE;
+		return true;
 		}
 	
-	return FALSE;
+	return false;
 	}
 
 bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	{
+	fsop.breakop = 0;
+	
 	u8 *buff = NULL;
 	int size;
 	int bytes, rb;
 	//int block = 65536*4; // (256Kb)
-	int block = 71680;
+	//int block = 71680;
+	int block = 65536;
 	FILE *fs = NULL, *ft = NULL;
 	
 	ft = fopen(target, "wt");
 	if (!ft)
-		return FALSE;
+		return false;
 	
 	fs = fopen(source, "rb");
 	if (!fs)
-		return FALSE;
+		return false;
 
 	//Get file size
 	fseek ( fs, 0, SEEK_END);
@@ -174,7 +172,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	if (size <= 0)
 		{
 		fclose (fs);
-		return NULL;
+		return false;
 		}
 		
 	// Return to beginning....
@@ -184,7 +182,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	if (buff == NULL) 
 		{
 		fclose (fs);
-		return NULL;
+		return false;
 		}
 	
 	bytes = 0;
@@ -193,15 +191,21 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		rb = fread(buff, 1, block, fs );
 		fwrite(buff, 1, rb, ft );
 		bytes += rb;
+		
+		fsop.multy.bytes += rb;
 		fsop.bytes = bytes;
+		
 		if (vc) vc();
+		if (fsop.breakop) break;
 		}
 	while (bytes < size);
 
 	fclose (fs);
 	free (buff);
 
-	return buff;
+	if (fsop.breakop) return false;
+	
+	return true;
 	}
 
 /*
@@ -209,19 +213,20 @@ Semplified folder make
 */
 int fsop_MakeFolder (char *path)
 	{
-	if (mkdir(path, S_IREAD | S_IWRITE) == 0) return TRUE;
+	if (mkdir(path, S_IREAD | S_IWRITE) == 0) return true;
 	
-	return FALSE;
+	return false;
 	}
 
 /*
 Recursive copyfolder
 */
-bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
+static bool doCopyFolder (char *source, char *target, fsopCallback vc)
 	{
 	DIR *pdir;
 	struct dirent *pent;
 	char newSource[300], newTarget[300];
+	bool ret = true;
 	
 	// If target folder doesn't exist, create it !
 	if (!fsop_DirExist (target))
@@ -231,7 +236,7 @@ bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
 
 	pdir=opendir(source);
 	
-	while ((pent=readdir(pdir)) != NULL) 
+	while ((pent=readdir(pdir)) != NULL && ret == true) 
 		{
 		// Skip it
 		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
@@ -243,18 +248,37 @@ bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
 		// If it is a folder... recurse...
 		if (fsop_DirExist (newSource))
 			{
-			fsop_CopyFolder (newSource, newTarget, vc);
+			ret = doCopyFolder (newSource, newTarget, vc);
 			}
 		else	// It is a file !
 			{
 			strcpy (fsop.op, pent->d_name);
-			fsop_CopyFile (newSource, newTarget, vc);
+			ret = fsop_CopyFile (newSource, newTarget, vc);
 			}
 		}
 	
 	closedir(pdir);
 
-	return TRUE;
+	return ret;
+	}
+	
+bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
+	{
+	fsop.breakop = 0;
+	fsop.multy.start_t = time(NULL);
+	fsop.multy.bytes = 0;
+	fsop.multy.size = fsop_GetFolderBytes (source, vc);
+	
+	Debug ("fsop_CopyFolder");
+	Debug ("fsop.multy.start_t = %u", fsop.multy.start_t);
+	Debug ("fsop.multy.bytes = %llu", fsop.multy.bytes);
+	Debug ("fsop.multy.size = %llu (%u Mb)", fsop.multy.size, (u32)((fsop.multy.size/1000)/1000));
+	
+	//return false;
+	
+	//fsop_KillFolderTree (target, vc);
+	
+	return doCopyFolder (source, target, vc);
 	}
 	
 /*
@@ -293,7 +317,7 @@ bool fsop_KillFolderTree (char *source, fsopCallback vc)
 	
 	unlink (source);
 	
-	return TRUE;
+	return true;
 	}
 	
 
@@ -330,7 +354,6 @@ bool fsop_CreateFolderTree (char *path)
 			strcpy (buff, path);
 			buff[i] = 0;
 
-			//Debug ("fsop_CreateFolderTree: %s", buff);
 			fsop_MakeFolder(buff);
 			}
 		}

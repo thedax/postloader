@@ -9,7 +9,7 @@
 //#define DOLPHINE
 
 #define BUILD 56
-#define VER "3.56.0"
+#define VER "3.56.1"
 #define CFGVER "PLCFGV0008"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -446,7 +446,7 @@ int ThemeSelect (void);
 int DMLSelect (void);
 char * DMLScanner (void);
 int DMLRun (char *id);
-int DMLInstall (size_t reqKb);
+int DMLInstall (char *gamename, size_t reqKb);
 
 // ScreenSaver
 bool LiveCheck (int reset);

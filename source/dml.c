@@ -378,7 +378,7 @@ DMLRemove will prompt to remove same games from sd to give space to new one
 
 */
 
-int DMLInstall (size_t reqKb)
+int DMLInstall (char *gamename, size_t reqKb)
 	{
 	int ret;
 	int i = 0, j;
@@ -388,7 +388,7 @@ int DMLInstall (size_t reqKb)
 	char menu[2048];
 	char buff[64];
 	char name[64];
-	char title[128];
+	char title[256];
 	
 	char files[MAXGAMES][64];
 	size_t sizes[MAXGAMES];
@@ -398,7 +398,9 @@ int DMLInstall (size_t reqKb)
 	if (!IsDevValid(DEV_SD)) return 0;
 	
 	sprintf (path, "%s://games", vars.mount[DEV_SD]);
+
 	devKb = fsop_GetFreeSpaceKb (path);
+	if (devKb > reqKb) return 1; // We have the space
 	
 	while (devKb < reqKb)
 		{
@@ -406,15 +408,25 @@ int DMLInstall (size_t reqKb)
 		i = 0;
 		j = 0;
 		
+		//sprintf (path, "%s://games", vars.mount[DEV_SD]);
 		pdir=opendir(path);
+		
+		//Debug ("opendir(%s) = 0x%X", path, pdir);
 		
 		while ((pent=readdir(pdir)) != NULL) 
 			{
+			//Debug ("    > %s", pent->d_name);
 			if (strlen (pent->d_name) ==  6)
 				{
 				strcpy (files[i], pent->d_name);
 				
 				GetName (DEV_SD, files[i], name);
+				if (strlen (name) > 12)
+					{
+					name[12] = 0;
+					strcat(name, "...");
+					}
+					
 				sprintf (buff, "%s/%s", path, files[i]);
 				sizes[i] = fsop_GetFolderKb (buff, NULL);
 				grlib_menuAddItem (menu, i, "%s (%d Mb)", name, sizes[i] / 1000);
@@ -437,7 +449,8 @@ int DMLInstall (size_t reqKb)
 			
 		closedir(pdir);
 		
-		sprintf (title, "You must free %u Mb to install a new game\nClick on game to remove it from SD\nPress (B) to close", (reqKb - devKb) / 1000);
+		sprintf (title, "You must free %u Mb to install %s\nClick on game to remove it from SD, game size is %u Mb), Press (B) to close", 
+			(reqKb - devKb) / 1000, gamename, reqKb / 1000);
 
 		ret = grlib_menu (title, menu);
 		if (ret == -1) return 0;
@@ -451,7 +464,6 @@ int DMLInstall (size_t reqKb)
 			}
 			
 		devKb = fsop_GetFreeSpaceKb (path);
-				
 		if (devKb > reqKb) return 1; // We have the space
 		}
 	

@@ -134,6 +134,8 @@ static void InitializeGui (void)
 	il = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
 		{
+		grlib_IconInit (&gui.spots[i].ico, NULL);
+		
 		gui.spots[i].ico.x = x;
 		gui.spots[i].ico.y = y;
 		gui.spots[i].ico.w = ICONW;
@@ -1307,10 +1309,13 @@ static void Redraw (void)
 			else
 				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
 
-			if (games[ai].slot)
-				gui.spots[gui.spotsIdx].ico.transparency = 128;
-			else
-				gui.spots[gui.spotsIdx].ico.transparency = 255;
+			if (config.gameMode == GM_DML)
+				{
+				if (games[ai].slot)
+					gui.spots[gui.spotsIdx].ico.transparency = 128;
+				else
+					gui.spots[gui.spotsIdx].ico.transparency = 255;
+				}
 				
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 
@@ -1338,15 +1343,27 @@ static void Overlay (void)
 	return;
 	}
 
-static void fcb (void)
+static void cb_filecopy (void)
 	{
-	static int i = 0;
+	static time_t lastt = 0;
+	time_t t = time(NULL);
 	
-	i++;
-	if (i > 5)
+	if (t - lastt >= 1)
 		{
-		Video_WaitPanel (TEX_HGL, "Please wait...|Copying %u of %u Mb", fsop.bytes/1000/1000, fsop.size/1000/1000);
-		i = 0;
+		u32 mb = (u32)((fsop.multy.bytes/1000)/1000);
+		u32 sizemb = (u32)((fsop.multy.size/1000)/1000);
+		u32 elapsed = time(NULL) - fsop.multy.start_t;
+		u32 perc = (mb * 100)/sizemb;
+		
+		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
+		
+		lastt = t;
+		
+		if (grlib_GetUserInput() & WPAD_BUTTON_B)
+			{
+			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
+			if (ret == 0) fsop.breakop = 1;
+			}
 		}
 	}
 
@@ -1359,7 +1376,7 @@ static size_t GetGCGameUsbKb (int ai)
 	return fsop_GetFolderKb (path, NULL);
 	}
 
-int MoveGCGame (int ai)
+static bool MoveGCGame (int ai)
 	{
 	char source[300];
 	char target[300];
@@ -1367,7 +1384,14 @@ int MoveGCGame (int ai)
 	sprintf (source, "usb://ngc/%s", games[ai].asciiId);
 	sprintf (target, "sd://games/%s", games[ai].asciiId);
 
-	return fsop_CopyFolder (source, target, fcb);
+	bool ret = fsop_CopyFolder (source, target, cb_filecopy);
+	
+	if (!ret || fsop.breakop)
+		{
+		fsop_KillFolderTree (target, NULL);
+		}
+	
+	return ret;
 	}
 	
 int GameBrowser (void)
@@ -1450,8 +1474,13 @@ int GameBrowser (void)
 					if (games[gamesSelected].slot)
 						{
 						Debug ("DMLInstall");
-						if (DMLInstall (GetGCGameUsbKb(gamesSelected)))
-							MoveGCGame (gamesSelected);
+						if (DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected)))
+							{
+							Redraw();
+							grlib_PushScreen();
+
+							err = !MoveGCGame (gamesSelected);
+							}
 						else
 							err = true;
 						}
@@ -1464,6 +1493,8 @@ int GameBrowser (void)
 						DMLRun (games[gamesSelected].asciiId);
 						}
 					}
+				
+				browse = 1;
 				}
 				
 			/////////////////////////////////////////////////////////////////////////////////////////////
@@ -1531,8 +1562,8 @@ int GameBrowser (void)
 		
 		if (browse)
 			{
-			GameBrowse (0);
 			browse = 0;
+			GameBrowse (0);
 			redraw = 1;
 			}
 		

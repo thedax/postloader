@@ -5,9 +5,18 @@ typedef void (*fsopCallback)(void);
 
 typedef struct 
 	{
-	char op[64];	// Calling process can set filename or any other info that fit
-	int size;
-	int bytes;
+	u64 size, bytes; // for operation that uses more than one file
+	time_t start_t;
+	}
+s_fsopmulty;
+
+typedef struct 
+	{
+	char op[256];	// Calling process can set filename or any other info that fit
+	
+	u32 size, bytes;
+
+	s_fsopmulty multy;
 	
 	int flag1;		// user defined flag
 	bool breakop;	// allow to stop a long operation
@@ -27,6 +36,7 @@ bool fsop_CreateFolderTree (char *path);
 int fsop_CountFolderTree (char *path);
 
 u32 fsop_GetFolderKb (char *source, fsopCallback vc);
+u64 fsop_GetFolderBytes (char *source, fsopCallback vc);
 u32 fsop_GetFreeSpaceKb (char *path);
 
 #endif
