@@ -39,6 +39,7 @@ THE SOFTWARE.
 #define DEFAULT_FIFO_SIZE (256 * 1024) /**< GX fifo buffer size. */
 
 #define ENABLE_JPEG
+//#define ENABLE_TTF
 
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
@@ -198,7 +199,9 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
     if (!fatInitDefault())  error_code = -2;
 
     // Initialise TTF
-    // if (GRRLIB_InitTTF())  error_code = -3;
+#ifdef ENABLE_TTF
+	if (GRRLIB_InitTTF())  error_code = -3;
+#endif
 	enable_output = 1;
     //VIDEO_SetBlack(false);  // Enable video output (let do this to render subr)
     return error_code;
@@ -243,7 +246,9 @@ void  GRRLIB_Exit (void)
 		VIDEO_WaitVSync();
 
     // Done with TTF
-    // GRRLIB_ExitTTF();
+#ifdef ENABLE_TTF
+    GRRLIB_ExitTTF();
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

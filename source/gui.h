@@ -21,3 +21,6 @@ extern s_gui gui;
 
 void gui_Init (void);
 void gui_Clean (void);
+
+int ChooseDPadReturnMode (u32 btn);
+int Menu_SelectBrowsingMode (void);

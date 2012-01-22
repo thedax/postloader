@@ -334,6 +334,7 @@ char * DMLScanner (void)
 		{
 		if (strlen (pent->d_name) ==  6)
 			{
+			Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 			GetName (DEV_SD, pent->d_name, name);
 			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
 			strcat (buff, b);
@@ -342,25 +343,27 @@ char * DMLScanner (void)
 		
 	closedir(pdir);
 
-	if (!IsDevValid(DEV_USB)) return 0;
-	
-	sprintf (path, "%s://ngc", vars.mount[DEV_USB]);
-	
-	Debug ("DML: scanning %s", path);
-	
-	pdir=opendir(path);
-	
-	while ((pent=readdir(pdir)) != NULL) 
+	if (IsDevValid(DEV_USB))
 		{
-		if (strlen (pent->d_name) ==  6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
-			{
-			GetName (DEV_USB, pent->d_name, name);
-			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
-			strcat (buff, b);
-			}
-		}
+		sprintf (path, "%s://ngc", vars.mount[DEV_USB]);
 		
-	closedir(pdir);
+		Debug ("DML: scanning %s", path);
+		
+		pdir=opendir(path);
+		
+		while ((pent=readdir(pdir)) != NULL) 
+			{
+			if (strlen (pent->d_name) ==  6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+				{
+				Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+				GetName (DEV_USB, pent->d_name, name);
+				sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
+				strcat (buff, b);
+				}
+			}
+			
+		closedir(pdir);
+		}
 
 	int i, l;
 	

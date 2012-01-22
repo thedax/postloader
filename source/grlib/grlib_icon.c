@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include "../globals.h"
 #include "grlib.h"
 
 void grlib_IconSettingInit (s_grlib_iconSetting *grlib_iconSetting)
@@ -51,12 +52,11 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 	
 	// Draw background
 	
-	if (is->themed)
-		{
+	if (is->themed)		{
 		// Draw mask (if exist)
-		grlib_DrawSquareThemed (&grob, is->bkgMsk, NULL, 0, 0, DSTF_NONE);
-		// Draw background (if exist)
-		grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE);
+		if (!icon->noIcon)	grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE);
+		//Debug ("theme.frameBack = 0x%X 0x%X", theme.frameBack, is->bkgTex);
+		
 		}
 	else
 		{
@@ -122,6 +122,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		if (is->themed)
 			{
 			grlib_DrawSquareThemed (&grob, is->fgrTex, NULL, 0, 0, DSTF_NONE);
+			//grlib_MagObject (&grob, &grob, 2, 2);
 			grlib_DrawSquareThemed (&grob, is->fgrSelTex, NULL, 0, 0, DSTF_NONE);
 			}
 		else

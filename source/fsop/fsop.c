@@ -145,24 +145,25 @@ bool fsop_DirExist (char *path)
 
 bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	{
+	int err = 0;
 	fsop.breakop = 0;
 	
 	u8 *buff = NULL;
 	int size;
-	int bytes, rb;
+	int bytes, rb,wb;
 	//int block = 65536*4; // (256Kb)
 	//int block = 71680;
 	int block = 65536;
 	FILE *fs = NULL, *ft = NULL;
 	
-	ft = fopen(target, "wt");
-	if (!ft)
-		return false;
-	
 	fs = fopen(source, "rb");
 	if (!fs)
 		return false;
 
+	ft = fopen(target, "wt");
+	if (!ft)
+		return false;
+	
 	//Get file size
 	fseek ( fs, 0, SEEK_END);
 	size = ftell(fs);
@@ -189,7 +190,9 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	do
 		{
 		rb = fread(buff, 1, block, fs );
-		fwrite(buff, 1, rb, ft );
+		wb = fwrite(buff, 1, rb, ft );
+		
+		if (wb != wb) err = 1;
 		bytes += rb;
 		
 		fsop.multy.bytes += rb;
@@ -198,12 +201,16 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		if (vc) vc();
 		if (fsop.breakop) break;
 		}
-	while (bytes < size);
+	while (bytes < size && err == 0);
 
 	fclose (fs);
+	fclose (ft);
+	
 	free (buff);
+	
+	if (err) unlink (target);
 
-	if (fsop.breakop) return false;
+	if (fsop.breakop || err) return false;
 	
 	return true;
 	}

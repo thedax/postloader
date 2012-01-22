@@ -51,6 +51,7 @@ LIBS	+= -ljpeg
 LIBS	+= -lz -lfat -lntfs
 LIBS	+= -lwiiuse
 LIBS	+= -lbte -logc -lm
+#LIBS	+= -lfreetype
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

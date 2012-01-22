@@ -1,3 +1,6 @@
+#ifndef __GRLIB_H__
+#define __GRLIB_H__
+
 #include "grrlib.h"
 
 #define GRLIBVER "1.3"
@@ -125,7 +128,6 @@ typedef struct
 	GRRLIB_texImg *iconFake; 		// if icon and alternateIcon are null, draw this !
 	
 	// Themed
-	GRRLIB_texImg *bkgMsk; 		// Background texture
 	GRRLIB_texImg *bkgTex; 		// Background texture
 	GRRLIB_texImg *fgrSelTex; 	// foreground texture when selected flag is on
 	GRRLIB_texImg *fgrTex; 		// foreground texture 
@@ -158,7 +160,7 @@ void grlib_Redraw (void);
 void grlib_Render (void);
 void grlib_SetFontBMF (GRRLIB_bytemapFont *bmf);
 int grlib_GetFontMetrics (const char *text, int *width, int *heigh);
-void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text);
+void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text);
 void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...);
 
 void grlib_DrawSquare ( s_grlibobj *b );
@@ -210,3 +212,4 @@ HISTORY
 
 1.0 - First stable version
 *****************************************************************************************************************************/
+#endif

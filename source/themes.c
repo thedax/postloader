@@ -81,6 +81,21 @@ int ThemeSelect (void)
 	
 	ZipUnpack (path, targpath, NULL);
 	
+	sprintf (targpath, "%s://ploader/theme/ploader.png", vars.defMount);
+	if (fsop_FileExist (targpath) && IsDevValid (DEV_SD))
+		{
+		i = grlib_menu ("This theme contain a splash screen\n\nDo you want to install it ?", "Yes##1~No##-1~Remove##0");
+		if (i != -1)
+			unlink ("sd://ploader.png");
+		if (i == 1)
+			{
+			if (!fsop_CopyFile (targpath, "sd://ploader.png", NULL))
+				{
+				grlib_menu ("An error occured copying the splash...", "   OK   ");
+				}
+			}
+		}
+	
 	Video_LoadTheme (0);
 	Video_LoadTheme (1);
 	

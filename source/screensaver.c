@@ -8,6 +8,19 @@
 #include "globals.h"
 #include "bin2o.h"
 
+static void UpdateLiveUSB (void)
+	{
+	if (!IsDevValid (DEV_USB)) return;
+	
+	FILE *f;
+	char path[PATHMAX];
+	
+	sprintf (path, "%s://pllive.dat", vars.mount[DEV_USB]);
+	f = fopen (path, "wb");
+	fwrite (f, 1, sizeof(FILE), f);
+	fclose (f);
+	}
+
 static bool Play (char * fn) // return true interrupt the screensaver
 	{
 	static int xs = 0;
@@ -81,6 +94,8 @@ static bool Play (char * fn) // return true interrupt the screensaver
 		}
 
 	GRRLIB_FreeTexture (img);
+	
+	UpdateLiveUSB ();
 	
 	return false;
 	}
@@ -165,15 +180,7 @@ bool LiveCheck (int reset)
 	if ((time(NULL) - t) > 30 && IsDevValid(DEV_USB))
 		{
 		t = time(NULL);
-		
-		FILE *f;
-		char path[PATHMAX];
-		sprintf (path, "%s://pllive.dat", vars.mount[DEV_USB]);
-		f = fopen (path, "wb");
-		fwrite (f, 1, sizeof(FILE), f);
-		fclose (f);
-		
-		unlink (path);
+		UpdateLiveUSB ();
 		}
 	
 	return false;

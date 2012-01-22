@@ -95,7 +95,7 @@ bool NeedArgs (u8 *buffer)
 
 int DolBootPrepareWiiload (void)
 	{
-	MasterInterface (1, 0, 3, "Booting... %x %d", wiiload.buff, wiiload.buffsize);
+	MasterInterface (1, 0, 3, "Booting...");
 
 	memcpy(EXECUTE_ADDR, wiiload.buff, wiiload.buffsize);
 	DCFlushRange((void *) EXECUTE_ADDR, wiiload.buffsize);

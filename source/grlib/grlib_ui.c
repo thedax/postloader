@@ -82,7 +82,7 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 		if (b->text[1] == '-') toggle = 0;
 		
 		if (toggle == 0) sprintf (text, "[\255*] %s", &b->text[2]);
-		if (toggle == 1) sprintf (text, "[*] %s", &b->text[2]);
+		if (toggle == 1) sprintf (text, "[X] %s", &b->text[2]);
 		}
 	
 	if (toggle == -1) strcpy(text, b->text);

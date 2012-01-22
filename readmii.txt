@@ -1,11 +1,14 @@
-postLoader3 (readmii.txt 1.4)
+postLoader3 (readmii.txt 1.5)
 
 ========================================
 What postLoader is:
 ========================================
-* HomeBrew Browser with subfolder support
+* HomeBrew Browser with subfolder and xml support
 * Channel/Title Browser with filters and cover
 * neek2o & Uneek+DI game browser with cover support
+* game loaders forwarder (for CFG, GX and WiiFlow) with cover and filters support
+* DML gamecube browser with USB to SD copy feature
+* Themable user interface
 * Wiiload server
 
 ========================================
@@ -37,6 +40,12 @@ USB Loaders forwarder
 * Support title vote
 * Support ios selection
 
+DML gamecube games
+* Support covers
+* Support title vote
+* Support ios selection
+* Can copy games from USB to SD before execute them
+
 Homebrew:
 * HB Channel replacement: It can be used to browse homebrew application, with it own interface. 
 * Dangerous homebrews can be hidden
@@ -45,7 +54,7 @@ Homebrew:
 * Can browse SD and USB device (FAT32 on first/active partition)
 * WiiLoad support (straight, compressed dol, zip archieve)
 
-Titles:
+Channels:
 * Nand emulation (ciosx/waninkoko on slot 249)
 * AHBPROT is need for real nand browsing (otherwise ios249 is used)
 * Wii System Channel replacemente: Can browse and run Channels, WiiWare and VC.
@@ -62,40 +71,26 @@ Titles:
 Installation:
 ========================================
 
-(A) Real Wii: priiloader extension via priibooter (see below) [SUGGESTED]
+postLoader can be executed like any wii homebrew. Anyway you can get the best from it in these ways:
 
-PRO: Easy to upgrade. All priibooter beneficts
+(A) Real Wii: priiloader extension via priibooterGUI (see below) [SUGGESTED]
+
+PRO: Easy to upgrade. All priibooterGUI beneficts
 CON: SD is always needed in the Wii
 
-1) Copy to your SD or USB root postLoader.dol. 
-2) Copy to your SD root priibooter.dol. 
+1) Install to your SD or USB /apps/postloader like any homebrew
+2) Copy to your SD root priibooterGUI.dol. 
 3) Enter in priiloader pressing "reset" when you turn on your wii.
 4) Select "Load/Install file" from priiloader menu'
-5) Select priibooter.dol
+5) Select priibooterGUI.dol
 6) Go back to main menu'
 7) Select settings -> Autoboot: Installed File
 8) Select settings -> Return to: Autoboot
-9) If you wish, you can remove priibooter.dol from the SD
-10) postLoader MUST exist on the root of SD, and SD must be inside the Wii
+9) If you wish, you can remove priibooterGUI.dol from the SD
 
+(B) neek2o/UNEEK: priiloader extension via priibooterGUI
 
-(B) Real Wii: priiloader extension
-
-PRO: Do not require an SD always inserted
-CON: Upgrades are less easy. Auto update function can't work
-
-1) Copy to your SD root postLoader.dol. 
-2) Enter in priiloader pressing "reset" when you turn on your wii.
-3) Select "Load/Install file" from priiloader menu'
-4) Select postLoader.dol
-5) Go back to main menu'
-6) Select settings -> Autoboot: Installed File
-7) Select settings -> Return to: Autoboot
-8) If you wish, you can remove postLoader.dol from the SD
-
-(C) UNEEK: priiloader extension via priibooter (ios 249 NOT required)
-
-1) Copy to your SD root postLoader.dol. 
+1) Install to your SD or USB /apps/postloader like any homebrew
 2) Copy to your SD root neekbooter.dol. 
 3) Run your NEEK environment pressing "reset" to enter in neek priiloader.
 4) Select "Load/Install file" from priiloader menu'
@@ -105,10 +100,15 @@ CON: Upgrades are less easy. Auto update function can't work
 8) Select settings -> Return to: Autoboot
 9) If you wish, you can remove neekbooter.dol from the SD
 10) postLoader MUST exist on the root of SD, and SD must be inside the Wii
-11) The first time you enter in postLoader, press (H) to enter in the menu -> Options -> select "Disable boot time USB initialization"
 
-(D) SNEEK: Actually not supperted nor tested. You can try solution (A) also for this. (ios 249 required on neek)
+========================================
+DML: (gamecube games on USB)
+========================================
 
+notes: ngc iso (already converted with DiscEX) must be copied in usb://ngc folder (primary FAT32 part). 
+postLoader will take care to copy to sd://games when required
+Games icon from usb games are dimmed. Copying process is slow (1750 kb/s on my sd)
+If there is no space on sd, postLoader will ask to delete some games.
 
 ========================================
 Usage:
@@ -133,6 +133,7 @@ Keys (interactive mode)
 CUSTOM SPLASH SCREEN
 ========================================
 
+Themes tipically contains and install their own splash screen.
 Copy your png named "ploader.png" on the root of SD card. 640x480 is suggested.
 Using a custom splash screen will slow a bit postLoader startup.
 
@@ -184,9 +185,9 @@ NOTES:
 Additiona applications:
 ========================================
 
-priibooter.dol:
+priibooterGUI.dol:
 
-priibooter is a little console application intended to be installed under priiloader. It allow to
+priibooter is a little gui application intended to be installed under priiloader. It allow to
 * Boot (remembering last operation [sd needed])
   > postloader from sd://apps/postloader/boot.dol or usb://apps/postloader/boot.dol
   > HBC
@@ -208,7 +209,7 @@ Files you will find after running postLoader:
 ========================================
 
 SD://ploader.png: custom splashcreen (added by you)
-SD://ploader.sd: if it is present, usb will not be used
+SD://ploader/ploader.sd: if it is present, usb will not be used
 dev://ploader/channels.png/: icon of installed channels (dev is the one selected the first time)
 dev://ploader/channels.cfg/: configuration data for channels/titles
 dev://ploader/channels.txt: dump of the last nand scan
@@ -233,8 +234,7 @@ Themes must be copied to dev://ploader/theme and are composed of the following f
 * button.png: 3x3 tile for drawing button (suggested size 24x24 px)
 * button_sel.png: 3x3 tile for drawing selected button (suggested size 24x24 px)
 * bkg.png: is the 640x480 background png
-* frame_back.png: is the background of empty icon. This can be transparent or partially transparent
-* frame_mask.png: an icon is drawn on top of this. This shouldn't be transparent
+* frame_back.png: is the background of empty icon. Should not be transparent
 * frame.png: is the standard frame for icons
 * frame_sel.png: when an icon is selected, this frame will be drawn
 
@@ -245,13 +245,10 @@ Themes must be copied to dev://ploader/theme and are composed of the following f
   > grlibSettings.theme.buttonMagY: Y
   > grlibSettings.theme.buttonsTextOffsetY: vertical text offset for buttons
   > grlibSettings.fontBMF_reverse = 1: font color is reversed (if 1 text is black)
-  > theme.hb_line1Y: hb name
-  > theme.hb_line3Y: hb path and args info. If 0 it isn' displayed (like wii theme)
-  > theme.hb_line2Y: hb short description 
-  > theme.ch_line1Y: title name
-  > theme.ch_line2Y: title info
+  > theme.line1Y: selection name
+  > theme.line2Y: selection short description (if applicable)
+  > theme.line3Y: path and args info. If 0 it isn' displayed (like wii theme)
 NOTE: actually cfg file do not accept comments (like # or ; as first character of a line)
-
 
 ========================================
 UNEEK Nand switcher notes:

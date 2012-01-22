@@ -8,8 +8,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 56
-#define VER "3.56.1"
+#define BUILD 57
+#define VER "3.57.1"
 #define CFGVER "PLCFGV0008"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -19,6 +19,7 @@
 
 #define FNTNORM 0
 #define FNTSMALL 1
+#define FNTBIG 2
 
 #define CFG_HOME_PRIILOAER 0x4461636F
 #define PRIILOADER_TOMENU  0x50756E65
@@ -148,18 +149,14 @@ typedef struct
 	{
 	bool ok;
 	
-	int hb_line1Y;	// Y coord of title
-	int hb_line2Y;	// Y coord short desc
-	int hb_line3Y;	// Y coord info
-	
-	int ch_line1Y;	// Y Coord title
-	int ch_line2Y;  // Y coord info
+	int line1Y;	// Y coord of title
+	int line2Y;	// Y coord short desc
+	int line3Y;	// Y coord info
 	
 	GRRLIB_texImg *bkg;
 	GRRLIB_texImg *frame;
 	GRRLIB_texImg *frameBack;
 	GRRLIB_texImg *frameSel;
-	GRRLIB_texImg *frameMask;
 	}
 s_theme;
 
@@ -333,7 +330,7 @@ extern s_grlibSettings grlibSettings;
 	s_config config;
 	int sdStatus = -1;
 	int interactive = 0;
-	GRRLIB_bytemapFont *fonts[2];
+	GRRLIB_bytemapFont *fonts[3];
 	s_vars vars;
 	s_theme theme;
 	const char CHANNEL_FILTERS[] = "HWFECJLMNPQ ";
@@ -343,7 +340,7 @@ extern s_grlibSettings grlibSettings;
 	extern s_config config;
 	extern int sdStatus;
 	extern int interactive;
-	extern GRRLIB_bytemapFont *fonts[2];
+	extern GRRLIB_bytemapFont *fonts[3];
 	extern s_vars vars;
 	extern s_theme theme;
 	extern const char CHANNEL_FILTERS[];

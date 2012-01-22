@@ -2,6 +2,22 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.57.1
+
+* Updated readmii.txt to version 1.5 with latest changes
+* wiimote key (1) now is "go to page...". D-Pad (LF) homebrew, (RG) channels, (UP) WII games, (DW) GC Games
+* Added messages when "intensive" operation are performed
+* When possibile bigger font are used.
+* priibooter console no more in distribution
+* added "wii theme" to the default distribution
+* also the splash screen is installed if it is present in the theme
+* Now name sorting is case insensitive
+* Optimized a bit the keep usb live funcion
+* Keep usb live is now called in the screensaver
+* dml scanner function was failing if no usb hdd is attached
+* Adjusted a lot of thing about themes. Themes must be updated to package 2.1
+* Code clean and some bug fix in code
+
 postLoader 3.56.1
 
 * added a lot of additional checking and perfcounter for filesystem function (copy etc...)

@@ -11,6 +11,7 @@
 #include "ios.h"
 #include "identify.h"
 #include "gui.h"
+#include "mystring.h"
 
 #define CHNMAX 1024
 
@@ -330,7 +331,7 @@ static void AppsSort (void)
 		
 		for (i = 0; i < chans2Disp - 1; i++)
 			{
-			if (chans[i].name && chans[i+1].name && strcmp (chans[i+1].name, chans[i].name) < 0)
+			if (chans[i].name && chans[i+1].name && ms_strcmp (chans[i+1].name, chans[i].name) < 0)
 				{
 				// swap
 				memcpy (&app, &chans[i+1], sizeof(s_channel));
@@ -474,18 +475,9 @@ static int RebuildCacheFile (void)
 				lower[cnt] = TITLE_LOWER(TitleIds[i]);
 				upper[cnt] = TITLE_UPPER(TitleIds[i]);
 				
-				/*
-				char temp[6];
-				memset(temp, 0, 6);
-				memcpy(temp, (char *)(&lower[cnt]), 4);
-				grlib_dosm ("%d: 0x%08x 0x%08x ID:%s", cnt, upper[cnt], lower[cnt], temp);
-				*/
-				
 				// Search title in cache
 				names[cnt] = get_name(TitleIds[i]);
 				
-				//grlib_dosm ("%d: 0x%08x 0x%08x %s", cnt, upper[cnt], lower[cnt], names[cnt]);
-
 				Video_WaitPanel (TEX_HGL, "Searching for channels: %d found...", cnt);
 				cnt++;
 				}
@@ -631,7 +623,7 @@ static int FindSpot (void)
 			grlib_IconDraw (&is, &gui.spots[i].ico);
 
 			grlib_SetFontBMF (fonts[FNTNORM]);
-			grlib_printf (XMIDLEINFO, theme.ch_line1Y, GRLIB_ALIGNCENTER, 0, chans[chansSelected].name);
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, chans[chansSelected].name);
 			
 			grlib_SetFontBMF (fonts[FNTSMALL]);
 			
@@ -647,7 +639,7 @@ static int FindSpot (void)
 			strcat (info, chans[chansSelected].asciiId);
 			strcat (info, ")");
 			
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, info);
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, info);
 			
 			t = time(NULL);
 			break;
@@ -657,12 +649,12 @@ static int FindSpot (void)
 	grlib_SetFontBMF (fonts[FNTNORM]);
 	if (!grlib_irPos.valid)
 		{
-		if (chansSelected == -1) grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");
+		if (chansSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");
 		}
 	else
 		if (time(NULL) - t > 0 && chansSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Title menu (1) Switch mode (2) Filters");
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (D-Pad) Switch mode (1) goto page (2) Filters");
 			}
 	
 	return chansSelected;
@@ -725,7 +717,10 @@ static void ShowAppMenu (int ai)
 		strcat (buff, "|");
 		strcat (buff, "Close##-1");
 		
+		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (chans[ai].name, buff);
+		grlibSettings.fontNormBMF = fonts[FNTNORM];
+		
 		if (item < 100) break;
 		if (item >= 100)
 			{
@@ -784,7 +779,7 @@ static void ShowAppMenu (int ai)
 
 	WriteTitleConfig (chansSelected);
 	
-	ChnBrowse ();
+	//ChnBrowse ();
 	}
 
 static void ShowFilterMenu (void)
@@ -898,7 +893,9 @@ static void ShowNandMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Select NAND Source", buff);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 	if (item == 100)
 		{
@@ -978,45 +975,37 @@ static void ShowNandOptions (void)
 	
 static void ShowMainMenu (void)
 	{
-	char buff[300];
+	char buff[512];
 	
 	buff[0] = '\0';
 	
-	strcat (buff, "Switch to Homebrew mode##100|");
-	strcat (buff, "Switch to Game mode##101|");
-	strcat (buff, "|");
-	strcat (buff, "NAND Source##1|");
-	strcat (buff, "NAND Options##8|");
-	strcat (buff, "|");
-	strcat (buff, "Select titles filter##3|");
+	grlib_menuAddItem (buff, 100, "Browse to...");
+	grlib_menuAddItem (buff,  1, "NAND Source...");
+	grlib_menuAddItem (buff,  8, "NAND Options...");
+	grlib_menuAddItem (buff,  3, "Titles filter");
 
 	if (showHidden)
-		strcat (buff, "Hide hidden titles##6|");
+		grlib_menuAddItem (buff,  6, "Hide hidden titles");
 	else
-		strcat (buff, "Show hidden titles##7|");
-		
-	strcat (buff, "|");
-	strcat (buff, "Run WII system menu##4|");
-	strcat (buff, "Run BOOTMII##20|");
-	strcat (buff, "Run DISC##21|");
-	
-	strcat (buff, "|");	
-	strcat (buff, "Options...##5|");
-	strcat (buff, "Cancel##-1");
+		grlib_menuAddItem (buff,  7, "Show hidden titles");
+
+	grlib_menuAddColumn (buff);
+	grlib_menuAddItem (buff,  4, "Run System menu");
+	grlib_menuAddItem (buff, 20, "Run BOOTMII");
+	grlib_menuAddItem (buff, 21, "Run DISC");
+	grlib_menuAddItem (buff,  5, "System options...");
+	grlib_menuAddItem (buff, -1, "Close");
 		
 	Redraw();
 	grlib_PushScreen();
 	
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Channel menu", buff);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 	if (item == 100)
 		{
-		browserRet = INTERACTIVE_RET_TOHOMEBREW;
-		}
-		
-	if (item == 101)
-		{
-		browserRet = INTERACTIVE_RET_TOGAMES;
+		browserRet = Menu_SelectBrowsingMode ();
 		}
 		
 	if (item == 3)
@@ -1263,9 +1252,13 @@ int ChnBrowser (void)
 		// If [HOME] was pressed on the first Wiimote, break out of the loop
 		if (btn)
 			{
+			browserRet = ChooseDPadReturnMode (btn);
+			if (browserRet != -1) break;
+			
 			if (btn & WPAD_BUTTON_1) 
 				{
-				browserRet = INTERACTIVE_RET_TOGAMES;
+				GoToPage ();
+				redraw = 1;
 				}
 			
 			if (btn & WPAD_BUTTON_A && chansSelected != -1) 
@@ -1292,12 +1285,6 @@ int ChnBrowser (void)
 				{
 				ShowFilterMenu ();
 				ConfigWrite ();
-				redraw = 1;
-				}
-				
-			if (btn & WPAD_BUTTON_DOWN)
-				{
-				GoToPage ();
 				redraw = 1;
 				}
 				
@@ -1356,10 +1343,12 @@ int ChnBrowser (void)
 			redraw = 1;
 			}
 			
-		if (wiiload.status == WIILOAD_HBREADY && WiiloadPostloaderDolMenu())
+		if (wiiload.status == WIILOAD_HBREADY)
 			{
-			browserRet = INTERACTIVE_RET_WIILOAD;
-			redraw = 1;
+			if (WiiloadPostloaderDolMenu())
+				browserRet = INTERACTIVE_RET_WIILOAD;
+			else
+				redraw = 1;
 			break;
 			}
 		

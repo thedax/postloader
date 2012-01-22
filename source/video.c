@@ -47,6 +47,7 @@ void Video_Init (void)
 		
 	fonts[FNTNORM] = GRRLIB_LoadBMF (fnorm_bmf);
 	fonts[FNTSMALL] = GRRLIB_LoadBMF (fsmall_bmf);
+	fonts[FNTBIG] = GRRLIB_LoadBMF (fbig_bmf);
 	
 	grlibSettings.fontNormBMF = fonts[FNTNORM];
 	grlibSettings.fontSmallBMF = fonts[FNTSMALL];
@@ -67,6 +68,7 @@ void Video_Deinit (void)
 	
 	GRRLIB_FreeBMF (fonts[FNTNORM]);
 	GRRLIB_FreeBMF (fonts[FNTSMALL]);
+	GRRLIB_FreeBMF (fonts[FNTBIG]);
 	
 	GRRLIB_FreeTexture (bkg[0]);
 	GRRLIB_FreeTexture (bkg[1]);
@@ -210,6 +212,12 @@ void Video_LoadTheme (int init)
 		
 		memset (&theme, 0, sizeof (s_theme));
 		
+		// Setting default values
+		theme.line1Y = 410;
+		theme.line2Y = 425;
+		theme.line3Y = 450;
+		grlibSettings.fontBMF_reverse = 0;
+		
 		sprintf (path, "%s://ploader/theme/bkg.png", vars.defMount);
 		theme.bkg = GRRLIB_LoadTextureFromFile (path);
 		
@@ -221,9 +229,7 @@ void Video_LoadTheme (int init)
 		
 		sprintf (path, "%s://ploader/theme/frame_back.png", vars.defMount);
 		theme.frameBack = GRRLIB_LoadTextureFromFile (path);
-		
-		sprintf (path, "%s://ploader/theme/frame_mask.png", vars.defMount);
-		theme.frameMask = GRRLIB_LoadTextureFromFile (path);
+		Debug ("theme.frameBack = 0x%X", theme.frameBack);
 		
 		sprintf (path, "%s://ploader/theme/button.png", vars.defMount);
 		grlibSettings.theme.texButton = GRRLIB_LoadTextureFromFile (path);
@@ -252,11 +258,9 @@ void Video_LoadTheme (int init)
 			cfg_GetInt (cfg, "grlibSettings.fontBMF_reverse", &grlibSettings.fontBMF_reverse);
 
 			Debug ("theme block#3");
-			cfg_GetInt (cfg, "theme.hb_line3Y", &theme.hb_line3Y);
-			cfg_GetInt (cfg, "theme.hb_line1Y", &theme.hb_line1Y);
-			cfg_GetInt (cfg, "theme.hb_line2Y", &theme.hb_line2Y);
-			cfg_GetInt (cfg, "theme.ch_line1Y", &theme.ch_line1Y);
-			cfg_GetInt (cfg, "theme.ch_line2Y", &theme.ch_line2Y);
+			cfg_GetInt (cfg, "theme.line3Y", &theme.line3Y);
+			cfg_GetInt (cfg, "theme.line1Y", &theme.line1Y);
+			cfg_GetInt (cfg, "theme.line2Y", &theme.line2Y);
 
 			free (cfg);
 			
@@ -274,29 +278,15 @@ void Video_LoadTheme (int init)
 			theme.ok = 1;
 			grlibSettings.theme.enabled = true;
 			}
-		else
-			{
-			Debug ("using no theme");
-			
-			theme.hb_line1Y = 410;
-			theme.hb_line2Y = 425;
-			theme.hb_line3Y = 450;
-			
-			theme.ch_line1Y = 425;
-			theme.ch_line2Y = 450;
-			
-			grlibSettings.fontBMF_reverse = 0;
-			}
-			
+		
+		#ifndef DOLPHINE
 		if (rmode->viTVMode == VI_DEBUG_PAL)
 			{
-			theme.hb_line1Y /= 1.01;
-			theme.hb_line2Y /= 1.01;
-			theme.hb_line3Y /= 1.01;
-			
-			theme.ch_line1Y /= 1.01;
-			theme.ch_line2Y /= 1.01;
+			theme.line1Y /= 1.01;
+			theme.line2Y /= 1.01;
+			theme.line3Y /= 1.01;
 			}
+		#endif
 		}
 	else
 		{
@@ -319,7 +309,6 @@ void Video_LoadTheme (int init)
 		GRRLIB_FreeTexture (theme.frame);
 		GRRLIB_FreeTexture (theme.frameSel);
 		GRRLIB_FreeTexture (theme.frameBack);
-		GRRLIB_FreeTexture (theme.frameMask);
 		GRRLIB_FreeTexture (grlibSettings.theme.texButton);
 		GRRLIB_FreeTexture (grlibSettings.theme.texButtonSel);
 		GRRLIB_FreeTexture (grlibSettings.theme.texWindow);

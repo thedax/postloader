@@ -139,12 +139,17 @@ void ShowAboutMenu (void)
 	
 	options[0] = '\0';
 	
+	grlib_menuAddItem (options, 1,  "About postLoader"VER);
+	grlib_menuAddItem (options, 14,  "Change theme...");
+
+	grlib_menuAddSeparator (options);
+
+	grlib_menuAddItem (options, 11,  "Reboot...");
+
 	if (vars.neek == NEEK_2o)
 		menu_SwitchNandAddOption (options);
 	else
 		grlib_menuAddItem (options, 10,  "Change UNEEK nand");
-	
-	grlib_menuAddSeparator (options);
 
 	if (IsDevValid (DEV_SD))
 		{
@@ -158,17 +163,17 @@ void ShowAboutMenu (void)
 		grlib_menuAddItem (options, 6,  "Disable autoboot");
 	
 	grlib_menuAddItem (options, 2,  "Check online for updates");
-	grlib_menuAddItem (options, 11,  "Reboot...");
 	grlib_menuAddItem (options, 12,  "Clean channel/games configuration files...");
-	grlib_menuAddItem (options, 14,  "Change theme...");
 	
 	if (vars.neek == NEEK_2o && IsDevValid (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 		grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
 
-	grlib_menuAddItem (options, 1,  "About postLoader"VER);
+	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, 0,  "Close");
 	
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	item = grlib_menu (buff, options);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
 	
 	if (item == 1)
 		{

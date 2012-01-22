@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "bin2o.h"
 #include "gui.h"
+#include "mystring.h"
 
 // 192x112
 // 128x48
@@ -83,7 +84,6 @@ static void InitializeGui (void)
 	is.magXSel = 1.2;
 	is.magYSel = 1.2;
 	is.iconFake = vars.tex[TEX_NONE];
-	is.bkgMsk = theme.frameMask;
 	is.bkgTex = theme.frameBack;
 	is.fgrSelTex = theme.frameSel;
 	is.fgrTex = theme.frame;
@@ -553,7 +553,7 @@ static void AppsSort (void)
 		
 		for (i = 0; i < apps2Disp - 1; i++)
 			{
-			if (apps[i].name && apps[i+1].name && strcmp (apps[i+1].name, apps[i].name) < 0 && apps[i].type != AT_FOLDERUP)
+			if (apps[i].name && apps[i+1].name && ms_strcmp (apps[i+1].name, apps[i].name) < 0 && apps[i].type != AT_FOLDERUP)
 				{
 				// swap
 				memcpy (&app, &apps[i+1], sizeof(s_app));
@@ -738,7 +738,7 @@ static void ShowAppMenu (int ai)
 				title[j+1] = 0;			
 				}
 				
-			if (lines > 15)
+			if (lines > 14)
 				{
 				strcat (title, "... CUT ...");
 				j = strlen(title);
@@ -753,9 +753,11 @@ static void ShowAppMenu (int ai)
 	buff[0] = '\0';
 	strcat (buff, "Set as autoboot application##0|");
 	if (apps[ai].hidden)
-		strcat (buff, "Remove hide flag##1|");
+		strcat (buff, "Remove hide flag##1");
 	else
-		strcat (buff, "Hide this application##2|");
+		strcat (buff, "Hide this application##2");
+		
+	strcat (buff, "~");
 		
 	if (apps[ai].fixCrashOnExit)
 		strcat (buff, "Fix crash on exit (active)##3|");
@@ -863,25 +865,23 @@ static void SortDispMenu (void)
 
 static void ShowMainMenu (void)
 	{
-	char buff[300];
+	char buff[512];
 	
 	buff[0] = '\0';
 	
-	grlib_menuAddItem (buff, 100, "Switch to Channel mode");
-	grlib_menuAddItem (buff, 101, "Switch to Game mode");
-	grlib_menuAddSeparator (buff);
+	grlib_menuAddItem (buff, 100, "Browse to...");
 	grlib_menuAddItem (buff,  0, "Rescan devices");
-	grlib_menuAddSeparator (buff);
-	grlib_menuAddItem (buff,  4, "Run WII system menu");
+	grlib_menuAddItem (buff,  6, "View options...");
+	grlib_menuAddColumn (buff);
+	grlib_menuAddItem (buff,  4, "Run System menu");
 	grlib_menuAddItem (buff, 20, "Run BOOTMII");
 	grlib_menuAddItem (buff, 21, "Run DISC");
-	grlib_menuAddSeparator (buff);
-	grlib_menuAddItem (buff,  6, "Sort and display options...");
-	grlib_menuAddItem (buff,  5, "Options...");
-	grlib_menuAddSeparator (buff);
+	grlib_menuAddItem (buff,  5, "System options...");
 	grlib_menuAddItem (buff, -1, "Close");
 		
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Homebrew menu", buff);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 	if (item == 0)
 		{
@@ -892,12 +892,7 @@ static void ShowMainMenu (void)
 		
 	if (item == 100)
 		{
-		browserRet = INTERACTIVE_RET_TOCHANNELS;
-		}
-		
-	if (item == 101)
-		{
-		browserRet = INTERACTIVE_RET_TOGAMES;
+		browserRet = Menu_SelectBrowsingMode ();
 		}
 		
 	if (item == 20)
@@ -968,17 +963,17 @@ void DrawInfo (void)
 		
 		if (apps[appsSelected].desc)
 			{
-			grlib_printf (XMIDLEINFO, theme.hb_line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
-			grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
 			}
 		else
-			grlib_printf (XMIDLEINFO, theme.hb_line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
 
 		grlib_SetFontBMF (fonts[FNTSMALL]);
 		
 		if (apps[appsSelected].type != AT_FOLDERUP)
 			{
-			if (theme.hb_line3Y > 0)
+			if (theme.line3Y > 0)
 				{
 				char rld[32];
 				
@@ -988,9 +983,9 @@ void DrawInfo (void)
 					strcpy (rld, " <no_ios_reload/>");
 				
 				if (apps[appsSelected].args != NULL)
-					grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s (%s)%s",subpath, apps[appsSelected].path, apps[appsSelected].args, rld);
+					grlib_printf (XMIDLEINFO, theme.line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s (%s)%s",subpath, apps[appsSelected].path, apps[appsSelected].args, rld);
 				else
-					grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s%s",subpath, apps[appsSelected].path, rld);
+					grlib_printf (XMIDLEINFO, theme.line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s%s",subpath, apps[appsSelected].path, rld);
 				}
 			}
 		}
@@ -998,13 +993,13 @@ void DrawInfo (void)
 	grlib_SetFontBMF (fonts[FNTNORM]);
 	if (!grlib_irPos.valid)
 		{
-		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");		
+		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");		
 		}
 	else
 		{
 		if (time(NULL) - t > 0 && appsSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.hb_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) App. menu (1) Switch mode");
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (D-Pad) Switch mode (1) goto page");
 			}
 		}
 	}
@@ -1061,8 +1056,6 @@ static void Redraw (void)
 		
 	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", appsPage+1, appsPageMax+1);
 	
-	Debug ("Redraw [spots]");
-
 	// Prepare black box
 	s_grlib_icon ico;
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -1109,8 +1102,6 @@ static void Redraw (void)
 					gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDER];
 				}
 
-			//Debug ("Drawing #1");
-
 			// Check if it is autoboot app
 			if (config.autoboot.enabled && config.autoboot.appMode == APPMODE_HBA)
 				{
@@ -1119,8 +1110,6 @@ static void Redraw (void)
 				if (strcmp (config.autoboot.path, path) == 0)
 					gui.spots[gui.spotsIdx].ico.iconOverlay[0] = vars.tex[TEX_STAR];
 				}
-
-			//Debug ("Drawing #2");
 
 			// Is it hidden ?
 			if (apps[ai].hidden && showHidden)
@@ -1133,8 +1122,6 @@ static void Redraw (void)
 			if (apps[ai].mount[0] == 'u' || apps[ai].mount[0] == 'U') 
 				gui.spots[gui.spotsIdx].ico.iconOverlay[2] = vars.tex[TEX_USB];
 			
-			//Debug ("Drawing #3");
-
 			if (!gui.spots[gui.spotsIdx].ico.icon)
 				{
 				if (apps[ai].name)
@@ -1143,7 +1130,6 @@ static void Redraw (void)
 					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].path);
 				}
 
-			//Debug ("Drawing #4");
 			if (spotSelected == i)
 				gui.spots[i].ico.sel = true;
 				
@@ -1155,8 +1141,6 @@ static void Redraw (void)
 		}
 
 	grlib_SetFontBMF(fonts[FNTNORM]);
-
-	//Debug ("Redraw [end]");
 	}
 
 static void Overlay (void)
@@ -1243,9 +1227,13 @@ int AppBrowser (void)
 			{
 			while (WPAD_ButtonsDown(0)) WPAD_ScanPads();
 			
+			browserRet = ChooseDPadReturnMode (btn);
+			if (browserRet != -1) break;
+			
 			if (btn & WPAD_BUTTON_1) 
 				{
-				browserRet = INTERACTIVE_RET_TOCHANNELS;
+				GoToPage ();
+				redraw = 1;
 				}
 
 			if (btn & WPAD_BUTTON_A && appsSelected != -1 && sortMode == 0) 
@@ -1302,13 +1290,6 @@ int AppBrowser (void)
 				ShowAppMenu (appsSelected);
 				redraw = 1;
 				}
-				
-			if (btn & WPAD_BUTTON_DOWN)
-				{
-				GoToPage ();
-				redraw = 1;
-				}
-
 
 			/////////////////////////////////////////////////////////////////////////////////////////////
 			// If user press (B) stop sort mode
@@ -1388,10 +1369,12 @@ int AppBrowser (void)
 			redraw = 1;
 			}
 			
-		if (wiiload.status == WIILOAD_HBREADY && WiiloadPostloaderDolMenu())
+		if (wiiload.status == WIILOAD_HBREADY)
 			{
-			browserRet = INTERACTIVE_RET_WIILOAD;
-			redraw = 1;
+			if (WiiloadPostloaderDolMenu())
+				browserRet = INTERACTIVE_RET_WIILOAD;
+			else
+				redraw = 1;
 			break;
 			}
 		

@@ -12,6 +12,7 @@
 #include "identify.h"
 #include "gui.h"
 #include "neek.h"
+#include "mystring.h"
 
 #define CHNMAX 1024
 
@@ -130,6 +131,8 @@ static void InitializeGui (void)
 	is.borderSelColor = RGBA (255,255,255,255); 	// Border color
 	is.borderColor = RGBA (128,128,128,255); 		// Border color
 	is.fontReverse = 0; 		// Border color
+	
+	Debug ("theme.frameBack = 0x%X 0x%X", theme.frameBack, is.bkgTex);
 
 	il = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -339,7 +342,7 @@ static void AppsSort (void)
 		
 		for (i = 0; i < games2Disp - 1; i++)
 			{
-			if (games[i].name && games[i+1].name && strcmp (games[i+1].name, games[i].name) < 0)
+			if (games[i].name && games[i+1].name && ms_strcmp (games[i+1].name, games[i].name) < 0)
 				{
 				// swap
 				memcpy (&app, &games[i+1], sizeof(s_game));
@@ -433,6 +436,8 @@ static int GameBrowse (int forcescan)
 		int i;
 		char *titles;
 		char *p;
+		
+		Video_WaitPanel (TEX_HGL, "Please wait...");
 		
 		if (config.gameMode == GM_WII)
 			{
@@ -559,7 +564,7 @@ static int FindSpot (void)
 				}
 			
 			grlib_SetFontBMF (fonts[FNTNORM]);
-			grlib_printf (XMIDLEINFO, theme.ch_line1Y, GRLIB_ALIGNCENTER, 0, info);
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, info);
 
 			grlib_SetFontBMF (fonts[FNTSMALL]);
 			
@@ -568,7 +573,7 @@ static int FindSpot (void)
 			strcat (info, games[gamesSelected].asciiId);
 			strcat (info, ")");
 			
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, info);
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, info);
 			
 			t = time(NULL);
 			break;
@@ -578,12 +583,12 @@ static int FindSpot (void)
 	grlib_SetFontBMF (fonts[FNTNORM]);
 	if (!grlib_irPos.valid)
 		{
-		if (gamesSelected == -1) grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");
+		if (gamesSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");
 		}
 	else
 		if (time(NULL) - t > 0 && gamesSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.ch_line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (1) Switch mode (2) Filters (UP) wii/dml (DW) goto page");
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (D-Pad) Switch mode (1) goto page (2) Filters");
 			}
 	
 	return gamesSelected;
@@ -838,7 +843,9 @@ static void ShowAppMenu (int ai)
 		strcat (buff, "|");
 		strcat (buff, "Close##-1");
 		
+		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (games[ai].name, buff);
+		grlibSettings.fontNormBMF = fonts[FNTNORM];
 
 		if (item >= 100)
 			{
@@ -926,7 +933,7 @@ static void ShowAppMenu (int ai)
 
 	WriteGameConfig (ai);
 	
-	GameBrowse (0);
+	//GameBrowse (0);
 	}
 
 // Nand folder can be only root child...
@@ -1072,7 +1079,9 @@ static void ShowGamesOptions (void)
 	Redraw();
 	grlib_PushScreen();
 	
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Games Options", buff);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 	if (item == 9)
 		{
@@ -1114,46 +1123,43 @@ static void ShowGamesOptions (void)
 
 static void ShowMainMenu (void)
 	{
-	char buff[300];
+	char buff[512];
 	
 	start:
 	
 	buff[0] = '\0';
 	
-	strcat (buff, "Switch to Homebrew mode##100|");
-	strcat (buff, "Switch to Channel mode##101|");
-	strcat (buff, "|");
-	strcat (buff, "Game options##8|");
-	strcat (buff, "|");
-	
+	grlib_menuAddItem (buff, 100, "Browse to...");
+	grlib_menuAddItem (buff,  8, "Game options...");
+
 	if (config.gameSort == 0)
-		strcat (buff, "Sort by: vote##9|");
+		grlib_menuAddItem (buff,  9, "Sort by: vote");
 	if (config.gameSort == 1)
-		strcat (buff, "Sort by: name##9|");
+		grlib_menuAddItem (buff,  9, "Sort by: name");
 	if (config.gameSort == 2)
-		strcat (buff, "Sort by: play count##9|");
+		grlib_menuAddItem (buff,  9, "Sort by: play count");
 	
-	strcat (buff, "Select titles filter##3|");
+	grlib_menuAddItem (buff,  3, "Select filters");
 
 	if (showHidden)
-		strcat (buff, "Hide hidden titles##6|");
+		grlib_menuAddItem (buff,  6, "Hide hidden titles");
 	else
-		strcat (buff, "Show hidden titles##7|");
+		grlib_menuAddItem (buff,  7, "Show hidden titles");
 		
-	strcat (buff, "|");
-	strcat (buff, "Run WII system menu##4|");
-	strcat (buff, "Run BOOTMII##20|");
-	strcat (buff, "Run DISC##21|");
-	
-	strcat (buff, "|");	
-	strcat (buff, "Options...##5|");
-	strcat (buff, "Cancel##-1");
+	grlib_menuAddColumn (buff);
+	grlib_menuAddItem (buff,  4, "Run System menu");
+	grlib_menuAddItem (buff, 20, "Run BOOTMII");
+	grlib_menuAddItem (buff, 21, "Run DISC");
+	grlib_menuAddItem (buff,  5, "System options...");
+	grlib_menuAddItem (buff, -1, "Close");
 		
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Channel menu", buff);
-		
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
+	int item = grlib_menu ("Games menu", buff);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
+	
 	if (item == 9)
 		{
 		config.gameSort ++;
@@ -1164,11 +1170,7 @@ static void ShowMainMenu (void)
 
 	if (item == 100)
 		{
-		browserRet = INTERACTIVE_RET_TOHOMEBREW;
-		}
-	if (item == 101)
-		{
-		browserRet = INTERACTIVE_RET_TOCHANNELS;
+		browserRet = Menu_SelectBrowsingMode ();
 		}
 		
 	if (item == 3)
@@ -1446,9 +1448,13 @@ int GameBrowser (void)
 		// If [HOME] was pressed on the first Wiimote, break out of the loop
 		if (btn)
 			{
+			browserRet = ChooseDPadReturnMode (btn);
+			if (browserRet != -1) break;
+			
 			if (btn & WPAD_BUTTON_1) 
 				{
-				browserRet = INTERACTIVE_RET_TOHOMEBREW;
+				GoToPage ();
+				redraw = 1;
 				}
 			
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
@@ -1512,18 +1518,6 @@ int GameBrowser (void)
 				redraw = 1;
 				}
 				
-			if (btn & WPAD_BUTTON_DOWN)
-				{
-				GoToPage ();
-				redraw = 1;
-				}
-				
-			if (btn & WPAD_BUTTON_UP)
-				{
-				config.gameMode = 1 - config.gameMode;//DMLSelect ();
-				browserRet = INTERACTIVE_RET_TOGAMES;
-				}
-
 			if (btn & WPAD_BUTTON_HOME)
 				{
 				ShowMainMenu ();
@@ -1579,10 +1573,12 @@ int GameBrowser (void)
 			redraw = 1;
 			}
 			
-		if (wiiload.status == WIILOAD_HBREADY && WiiloadPostloaderDolMenu())
+		if (wiiload.status == WIILOAD_HBREADY)
 			{
-			browserRet = INTERACTIVE_RET_WIILOAD;
-			redraw = 1;
+			if (WiiloadPostloaderDolMenu())
+				browserRet = INTERACTIVE_RET_WIILOAD;
+			else
+				redraw = 1;
 			break;
 			}
 			

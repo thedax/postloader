@@ -176,7 +176,7 @@ void grlib_Render (void)
 	GRRLIB_Render ();
 	} 
 
-void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text)
+void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 	{
     uint  i;
     u8    *pdata;
@@ -186,6 +186,8 @@ void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color
 
     f32   xoff = xpos;
     const GRRLIB_bytemapChar *pchar;
+	
+	ypos --;
 
 	if (align == GRLIB_ALIGNCENTER)
 	    xoff -= grlib_GetFontMetrics (text, NULL, NULL) / 2;
@@ -210,9 +212,9 @@ void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color
 			}
 
         pdata = pchar->data;
-        for (y=0; y<pchar->height; y++) 
+        for (y = 0; y < pchar->height; y++) 
 			{
-            for (x=0; x<pchar->width; x++) 
+            for (x = 0; x < pchar->width; x++) 
 				{
                 if (*pdata && !ghostChar) 
 					{
@@ -235,7 +237,7 @@ void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color
 							
 						a = A(c);
 						c = RGBA (r,g,b,a);
-						if (R(grlibSettings.fontBMF->palette[*pdata]) > 32 && G(grlibSettings.fontBMF->palette[*pdata]) > 32 && B(grlibSettings.fontBMF->palette[*pdata]) > 32)
+						//if (R(grlibSettings.fontBMF->palette[*pdata]) > 32 && G(grlibSettings.fontBMF->palette[*pdata]) > 32 && B(grlibSettings.fontBMF->palette[*pdata]) > 32)
 							GRRLIB_Plot(xoff + x + pchar->relx, ypos + y + pchar->rely, c);
 						}
 					else

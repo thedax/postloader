@@ -8,7 +8,7 @@
 
 #define MAXITEMS 128
 #define MAXCOLS 12
-#define YSPACING 20
+#define YSPACING 25
 #define YSPACINGFAKE 10
 #define YTITLE 20
 #define XCOLSPACING 10
@@ -158,6 +158,8 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 			grlibSettings.fontBMF = grlibSettings.fontSmallBMF;
 			}
 		}
+	
+	titlew += 5;
 
 	grlibSettings.fontBMF = grlibSettings.fontNormBMF;
 
@@ -192,7 +194,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 				{
 				char buff[256];
 				
-				sprintf (buff, "[*] %s", &goItems[itemsCnt].text[2]);
+				sprintf (buff, "[X] %s", &goItems[itemsCnt].text[2]);
 				grlib_GetFontMetrics (buff, &l, &h);
 				}
 			else
@@ -242,6 +244,9 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	winw = ((itemw+XCOLSPACING) * (columns)) + 40;
 	if (linew > winw)
 		winw = linew + 40;
+		
+	if (winw < titlew)
+		winw = titlew;
 	
 	winh = 0;
 	for (i = 0; i < columns; i++)
