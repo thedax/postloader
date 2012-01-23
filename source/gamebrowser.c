@@ -398,6 +398,28 @@ static void AppsSort (void)
 		while (mooved);
 		}
 
+	// Sort by priority
+	if (config.gameMode == GM_DML)
+		{
+		do
+			{
+			mooved = 0;
+			
+			for (i = 0; i < games2Disp - 1; i++)
+				{
+				if (games[i+1].slot < games[i].slot)
+					{
+					// swap
+					memcpy (&app, &games[i+1], sizeof(s_game));
+					memcpy (&games[i+1], &games[i], sizeof(s_game));
+					memcpy (&games[i], &app, sizeof(s_game));
+					mooved = 1;
+					}
+				}
+			}
+		while (mooved);
+		}
+
 	gamesPageMax = games2Disp / gui.spotsXpage;
 	refreshPng = 1;
 	}
@@ -491,6 +513,7 @@ static int GameBrowse (int forcescan)
 					games[i].slot = atoi (slot); // sd = 0 / usb = 1 ?
 					}
 				
+				if (i % 10 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 				ReadGameConfig (i);
 				
 				i ++;

@@ -1638,6 +1638,8 @@ void  GRRLIB_BMFX_Sepia (const GRRLIB_texImg *texsrc, GRRLIB_texImg *texdest) {
 void  GRRLIB_BMFX_Invert (const GRRLIB_texImg *texsrc, GRRLIB_texImg *texdest) {
     unsigned int x, y;
     u32 color;
+	
+	if (texsrc == NULL || texdest == NULL) return;
 
     for (y = 0; y < texsrc->h; y++) {
         for (x = 0; x < texsrc->w; x++) {
@@ -1645,6 +1647,8 @@ void  GRRLIB_BMFX_Invert (const GRRLIB_texImg *texsrc, GRRLIB_texImg *texdest) {
             GRRLIB_SetPixelTotexImg(x, y, texdest,
                 ((0xFFFFFF - (color >> 8 & 0xFFFFFF)) << 8)  | (color & 0xFF));
         }
+		
+	GRRLIB_FlushTex (texdest);
     }
 }
 

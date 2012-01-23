@@ -229,7 +229,6 @@ void Video_LoadTheme (int init)
 		
 		sprintf (path, "%s://ploader/theme/frame_back.png", vars.defMount);
 		theme.frameBack = GRRLIB_LoadTextureFromFile (path);
-		Debug ("theme.frameBack = 0x%X", theme.frameBack);
 		
 		sprintf (path, "%s://ploader/theme/button.png", vars.defMount);
 		grlibSettings.theme.texButton = GRRLIB_LoadTextureFromFile (path);
@@ -242,26 +241,43 @@ void Video_LoadTheme (int init)
 		
 		sprintf (path, "%s://ploader/theme/windowbk.png", vars.defMount);
 		grlibSettings.theme.texWindowBk = GRRLIB_LoadTextureFromFile (path);
+
+		Debug ("theme.bkg = 0x%X", theme.bkg);
+		Debug ("theme.frame = 0x%X", theme.frame);
+		Debug ("theme.frameSel = 0x%X", theme.frameSel);
+		Debug ("theme.frameBack = 0x%X", theme.frameBack);
+		Debug ("grlibSettings.theme.texButton = 0x%X", grlibSettings.theme.texButton);
+		Debug ("grlibSettings.theme.texButtonSel = 0x%X", grlibSettings.theme.texButtonSel);
+		Debug ("grlibSettings.theme.texWindow = 0x%X", grlibSettings.theme.texWindow);
+		Debug ("grlibSettings.theme.texWindowBk = 0x%X", grlibSettings.theme.texWindowBk);
 		
 		sprintf (path, "%s://ploader/theme/theme.cfg", vars.defMount);
 		cfg = (char*)ReadFile2Buffer (path, NULL, NULL, true);
 		if (cfg)
 			{
-			Debug ("theme block#1");
 			cfg_GetInt (cfg, "grlibSettings.theme.windowMagX", &grlibSettings.theme.windowMagX);
 			cfg_GetInt (cfg, "grlibSettings.theme.windowMagY", &grlibSettings.theme.windowMagY);
 			cfg_GetInt (cfg, "grlibSettings.theme.buttonMagX", &grlibSettings.theme.buttonMagX);
 			cfg_GetInt (cfg, "grlibSettings.theme.buttonMagY", &grlibSettings.theme.buttonMagY);
 			
-			Debug ("theme block#2");
 			cfg_GetInt (cfg, "grlibSettings.theme.buttonsTextOffsetY", &grlibSettings.theme.buttonsTextOffsetY);
 			cfg_GetInt (cfg, "grlibSettings.fontBMF_reverse", &grlibSettings.fontBMF_reverse);
 
-			Debug ("theme block#3");
-			cfg_GetInt (cfg, "theme.line3Y", &theme.line3Y);
 			cfg_GetInt (cfg, "theme.line1Y", &theme.line1Y);
+			cfg_GetInt (cfg, "theme.line3Y", &theme.line3Y);
 			cfg_GetInt (cfg, "theme.line2Y", &theme.line2Y);
 
+			Debug ("grlibSettings.theme.windowMagX = %d", grlibSettings.theme.windowMagX);
+			Debug ("grlibSettings.theme.windowMagY = %d", grlibSettings.theme.windowMagY);
+			Debug ("grlibSettings.theme.buttonMagX = %d", grlibSettings.theme.buttonMagX);
+			Debug ("grlibSettings.theme.buttonMagY = %d", grlibSettings.theme.buttonMagY);
+			Debug ("grlibSettings.theme.buttonsTextOffsetY = %d", grlibSettings.theme.buttonsTextOffsetY);
+			Debug ("grlibSettings.fontBMF_reverse = %d", grlibSettings.fontBMF_reverse);
+
+			Debug ("theme.line1Y = %d", theme.line1Y);
+			Debug ("theme.line2Y = %d", theme.line2Y);
+			Debug ("theme.line3Y = %d", theme.line3Y);
+			
 			free (cfg);
 			
 			if (grlibSettings.fontBMF_reverse) // we likely need to revert textures (skipping cursor)

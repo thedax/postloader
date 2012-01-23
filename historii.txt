@@ -2,6 +2,12 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.57.2
+
+* Corrected a bug in GRRLIB when inverting a texture
+* Added hourglass animation when reading game configuration
+* dml: games on sd are displayed first
+
 postLoader 3.57.1
 
 * Updated readmii.txt to version 1.5 with latest changes

@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <zlib.h>
 #include "wiiload.h"
+#include "../debug.h"
 
 #define PORT	4299
 #define STACKSIZE	8192
@@ -42,7 +43,8 @@ void printopt(const char *text, ...)
 	vsprintf(wiiload.op, text, args);
 	va_end(args);
 
-	//Debug ("wiiload.op = %s",  wiiload.op);
+	if (wiiload.op[0] != '!')
+		Debug ("wiiload.op = %s",  wiiload.op);
 	
 	wiiload.opUpd ++;
 	}

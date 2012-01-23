@@ -486,9 +486,11 @@ GRRLIB_texImg*  GRRLIB_CreateEmptyTexture (const uint w, const uint h)
  * @param tex The texture to flush.
  */
 INLINE
-void  GRRLIB_FlushTex (GRRLIB_texImg *tex) {
-    DCFlushRange(tex->data, tex->w * tex->h * 4);
-}
+void  GRRLIB_FlushTex (GRRLIB_texImg *tex) 
+	{
+	if(tex != NULL)
+		DCFlushRange(tex->data, tex->w * tex->h * 4);
+	}
 
 /**
  * Free memory allocated for texture.

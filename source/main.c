@@ -330,8 +330,6 @@ int main(int argc, char **argv)
 	
 	grlibSettings.autoCloseMenu = 60;
 	
-	//config.gameMode = GM_DML;
-	
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && interactive)
 		{
 		Video_LoadTheme (1);
