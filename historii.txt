@@ -2,6 +2,13 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.57.4
+
+* Added the capability to change default loader home [home]->game options->set default loader (can be very slow)
+* Corrected some menu options
+* Corrected gamebrowser top title
+* Some code clean
+
 postLoader 3.57.3
 
 * Added support for GC D-Pad (thx traitor)

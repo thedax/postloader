@@ -623,9 +623,11 @@ static int ScanApps (const char *mount)
 			appsCnt++;
 			if (appsCnt >= APPSMAX) break; // No more space
 
-			grlib_PopScreen ();
-			Video_DrawIcon (TEX_HGL, 320, 430);
-			grlib_Render ();
+			Video_WaitPanel (TEX_HGL, "Please wait...|Searching for applications");
+
+			//grlib_PopScreen ();
+			//Video_DrawIcon (TEX_HGL, 320, 430);
+			//grlib_Render ();
 			}
 		}
 

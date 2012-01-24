@@ -71,8 +71,8 @@ int Menu_SelectBrowsingMode (void)
 	
 	if (ret == 100) return INTERACTIVE_RET_TOHOMEBREW;
 	if (ret == 101) return INTERACTIVE_RET_TOCHANNELS;
-	if (ret == 102) {config.gameMode = 0; return INTERACTIVE_RET_TOGAMES;}
-	if (ret == 103) {config.gameMode = 1; return INTERACTIVE_RET_TOGAMES;}
+	if (ret == 102) {config.gameMode = GM_WII; return INTERACTIVE_RET_TOGAMES;}
+	if (ret == 103) {config.gameMode = GM_DML; return INTERACTIVE_RET_TOGAMES;}
 	
 	return -1;
 	}

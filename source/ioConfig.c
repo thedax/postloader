@@ -42,6 +42,8 @@ bool ConfigRead (void)
 	char ver[32];
 	FILE *f;
 	
+	memset (&config, 0, sizeof(config));
+	
 	if (vars.defMount[0] == '\0') return FALSE;
 	
 	if (vars.neek == NEEK_NONE)
@@ -58,9 +60,7 @@ bool ConfigRead (void)
 	fread (ver, sizeof(ver), 1, f);
 	ver[31] = 0; // make sure to terminate string
 	
-	if (strcmp (ver, CFGVER) != 0)
-		memset (&config, 0, sizeof(config)); // configuration version has changed... clear data struct
-	else
+	if (strcmp (ver, CFGVER) == 0)
 		fread (&config, sizeof(config), 1, f);
 		
 	fclose (f);
@@ -112,11 +112,17 @@ int ManageTitleConfig (char *asciiId, int write, s_channelConfig *config)
 	return ret;
 	}
 	
-int ManageGameConfig (char *asciiId, int write, s_gameConfig *config)
+int ManageGameConfig (char *asciiId, int write, s_gameConfig *gameConfig)
 	{
 	int ret = 0;
 	char cfg[256];
 	FILE* f = NULL;
+
+	
+	static int wiiregion = -999;
+	
+	if (wiiregion == -999)
+		wiiregion = CONF_GetRegion();
 	
 	sprintf (cfg, "%s://ploader/config/%s.cfg", vars.defMount, asciiId);
 	
@@ -125,31 +131,30 @@ int ManageGameConfig (char *asciiId, int write, s_gameConfig *config)
 		f = fopen(cfg, "wb");
 		if (!f) return 0;
 		
-		ret = fwrite (config, 1, sizeof(s_gameConfig), f );
+		ret = fwrite (gameConfig, 1, sizeof(s_gameConfig), f );
 		fclose(f);
 		}
 	else
 		{
 		if (!fsop_FileExist (cfg)) // Create a default config
 			{
-			config->priority = 5;
-			config->hidden = 0;
-			config->playcount = 0;
-			config->category = 0;
+			gameConfig->priority = 5;
+			gameConfig->hidden = 0;
+			gameConfig->playcount = 0;
+			gameConfig->category = 0;
 			
-			config->ios = 0; 		// use current
-			config->vmode = 0;
-			config->language = -1;
-			config->vpatch = 0;
-			config->ocarina = 0;
-			config->hook = 0;
-			
-			int wiiregion = CONF_GetRegion();
-			
+			gameConfig->ios = 0; 		// use current
+			gameConfig->vmode = 0;
+			gameConfig->language = -1;
+			gameConfig->vpatch = 0;
+			gameConfig->ocarina = 0;
+			gameConfig->hook = 0;
+			gameConfig->loader = config.gameDefaultLoader;
+
 			if (wiiregion == CONF_REGION_EU)
-				config->dmlvideomode = DMLVIDEOMODE_PAL;
+				gameConfig->dmlvideomode = DMLVIDEOMODE_PAL;
 			else
-				config->dmlvideomode = DMLVIDEOMODE_NTSC;
+				gameConfig->dmlvideomode = DMLVIDEOMODE_NTSC;
 			
 			return -1;
 			}
@@ -157,7 +162,7 @@ int ManageGameConfig (char *asciiId, int write, s_gameConfig *config)
 		f = fopen(cfg, "rb");
 		if (!f) return 0;
 		
-		ret = fread (config, 1, sizeof(s_gameConfig), f );
+		ret = fread (gameConfig, 1, sizeof(s_gameConfig), f );
 		fclose(f);
 		}
 	

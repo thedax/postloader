@@ -9,7 +9,7 @@
 //#define DOLPHINE
 
 #define BUILD 57
-#define VER "3.57.3"
+#define VER "3.57.4"
 #define CFGVER "PLCFGV0008"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -321,6 +321,8 @@ typedef struct
 	char pwd[PWDMAXLEN+1];	// Classic wii pwd RLUD12AB, up to 8 chars
 	
 	u32 dmlvideomode;		// Current video mode for dml
+	
+	u8 gameDefaultLoader;
 	}
 s_config;
 
@@ -396,7 +398,7 @@ bool MountDevices (bool silent);
 bool ConfigWrite (void);
 bool ConfigRead (void);
 int ManageTitleConfig (char *asciiId, int write, s_channelConfig *config);
-int ManageGameConfig (char *asciiId, int write, s_gameConfig *config);
+int ManageGameConfig (char *asciiId, int write, s_gameConfig *gameConfig);
 
 // video.c
 void Video_Init (void);

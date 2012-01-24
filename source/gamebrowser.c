@@ -239,16 +239,17 @@ static void DownloadCovers (void)
 	GameBrowse (0);
 	}
 	
-static void ReadGameConfig (int ia)
+static int ReadGameConfig (int ia)
 	{
-	ManageGameConfig (games[ia].asciiId, 0, &gameConf);
-
+	int ret = ManageGameConfig (games[ia].asciiId, 0, &gameConf);
+	
 	//strcpy (games[ia].asciiId, gameConf.asciiId);
 	games[ia].category = gameConf.category;
 	games[ia].hidden = gameConf.hidden;
 	games[ia].priority = gameConf.priority;
 	games[ia].playcount = gameConf.playcount;
 	
+	return ret;
 	}
 
 static void WriteGameConfig (int ia)
@@ -1075,18 +1076,56 @@ static void ShowNandMenu (void)
 	int i; for (i = 0; i < nandFodersCnt; i++) free (nandFolders[i]);
 	}
 
+static void ChangeDefaultLoader (void)
+	{
+	char buff[1024];
+	
+	buff[0] = '\0';
+	
+	// "CFG", "GX", "WiiFlow"
+	
+	grlib_menuAddItem (buff, 0, "CFG USB Loader");
+	grlib_menuAddItem (buff, 1, "Usb Loader GX ");
+	grlib_menuAddItem (buff, 2, "WiiFlow");
+	
+	int item = grlib_menu ("Select your default loader", buff);
+	if (item >= 0)
+		config.gameDefaultLoader = item;
+		
+	Redraw();
+	grlib_PushScreen();
+
+	int i;
+	for (i = 0; i < gamesCnt; i++)
+		{
+		int ret = ReadGameConfig (i);
+		//Debug ("ReadGameConfig %d, %d", i, ret);
+		if (ret > 0)
+			{
+			gameConf.loader = config.gameDefaultLoader;
+			Debug ("(update)ReadGameConfig %d, %d", i, ret);
+			WriteGameConfig (i);
+			}
+		
+		Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
+		}
+	}
 	
 static void ShowGamesOptions (void)
 	{
-	char buff[300];
+	char buff[1024];
 	
 	//MountDevices (true);
 	
 	buff[0] = '\0';
 	
-	strcat (buff, "Switch Wii/GC(DML) mode...##14||");
+	strcat (buff, "Download covers...##10|");
+	if (config.gameMode == GM_WII)
+		{
+		strcat (buff, "Set default loader...##15|");
+		}
+	strcat (buff, "|");
 	
-	strcat (buff, "Download covers...##10||");
 	if (vars.neek != NEEK_NONE)
 		{
 		strcat (buff, "Rebuild game list: postLoader wbfs mode (reboot)...##12|");
@@ -1096,7 +1135,9 @@ static void ShowGamesOptions (void)
 		{
 		strcat (buff, "Rebuild game list (ntfs/fat)...##13|");
 		}
+	
 	strcat (buff, "Reset configuration files...##11||");
+	
 	strcat (buff, "Cancel##-1");
 		
 	Redraw();
@@ -1135,13 +1176,10 @@ static void ShowGamesOptions (void)
 		CleanTitleConfiguration();
 		}
 	
-	if (item == 14)
+	if (item == 15)
 		{
-		//DMLSelect ();
-		config.gameMode = 1 - config.gameMode;//DMLSelect ();
-		browserRet = INTERACTIVE_RET_TOGAMES;
+		ChangeDefaultLoader ();
 		}
-		
 	}
 
 static void ShowMainMenu (void)
@@ -1257,23 +1295,9 @@ static void Redraw (void)
 	Video_DrawBackgroud (1);
 	
 	if (config.gameMode == GM_WII)
-		{
-		if (config.chnBrowser.nand == NAND_REAL)
-			strcpy (sdev, "WII Games - Real NAND");
-		else if (config.chnBrowser.nand == NAND_EMUSD)
-			sprintf (sdev, "WII Games - EmuNAND [SD] %s", config.chnBrowser.nandPath);
-		else if (config.chnBrowser.nand == NAND_EMUUSB)
-			sprintf (sdev, "WII Games - EmuNAND [USB] %s", config.chnBrowser.nandPath);
-		}
+		strcpy (sdev, "WII Games");
 	else
-		{
-		if (config.chnBrowser.nand == NAND_REAL)
-			strcpy (sdev, "GC Games(DML) - Real NAND");
-		else if (config.chnBrowser.nand == NAND_EMUSD)
-			sprintf (sdev, "GC Games(DML) - EmuNAND [SD] %s", config.chnBrowser.nandPath);
-		else if (config.chnBrowser.nand == NAND_EMUUSB)
-			sprintf (sdev, "GC Games(DML) - EmuNAND [USB] %s", config.chnBrowser.nandPath);
-		}
+		strcpy (sdev, "GC Games(DML)");
 
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	char ahpbrot[16];
@@ -1507,13 +1531,13 @@ int GameBrowser (void)
 
 					if (games[gamesSelected].slot)
 						{
-						if (DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected)))
-							{
-							Redraw();
-							grlib_PushScreen();
+						int ret = DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected));
 
+						Redraw();
+						grlib_PushScreen();
+
+						if (ret)
 							err = !MoveGCGame (gamesSelected);
-							}
 						else
 							err = true;
 						}
