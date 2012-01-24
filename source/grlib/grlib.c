@@ -585,6 +585,10 @@ int grlib_GetUserInput (void)
 		if (gcbtn & PAD_BUTTON_X) return WPAD_BUTTON_1;
 		if (gcbtn & PAD_BUTTON_Y) return WPAD_BUTTON_2;
 		if (gcbtn & PAD_BUTTON_MENU) return WPAD_BUTTON_HOME;
+		if (gcbtn & PAD_BUTTON_UP) return WPAD_BUTTON_UP;
+		if (gcbtn & PAD_BUTTON_LEFT) return WPAD_BUTTON_LEFT;
+		if (gcbtn & PAD_BUTTON_DOWN) return WPAD_BUTTON_DOWN;
+		if (gcbtn & PAD_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
 		}
 		
 	// Classic

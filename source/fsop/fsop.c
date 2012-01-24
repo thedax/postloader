@@ -42,11 +42,13 @@ bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_siz
 	if (filesize) *filesize = size;
 	fclose (f);
 	
+	Debug ("fsop_GetFileSizeBytes (%s) = %u", path, size);
+	
 	return true;
 	}
 
 /*
-Recursive copyfolder
+Recursive fsop_GetFolderBytes
 */
 u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 	{
@@ -75,23 +77,23 @@ u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 			size_t s;
 			fsop_GetFileSizeBytes (newSource, &s);
 			bytes += s;
-
-			//Debug ("fsop_GetFileSizeBytes (%s) = %u %llu", newSource, s, bytes);
 			}
 		}
 	
 	closedir(pdir);
 	
-	unlink (source);
-
-	//Debug ("fsop_GetFolderBytes '%s' = %llu bytes", source, bytes);
+	Debug ("fsop_GetFolderBytes (%s) = %llu", source, bytes);
 	
 	return bytes;
 	}
 
 u32 fsop_GetFolderKb (char *source, fsopCallback vc)
 	{
-	return round ((double)fsop_GetFolderBytes (source, vc) / 1000.0);
+	u32 ret = (u32) round ((double)fsop_GetFolderBytes (source, vc) / 1000.0);
+
+	Debug ("fsop_GetFolderKb (%s) = %u", source, ret);
+
+	return ret;
 	}
 
 u32 fsop_GetFreeSpaceKb (char *path) // Return free kb on the device passed
@@ -100,7 +102,11 @@ u32 fsop_GetFreeSpaceKb (char *path) // Return free kb on the device passed
 	
 	statvfs (path, &s);
 	
-	return round( ((double)s.f_bfree / 1000.0) * s.f_bsize) ;
+	u32 ret = (u32)round( ((double)s.f_bfree / 1000.0) * s.f_bsize);
+	
+	Debug ("fsop_GetFreeSpaceKb (%s) = %u", path, ret);
+	
+	return ret ;
 	}
 
 
@@ -149,20 +155,25 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	fsop.breakop = 0;
 	
 	u8 *buff = NULL;
-	int size;
-	int bytes, rb,wb;
-	//int block = 65536*4; // (256Kb)
-	//int block = 71680;
-	int block = 65536;
+	u32 size;
+	u32 bytes, rb,wb;
+	u32 block = 65536;
 	FILE *fs = NULL, *ft = NULL;
 	
 	fs = fopen(source, "rb");
 	if (!fs)
+		{
+		Debug ("fsop_CopyFile (%s, %s): Unable to open source file");
 		return false;
+		}
 
 	ft = fopen(target, "wt");
 	if (!ft)
+		{
+		fclose (fs);
+		Debug ("fsop_CopyFile (%s, %s): Unable to open target file");
 		return false;
+		}
 	
 	//Get file size
 	fseek ( fs, 0, SEEK_END);
@@ -170,10 +181,12 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 
 	fsop.size = size;
 	
-	if (size <= 0)
+	if (size == 0)
 		{
 		fclose (fs);
-		return false;
+		fclose (ft);
+		Debug ("fsop_CopyFile (%s, %s): Warning file size 0");
+		return true;
 		}
 		
 	// Return to beginning....
@@ -183,6 +196,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	if (buff == NULL) 
 		{
 		fclose (fs);
+		Debug ("fsop_CopyFile (%s, %s): ERR Unable to allocate buffers");
 		return false;
 		}
 	
@@ -207,6 +221,8 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	fclose (ft);
 	
 	free (buff);
+	
+	Debug ("fsop_CopyFile (%s, %s): bytes %u, size %u, err %d, breakop %d", source, target, bytes, size, err, fsop.breakop);
 	
 	if (err) unlink (target);
 

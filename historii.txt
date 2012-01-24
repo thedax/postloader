@@ -2,6 +2,13 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.57.3
+
+* Added support for GC D-Pad (thx traitor)
+* Corrected a bug in homebrew browser pagenum (thx traitor)
+* Incremented debug output for dml operation
+* DML: Removed call to setstreaming (thx FIX94)
+
 postLoader 3.57.2
 
 * Corrected a bug in GRRLIB when inverting a texture

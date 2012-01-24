@@ -113,7 +113,7 @@ s32 StartMIOS (void)
 	{
 	s32 ret;
 	
-	ret = setstreaming ();
+	//ret = setstreaming ();
 	
 	SetGCVideoMode ();
 	
@@ -397,13 +397,23 @@ int DMLInstall (char *gamename, size_t reqKb)
 	size_t sizes[MAXGAMES];
 
 	size_t devKb = 0;
+	
+	Debug ("DMLInstall (%s): Started", gamename);
 
-	if (!IsDevValid(DEV_SD)) return 0;
+	if (!IsDevValid(DEV_SD))
+		{
+		Debug ("DMLInstall (%s): ERR SD Device invalid", gamename);
+		return 0;
+		}
 	
 	sprintf (path, "%s://games", vars.mount[DEV_SD]);
 
 	devKb = fsop_GetFreeSpaceKb (path);
-	if (devKb > reqKb) return 1; // We have the space
+	if (devKb > reqKb) 
+		{
+		Debug ("DMLInstall (%s): OK there is enaught space", gamename);
+		return 1; // We have the space
+		}
 	
 	while (devKb < reqKb)
 		{
@@ -414,11 +424,8 @@ int DMLInstall (char *gamename, size_t reqKb)
 		//sprintf (path, "%s://games", vars.mount[DEV_SD]);
 		pdir=opendir(path);
 		
-		//Debug ("opendir(%s) = 0x%X", path, pdir);
-		
 		while ((pent=readdir(pdir)) != NULL) 
 			{
-			//Debug ("    > %s", pent->d_name);
 			if (strlen (pent->d_name) ==  6)
 				{
 				strcpy (files[i], pent->d_name);
@@ -445,31 +452,45 @@ int DMLInstall (char *gamename, size_t reqKb)
 				
 				if (i == MAXGAMES)
 					{
+					Debug ("DMLInstall (%s): Warning... to many games", gamename);
+
 					break;
 					}
 				}
 			}
-			
+		
 		closedir(pdir);
+
+		Debug ("DMLInstall (%s): found %d games on sd", gamename, i);
 		
 		sprintf (title, "You must free %u Mb to install %s\nClick on game to remove it from SD, game size is %u Mb), Press (B) to close", 
 			(reqKb - devKb) / 1000, gamename, reqKb / 1000);
 
 		ret = grlib_menu (title, menu);
-		if (ret == -1) return 0;
+		if (ret == -1)
+			{
+			Debug ("DMLInstall (%s): aborted by user", gamename);
+			return 0;
+			}
+			
 		if (ret >= 0)
 			{
 			char gamepath[128];
 			sprintf (gamepath, "%s://games/%s", vars.mount[DEV_SD], files[ret]);
 			
-			Debug ("Trying to delete '%s'", gamepath);
+			Debug ("DMLInstall deleting '%s'", gamepath);
 			fsop_KillFolderTree (gamepath, NULL);
 			}
 			
 		devKb = fsop_GetFreeSpaceKb (path);
-		if (devKb > reqKb) return 1; // We have the space
+		if (devKb > reqKb)
+			{
+			Debug ("DMLInstall (%s): OK there is enaught space", gamename);
+			return 1; // We have the space
+			}
 		}
 	
+	Debug ("DMLInstall (%s): Something gone wrong", gamename);
 	return 0;
 	}
 	

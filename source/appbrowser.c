@@ -583,6 +583,8 @@ static void AppsSort (void)
 			}
 		}
 	while (mooved);
+	
+	appsPageMax = apps2Disp / gui.spotsXpage;
 	}
 
 static int ScanApps (const char *mount)
@@ -664,7 +666,6 @@ static int AppsBrowse (void)
 		
 	
 	appsPage = 0;
-	appsPageMax = appsCnt / gui.spotsXpage;
 	
 	AppsSort ();
 	

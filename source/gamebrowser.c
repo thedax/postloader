@@ -1406,6 +1406,8 @@ static bool MoveGCGame (int ai)
 	char source[300];
 	char target[300];
 
+	Debug ("MoveGCGame (%s %s): Started", games[ai].name, games[ai].asciiId);
+
 	sprintf (source, "usb://ngc/%s", games[ai].asciiId);
 	sprintf (target, "sd://games/%s", games[ai].asciiId);
 
@@ -1413,6 +1415,7 @@ static bool MoveGCGame (int ai)
 	
 	if (!ret || fsop.breakop)
 		{
+		Debug ("MoveGCGame: interrupted... removing partial folder");
 		fsop_KillFolderTree (target, NULL);
 		}
 	
@@ -1500,9 +1503,10 @@ int GameBrowser (void)
 					{
 					bool err = false;
 					
+					Debug ("gamebrowser: requested dml");
+
 					if (games[gamesSelected].slot)
 						{
-						Debug ("DMLInstall");
 						if (DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected)))
 							{
 							Redraw();
@@ -1514,6 +1518,8 @@ int GameBrowser (void)
 							err = true;
 						}
 					
+					Debug ("gamebrowser: requested dml (err = %d)", err);
+
 					if (!err)
 						{
 						Debug ("DMLRun");
