@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.57.5
+
+* Corrected a bug in some debug message that could lead to a c. dump if logging is enabled
+
 postLoader 3.57.4
 
 * Added the capability to change default loader home [home]->game options->set default loader (can be very slow)

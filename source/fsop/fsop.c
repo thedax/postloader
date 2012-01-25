@@ -160,10 +160,12 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	u32 block = 65536;
 	FILE *fs = NULL, *ft = NULL;
 	
+	Debug ("fsop_CopyFile (%s, %s): Started", source, target);
+	
 	fs = fopen(source, "rb");
 	if (!fs)
 		{
-		Debug ("fsop_CopyFile (%s, %s): Unable to open source file");
+		Debug ("fsop_CopyFile: Unable to open source file");
 		return false;
 		}
 
@@ -171,7 +173,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	if (!ft)
 		{
 		fclose (fs);
-		Debug ("fsop_CopyFile (%s, %s): Unable to open target file");
+		Debug ("fsop_CopyFile: Unable to open target file");
 		return false;
 		}
 	
@@ -185,7 +187,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		{
 		fclose (fs);
 		fclose (ft);
-		Debug ("fsop_CopyFile (%s, %s): Warning file size 0");
+		Debug ("fsop_CopyFile: Warning file size 0");
 		return true;
 		}
 		
@@ -196,7 +198,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	if (buff == NULL) 
 		{
 		fclose (fs);
-		Debug ("fsop_CopyFile (%s, %s): ERR Unable to allocate buffers");
+		Debug ("fsop_CopyFile: ERR Unable to allocate buffers");
 		return false;
 		}
 	
@@ -222,7 +224,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	
 	free (buff);
 	
-	Debug ("fsop_CopyFile (%s, %s): bytes %u, size %u, err %d, breakop %d", source, target, bytes, size, err, fsop.breakop);
+	Debug ("fsop_CopyFile: bytes %u, size %u, err %d, breakop %d", bytes, size, err, fsop.breakop);
 	
 	if (err) unlink (target);
 
