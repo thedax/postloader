@@ -12,6 +12,7 @@
 #include "identify.h"
 #include "gui.h"
 #include "mystring.h"
+#include "cfg.h"
 
 #define CHNMAX 1024
 
@@ -46,6 +47,8 @@ static int ChnBrowse (void);
 
 static bool emuError = false;
 static bool nandScanned = false;
+
+static s_cfg *cfg;
 
 #define ICONW 128
 #define ICONH 93
@@ -187,19 +190,6 @@ static void DownloadCovers (void)
 	ChnBrowse ();
 	}
 	
-static void ReadTitleConfig (int ia)
-	{
-	int ret = ManageTitleConfig (chans[ia].asciiId, 0, &chnConf);
-	if (ret == -1)
-		{
-		chnConf.titleId = chans[ia].titleId;
-		}
-
-	chans[ia].titleId = chnConf.titleId;
-	chans[ia].hidden = chnConf.hidden;
-	chans[ia].priority = chnConf.priority;
-	}
-
 static void WriteTitleConfig (int ia)
 	{
 	if (ia < 0) return;
@@ -208,7 +198,46 @@ static void WriteTitleConfig (int ia)
 	chnConf.hidden = chans[ia].hidden;
 	chnConf.priority = chans[ia].priority;
 	
-	ManageTitleConfig (chans[ia].asciiId, 1, &chnConf);
+	char *buff = Bin2HexAscii (&chnConf, sizeof (s_channelConfig), 0);
+	cfg_SetString (cfg, chans[ia].asciiId, buff);
+	free (buff);
+	}
+
+static void ReadTitleConfig (int ia)
+	{
+	char buff[1024];
+	bool valid;
+	
+	valid = cfg_GetString (cfg, chans[ia].asciiId, buff);
+	
+	if (valid)
+		{
+		if (HexAscii2Bin (buff, &chnConf) != sizeof (s_channelConfig))
+			{
+			Debug ("size fails");
+			valid = false;
+			}
+		}
+	
+	if (!valid)
+		{
+		Debug ("%s notvalid", chans[ia].asciiId);
+		chnConf.priority = 5;
+		chnConf.hidden = 0;
+		chnConf.titleId = chans[ia].titleId;
+		chnConf.ios = 0;
+		chnConf.vmode = 0;
+		chnConf.language = -1;
+		chnConf.vpatch = 0;
+		chnConf.ocarina = 0;
+		chnConf.hook = 0;
+		chnConf.bootMode = 0;
+		chnConf.playcount = 0;
+		}
+
+	chans[ia].titleId = chnConf.titleId;
+	chans[ia].hidden = chnConf.hidden;
+	chans[ia].priority = chnConf.priority;
 	}
 
 static void ChansFree (void)
@@ -510,6 +539,26 @@ static int RebuildCacheFile (void)
 	return cnt;
 	}
 
+static void UpdateTitlesFromTxt (void)
+	{
+	LoadTitlesTxt ();
+	if (titlestxt == NULL) return;
+	
+	int i;
+	char buff[1024];
+	for (i = 0; i < chansCnt; i++)
+		{
+		if (cfg_GetString (titlestxt, chans[i].asciiId, buff))
+			{
+			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", chans[i].name, buff);
+			free (chans[i].name);
+			chans[i].name = ms_utf8_to_ascii (buff);
+			}
+		
+		if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Parsing...");
+		}
+	}
+
 static int ChnBrowse (void)
 	{
 	int i;
@@ -580,12 +629,15 @@ static int ChnBrowse (void)
 
 			// Update configuration
 			ReadTitleConfig (chansCnt);
+			
+			if (chansCnt % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading channels configuration");
 
 			chans[chansCnt].png = NULL;
 			chansCnt++;
 			}
 		}
 
+	UpdateTitlesFromTxt ();
 	AppsSort ();
 	
 	nandScanned = true;
@@ -1075,8 +1127,6 @@ static void Redraw (void)
 	int ai;	// Application index (corrected by the offset)
 	char sdev[64];
 	
-	Debug ("chbrowser: begin Redraw");
-
 	Video_DrawBackgroud (1);
 	
 	if (config.chnBrowser.nand == NAND_REAL)
@@ -1112,8 +1162,6 @@ static void Redraw (void)
 		
 	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", chansPage+1, chansPageMax+1);
 	
-	Debug ("chbrowser: Draw bk icons");
-	
 	// Prepare black box
 	s_grlib_icon ico;
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -1128,7 +1176,6 @@ static void Redraw (void)
 		}
 	
 	// Draw Icons
-	Debug ("chbrowser: Draw fg icons");
 	gui.spotsIdx = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
 		{
@@ -1171,8 +1218,6 @@ static void Redraw (void)
 		grlib_DrawCenteredWindow ("No titles found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
-	
-	Debug ("chbrowser: begin Redraw");
 	}
 	
 static void Overlay (void)
@@ -1202,12 +1247,30 @@ static void GoToPage (void)
 	if (item >= 0) chansPage = item;
 	}
 	
+static void Conf (bool open)
+	{
+	char cfgpath[64];
+	sprintf (cfgpath, "%s://ploader/channels.conf", vars.defMount);
+
+	if (open)
+		{
+		cfg = cfg_Alloc (cfgpath, 0);
+		}
+	else
+		{
+		cfg_Store (cfg, cfgpath);
+		cfg_Free (cfg);
+		}
+	}
+	
 int ChnBrowser (void)
 	{
 	u32 btn;
 	u8 redraw = 1;
 	
-	Debug ("ChnBrowser");
+	Debug ("ChnBrowser (begin)");
+	
+	Conf (true);
 
 	if (vars.neek != NEEK_NONE)
 		config.chnBrowser.nand = NAND_REAL;
@@ -1365,6 +1428,8 @@ int ChnBrowser (void)
 	config.chnPage = chansPage;
 
 	SaveTitlesCache ();
+
+	Conf (false);
 	
 	// Clean up all data
 	ChansFree ();
@@ -1372,6 +1437,8 @@ int ChnBrowser (void)
 	free (chans);
 	
 	grlib_SetRedrawCallback (NULL, NULL);
+	
+	Debug ("ChnBrowser (end)");
 	
 	return browserRet;
 	}

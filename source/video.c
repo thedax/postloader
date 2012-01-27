@@ -5,6 +5,7 @@
 #include "wiiload/wiiload.h"
 #include "globals.h"
 #include "bin2o.h"
+#include "cfg.h"
 
 GRRLIB_texImg *bkg[2];
 
@@ -208,8 +209,7 @@ void Video_LoadTheme (int init)
 	if (init)
 		{
 		char path[300];
-		char *cfg;
-		
+	
 		memset (&theme, 0, sizeof (s_theme));
 		
 		// Setting default values
@@ -252,7 +252,7 @@ void Video_LoadTheme (int init)
 		Debug ("grlibSettings.theme.texWindowBk = 0x%X", grlibSettings.theme.texWindowBk);
 		
 		sprintf (path, "%s://ploader/theme/theme.cfg", vars.defMount);
-		cfg = (char*)ReadFile2Buffer (path, NULL, NULL, true);
+		s_cfg *cfg = cfg_Alloc(path, 0);
 		if (cfg)
 			{
 			cfg_GetInt (cfg, "grlibSettings.theme.windowMagX", &grlibSettings.theme.windowMagX);
@@ -278,7 +278,7 @@ void Video_LoadTheme (int init)
 			Debug ("theme.line2Y = %d", theme.line2Y);
 			Debug ("theme.line3Y = %d", theme.line3Y);
 			
-			free (cfg);
+			cfg_Free (cfg);
 			
 			if (grlibSettings.fontBMF_reverse) // we likely need to revert textures (skipping cursor)
 				{

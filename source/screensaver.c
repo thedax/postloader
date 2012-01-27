@@ -96,6 +96,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 	GRRLIB_FreeTexture (img);
 	
 	UpdateLiveUSB ();
+	snd_Mp3Go ();
 	
 	return false;
 	}
@@ -143,26 +144,29 @@ static bool ScreenSaver (void)
 	return false;
 	}
 	
-// Do burnin checking and hdd live
+// Do burnin checking and hdd live and mp3 playing
 bool LiveCheck (int reset)
 	{
 	static int ss = 0;
 	static time_t t = 0;
 	static time_t tss = 0;
-	
+	static time_t tp = 0;
+	static time_t ct = 0; // current time
 	static int xLast = 0, yLast = 0, bAct = 0;
+	
+	ct = time(NULL);
 	
 	if (reset)
 		{
-		tss = t = time(NULL);
+		tp = tss = t = ct;
 		}
 		
 	// No user input ?
 	if (grlib_irPos.x == xLast && grlib_irPos.y == yLast && grlibSettings.buttonActivity == bAct)
 		{
-		if ((time(NULL) - tss) > 1)
+		if ((ct - tss) > 1)
 			{
-			tss = time(NULL);
+			tss = ct;
 			ss ++;
 			}
 			
@@ -177,10 +181,16 @@ bool LiveCheck (int reset)
 		ss = 0;
 		}
 		
-	if ((time(NULL) - t) > 30 && IsDevValid(DEV_USB))
+	if ((ct - t) > 30 && IsDevValid(DEV_USB))
 		{
-		t = time(NULL);
+		t = ct;
 		UpdateLiveUSB ();
+		}
+	
+	if ((ct - tp) > 1)
+		{
+		tp = ct;
+		snd_Mp3Go ();
 		}
 	
 	return false;

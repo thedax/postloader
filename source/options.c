@@ -163,7 +163,7 @@ void ShowAboutMenu (void)
 		grlib_menuAddItem (options, 6,  "Disable autoboot");
 	
 	grlib_menuAddItem (options, 2,  "Check online for updates");
-	grlib_menuAddItem (options, 12,  "Clean channel/games configuration files...");
+	//grlib_menuAddItem (options, 12,  "Clean channel/games configuration files...");
 	
 	if (vars.neek == NEEK_2o && IsDevValid (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 		grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");

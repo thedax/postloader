@@ -11,7 +11,9 @@
 #include "identify.h"
 #include "neek.h"
 #include "uneek_fs.h"
+#include "mem2.h"
 
+extern void __exception_setreload(int t); // In the event of a code dump, app will restart
 int Disc (void);
 bool plneek_GetNandName (void);
 
@@ -39,13 +41,13 @@ void Subsystems (bool enable)
 		{
 		grlib_Controllers (true);
 		MountDevices (1);
-
+		snd_Init ();
 		WiiLoad (1);
 		}
 	else
 		{
 		WiiLoad (0);
-
+		snd_Stop ();
 		grlib_Controllers (false);
 		Fat_Unmount ();
 		}
@@ -53,6 +55,8 @@ void Subsystems (bool enable)
 
 void Shutdown(bool doNotKillHBC)
 	{
+	cfg_Free (titlestxt);
+
 	Video_Deinit ();
 	Subsystems (false);
 	
@@ -75,6 +79,7 @@ void Shutdown(bool doNotKillHBC)
 
 int Initialize (int silent)
 	{
+	InitMem2Manager ();
 	Video_Init ();
 	
 	// Prepare the background
@@ -181,6 +186,8 @@ int main(int argc, char **argv)
 	int i;
 	int ret;
 	time_t t,tout;
+	
+	__exception_setreload(3); 	
 	
 	memset (&vars, 0, sizeof(s_vars));
 	
@@ -328,12 +335,20 @@ int main(int argc, char **argv)
 	
 	ret = INTERACTIVE_RET_NONE;
 	
+	cfg_Alloc ("sd://ploader/theme/theme.cfg", 256);
+	
+
+	
 	grlibSettings.autoCloseMenu = 60;
 	
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && interactive)
 		{
 		Video_LoadTheme (1);
 		WiiLoad (1);
+
+		// Initialise the audio subsystem
+		snd_Init ();
+		
 		do
 			{
 			if (config.browseMode == BROWSE_HB) ret = AppBrowser ();

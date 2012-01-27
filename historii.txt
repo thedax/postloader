@@ -2,6 +2,15 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.58.0
+
+* mp3 background music added... copy your mp3 to /ploader/mp3 or /mp3 on usb or sd
+* created .conf file managment library
+* Now channels/games configuration is stored in a single conf files.
+* Added overflow protection if a bad header is found during wbfs scan.
+* grlib_menu redraw previous screen when exiting
+* gametdb titles.txt is now supported. Just copy in /ploader folder. Note that utf-8 support is minimal, so don't expect to read symbols (for example, Japanese).
+
 postLoader 3.57.5
 
 * Corrected a bug in some debug message that could lead to a c. dump if logging is enabled

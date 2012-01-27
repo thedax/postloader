@@ -147,12 +147,13 @@ void CleanTitleConfiguration(void)
 	}
 
 // Convert passed buffer to ascii
-char* Bin2HexAscii (u8 *buff, size_t insize, size_t*outsize)
+char* Bin2HexAscii (void* buff, size_t insize, size_t*outsize)
 	{
 	int i;
 	int osize;
 	char *ob;
 	char hex[8];
+	u8 *b = (u8*) buff;
 	
 	osize = (insize*2)+2;	// Give some extra space... may be needed
 	
@@ -161,7 +162,7 @@ char* Bin2HexAscii (u8 *buff, size_t insize, size_t*outsize)
 	
 	for (i = 0; i < insize; i++)
 		{
-		sprintf (hex, "%02X", buff[i]);
+		sprintf (hex, "%02X", b[i]);
 		strcat (ob, hex);
 		}
 
@@ -171,9 +172,9 @@ char* Bin2HexAscii (u8 *buff, size_t insize, size_t*outsize)
 	}
 	
 // Convert passed ascii string to buff. the buffer must contain
-int HexAscii2Bin (char *ascii, u8 *buff)
+int HexAscii2Bin (char *ascii, void* buff)
 	{
-	int i;
+	int i, j = 0;
 	u8 l,h;
 	u8* p;
 	
@@ -197,78 +198,14 @@ int HexAscii2Bin (char *ascii, u8 *buff)
 		i++;
 		
 		*p = l + (h * 16);
+		
+		j++;
 		p++;
 		}
 	
-	return 1;
+	return j;
 	}
 	
-/////////////////////////////////////////////////////////////////////
-char *cfg_FindTag (char *buff, char *tag)
-	{
-	char b[300];
-	char *p;
-	
-	sprintf (b, "%s=", tag);
-	p = strstr (buff, b);
-	
-	if (p == NULL)
-		{
-		sprintf (b, "%s =", tag);
-		p = strstr (buff, b);
-		}
-	
-	if (p == NULL) return NULL;
-	
-	// move on value
-	p += strlen (b);
-	
-	// strip spaces
-	while (*p == ' ' && *p != '\0') p++;
-	if (*p == '\0') return NULL;
-	
-	// we should have a value
-	return p;
-	}
-	
-int cfg_GetString (char *buff, char *tag, char *string)
-	{
-	char *p;
-	char *ps;
-	
-	p = cfg_FindTag (buff, tag);
-	if (p == NULL) 
-		{
-		*string = '\0';
-		return 0;
-		}
-		
-	ps = string;
-	
-	while (*p != '\0' && *p != '\n')
-		{
-		*ps++ = *p++;
-		}
-	*ps = '\0';
-	
-	return 1;
-	}
-	
-int cfg_GetInt (char *buff, char *tag, int *ival)
-	{
-	char *p;
-	
-	p = cfg_FindTag (buff, tag);
-	if (p == NULL) 
-		{
-		*ival = 0;
-		return 0;
-		}
-	*ival = atoi (p);
-	
-	return 1;
-	}
-		
 bool IsPngBuff (u8 *buff, int size)
 	{
 	if (size < 8 || buff == NULL) return false;
@@ -283,3 +220,22 @@ bool IsPngBuff (u8 *buff, int size)
 	return true;
 	}
 	
+void LoadTitlesTxt (void)
+	{
+	static bool alreadyDone = false;
+	
+	if (alreadyDone) return;
+	alreadyDone = true;
+	
+	char txtpath[64];
+	sprintf (txtpath, "%s://ploader/titles.txt", vars.defMount);
+
+	Video_WaitPanel (TEX_HGL, "Please wait...|Loading titles.txt");
+	
+	titlestxt = cfg_Alloc (txtpath, 0);
+	if (titlestxt->tag == NULL)
+		{
+		cfg_Free (titlestxt);
+		titlestxt = NULL;
+		}
+	}

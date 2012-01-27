@@ -13,6 +13,7 @@
 #include "gui.h"
 #include "neek.h"
 #include "mystring.h"
+#include "cfg.h"
 
 #define CHNMAX 1024
 
@@ -92,6 +93,8 @@ static int GameBrowse (int forcescan);
 char* neek_GetGames (void);
 void neek_KillDIConfig (void);
 static bool IsFiltered (int ai);
+
+static s_cfg *cfg;
 
 #define ICONW 80
 #define ICONH 150
@@ -238,19 +241,6 @@ static void DownloadCovers (void)
 	
 	GameBrowse (0);
 	}
-	
-static int ReadGameConfig (int ia)
-	{
-	int ret = ManageGameConfig (games[ia].asciiId, 0, &gameConf);
-	
-	//strcpy (games[ia].asciiId, gameConf.asciiId);
-	games[ia].category = gameConf.category;
-	games[ia].hidden = gameConf.hidden;
-	games[ia].priority = gameConf.priority;
-	games[ia].playcount = gameConf.playcount;
-	
-	return ret;
-	}
 
 static void WriteGameConfig (int ia)
 	{
@@ -262,7 +252,55 @@ static void WriteGameConfig (int ia)
 	gameConf.category = games[ia].category;
 	gameConf.playcount = games[ia].playcount;
 	
-	ManageGameConfig (games[ia].asciiId, 1, &gameConf);
+	char *buff = Bin2HexAscii (&gameConf, sizeof (s_gameConfig), 0);
+	cfg_SetString (cfg, games[ia].asciiId, buff);
+	free (buff);
+	}
+
+static int ReadGameConfig (int ia)
+	{
+	char buff[1024];
+	bool valid;
+	
+	//ReadGameConfig (
+	
+	valid = cfg_GetString (cfg, games[ia].asciiId, buff);
+	
+	if (valid)
+		{
+		if (HexAscii2Bin (buff, &gameConf) != sizeof (s_gameConfig))
+			{
+			valid = false;
+			}
+		}
+	
+	if (!valid)
+		{
+		gameConf.priority = 5;
+		gameConf.hidden = 0;
+		gameConf.playcount = 0;
+		gameConf.category = 0;
+		
+		gameConf.ios = 0; 		// use current
+		gameConf.vmode = 0;
+		gameConf.language = -1;
+		gameConf.vpatch = 0;
+		gameConf.ocarina = 0;
+		gameConf.hook = 0;
+		gameConf.loader = config.gameDefaultLoader;
+
+		if (CONF_GetRegion() == CONF_REGION_EU)
+			gameConf.dmlvideomode = DMLVIDEOMODE_PAL;
+		else
+			gameConf.dmlvideomode = DMLVIDEOMODE_NTSC;
+		}
+
+	games[ia].category = gameConf.category;
+	games[ia].hidden = gameConf.hidden;
+	games[ia].priority = gameConf.priority;
+	games[ia].playcount = gameConf.playcount;
+	
+	return valid;
 	}
 
 static void StructFree (void)
@@ -446,6 +484,26 @@ static void GoToPage (void)
 	if (item >= 0) gamesPage = item;
 	}
 
+static void UpdateTitlesFromTxt (void)
+	{
+	LoadTitlesTxt ();
+	if (titlestxt == NULL) return;
+
+	int i;
+	char buff[1024];
+	for (i = 0; i < gamesCnt; i++)
+		{
+		if (cfg_GetString (titlestxt, games[i].asciiId, buff))
+			{
+			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, buff);
+			free (games[i].name);
+			games[i].name = ms_utf8_to_ascii (buff);
+			}
+		
+		if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Parsing...");
+		}
+	}
+
 static int GameBrowse (int forcescan)
 	{
 	char slot[8];
@@ -514,7 +572,7 @@ static int GameBrowse (int forcescan)
 					games[i].slot = atoi (slot); // sd = 0 / usb = 1 ?
 					}
 				
-				if (i % 10 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
+				if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 				ReadGameConfig (i);
 				
 				i ++;
@@ -529,6 +587,8 @@ static int GameBrowse (int forcescan)
 		free (titles);
 		}
 
+	UpdateTitlesFromTxt ();
+	
 	AppsSort ();
 	
 	scanned = 1;
@@ -1445,18 +1505,31 @@ static bool MoveGCGame (int ai)
 	
 	return ret;
 	}
-	
+
+static void Conf (bool open)
+	{
+	char cfgpath[64];
+	sprintf (cfgpath, "%s://ploader/games.conf", vars.defMount);
+
+	if (open)
+		{
+		cfg = cfg_Alloc (cfgpath, 0);
+		}
+	else
+		{
+		cfg_Store (cfg, cfgpath);
+		cfg_Free (cfg);
+		}
+	}
+		
 int GameBrowser (void)
 	{
-	Debug ("GameBrowser");
-	/*
-	if (!vars.neek)
-		{
-		return INTERACTIVE_RET_TOHOMEBREW;
-		}
-	*/
 	u32 btn;
 	u8 redraw = 1;
+
+	Debug ("GameBrowser (begin)");
+	
+	Conf (true);
 
 	scanned = 0;
 	browserRet = -1;
@@ -1646,6 +1719,8 @@ int GameBrowser (void)
 
 	// save current page
 	config.gamePage = gamesPage;
+	
+	Conf (false);
 
 	// Clean up all data
 	StructFree ();

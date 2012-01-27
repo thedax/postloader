@@ -5,12 +5,13 @@
 #include "grlib/grlib.h"
 #include "plneek.h"
 #include "debug.h"
+#include "cfg.h"
 
 //#define DOLPHINE
 
-#define BUILD 57
-#define VER "3.57.5"
-#define CFGVER "PLCFGV0008"
+#define BUILD 58
+#define VER "3.58.0"
+#define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
 
@@ -164,7 +165,7 @@ s_theme;
 
 typedef struct
 	{
-	int priority;	// Vote !
+	u32 priority;	// Vote !
 	bool hidden;	// if 1, this app will be not listed
 	
 	u64 titleId; 	// title id
@@ -309,10 +310,12 @@ typedef struct
 	// appbrowser settings
 	int chnPage; 			// last page
 	int appPage;			// 
+	int appDev;				// 0 both, 1 sd, 2 usb
 	int gamePage;			// 
 	u32 gameFilter;			// 
 	u32 gameSort;			// 0 vote, 1 name, 2 playcount
 	u32 gameMode;			// GM_WII, GM_DML
+	u8 gameDefaultLoader;
 
 	// channel browser settings
 	s_chnBrowser chnBrowser;
@@ -321,8 +324,6 @@ typedef struct
 	char pwd[PWDMAXLEN+1];	// Classic wii pwd RLUD12AB, up to 8 chars
 	
 	u32 dmlvideomode;		// Current video mode for dml
-	
-	u8 gameDefaultLoader;
 	}
 s_config;
 
@@ -335,6 +336,7 @@ extern s_grlibSettings grlibSettings;
 	GRRLIB_bytemapFont *fonts[3];
 	s_vars vars;
 	s_theme theme;
+	s_cfg *titlestxt = NULL;
 	const char CHANNEL_FILTERS[] = "HWFECJLMNPQ ";
 	const char *CHANNELS_NAMES[] = {"HStandard Channels","WWiiWare","FNintendo NES","ENeoGeo/Arcade","CCommodore64","JSuper Nintendo","LSega Master System",
 									"MSega Megadrive","NNintendo64","PTurboGraFX","QTurboGraFXCD", " Other"};
@@ -345,6 +347,7 @@ extern s_grlibSettings grlibSettings;
 	extern GRRLIB_bytemapFont *fonts[3];
 	extern s_vars vars;
 	extern s_theme theme;
+	extern s_cfg *titlestxt;
 	extern const char CHANNEL_FILTERS[];
 	extern const char *CHANNELS_NAMES[];
 #endif
@@ -366,13 +369,10 @@ bool DirExist (char *path);
 bool NandExits (int dev);
 void mssleep (int ms);
 void convertToUpperCase(char *sPtr);
-char* Bin2HexAscii (u8 *buff, size_t insize, size_t*outsize);
-int HexAscii2Bin (char *ascii, u8 *buff);
-
-int cfg_GetString (char *buff, char *tag, char *string);
-int cfg_GetInt (char *buff, char *tag, int *ival);
-
+char* Bin2HexAscii (void* buff, size_t insize, size_t*outsize);
+int HexAscii2Bin (char *ascii, void* buff);
 bool IsPngBuff (u8 *buff, int size);
+void LoadTitlesTxt (void);
 
 // dol.c
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
@@ -449,3 +449,8 @@ int DMLInstall (char *gamename, size_t reqKb);
 
 // ScreenSaver
 bool LiveCheck (int reset);
+
+// sound.c
+void snd_Init (void);
+void snd_Stop (void);
+void snd_Mp3Go (void);

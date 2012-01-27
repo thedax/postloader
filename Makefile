@@ -50,6 +50,7 @@ LIBS	+= -lpng
 LIBS	+= -ljpeg 
 LIBS	+= -lz -lfat -lntfs
 LIBS	+= -lwiiuse
+LIBS	+= -lmad -lasnd
 LIBS	+= -lbte -logc -lm
 #LIBS	+= -lfreetype
 

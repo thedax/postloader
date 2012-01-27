@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "mystring.h"
 
 /* not case sensible functions */
@@ -36,7 +37,7 @@ char *ms_strstr(char *str1, char *str2)
 int ms_strcmp(char *str1, char *str2)
 	{
 	if (!str1 || !str2 || !*str1 || !*str2)
-		return NULL;
+		return -10;
 		
 	int l1 = strlen(str1);
 	int l2 = strlen(str2);
@@ -55,4 +56,36 @@ int ms_strcmp(char *str1, char *str2)
 	free (s2);
 	
 	return ret;
+	}
+
+// Very simple wrapper for some utf8
+char *ms_utf8_to_ascii (char *string)
+	{
+	char *buff = calloc (1, strlen(string));
+	
+	int i;
+	int j = 0;
+	
+	for (i = 0; i < strlen(string); i++)
+		{
+		if (string[i] != 0xC3)
+			{
+			buff[j] = string[i];
+			}
+		else
+			{
+			i++;
+			char c = '?';
+			
+			if (string[i] >= 0xA8 && string[i] <= 0xAB) c = 'e';
+			if (string[i] >= 0xA0 && string[i] <= 0xA6) c = 'a';
+			if (string[i] >= 0xAC && string[i] <= 0xAF) c = 'i';
+			if (string[i] >= 0xB2 && string[i] <= 0xB6) c = 'o';
+
+			buff[j] = c;
+			}
+		j++;
+		}
+ 
+	return buff;
 	}

@@ -170,9 +170,11 @@ bool ScanWBFS (char *ob, char *path)
 			fread( gi, 1, GISIZE, f);
 			
 			// Add title
+			gi[0x20 + 64] = 0;		// Make sure to not oveflow
 			strcat (ob, &gi[0x20]);
 			strcat (ob, "\1");
 			// Add id
+			gi[0x00 + 6] = 0;		// Make sure to not oveflow
 			strcat (ob, &gi[0x0]);
 			strcat (ob, "\1");
 			// Add partition

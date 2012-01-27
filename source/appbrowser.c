@@ -638,8 +638,6 @@ static int ScanApps (const char *mount)
 
 static int AppsBrowse (void)
 	{
-	int i;
-
 	gui.spotsIdx = 0;
 	AppsFree ();
 	
@@ -660,10 +658,11 @@ static int AppsBrowse (void)
 		}
 	else
 		{
-		for (i = 0; i < DEVMAX; i++)
-			{
-			if (vars.mount[i][0]) ScanApps (vars.mount[i]);
-			}
+		if ((config.appDev == 0 || config.appDev == 1) && IsDevValid(DEV_SD))
+			ScanApps (vars.mount[DEV_SD]);
+
+		if ((config.appDev == 0 || config.appDev == 2) && IsDevValid(DEV_USB))
+			ScanApps (vars.mount[DEV_USB]);
 		}
 		
 	
@@ -866,6 +865,25 @@ static void SortDispMenu (void)
 		}
 	}
 
+static void ShowFilterMenu (void)
+	{
+	char buff[512];
+	int item;
+	
+	grlib_menuAddItem (buff, 100, "SD Device");
+	grlib_menuAddItem (buff, 101, "USB Device");
+	grlib_menuAddItem (buff, 102, "Both");
+	
+	item = grlib_menu ("Select device(s):\nPress (B) to close", buff);
+	
+	if (item == 100) config.appDev = 1;
+	if (item == 101) config.appDev = 2;
+	if (item == 102) config.appDev = 0;
+
+	AppsBrowse ();
+	AppsSort ();
+	}
+
 static void ShowMainMenu (void)
 	{
 	char buff[512];
@@ -875,6 +893,7 @@ static void ShowMainMenu (void)
 	grlib_menuAddItem (buff, 100, "Browse to...");
 	grlib_menuAddItem (buff,  0, "Rescan devices");
 	grlib_menuAddItem (buff,  6, "View options...");
+	grlib_menuAddItem (buff,  3, "Select device(s)...");
 	grlib_menuAddColumn (buff);
 	grlib_menuAddItem (buff,  4, "Run System menu");
 	grlib_menuAddItem (buff, 20, "Run BOOTMII");
@@ -891,6 +910,10 @@ static void ShowMainMenu (void)
 		MasterInterface (1, 0, 2, "Please wait...");
 		MountDevices(0);
 		AppsBrowse ();
+		}
+	if (item == 3)
+		{
+		ShowFilterMenu ();
 		}
 		
 	if (item == 100)
@@ -1019,13 +1042,25 @@ static void Redraw (void)
 	if (!subpath[0])
 		{
 		strcpy (sdev, "");
-		for (i = 0; i < DEVMAX; i++)
-			if (IsDevValid(i)) 
-				{
-				strcat (sdev, "[");
-				strcat (sdev, vars.mount[i]);
-				strcat (sdev, "] ");
-				}
+		
+		if ((config.appDev == 0 || config.appDev == 1) && IsDevValid(DEV_SD))
+			{
+			strcat (sdev, "[");
+			strcat (sdev, vars.mount[DEV_SD]);
+			strcat (sdev, "] ");
+			}
+
+		if ((config.appDev == 0 || config.appDev == 2) && IsDevValid(DEV_USB))
+			{
+			strcat (sdev, "[");
+			strcat (sdev, vars.mount[DEV_USB]);
+			strcat (sdev, "] ");
+			}
+			
+		if (strlen (sdev) == 0)
+			{
+			strcpy (sdev, "Invalid dev !!!");
+			}
 		}
 	else
 		{
@@ -1152,7 +1187,7 @@ static void Overlay (void)
 	
 	return;
 	}
-	
+		
 static void GoToPage (void)
 	{
 	int col, i, page;
