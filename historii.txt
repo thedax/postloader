@@ -2,6 +2,13 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.58.2
+
+* Corrected a bug on theme detection that was causing a code dump
+* Handled correctly sound when ios reload is performed
+* Code clean
+* Better debug output
+
 postLoader 3.58.1
 
 * Removed some heavy debug output

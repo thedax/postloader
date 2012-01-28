@@ -457,7 +457,8 @@ static int RebuildCacheFile (void)
 	int force = 0;
 	if (config.chnBrowser.nand == NAND_REAL && vars.neek == NEEK_NONE)
 		{
-		Video_WaitPanel (TEX_CHIP, "Patching NAND permission", IOS_DEFAULT);
+		Debug ("RebuildCacheFile: Patching NAND permission");
+		Video_WaitPanel (TEX_CHIP, "Patching NAND permission");
 		sleep (1);
 		IOSPATCH_Apply ();
 		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
@@ -466,6 +467,7 @@ static int RebuildCacheFile (void)
 
 	if (vars.ios != IOS_DEFAULT && vars.neek == NEEK_NONE && (config.chnBrowser.nand != NAND_REAL || force))
 		{
+		Debug ("RebuildCacheFile: Reloading IOS %d", IOS_DEFAULT);
 		Video_WaitPanel (TEX_CHIP, "Reloading IOS %d", IOS_DEFAULT);
 
 		// Reload cause loose of device handles and wiimotess
@@ -477,6 +479,7 @@ static int RebuildCacheFile (void)
 	if (config.chnBrowser.nand != NAND_REAL)
 		{
 		Fat_Unmount ();
+		Debug ("RebuildCacheFile: Enabling emulator...");
 		Video_WaitPanel (TEX_CHIP, "Enabling emulator...");
 		}
 
@@ -508,6 +511,8 @@ static int RebuildCacheFile (void)
 				names[cnt] = get_name(TitleIds[i]);
 				
 				Video_WaitPanel (TEX_HGL, "Searching for channels: %d found...", cnt);
+				Debug ("RebuildCacheFile: found '%s'", names[cnt]);
+				
 				cnt++;
 				}
 			
@@ -521,9 +526,11 @@ static int RebuildCacheFile (void)
 
 	GetCacheFileName (path);
 	
+	Debug ("RebuildCacheFile: storing cache '%s'", path);
+	
 	FILE* f = NULL;
 	char buff[256];
-
+	
 	f = fopen(path, "wb");
 	if (!f) return 0;
 	
@@ -535,6 +542,8 @@ static int RebuildCacheFile (void)
 		free (names[i]);
 		}
 	fclose(f);
+	
+	Debug ("RebuildCacheFile: done !");
 	
 	return cnt;
 	}
@@ -569,7 +578,7 @@ static int ChnBrowse (void)
 	u32 lower, upper;
 	size_t size;
 	
-	Debug ("begin ChnBrowse");
+	Debug ("ChnBrowse: begin!");
 	
 	gui.spotsIdx = 0;
 	gui_Clean ();
@@ -579,8 +588,11 @@ static int ChnBrowse (void)
 	GetCacheFileName (path);
 	
 	titles = (char*)ReadFile2Buffer (path, &size, NULL, TRUE);
-	
-	//grlib_dosm ("%s %d", path, size);
+	if (!titles)
+		{
+		Debug ("ChnBrowse: ReadFile2Buffer failed '%s'", path);
+		return 0;
+		}
 	
 	chansCnt = 0;
 	p = titles;
@@ -644,7 +656,7 @@ static int ChnBrowse (void)
 	
 	free (titles);
 	
-	Debug ("end ChnBrowse");
+	Debug ("ChnBrowse: done!");
 	return chansCnt;
 	}
 
@@ -1127,6 +1139,8 @@ static void Redraw (void)
 	int ai;	// Application index (corrected by the offset)
 	char sdev[64];
 	
+	Debug ("Redraw: begin!");
+	
 	Video_DrawBackgroud (1);
 	
 	if (config.chnBrowser.nand == NAND_REAL)
@@ -1218,6 +1232,8 @@ static void Redraw (void)
 		grlib_DrawCenteredWindow ("No titles found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
+		
+	Debug ("Redraw: done!");
 	}
 	
 static void Overlay (void)

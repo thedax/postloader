@@ -21,11 +21,10 @@ static int stopped = 0;
 static int songs = 0;
 
 
-static s32 reader(void *fp,void *dat, s32 size){
-	
+static s32 reader(void *fp,void *dat, s32 size)
+	{
 	return fread(dat, 1, size, (FILE *) fp);
-
-}
+	}
 
 void snd_Mp3Go (void)
 	{
@@ -82,6 +81,8 @@ void snd_Init (void)
 	ASND_Init(NULL);
 	MP3Player_Init();
 	
+	stopped = 1;
+	
 	if (mp3 == NULL)
 		{
 		mp3 = cfg_Alloc (NULL, 0);
@@ -109,6 +110,7 @@ void snd_Init (void)
 			
 		//cfg_Debug (mp3);
 		
+		stopped = 0;
 		mp3playing = mp3;
 		snd_Mp3Go ();
 		}
@@ -116,8 +118,24 @@ void snd_Init (void)
 	
 void snd_Stop (void)
 	{
-	if (mp3f) fclose (mp3f);
+	Debug ("snd_Stop");
+	
 	MP3Player_Stop();
+	
+	while (MP3Player_IsPlaying())
+		{
+		usleep (1000*1000);
+		Debug ("stopping...");
+		}
 	ASND_End();
+
+	if (mp3f) fclose (mp3f);
+	mp3f = NULL;
+	
 	cfg_Free (mp3);
+	mp3 = NULL;
+	mp3playing = NULL;
+	
+	stopped = 1;
+	songs = 0;
 	}

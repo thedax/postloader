@@ -250,6 +250,21 @@ void Video_LoadTheme (int init)
 		Debug ("grlibSettings.theme.texButtonSel = 0x%X", grlibSettings.theme.texButtonSel);
 		Debug ("grlibSettings.theme.texWindow = 0x%X", grlibSettings.theme.texWindow);
 		Debug ("grlibSettings.theme.texWindowBk = 0x%X", grlibSettings.theme.texWindowBk);
+
+		if (
+			theme.bkg &&
+			theme.frame &&
+			theme.frameSel &&
+			theme.frameBack &&
+			grlibSettings.theme.texButton &&
+			grlibSettings.theme.texButtonSel &&
+			grlibSettings.theme.texWindow &&
+			grlibSettings.theme.texWindowBk
+			)
+			{
+			theme.ok = 1;
+			grlibSettings.theme.enabled = true;
+			}
 		
 		sprintf (path, "%s://ploader/theme/theme.cfg", vars.defMount);
 		s_cfg *cfg = cfg_Alloc(path, 0);
@@ -290,9 +305,6 @@ void Video_LoadTheme (int init)
 				GRRLIB_BMFX_Invert (vars.tex[TEX_EXCL],vars.tex[TEX_EXCL]);
 				GRRLIB_BMFX_Invert (vars.tex[TEX_WIFI],vars.tex[TEX_WIFI]);
 				}
-
-			theme.ok = 1;
-			grlibSettings.theme.enabled = true;
 			}
 		
 		#ifndef DOLPHINE

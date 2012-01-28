@@ -41,20 +41,21 @@ void Subsystems (bool enable)
 		{
 		grlib_Controllers (true);
 		MountDevices (1);
-		snd_Init ();
+		DebugStart (true, "sd://ploader.log");
 		WiiLoad (1);
 		}
 	else
 		{
 		WiiLoad (0);
-		snd_Stop ();
 		grlib_Controllers (false);
+		DebugStop ();
 		Fat_Unmount ();
 		}
 	}
 
 void Shutdown(bool doNotKillHBC)
 	{
+	snd_Stop ();
 	cfg_Free (titlestxt);
 
 	Video_Deinit ();
@@ -336,8 +337,6 @@ int main(int argc, char **argv)
 	ret = INTERACTIVE_RET_NONE;
 	
 	cfg_Alloc ("sd://ploader/theme/theme.cfg", 256);
-	
-
 	
 	grlibSettings.autoCloseMenu = 60;
 	

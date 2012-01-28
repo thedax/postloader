@@ -62,7 +62,7 @@ static int AppsManageCfgFile (int ia, int write);
 
 static void InitializeGui (void)
 	{
-	Debug ("InitializeGui");
+	Debug ("InitializeGui %d", theme.ok);
 
 	// Prepare black box
 	int i, il;

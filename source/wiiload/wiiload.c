@@ -318,7 +318,7 @@ static bool StartWiiLoadServer (void)
 	if (err < 0)
 		{
 		printopt ("net_setsockopt SO_REUSEADDR error");
-		return false;
+		//return false;
 		}
 	
 	sin.sin_family = AF_INET;
@@ -473,6 +473,8 @@ void WiiLoad_Stop(void)
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
+	
+	net_wc24cleanup();
 	}
 
 void WiiLoad_Pause (void)
