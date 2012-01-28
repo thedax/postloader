@@ -129,7 +129,7 @@ s_cfg *cfg_Alloc (char *fn, int linebuffsize) // If fn is null, it return an emp
 	c = base;
 	while (fgets (line, linebuffsize, f))
 		{
-		Debug ("cfg_Alloc: (rd) %s", line);
+		//Debug ("cfg_Alloc: (rd) %s", line);
 		
 		p = line + strlen(line) - 1;
 		while (p > line && (*(p-1) == '\32' || *(p-1) == 13 || *(p-1) == 10)) p--; // remove spaces/cr/lf
@@ -159,7 +159,7 @@ s_cfg *cfg_Alloc (char *fn, int linebuffsize) // If fn is null, it return an emp
 			c->value = calloc (1, strlen (p) + 1);
 			strcpy (c->value, p);
 			
-			Debug ("Adding %s=%s", c->tag, c->value);
+			//Debug ("Adding %s=%s", c->tag, c->value);
 			}
 		
 		addnew = true;
@@ -168,7 +168,7 @@ s_cfg *cfg_Alloc (char *fn, int linebuffsize) // If fn is null, it return an emp
 	free (line);
 	
 	fclose (f);
-	cfg_Debug (base);
+	//cfg_Debug (base);
 	
 	Debug ("cfg_Alloc: completed");
 	

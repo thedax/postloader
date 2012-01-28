@@ -2,6 +2,12 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.58.1
+
+* Removed some heavy debug output
+* Added debug output when browsing homebrew
+* undo "grlib_menu redraw previous screen when exiting"... causes flickering
+
 postLoader 3.58.0
 
 * mp3 background music added... copy your mp3 to /ploader/mp3 or /mp3 on usb or sd

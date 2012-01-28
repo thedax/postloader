@@ -107,7 +107,7 @@ void snd_Init (void)
 			ScanForMp3 (path);
 			}
 			
-		cfg_Debug (mp3);
+		//cfg_Debug (mp3);
 		
 		mp3playing = mp3;
 		snd_Mp3Go ();

@@ -603,6 +603,8 @@ static int ScanApps (const char *mount)
 		{
 		if(strcmp(".", pent->d_name) == 0 || strcmp("..", pent->d_name) == 0)
 	        continue;
+			
+		Debug ("ScanApps: %s", pent->d_name);
 		
 		apptype = AppExist(mount, pent->d_name, filename);	    
 		if (apptype)

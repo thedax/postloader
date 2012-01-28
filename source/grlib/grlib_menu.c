@@ -395,14 +395,14 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	while (TRUE);
 
 	do {WPAD_ScanPads(); if (!WPAD_ButtonsDown(0)) break;} while (TRUE);
-	
+	/*
 	if (grlibSettings.RedrawCallback != NULL) 
 		{
 		grlibSettings.RedrawCallback();
 		grlib_PushScreen ();
 		grlib_Render ();
 		}
-	
+	*/	
 	free (line);
 	
 	// Report cancel
