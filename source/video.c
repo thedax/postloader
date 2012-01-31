@@ -258,8 +258,8 @@ void Video_LoadTheme (int init)
 			theme.frameBack &&
 			grlibSettings.theme.texButton &&
 			grlibSettings.theme.texButtonSel &&
-			grlibSettings.theme.texWindow &&
-			grlibSettings.theme.texWindowBk
+			grlibSettings.theme.texWindow /* &&
+			grlibSettings.theme.texWindowBk*/
 			)
 			{
 			theme.ok = 1;

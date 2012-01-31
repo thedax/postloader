@@ -43,7 +43,6 @@ config_bytes[7] debugger
 #include "patchcode.h"
 
 #include "tools.h"
-#include "config.h"
 #include "codes.h"
 
 static const u8 *codelistend = (u8 *) 0x80003000;
@@ -53,7 +52,9 @@ static size_t codebuff_size = 0;
 
 void *codelist;
 
-//extern const DISC_INTERFACE __io_usbstorage;
+extern u32 ocarinaoption;
+extern u32 debuggeroption;
+extern u32 hooktypeoption;
 
 DISC_INTERFACE storage;
 
@@ -84,8 +85,8 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 			}
 		if (Fd < 0)
 			{
-			Print("Failed to open %s\n", path);
-			Print("No %s codes found\n", text);
+			debug("Failed to open %s\n", path);
+			debug("No %s codes found\n", text);
 			sleep(3);
 			return -1;
 			}
@@ -93,7 +94,7 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		fstats *status = allocate_memory(sizeof(fstats));
 		if (status == NULL)
 			{
-			Print("Out of memory for status\n");
+			debug("Out of memory for status\n");
 			ISFS_Close(Fd);
 			return -1;
 			}
@@ -101,7 +102,7 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		ret = ISFS_GetFileStats(Fd, status);
 		if (ret < 0)
 			{
-			Print("ISFS_GetFileStats failed %d\n", ret);
+			debug("ISFS_GetFileStats failed %d\n", ret);
 			ISFS_Close(Fd);
 			free(status);
 			return -1;
@@ -111,7 +112,7 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		
 		if (filesize > maxsize)
 			{
-			Print("Too many codes\n");
+			debug("Too many codes\n");
 			ISFS_Close(Fd);
 			return -1;
 			}
@@ -120,7 +121,7 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		u8 *buf = allocate_memory(filesize);
 		if (buf == NULL)
 			{
-			Print("Out of memory for buffer\n");
+			debug("Out of memory for buffer\n");
 			ISFS_Close(Fd);
 			return -1;
 			}
@@ -128,7 +129,7 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		ret = ISFS_Read(Fd, buf, filesize);
 		if (ret < 0)
 			{
-			Print("ISFS_Read failed %d\n", ret);
+			debug("ISFS_Read failed %d\n", ret);
 			ISFS_Close(Fd);
 			free(buf);
 			return ret;
@@ -143,13 +144,13 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		{
 		if (codebuff && codebuff_size)
 			{
-			Print("Codes found in memory %d !!!!!!!!!\n", ret);
+			debug("Codes found in memory %d !!!!!!!!!\n", ret);
 			memcpy (buffer, codebuff, codebuff_size);
 			sleep (3);
 			}
 		else
 			{
-			Print("Codes not found in memory %d xxxxxxxxxx\n", ret);
+			debug("Codes not found in memory %d xxxxxxxxxx\n", ret);
 			return -1;
 			sleep (3);
 			}
@@ -297,11 +298,11 @@ void do_codes(u64 titleid)
 		ret = load_codes(gameidbuffer, (u32)codelistend - (u32)codelist, codelist);
 		if (ret >= 0)
 			{
-			Print("Codes found. Applying\n");
+			debug("Codes found. Applying\n");
 			}
 		else
 			{
-			Print("Codes not found.\n");
+			debug("Codes not found.\n");
 			}
 		//sleep(1);
 		}
@@ -317,7 +318,7 @@ void preload_codes (u64 titleid)
 	
 	if (!ocarinaoption) return;
 	
-	Print("Preloading codes\n");
+	debug("Preloading codes\n");
 	//sleep (1);
 	
 	if (debuggeroption == 0x00)
@@ -369,7 +370,7 @@ void preload_codes (u64 titleid)
 	ret = storage.startup();
 	if (ret < 0) 
 		{
-		Print("%s Error\n", text);
+		debug("%s Error\n", text);
 		sleep (3);
 		return;
 		}
@@ -379,26 +380,20 @@ void preload_codes (u64 titleid)
 	if (ret < 0) 
 		{
 		storage.shutdown();
-		Print("FAT Error\n");
+		debug("FAT Error\n");
 		sleep (3);
 		return;
 		}
 
-	sprintf(path, "fat:/TriiForce/codes/%s.gct", filename);
+	sprintf(path, "fat:/codes/%s.gct", filename);
 	fp = fopen(path, "rb");
-
-	if (!fp) 
-		{
-		sprintf(path, "fat:/codes/%s.gct", filename);
-		fp = fopen(path, "rb");
-		}
 
 	if (!fp) 
 		{
 		fatUnmount("fat");
 		storage.shutdown();
-		Print("Failed to open %s\n", path);
-		Print("No %s codes found\n", text);
+		debug("Failed to open %s\n", path);
+		debug("No %s codes found\n", text);
 		sleep(3);
 		return;
 		}
@@ -413,9 +408,9 @@ void preload_codes (u64 titleid)
 		fatUnmount("fat");
 		storage.shutdown();
 		if (codebuff_size)
-			Print("Too many codes\n");
+			debug("Too many codes\n");
 		else
-			Print("File is empty\n");
+			debug("File is empty\n");
 			
 		sleep (3);
 		return;
@@ -433,7 +428,7 @@ void preload_codes (u64 titleid)
 
 	if (ret != codebuff_size)
 	{	
-		Print("%s Code Error\n", text);
+		debug("%s Code Error\n", text);
 		sleep (3);
 		
 		free (codebuff);
@@ -443,7 +438,7 @@ void preload_codes (u64 titleid)
 		return;
 	}
 
-	Print("Code loaded (size = %d)\n", codebuff_size);
+	debug("Code loaded (size = %d)\n", codebuff_size);
 	//sleep (1);
 	
 	return;

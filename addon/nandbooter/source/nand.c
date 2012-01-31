@@ -31,7 +31,7 @@ s32 Nand_Mount(nandDevice *dev)
     if (fd < 0)
         return fd;
 		
-	Print ("Nand_Mount: ios_rev = %d\n", rev);
+	debug ("Nand_Mount: ios_rev = %d\n", rev);
 
     /* Prepare vector */
     if(rev >= 21 && rev < 30000)
@@ -57,7 +57,7 @@ s32 Nand_Mount(nandDevice *dev)
     /* Mount device */
     ret = IOS_Ioctlv(fd, dev->mountCmd, inlen, 0, vector);
 
-	Print ("Nand_Mount: IOS_Ioctlv = %d\n", ret);
+	debug ("Nand_Mount: IOS_Ioctlv = %d\n", ret);
 
     /* Close FAT module */
     IOS_Close(fd);
@@ -68,27 +68,7 @@ s32 Nand_Mount(nandDevice *dev)
 
     return ret;
 }
-/*
-s32 Nand_Mount(nandDevice *dev)
-{
-	s32 fd, ret;
 
-	// Open FAT module
-	fd = IOS_Open("fat", 0);
-	if (fd < 0)
-		return fd;
-
-	// TODO Tell the cIOS which partition to use
-	
-	// Mount device
-	ret = IOS_Ioctlv(fd, dev->mountCmd, 0, 0, NULL);
-
-	// Close FAT module
-	IOS_Close(fd);
-
-	return ret;
-}
-*/
 s32 Nand_Unmount(nandDevice *dev)
 {
 	s32 fd, ret;
@@ -151,13 +131,13 @@ s32 Nand_Enable(nandDevice *dev, char *path)
 		
 		free (buffer);
 		
-		Print ("Nand_Enable IOS_Ioctlv = %d\n", ret);
+		debug ("Nand_Enable IOS_Ioctlv = %d\n", ret);
 		}
 	else
 		{
 		ret = IOS_Ioctl(fd, 100, inbuf, sizeof(inbuf), NULL, 0);
 		
-		Print ("Nand_Enable IOS_Ioctl = %d\n", ret);
+		debug ("Nand_Enable IOS_Ioctl = %d\n", ret);
 		}
 
 	/* Close /dev/fs */
@@ -194,34 +174,8 @@ s32 get_nand_device()
 	return mounted;
 	}
 
-/*
 s32 Enable_Emu(int selection, char *path)
-{
-	if (mounted != 0) return -1;
-	s32 ret;
-	nandDevice *ndev = NULL;
-	ndev = &ndevList[selection];
-	
-	ret = Nand_Mount(ndev);
-	if (ret < 0) 
 	{
-		return ret;
-	}
-
-	ret = Nand_Enable(ndev, path);
-	if (ret < 0) 
-	{
-		Nand_Unmount(ndev);
-		return ret;
-	}
-
-	mounted = selection;
-	return 0;
-}	
-*/
-
-s32 Enable_Emu(int selection, char *path)
-{
 	if (mounted != 0) return -1;
 	
 	s32 ret;
@@ -241,20 +195,20 @@ s32 Enable_Emu(int selection, char *path)
 	if (ret < 0) 
 		return ret;
 		
-	Print ("Enabling Nand\n");
+	debug ("Enabling Nand\n");
 
 	ret = Nand_Enable(ndev, path);
 	if (ret < 0) 
-	{
+		{
 		Nand_Unmount(ndev);
 		return ret;
-	}
+		}
 	
-	Print ("Nand Mounted= %d\n", ret);
+	debug ("Nand Mounted= %d\n", ret);
 
 	mounted = selection;
 	return 0;
-}	 
+	}	 
 
 s32 Disable_Emu()
 {

@@ -133,6 +133,9 @@ bool GetFileToBoot (void)
 		__io_wiisd.shutdown();
 		}
 
+	if (ret == false)
+		ret = LoadPostloaderFromISFS ();
+
 	if (ret == false && fatMountSimple("fat", &__io_usbstorage))
 		{
 		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
@@ -143,9 +146,6 @@ bool GetFileToBoot (void)
 		fatUnmount("fat:/");
 		__io_wiisd.shutdown();
 		}
-
-	if (ret == false)
-		ret = LoadPostloaderFromISFS ();
  
 	return ret;
 	} 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 		char buff[32];
 
 		memset (buff, 0, sizeof(buff));
-		strcpy (buff, "neek");
+		//strcpy (buff, "neek");
 
 		arg.argvMagic = ARGV_MAGIC;
 		arg.length  = strlen(buff)+1;

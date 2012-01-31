@@ -97,7 +97,10 @@ void grlib_Exit (void)
 	{
 	GRRLIB_FreeTexture (redrawTex);
 	GRRLIB_FreeTexture (popPushTex);
-	if (!grlibSettings.doNotCall_GRRLIB_Exit) GRRLIB_Exit ();
+	if (!grlibSettings.doNotCall_GRRLIB_Exit) 
+		GRRLIB_Exit ();
+	else
+		GRRLIB_ExitLight ();
 	}
 	
 void grlib_SetRedrawCallback (GRLIB_RedrawCallback cbRedraw, GRLIB_RedrawCallback cbOverlay)

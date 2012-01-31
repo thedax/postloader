@@ -25,6 +25,8 @@ s_fsop;
 
 extern s_fsop fsop;
 
+u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded);
+u32 fsop_CountDirItems (char *source);
 bool fsop_GetFileSizeBytes (char *path, size_t *filesize);	// for me stats st_size report always 0 :(
 bool fsop_StoreBuffer (char *fn, u8 *buff, int size, fsopCallback vc);
 bool fsop_FileExist (char *fn);

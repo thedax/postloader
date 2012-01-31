@@ -48,7 +48,7 @@ s32 __decompressLZ77_11(u8 *in, u32 inputLen, u8 **output, u32 *outputLen, u32 m
         compressedPos += 0x4;
     }
  
-    //Print("Decompressed size : %i\n", decompressedSize);
+    //debug("Decompressed size : %i\n", decompressedSize);
 
 	if (max_size == 0)
 	{
@@ -64,7 +64,7 @@ s32 __decompressLZ77_11(u8 *in, u32 inputLen, u8 **output, u32 *outputLen, u32 m
     out = malloc(max_size);
 	if (out == NULL)
 	{
-		Print("ERR: (__decompressLZ77_11) Out of memory\n");
+		debug("ERR: (__decompressLZ77_11) Out of memory\n");
 		return -1;
 	}
  
@@ -158,7 +158,7 @@ s32 __decompressLZ77_10(u8 *in, u32 inputLen, u8 **output, u32 *outputLen, u32 m
 	 
 	//int compressionType = (packBytes(in[0], in[1], in[2], in[3]) >> 4) & 0xF;
 	 
-	//Print("Decompressed size : %i\n", decompressedSize);
+	//debug("Decompressed size : %i\n", decompressedSize);
 
 	if (max_size == 0)
 	{
@@ -174,7 +174,7 @@ s32 __decompressLZ77_10(u8 *in, u32 inputLen, u8 **output, u32 *outputLen, u32 m
 	out = malloc(max_size);
 	if (out == NULL)
 	{
-		Print("ERR: (__decompressLZ77_10) Out of memory\n");
+		debug("ERR: (__decompressLZ77_10) Out of memory\n");
 		return -1;
 	}
 	 
@@ -248,15 +248,15 @@ int decompressLZ77content(u8 *buffer, u32 length, u8 **output, u32 *outputLen, u
 	switch (buffer[0])
     {
         case LZ77_0x10_FLAG:
-            //Print("LZ77 variant 0x10 compressed content...unpacking may take a while...\n");
+            //debug("LZ77 variant 0x10 compressed content...unpacking may take a while...\n");
             ret = __decompressLZ77_10(buffer, length, output, outputLen, max_size);
 			break;
         case LZ77_0x11_FLAG:
-            //Print("LZ77 variant 0x11 compressed content...unpacking may take a while...\n");
+            //debug("LZ77 variant 0x11 compressed content...unpacking may take a while...\n");
             ret = __decompressLZ77_11(buffer, length, output, outputLen, max_size);
 			break;
         default:
-            Print("Not compressed ...\n");
+            debug("Not compressed ...\n");
 			ret = -1;
 			break;
     }

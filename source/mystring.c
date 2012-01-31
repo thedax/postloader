@@ -14,7 +14,7 @@ char *ms_strstr(char *str1, char *str2)
 		
 	int l1 = strlen(str1);
 	int l2 = strlen(str2);
-
+	
 	char *s1 = malloc (l1+1);
 	char *s2 = malloc (l2+1);
 
@@ -37,7 +37,7 @@ char *ms_strstr(char *str1, char *str2)
 int ms_strcmp(char *str1, char *str2)
 	{
 	if (!str1 || !str2 || !*str1 || !*str2)
-		return -10;
+		return 0;
 		
 	int l1 = strlen(str1);
 	int l2 = strlen(str2);

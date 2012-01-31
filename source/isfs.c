@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "tools.h"
 #include "isfs.h"
 
 s32 __FileCmp(const void *a, const void *b)
@@ -196,4 +195,65 @@ s32 read_file_from_nand(char *filepath, u8 *buffer, u32 filesize)
 	free(status);
 
 	return 0;
+}
+
+u8 * readalloc_file_from_nand(char *filepath, s32 *error, size_t bytes2read, size_t *bytesReaded)
+{
+	s32 Fd;
+	int ret = 0;
+	
+	Fd = ISFS_Open(filepath, ISFS_OPEN_READ);
+	if (Fd < 0)
+		{
+		if (error) *error = Fd;
+		return NULL;
+		}
+
+	fstats *status = allocate_memory(sizeof(fstats));
+	if (status == NULL)
+		{
+		ISFS_Close(Fd);
+		if (error) *error = -2;
+		return NULL;
+		}
+	
+	ret = ISFS_GetFileStats(Fd, status);
+	if (ret < 0 || status->file_length == 0)
+		{
+		ISFS_Close(Fd);
+		free(status);
+		if (error) *error = -3;
+		return NULL;
+		}
+	
+	if (bytes2read > status->file_length)
+		{
+		bytes2read = status->file_length;
+		}
+	
+	u8 *buffer = allocate_memory(bytes2read);
+		{
+		ISFS_Close(Fd);
+		if (error) *error = -4;
+		return NULL;
+		}
+	
+	ret = ISFS_Read(Fd, buffer, bytes2read);
+	if (ret < 0)
+		{
+		ISFS_Close(Fd);
+		free(status);
+		if (error) *error = ret;
+		return NULL;
+		}
+	else
+		{
+		if (bytesReaded) *bytesReaded = ret;
+		}
+		
+	ISFS_Close(Fd);
+
+	free(status);
+
+	return buffer;
 }

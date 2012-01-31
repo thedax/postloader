@@ -4,7 +4,6 @@
 #include "wiiload/wiiload.h"
 #include "globals.h"
 #include "bin2o.h"
-#include "triiforce/nand.h"
 #include "network.h"
 #include "sys/errno.h"
 #include "http.h"
@@ -16,10 +15,6 @@
 #include "cfg.h"
 
 #define CHNMAX 1024
-
-#define TITLE_UPPER(x)		((u32)((x) >> 32))
-#define TITLE_LOWER(x)		((u32)(x))
-#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
 
 /*
 

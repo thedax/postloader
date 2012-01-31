@@ -251,6 +251,34 @@ void  GRRLIB_Exit (void)
 #endif
 }
 
+void  GRRLIB_ExitLight (void) 
+	{
+	if (!is_setup)  
+		return;
+    else
+		is_setup = false;
+
+    // Allow write access to the full screen
+    GX_SetClipMode( GX_CLIP_DISABLE );
+    GX_SetScissor( 0, 0, rmode->fbWidth, rmode->efbHeight );
+
+    // Shut down the GX engine
+    GX_DrawDone();
+    GX_AbortFrame();
+	GX_Flush();
+
+    if (gp_fifo != NULL) {  free(gp_fifo);               gp_fifo = NULL;  }
+
+    // Free up memory allocated for frame buffers & FIFOs
+    if (xfb[0]  != NULL) {  free(MEM_K1_TO_K0(xfb[0]));  xfb[0]  = NULL;  }
+    if (xfb[1]  != NULL) {  free(MEM_K1_TO_K0(xfb[1]));  xfb[1]  = NULL;  }
+
+    // Done with TTF
+#ifdef ENABLE_TTF
+    GRRLIB_ExitTTF();
+#endif
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // GRRLIB_ttf
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

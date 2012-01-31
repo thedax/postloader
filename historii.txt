@@ -2,7 +2,19 @@
 PLOADER - HISTORII
 ====================
 
-postLoader 3.58.2
+postLoader 3.90.0
+
+* Removed debug output for nandbooter (emulation nand), now is much more faster and nicer. If an error occours, a log file is written to sd
+* nandbooter moved to 0x81330000
+* nandbooter: huge code cleanup
+* Corrected a bug where selected homebrew icon can be partially overlapped by other icons
+* homebrew application version is now displayed
+* Almost totally rewritten postloader channels/nandemu routines
+* postLoader need no more to reload 249 to refresh channel cache for emunand (and it is faster)
+* channels filter menu is now on two columns
+* fix an issue with some themes
+
+postLoader 3.58.3
 
 * Corrected a bug on theme detection that was causing a code dump
 * Handled correctly sound when ios reload is performed

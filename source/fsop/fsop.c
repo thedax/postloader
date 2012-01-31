@@ -23,6 +23,41 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 
 s_fsop fsop;
 
+
+// return false if the file doesn't exist
+u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded)
+	{
+	FILE *f;
+	size_t size = 0;
+	
+	f = fopen(path, "rb");
+	if (!f)
+		{
+		if (bytesReaded) *bytesReaded = size;
+		return NULL;
+		}
+
+	//Get file size
+	fseek( f, 0, SEEK_END);
+	size = ftell(f);
+	if (bytesReaded) *bytesReaded = size;
+	if (size == 0) return NULL;
+	
+	// goto to start
+	fseek( f, 0, SEEK_SET);
+	
+	if (bytes2read < size)
+		size = bytes2read;
+	
+	u8 *buff = malloc (size);
+	size = fread (buff, 1, size, f);
+	fclose (f);
+	
+	if (bytesReaded) *bytesReaded = size;
+
+	return buff;
+	}
+
 // return false if the file doesn't exist
 bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_size report always 0 :(
 	{
@@ -45,6 +80,31 @@ bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_siz
 	Debug ("fsop_GetFileSizeBytes (%s) = %u", path, size);
 	
 	return true;
+	}
+
+/*
+
+*/
+u32 fsop_CountDirItems (char *source)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	u32 count = 0;
+	
+	pdir=opendir(source);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		// Skip it
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
+			continue;
+
+		count++;
+		}
+	
+	closedir(pdir);
+	
+	return count;
 	}
 
 /*

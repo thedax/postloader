@@ -1,3 +1,6 @@
+#ifndef __PLNEEK__
+	#define __PLNEEK__
+
 #define NAND_MAX 16
 
 #define PLNEEK_DIR "sd://ploader/plneek.dir"
@@ -27,3 +30,5 @@ typedef struct
 	int nandsCnt;
 	}
 s_plneek;
+
+#endif

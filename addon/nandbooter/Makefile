@@ -28,9 +28,9 @@ INCLUDES	:=	source
 CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DPAL
 CXXFLAGS	=	$(CFLAGS)
 #originale TRIIFORCE
-LDFLAGS	= -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80dfff00
+#LDFLAGS	= -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80dfff00
 #preso da booter
-#LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x81000000
+LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x81330000
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project

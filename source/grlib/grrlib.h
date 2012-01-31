@@ -236,6 +236,7 @@ void  GRRLIB_BMFX_Pixelate  (const GRRLIB_texImg *texsrc,
 // GRRLIB_core.c - GRRLIB core functions
 int  GRRLIB_Init (int skipVideo, int fixPal);
 void  GRRLIB_Exit (void);
+void  GRRLIB_ExitLight (void);
 
 //------------------------------------------------------------------------------
 // GRRLIB_fbAdvanced.c - Render to framebuffer: Advanced primitives

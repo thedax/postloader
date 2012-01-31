@@ -26,9 +26,7 @@
 #include "main.h"
 #include "tools.h"
 #include "isfs.h"
-#include "name.h"
 #include "lz77.h"
-#include "config.h"
 #include "patch.h"
 #include "codes/codes.h"
 #include "codes/patchcode.h"
@@ -75,6 +73,16 @@ u32		dolchunkcount;
 
 void _unstub_start();
 
+s32 videooption;
+u32 languageoption;
+u32 videopatchoption;
+
+u32 hooktypeoption;
+u32 debuggeroption;
+u32 ocarinaoption;
+
+u32 bootmethodoption;
+
 // Prevent IOS36 loading at startup
 s32 __IOS_LoadStartupIOS()
 {
@@ -86,12 +94,11 @@ void reboot()
 	Disable_Emu();
 	if (strncmp("STUBHAXX", (char *)0x80001804, 8) == 0)
 	{
-		Print("Exiting to HBC...\n");
+		debug("Exiting to HBC...\n");
 		sleep(3);
 		exit(0);
 	}
-	Print("Rebooting...\n");
-	sleep(3);
+	debug("Rebooting...\n");
 	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 }
 
@@ -110,100 +117,6 @@ typedef struct _dolheader
 	u32 entry_point;
 } dolheader;
 
-
-void videoInit(bool banner)
-{
-	VIDEO_Init();
-	rmode = VIDEO_GetPreferredMode(0);
-	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-	VIDEO_Configure(rmode);
-	VIDEO_SetNextFramebuffer(xfb);
-	VIDEO_SetBlack(FALSE);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
- 	
-    int x, y, w, h;
-	
-	if (banner)
-	{
-		x = 32;
-		y = 212;
-		w = rmode->fbWidth - 64;
-		h = rmode->xfbHeight - 212 - 32;
-	} else
-	{
-		x = 24;
-		y = 32;
-		w = rmode->fbWidth - (32);
-		h = rmode->xfbHeight - (48);
-	}
-
-	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
-
-	CON_InitEx(rmode, x, y, w, h);
-	
-	// Set console text color
-	printf("\x1b[%u;%um", 37, false);
-	printf("\x1b[%u;%um", 40, false);
-	}
-
-
-s32 get_game_list(u64 **TitleIds, u32 *num)
-{
-	int ret;
-	u32 maxnum;
-	u32 tempnum = 0;
-	u32 number;
-	dirent_t *list = NULL;
-    char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-    sprintf(path, "/title/00010001");
- 
-	ret = getdir(path, &list, &maxnum);
-	if (ret < 0)
-	{
-		Print("ERR: Reading folder %s failed\n", path);
-		return ret;
-	}
-
-	u64 *temp = malloc(sizeof(u64) * maxnum);
-	if (temp == NULL)
-	{
-		free(list);
-		Print("ERR: Out of memory\n");
-		return -1;
-	}
-
-	int i;
-	for (i = 0; i < maxnum; i++)
-	{	
-		// Ignore channels starting with H (Channels) and U (Loadstructor channels)
-		if (memcmp(list[i].name, "48", 2) != 0 && memcmp(list[i].name, "55", 2) != 0 
-		// Also ignore the HBC, "JODI" and 0xaf1bf516 
-		&& memcmp(list[i].name, "4a4f4449", 8) != 0 && memcmp(list[i].name, "4A4F4449", 8) != 0 
-		&& memcmp(list[i].name, "af1bf516", 8) != 0 && memcmp(list[i].name, "AF1BF516", 8) != 0
- 		// And ignore everything that's not using characters or numbers(only check 1st char)
-		&& strtol(list[i].name,NULL,16) >= 0x30000000 && strtol(list[i].name,NULL,16) <= 0x7a000000 )
-		{
-			sprintf(path, "/title/00010001/%s/content", list[i].name);
-			
-			ret = getdircount(path, &number);
-			
-			if (ret >= 0 && number > 1) // 1 == tmd only
-			{
-				temp[tempnum] = TITLE_ID(0x00010001, strtol(list[i].name,NULL,16));
-				tempnum++;		
-			}
-		}
-	}
-
-	*TitleIds = temp;
-	*num = tempnum;
-	free(list);
-	return 0;
-}
-
-
 s32 check_dol(u64 titleid, char *out, u16 bootcontent)
 {
     s32 ret;
@@ -219,7 +132,7 @@ s32 check_dol(u64 titleid, char *out, u16 bootcontent)
 	
 	if (buffer == NULL)
 	{
-		Print("ERR: (checkdol) Out of memory\n");
+		debug("ERR: (checkdol) Out of memory\n");
 		return -1;
 	}
  
@@ -229,7 +142,7 @@ s32 check_dol(u64 titleid, char *out, u16 bootcontent)
     ret = getdir(path, &list, &num);
     if (ret < 0)
 	{
-		Print("ERR: (checkdol) Reading folder of the title failed\n");
+		debug("ERR: (checkdol) Reading folder of the title failed\n");
 		free(buffer);
 		return ret;
 	}
@@ -250,14 +163,14 @@ s32 check_dol(u64 titleid, char *out, u16 bootcontent)
 
 			if (isLZ77compressed(buffer))
 			{
-				//Print("Found LZ77 compressed content --> %s\n", list[cnt].name);
-				//Print("This is most likely the main DOL, decompressing for checking\n");
+				//debug("Found LZ77 compressed content --> %s\n", list[cnt].name);
+				//debug("This is most likely the main DOL, decompressing for checking\n");
 
 				// We only need 6 bytes...
 				ret = decompressLZ77content(buffer, 32, &decompressed, &decomp_size, 32);
 				if (ret < 0)
 				{
-					Print("ERR: (checkdol) Decompressing failed\n");
+					debug("ERR: (checkdol) Decompressing failed\n");
 					free(list);
 					free(buffer);
 					return ret;
@@ -270,7 +183,7 @@ s32 check_dol(u64 titleid, char *out, u16 bootcontent)
 	        ret = memcmp(buffer, check, 6);
             if(ret == 0)
             {
-				Print("Found DOL --> %s\n", list[cnt].name);
+				debug("Found DOL --> %s\n", list[cnt].name);
 				sprintf(out, "%s", path);
 				free(list);
 				free(buffer);
@@ -282,7 +195,7 @@ s32 check_dol(u64 titleid, char *out, u16 bootcontent)
 	free(list);
 	free(buffer);
 	
-	Print("ERR: (checkdol) No .dol found\n");
+	debug("ERR: (checkdol) No .dol found\n");
 	return -1;
 }
 
@@ -322,7 +235,7 @@ void patch_dol(bool bootcontent)
 	}
 	if (hooktypeoption != 0 && !hookpatched)
 	{
-		Print("ERR: (patch_dol) Could not patch the hook: Ocarina and debugger won't work\n");
+		debug("ERR: (patch_dol) Could not patch the hook: Ocarina and debugger won't work\n");
 	}
 }  
 
@@ -337,7 +250,7 @@ u32 load_dol(const void *dolstart)
     {
         dolfile = (dolheader *) dolstart;
 		
-		Print("EP: %08x\n", dolfile->entry_point);
+		debug("EP: %08x\n", dolfile->entry_point);
 		
 		if (dolfile->bss_start < MEM1_MAX) 
 			{
@@ -362,25 +275,23 @@ u32 load_dol(const void *dolstart)
 					}
 				}
 			
-			//fflush(stdout);
-			
             if ((dolfile->text_size[i] == 0) || (dolfile->text_start[i] < 0x80000000))
 				{
-				//Print ("skip (%d,%d)\n", (dolfile->text_size[i] == 0), (dolfile->text_start[i] < 0x80000000));
+				//debug ("skip (%d,%d)\n", (dolfile->text_size[i] == 0), (dolfile->text_start[i] < 0x80000000));
 				if (i == 0) changeEP = true;
                 continue;
 				}
 
-			Print("TS: %u from %08x to %08x-%08x...", i, dolfile->text_pos[i], dolfile->text_start[i], dolfile->text_start[i]+dolfile->text_size[i]);
+			debug("TS: %u from %08x to %08x-%08x...", i, dolfile->text_pos[i], dolfile->text_start[i], dolfile->text_start[i]+dolfile->text_size[i]);
 
 			if (changeEP == i)
 				{
 				dolfile->entry_point = dolfile->text_start[i];
 				changeEP = false;
-				Print ("ok (EP Changed)\n");
+				debug ("ok (EP Changed)\n");
 				}
 			else
-				Print ("ok\n");
+				debug ("ok\n");
 
             memmove((void *) dolfile->text_start[i], dolstart + dolfile->text_pos[i], dolfile->text_size[i]);
             DCFlushRange ((void *) dolfile->text_start[i], dolfile->text_size[i]);
@@ -391,12 +302,11 @@ u32 load_dol(const void *dolstart)
         {
             if ((dolfile->data_size[i] == 0) || (dolfile->data_start[i] <= 0x100))
 				{
-				//Print ("skip (%d, %d)\n", (dolfile->data_size[i] == 0), (dolfile->data_start[i] <= 0x100));
                 continue;
 				}
 				
-			Print("DS: %u from %08x to %08x-%08x...", i, dolfile->data_pos[i], dolfile->data_start[i], dolfile->data_start[i]+dolfile->text_size[i]);
-			Print ("ok\n");
+			debug("DS: %u from %08x to %08x-%08x...", i, dolfile->data_pos[i], dolfile->data_start[i], dolfile->data_start[i]+dolfile->text_size[i]);
+			debug ("ok\n");
 
             // VIDEO_WaitVSync();
             memmove((void *) dolfile->data_start[i], dolstart + dolfile->data_pos[i], dolfile->data_size[i]);
@@ -409,123 +319,8 @@ u32 load_dol(const void *dolstart)
     return 0;
 }
 
-u32 load_dol_old(u8 *buffer)
-{
-	dolchunkcount = 0;
-	
-	dolheader *dolfile;
-	dolfile = (dolheader *)buffer;
-	
-	Print("Entrypoint: %08x\n", dolfile->entry_point);
-
-	memset((void *)dolfile->bss_start, 0, dolfile->bss_size);
-	DCFlushRange((void *)dolfile->bss_start, dolfile->bss_size);
-	ICInvalidateRange((void *)dolfile->bss_start, dolfile->bss_size);
-	
-    Print("BSS cleared\n");
-
-	u32 doloffset;
-	u32 memoffset;
-	u32 restsize;
-	u32 size;
-
-	int i;
-	for (i = 0; i < 7; i++)
-	{	
-		if (dolfile->text_pos[i] < 0x80000000)
-			dolfile->text_pos[i] += 0x80000000;
-		if (dolfile->text_start[i] < 0x80000000)
-			dolfile->text_start[i] += 0x80000000;
-		
-		Print("Moving text section %u from %08x to %08x-%08x...\n", i, dolfile->text_pos[i], dolfile->text_start[i], dolfile->text_start[i]+dolfile->text_size[i]);
-		fflush(stdout);			
-
-		if(dolfile->text_pos[i] < sizeof(dolheader))
-			continue;
-	    
-		dolchunkoffset[dolchunkcount] = (void *)dolfile->text_start[i];
-		dolchunksize[dolchunkcount] = dolfile->text_size[i];
-		dolchunkcount++;
-		
-		doloffset = (u32)buffer + dolfile->text_pos[i];
-		memoffset = dolfile->text_start[i];
-		restsize = dolfile->text_size[i];
-
-		//fflush(stdout);
-			
-		while (restsize > 0)
-		{
-			if (restsize > 2048)
-			{
-				size = 2048;
-			} else
-			{
-				size = restsize;
-			}
-			restsize -= size;
-			
-			memcpy((void *)memoffset, (void *)doloffset, size);
-			
-			DCFlushRange((void *)memoffset, size);
-			ICInvalidateRange ((void *)memoffset, size);
-			
-			doloffset += size;
-			memoffset += size;
-		}
-
-		//Print("done\n");
-		//fflush(stdout);			
-	}
-
-	for(i = 0; i < 11; i++)
-	{
-		Print("Moving data section %u from %08x to %08x-%08x...", i, dolfile->data_pos[i], dolfile->data_start[i], dolfile->data_start[i]+dolfile->data_size[i]);
-		fflush(stdout);			
-		
-		if(dolfile->data_pos[i] < sizeof(dolheader))
-			continue;
-		
-		dolchunkoffset[dolchunkcount] = (void *)dolfile->data_start[i];
-		dolchunksize[dolchunkcount] = dolfile->data_size[i];
-		dolchunkcount++;
-
-		doloffset = (u32)buffer + dolfile->data_pos[i];
-		memoffset = dolfile->data_start[i];
-		restsize = dolfile->data_size[i];
-
-		//fflush(stdout);
-			
-		while (restsize > 0)
-		{
-			if (restsize > 2048)
-			{
-				size = 2048;
-			} else
-			{
-				size = restsize;
-			}
-			restsize -= size;
-			memcpy((void *)memoffset, (void *)doloffset, size);
-
-			DCFlushRange((void *)memoffset, size);
-			ICInvalidateRange ((void *)memoffset, size);
-			
-			doloffset += size;
-			memoffset += size;
-		}
-
-		//Print("done\n");
-		//fflush(stdout);			
-	} 
-	Print("All .dol sections moved\n");
-	fflush(stdout);	
-
-	return dolfile->entry_point;
-}
-
-
 s32 search_and_read_dol(u64 titleid, u8 **contentBuf, u32 *contentSize, bool skip_bootcontent)
-{
+	{
 	char filepath[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	int ret;
 	u16 bootindex;
@@ -537,16 +332,16 @@ s32 search_and_read_dol(u64 titleid, u8 **contentBuf, u32 *contentSize, bool ski
 	tmd_content *p_cr = NULL;
 
 	// Opening the tmd only to get to know which content is the apploader
-	Print("Reading TMD...");
+	debug("Reading TMD...");
 
 	sprintf(filepath, "/title/%08x/%08x/content/title.tmd", TITLE_UPPER(titleid), TITLE_LOWER(titleid));
 	ret = read_full_file_from_nand(filepath, &tmdBuffer, &tmdSize);
 	if (ret < 0)
-	{
-		Print("ERR: (search_and_read_dol) Reading TMD failed\n");
+		{
+		debug("ERR: (search_and_read_dol) Reading TMD failed\n");
 		return ret;
-	}
-	Print("done\n");
+		}
+	debug("done\n");
 	
 	bootindex = ((tmd *)SIGNATURE_PAYLOAD((signed_blob *)tmdBuffer))->boot_index;
 	p_cr = TMD_CONTENTS(((tmd *)SIGNATURE_PAYLOAD((signed_blob *)tmdBuffer)));
@@ -560,13 +355,13 @@ s32 search_and_read_dol(u64 titleid, u8 **contentBuf, u32 *contentSize, bool ski
 	if (skip_bootcontent)
 		{
 		bootcontent_loaded = false;
-		Print("Searching for main DOL...\n");
+		debug("Searching for main DOL...\n");
 			
 		// Search the folder for .dols and ignore the apploader
 		ret = check_dol(titleid, filepath, bootcontent);
 		if (ret < 0)
 			{
-			Print("ERR: (search_and_read_dol) Searching for main.dol failed, loading nand loader instead\n");
+			debug("ERR: (search_and_read_dol) Searching for main.dol failed, loading nand loader instead\n");
 			bootcontent_loaded = true;
 			}
 		} 
@@ -575,39 +370,40 @@ s32 search_and_read_dol(u64 titleid, u8 **contentBuf, u32 *contentSize, bool ski
 		bootcontent_loaded = true;
 		}
 	
-    Print("Loading DOL: %s\n", filepath);
+    debug("Loading DOL: %s\n", filepath);
 
 	ret = read_full_file_from_nand(filepath, contentBuf, contentSize);
 	if (ret < 0)
 		{
-		Print("ERR: (search_and_read_dol) Reading .dol failed\n");
+		debug("ERR: (search_and_read_dol) Reading .dol failed\n");
 		return ret;
 		}
 	
 	if (isLZ77compressed(*contentBuf))
 		{
-		Print("Decompressing...");
+		debug("Decompressing...");
 		u8 *decompressed;
 		ret = decompressLZ77content(*contentBuf, *contentSize, &decompressed, contentSize, 0);
 		if (ret < 0)
 			{
-			Print("ERR: (search_and_read_dol) Decompression failed\n");
+			debug("ERR: (search_and_read_dol) Decompression failed\n");
 			free(*contentBuf);
 			return ret;
 			}
 		free(*contentBuf);
 		*contentBuf = decompressed;
-		Print("done\n");
+		debug("done\n");
 		}	
 
 	if (bootcontent_loaded)
-	{
+		{
 		return 1;
-	} else
-	{
+		} 
+	else
+		{
 		return 0;
+		}
 	}
-}
 
 
 void determineVideoMode(u64 titleid)
@@ -723,36 +519,32 @@ void determineVideoMode(u64 titleid)
 }
 
 void setVideoMode()
-{	
+	{	
+	VIDEO_Init();
+	VIDEO_SetBlack(TRUE);
+	rmode = VIDEO_GetPreferredMode(0);
+	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
+	
 	*(u32 *)0x800000CC = Video_Mode;
 	DCFlushRange((void*)0x800000CC, sizeof(u32));
 	
 	// Overwrite all progressive video modes as they are broken in libogc
 	if (videomode_interlaced(rmode) == 0)
-	{
+		{
 		rmode = &TVNtsc480Prog;
-	}
+		}
 
 	VIDEO_Configure(rmode);
 	VIDEO_SetNextFramebuffer(xfb);
-	VIDEO_SetBlack(FALSE);
 	VIDEO_Flush();
 	VIDEO_WaitVSync();
-	
 	if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
-}
-
-void green_fix() //GREENSCREEN FIX
-{     
-    VIDEO_Configure(rmode);
-    VIDEO_SetNextFramebuffer(xfb);
-    VIDEO_SetBlack(TRUE);
-    VIDEO_Flush();
-    VIDEO_WaitVSync();
-}
+	VIDEO_SetBlack(FALSE);
+	}
 
 void bootTitle(u64 titleid)
-{
+	{
 	entrypoint appJump;
 	int ret;
 	u32 requested_ios;
@@ -760,12 +552,12 @@ void bootTitle(u64 titleid)
 	u32 dolsize;
 	bool bootcontentloaded;
 	
-	Print("Running search_and_read_dol\n");
+	debug("Running search_and_read_dol\n");
 
 	ret = search_and_read_dol(titleid, &dolbuffer, &dolsize, (bootmethodoption == 0));
 	if (ret < 0)
 	{
-		Print("ERR: (bootTitle) .dol loading failed\n");
+		debug("ERR: (bootTitle) .dol loading failed\n");
 		return;
 	}
 	bootcontentloaded = (ret == 1);
@@ -773,98 +565,95 @@ void bootTitle(u64 titleid)
 	determineVideoMode(titleid);
 	
 	entryPoint = load_dol(dolbuffer);
-	
+
 	free(dolbuffer);
 
-	Print(".dol loaded\n");
+	debug(".dol loaded\n");
 
 	ret = identify(titleid, &requested_ios);
 	if (ret < 0)
-	{
-		Print("ERR: (bootTitle) Identify failed\n");
+		{
+		debug("ERR: (bootTitle) Identify failed\n");
 		return;
-	}
-	
-	// Might cause trouble?
-	//ISFS_Deinitialize();
+		}
 	
 	// Set the clock
 	settime(secs_to_ticks(time(NULL) - 946684800));
 
-	// Should be required by online play..
-	*(u32 *)0x80000000 = TITLE_LOWER(titleid);
-	DCFlushRange((void*)0x80000000, 32);
-
 	// Memory setup when booting the main.dol
 	if (entryPoint != 0x3400)
-	{
+		{
 		*(u32 *)0x80000034 = 0;				// Arena High, the apploader does this too
-		*(u32 *)0x800000F4 = 0x817FE000;	// BI2, the apploader does this too
-		*(u32 *)0x800000F8 = 0x0E7BE2C0;	// bus speed
-		*(u32 *)0x800000FC = 0x2B73A840;	// cpu speed
-
-		DCFlushRange((void*)0x80000000, 0x100);
+		DCFlushRange((void*)0x80000034, 4);
 		
+		*(u32 *)0x800000F4 = 0x817FE000;	// BI2, the apploader does this too
+		DCFlushRange((void*)0x800000F4, 4);
+		
+		*(u32 *)0x800000F8 = 0x0E7BE2C0;	// bus speed
+		DCFlushRange((void*)0x800000F8, 4);
+
+		*(u32 *)0x800000FC = 0x2B73A840;	// cpu speed
+		DCFlushRange((void*)0x800000FC, 4);
+
 		memset((void *)0x817FE000, 0, 0x2000); // Clearing BI2, or should this be read from somewhere?
 		DCFlushRange((void*)0x817FE000, 0x2000);		
 
 		if (hooktypeoption == 0)
-		{
+			{
 			*(u32 *)0x80003180 = TITLE_LOWER(titleid);
-		} else
-		{
+			DCFlushRange((void*)0x80003180, 4);
+			} 
+		else
+			{
 			*(u32 *)0x80003180 = 0;		// No comment required here
-		}
-		
+			DCFlushRange((void*)0x80003180, 4);
+			}
 		*(u32 *)0x80003184 = 0x81000000;	// Game id address, while there's all 0s at 0x81000000 when using the apploader...
+		DCFlushRange((void*)0x80003184, 4);
+		}
+	
+	// IOS Version Check (002 error)
+    *(vu32*)0x80003140 = ((requested_ios << 16)) | 0xFFFF;
+    *(vu32*)0x80003188 = ((requested_ios << 16)) | 0xFFFF;
+    DCFlushRange((void *)0x80003140, 4);
+    DCFlushRange((void *)0x80003188, 4);
+	
+    // Game ID Online Check
+    memset((void *)0x80000000, 0, 6);
+    *(vu32 *)0x80000000 = TITLE_LOWER(titleid);
+    DCFlushRange((void *)0x80000000, 6);
 
-		DCFlushRange((void*)0x80003180, 32);
-	}
-	
-	// Remove 002 error
-	*(u16 *)0x80003140 = requested_ios;
-	*(u16 *)0x80003142 = 0xffff;
-	*(u16 *)0x80003188 = requested_ios;
-	*(u16 *)0x8000318A = 0xffff;
-	
-	DCFlushRange((void*)0x80003140, 32);
-	DCFlushRange((void*)0x80003180, 32);
-	
+	/*
 	// Maybe not required at all?	
 	ret = ES_SetUID(titleid);
 	if (ret < 0)
-	{
-		Print("ERR: (bootTitle) ES_SetUID failed %d", ret);
+		{
+		debug("ERR: (bootTitle) ES_SetUID failed %d", ret);
 		return;
-	}	
-	//Print("ES_SetUID successful\n");
-	
+		}	
+	*/
 	if (hooktypeoption)
-	{
+		{
 		do_codes(titleid);
-	}
+		}
 	
 	patch_dol(bootcontentloaded);
 	
-	Print("Loading complete, booting...\n");
+	debug("Loading complete, booting...\n");
+	setVideoMode();
 
 	appJump = (entrypoint)entryPoint;
 
 	tell_cIOS_to_return_to_channel();
-
-	setVideoMode();
-	green_fix();
 	
 	IRQ_Disable();
 	__IOS_ShutdownSubsystems();
 	__exception_closeall();
 
-	//SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
-
 	if (entryPoint != 0x3400)
-	{
-		if (hooktypeoption != 0)
 		{
+		if (hooktypeoption != 0)
+			{
 			__asm__(
 						"lis %r3, entryPoint@h\n"
 						"ori %r3, %r3, entryPoint@l\n"
@@ -876,14 +665,16 @@ void bootTitle(u64 titleid)
 						"bctr\n"
 						);
 						
-		} else
-		{
+			} 
+		else
+			{
 			appJump();	
-		}
-	} else
-	{
-		if (hooktypeoption != 0)
+			}
+		} 
+	else
 		{
+		if (hooktypeoption != 0)
+			{
 			__asm__(
 						"lis %r3, returnpoint@h\n"
 						"ori %r3, %r3, returnpoint@l\n"
@@ -903,12 +694,13 @@ void bootTitle(u64 titleid)
 						"mtsrr0 %r4\n"
 						"rfi\n"
 						);
-		} else
-		{
+			} 
+		else
+			{
 			_unstub_start();
+			}
 		}
 	}
-}
 
 extern char * logbuff;
 void StoreLogFile (void)
@@ -928,7 +720,10 @@ int main(int argc, char* argv[])
 	{
 	int ret;
 	s_nandbooter nb;
-	u8 *tfb = (u8 *) 0x90000000;
+	//u8 *tfb = (u8 *) 0x90000000;
+	u8 *tfb = ((u8 *) 0x93200000);
+
+	//sleep (10);
 
 	memcpy (&nb, tfb, sizeof(s_nandbooter));
 	
@@ -941,8 +736,6 @@ int main(int argc, char* argv[])
 	
 	IOS_ReloadIOS(ios[nb.channel.ios]);
 	
-	Set_Config_to_Defaults();
-
 	// Configure triiforce options
 	videooption = nb.channel.vmode;
 	languageoption = nb.channel.language;
@@ -952,32 +745,30 @@ int main(int argc, char* argv[])
 	ocarinaoption = nb.channel.ocarina;
 	bootmethodoption = nb.channel.bootMode;
 
-	videoInit(false);
+	//videoInit(false);
 	
-	Print("nandBooter (b4): postLoader triiforce mod...\n\n");
-	Print("CONF: %d, %d, %d, %d, %d, %d, %d\n", ios[nb.channel.ios], videooption, languageoption, videopatchoption, hooktypeoption, ocarinaoption, bootmethodoption);
-	Print("NAND: %d, %s\n\n", nb.nand, nb.nandPath);
+	debug("nandBooter (b4): postLoader triiforce mod...\n\n");
+	debug("CONF: %d, %d, %d, %d, %d, %d, %d\n", ios[nb.channel.ios], videooption, languageoption, videopatchoption, hooktypeoption, ocarinaoption, bootmethodoption);
+	debug("NAND: %d, %s\n\n", nb.nand, nb.nandPath);
 	
-	/*
-	Print ("videooption = %d\n", videooption);
-	Print ("languageoption = %d\n", languageoption);
-	Print ("videopatchoption = %d\n", videopatchoption);
-	Print ("hooktypeoption = %d\n", hooktypeoption);
-	Print ("ocarinaoption = %d\n", ocarinaoption);
-	Print ("bootmethodoption = %d\n", bootmethodoption);
-	Print ("\n");
-	*/
+	debug ("videooption = %d\n", videooption);
+	debug ("languageoption = %d\n", languageoption);
+	debug ("videopatchoption = %d\n", videopatchoption);
+	debug ("hooktypeoption = %d\n", hooktypeoption);
+	debug ("ocarinaoption = %d\n", ocarinaoption);
+	debug ("bootmethodoption = %d\n", bootmethodoption);
+	debug ("\n");
 	
 	// Preload codes
 	if (hooktypeoption) preload_codes ((u64)(nb.channel.titleId));
 
 	if (nb.nand != 0)
 		{
-		Print("Starting nand emu...\n");
+		debug("Starting nand emu...\n");
 		ret = Enable_Emu(nb.nand, nb.nandPath);
 		if (ret < 0)
 			{
-			Print("ERR: (main) Starting nand emu failed\n");
+			debug("ERR: (main) Starting nand emu failed\n");
 			reboot();
 			}
 		}
@@ -985,17 +776,17 @@ int main(int argc, char* argv[])
 		sleep (1);
 
 	ret = ISFS_Initialize();
-	Print ("ISFS_Initialize: %d\n", ret);
+	debug ("ISFS_Initialize: %d\n", ret);
 	
 	bootTitle((u64)(nb.channel.titleId));
 
 	sleep(5);
 	
-	Print ("Things are gone wrong, disabling emulator...\n");
+	debug ("Things are gone wrong, disabling emulator...\n");
 	Disable_Emu ();
 	
 	// Try to write log to sd
-	Print ("Trying to write error log to sd...\n");
+	debug ("Trying to write error log to sd...\n");
 	StoreLogFile ();
 	
 	reboot();

@@ -3,7 +3,8 @@
 #include <string.h>
 #include <malloc.h>
 #include "identify.h"
-#include "triiforce/sha1.h"
+#include "sha1.h"
+#include "isfs.h"
 
 extern const u8 certs_dat[];
 extern const u32 certs_dat_size;

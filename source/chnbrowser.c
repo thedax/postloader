@@ -4,7 +4,7 @@
 #include "wiiload/wiiload.h"
 #include "globals.h"
 #include "bin2o.h"
-#include "triiforce/nand.h"
+#include "channels.h"
 #include "network.h"
 #include "sys/errno.h"
 #include "http.h"
@@ -15,10 +15,6 @@
 #include "cfg.h"
 
 #define CHNMAX 1024
-
-#define TITLE_UPPER(x)		((u32)((x) >> 32))
-#define TITLE_LOWER(x)		((u32)(x))
-#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
 
 /*
 
@@ -45,7 +41,6 @@ static s_grlib_iconSetting is;
 static void Redraw (void);
 static int ChnBrowse (void);
 
-static bool emuError = false;
 static bool nandScanned = false;
 
 static s_cfg *cfg;
@@ -433,7 +428,6 @@ To have the maximum speed, titles are now stored in cache file. Cache file must 
 static int RebuildCacheFile (void)
 	{
 	int i, cnt;
-	int emu;
 	int ret;
 	int id;
 	
@@ -446,15 +440,12 @@ static int RebuildCacheFile (void)
 	
 	Debug ("RebuildCacheFile()");
 	
-	emuError = false;
-	
 	nandScanned = false;
 	
 	Redraw ();
 	grlib_PushScreen ();
 	
 #ifndef DOLPHINE
-	int force = 0;
 	if (config.chnBrowser.nand == NAND_REAL && vars.neek == NEEK_NONE)
 		{
 		Debug ("RebuildCacheFile: Patching NAND permission");
@@ -462,43 +453,34 @@ static int RebuildCacheFile (void)
 		sleep (1);
 		IOSPATCH_Apply ();
 		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
-			force = 1;
-		}
-
-	if (vars.ios != IOS_DEFAULT && vars.neek == NEEK_NONE && (config.chnBrowser.nand != NAND_REAL || force))
-		{
-		Debug ("RebuildCacheFile: Reloading IOS %d", IOS_DEFAULT);
-		Video_WaitPanel (TEX_CHIP, "Reloading IOS %d", IOS_DEFAULT);
-
-		// Reload cause loose of device handles and wiimotess
-		Subsystems (false);
-		vars.ios = ios_ReloadIOS (IOS_DEFAULT, &vars.ahbprot); // Let's try to reload
-		Subsystems (true);
+			{
+			grlib_menu ("postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+			return -1;
+			}
 		}
 #endif
+
+	if (config.chnBrowser.nand == NAND_REAL) ISFS_Initialize();
+
+	*path = '\0';
 	if (config.chnBrowser.nand != NAND_REAL)
 		{
-		Fat_Unmount ();
-		Debug ("RebuildCacheFile: Enabling emulator...");
-		Video_WaitPanel (TEX_CHIP, "Enabling emulator...");
+		if (config.chnBrowser.nand == NAND_EMUSD) 
+			sprintf (path, "sd:/%s", config.chnBrowser.nandPath);
+		if (config.chnBrowser.nand == NAND_EMUUSB)
+			sprintf (path, "usb:/%s", config.chnBrowser.nandPath);
+		
+		Debug ("RebuildCacheFile: browsing '%s'", path);
+		Video_WaitPanel (TEX_CHIP, "Please wait...");
 		}
 
-	emu = 0;
-	if (config.chnBrowser.nand == NAND_EMUSD) emu = Enable_Emu(EMU_SD, config.chnBrowser.nandPath);
-	if (config.chnBrowser.nand == NAND_EMUUSB) emu = Enable_Emu(EMU_USB, config.chnBrowser.nandPath);
-
-	ISFS_Initialize();
-
-	if (emu < 0)
-		{
-		grlib_Message ("ERROR: I can't enable NAND emulator (ret=%d).\n", emu);
-		emuError = true;
-		}
-	
 	cnt = 0;
 	for (id = 0; id < 2; id++)
 		{
-		ret = get_game_list(&TitleIds, &Titlecount, id);
+		if (*path == 0)
+			ret = get_game_list(&TitleIds, &Titlecount, id);
+		else
+			ret = get_game_listEmu(&TitleIds, &Titlecount, id, path);
 		
 		if (ret > 0)
 			{
@@ -508,7 +490,7 @@ static int RebuildCacheFile (void)
 				upper[cnt] = TITLE_UPPER(TitleIds[i]);
 				
 				// Search title in cache
-				names[cnt] = get_name(TitleIds[i]);
+				names[cnt] = get_name(TitleIds[i], path);
 				
 				Video_WaitPanel (TEX_HGL, "Searching for channels: %d found...", cnt);
 				Debug ("RebuildCacheFile: found '%s'", names[cnt]);
@@ -520,9 +502,7 @@ static int RebuildCacheFile (void)
 			}
 		}
 
-	if (config.chnBrowser.nand != NAND_REAL) Disable_Emu();
-	ISFS_Deinitialize();
-	if (config.chnBrowser.nand != NAND_REAL) MountDevices(1);
+	if (config.chnBrowser.nand == NAND_REAL) ISFS_Deinitialize();
 
 	GetCacheFileName (path);
 	
@@ -858,7 +838,10 @@ static void ShowFilterMenu (void)
 		{
 		buff[0] = '\0';
 		for (item = 0; item < CHANNELS_MAXFILTERS; item++)
+			{
+			if (item == 6) grlib_menuAddColumn (buff);
 			grlib_menuAddCheckItem (buff, 100 + item, f[item], &CHANNELS_NAMES[item][1]);
+			}
 		
 		item = grlib_menu ("Filter menu:\nPress (B) to close, (+) Select all, (-) Deselect all", buff);
 
@@ -1022,7 +1005,9 @@ static void ShowNandOptions (void)
 	Redraw();
 	grlib_PushScreen();
 	
+	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("NAND Options", buff);
+	grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 	if (item == 9)
 		{

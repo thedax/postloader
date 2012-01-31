@@ -1,3 +1,6 @@
+#ifndef __GLOBALS__
+#define __GLOBALS__
+
 #include <unistd.h>
 #include <wiiuse/wpad.h>
 #include "fsop/fsop.h"
@@ -9,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 58
-#define VER "3.58.2"
+#define BUILD 59
+#define VER "3.59.0"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define USE_IOS_DEFAULT 0
@@ -34,6 +37,10 @@
 
 #define GM_WII 0
 #define GM_DML 1
+
+#define TITLE_UPPER(x)		((u32)((x) >> 32))
+#define TITLE_LOWER(x)		((u32)(x))
+#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
 
 enum {
 	INTERACTIVE_RET_NONE=0,
@@ -257,7 +264,8 @@ typedef struct
 	char *desc;
 	char *longdesc;
 	char *path;
-	char *args; 		// Not used by now
+	char *args;
+	char *version;
 	char filename[32];	// boot.dol... boot.elf...
 	char mount[5];		// keep track of where is located the homebrew, as we mix sd and usb...
 	int priority; 		// if true is listed before others
@@ -418,12 +426,6 @@ int ChnBrowser (void);
 // gamebrowser.c
 int GameBrowser (void);
 
-// triiforce
-int tfboot(s_run *run);
-s32 get_game_list(u64 **TitleIds, u32 *num, u8 id);
-char *get_name(u64 titleid);
-void Microsneek (s_run *run, int enable); // If enable, the title is installed in sneek, if not, it is removed
-
 // wiiloadzip
 int ZipUnpack (char *path, char *target, char *dols);
 void WiiloadZipMenu (void);
@@ -454,3 +456,5 @@ bool LiveCheck (int reset);
 void snd_Init (void);
 void snd_Stop (void);
 void snd_Mp3Go (void);
+
+#endif

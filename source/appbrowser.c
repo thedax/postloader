@@ -129,6 +129,11 @@ static void AppsFree (void)
 			free (apps[i].name);
 			apps[i].name = NULL;
 			}
+		if (apps[i].version != NULL) 
+			{
+			free (apps[i].version);
+			apps[i].version = NULL;
+			}
 		if (apps[i].desc != NULL) 
 			{
 			free (apps[i].desc);
@@ -201,6 +206,8 @@ static char * MallocReadMetaXML (char *fn, int morebytes)
 
 static void ParseXML (char * buff, int ai)
 	{
+	if (strlen(buff) == 0) return;
+	
 	int found;
 	char *p1,*p2;
 	char token[256];
@@ -239,6 +246,27 @@ static void ParseXML (char * buff, int ai)
 	else
 		apps[ai].iosReload = 1;
 
+	/////////////////////////////////////////////////
+	// scan for application name
+	p1 = buff;
+	strcpy (token, "<version>");
+	p1 = strstr (p1, token);
+	if (p1)
+		{
+		p2 = strstr (p1, "</version>");
+		if (p2)
+			{
+			p1 += strlen(token);
+			
+			if (p2 > p1)
+				{
+				// we have the name
+				apps[ai].version = calloc (p2-p1+1,1);
+				strncpy (apps[ai].version, p1, p2-p1);
+				}
+			}
+		}
+		
 	/////////////////////////////////////////////////
 	// scan for application name
 	p1 = buff;
@@ -393,6 +421,12 @@ static int AppsManageCfgFile (int ia, int write)
 		
 		ParseXML (buff, appsCnt);
 		
+		if (apps[ia].name == NULL)
+			{
+			apps[ia].name = calloc (1, strlen(apps[ia].path)+1);
+			strcpy (apps[ia].name, apps[ia].path);
+			}
+
 		// Search for config
 		strcpy (token, "<ploader>");
 		p = strstr (buff, token);
@@ -519,6 +553,8 @@ static void AppsSort (void)
 	int i;
 	int mooved;
 	s_app app;
+	
+	Debug ("AppSort (begin)");
 
 	// Apply filters
 	apps2Disp = 0;
@@ -546,6 +582,8 @@ static void AppsSort (void)
 		}
 	while (mooved);
 
+	Debug ("AppSort (#1)");
+
 	// Sort by name, fucking ass stupid algorithm...
 	do
 		{
@@ -553,7 +591,11 @@ static void AppsSort (void)
 		
 		for (i = 0; i < apps2Disp - 1; i++)
 			{
-			if (apps[i].name && apps[i+1].name && ms_strcmp (apps[i+1].name, apps[i].name) < 0 && apps[i].type != AT_FOLDERUP)
+			int ret;
+			ret = ms_strcmp (apps[i+1].name, apps[i].name);
+			//Debug ("apps[i].name = 0x%X (%s), apps[i+1].name = 0x%X (%s), %d, %d", apps[i].name, apps[i+1].name, apps[i].name, apps[i+1].name, i, ret);
+			
+			if (apps[i].name && apps[i+1].name && ret < 0 && apps[i].type != AT_FOLDERUP)
 				{
 				// swap
 				memcpy (&app, &apps[i+1], sizeof(s_app));
@@ -565,6 +607,7 @@ static void AppsSort (void)
 		}
 	while (mooved);
 
+	Debug ("AppSort (#2)");
 	// Sort by priority, fucking ass stupid algorithm...
 	do
 		{
@@ -585,6 +628,8 @@ static void AppsSort (void)
 	while (mooved);
 	
 	appsPageMax = apps2Disp / gui.spotsXpage;
+	
+	Debug ("AppSort (end)");
 	}
 
 static int ScanApps (const char *mount)
@@ -634,6 +679,8 @@ static int ScanApps (const char *mount)
 		}
 
 	closedir(pdir);
+	
+	Debug ("ScanApps completed!");
 	
 	return 0;
 	}
@@ -985,17 +1032,23 @@ void DrawInfo (void)
 
 	if (appsSelected != -1)
 		{
+		char name[256];
 		t = time(NULL);
 
 		grlib_SetFontBMF (fonts[FNTNORM]);
 		
+		if (apps[appsSelected].version)
+			sprintf (name, "%s (%s)", apps[appsSelected].name, apps[appsSelected].version);
+		else
+			sprintf (name, "%s", apps[appsSelected].name);
+		
 		if (apps[appsSelected].desc)
 			{
-			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
 			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
 			}
 		else
-			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].name);
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
 
 		grlib_SetFontBMF (fonts[FNTSMALL]);
 		
@@ -1117,6 +1170,8 @@ static void Redraw (void)
 	gui.spotsIdx = 0;
 
 	//Debug ("Redraw [icons]");
+	
+	int drawSpot = 0;
 
 	for (i = 0; i < gui.spotsXpage; i++)
 		{
@@ -1170,14 +1225,23 @@ static void Redraw (void)
 					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].path);
 				}
 
-			if (spotSelected == i)
+			if (spotSelected == i) // Draw selected icon as last one
+				{
+				drawSpot = 1;
 				gui.spots[i].ico.sel = true;
-				
-			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
+				grlib_IconInit (&ico, &gui.spots[gui.spotsIdx].ico);
+				}
+			else
+				grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 			
 			gui.spots[gui.spotsIdx].id = ai;
 			gui.spotsIdx++;
 			}
+		}
+		
+	if (drawSpot)
+		{
+		grlib_IconDraw (&is, &ico);
 		}
 
 	grlib_SetFontBMF(fonts[FNTNORM]);

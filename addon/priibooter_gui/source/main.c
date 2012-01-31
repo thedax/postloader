@@ -19,9 +19,6 @@
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
 
-#define POSTLOADER_SD "sd://postloader.dol"
-#define POSTLOADER_USB "usb://postloader.dol"
-
 #define POSTLOADER_SDAPP "sd://apps/postloader/boot.dol"
 #define POSTLOADER_USBAPP "usb://apps/postloader/boot.dol"
 
@@ -539,21 +536,11 @@ void Boot (void)
 		{
 		bool found = FALSE;
 		
-		if (pl_sd)
-			{
-			if (!found) found = LoadExecFile (POSTLOADER_SD, "priibooter");
-			if (!found) found = LoadExecFile (POSTLOADER_SDAPP, "priibooter");
-			}
-		if (pl_usb)
-			{
-			if (!found) found = LoadExecFile (POSTLOADER_USB, "priibooter");
-			if (!found) found = LoadExecFile (POSTLOADER_USBAPP, "priibooter");
-			}
+		if (pl_sd && !found) found = LoadExecFile (POSTLOADER_SDAPP, "priibooter");
+		if (pl_usb && !found) found = LoadExecFile (POSTLOADER_USBAPP, "priibooter");
 
 		if (!found) BootToMenu ();
 				
-		//grlib_dosm ("found = %d", found);
-
 		Fat_Unmount ();
 		grlib_Exit ();
 		BootExecFile ();
@@ -566,8 +553,6 @@ void Boot (void)
 		grlib_Exit ();
 		BootToMenu ();
 		}
-		
-	exit (0); // This isn't really needed...
 	}
 
 //=============================================================================================================================
@@ -610,21 +595,15 @@ int main(int argc, char **argv)
 	fadeInMsec = 5;
 	while (!fadeIn (0));
 	
-	if (sd && fsop_FileExist (POSTLOADER_SD))
-		pl_sd = 1;
-
 	if (sd && fsop_FileExist (POSTLOADER_SDAPP))
 		pl_sd = 1;
-
-	if (usb && fsop_FileExist (POSTLOADER_USB))
-		pl_usb = 1;
 
 	if (usb && fsop_FileExist (POSTLOADER_USBAPP))
 		pl_usb = 1;
 
 	if (pl_sd == 0 && pl_usb == 0)
 		{
-		printd ("Warning: postLoader.dol not found on sd/usb");
+		grlib_menu ("Warning: postLoader.dol not found on sd/usb", " Ok ");
 		
 		if (pln.bootMode != PLN_BOOT_NEEK)
 			keypressed = 1;

@@ -22,11 +22,6 @@ bool Reset_Flag;
 
 void *allocate_memory(u32 size);
 s32 identify(u64 titleid, u32 *ios);
-void set_highlight(bool highlight);
-void waitforbuttonpress(u32 *out, u32 *outGC);
-void printheadline();
-void set_silent(bool value);
-bool get_silent();
-void Print(const char *text, ...);
+void debug(const char *text, ...);
 void tell_cIOS_to_return_to_channel(void);
 u64 old_title_id;

@@ -12,6 +12,7 @@
 #include "neek.h"
 #include "uneek_fs.h"
 #include "mem2.h"
+#include "channels.h"
 
 extern void __exception_setreload(int t); // In the event of a code dump, app will restart
 int Disc (void);
@@ -229,6 +230,12 @@ int main(int argc, char **argv)
 	
 	Debug ("-----[postLoader "VER"]-----");
 	Debug ("Initialization done !");
+	
+	Debug ("xfb[0] = 0x%X", xfb[0]);
+	Debug ("xfb[1] = 0x%X", xfb[1]);
+	
+	Debug ("Arena Low = 0x%X", *(u32*)0x80000030);
+	Debug ("Arena  Hi = 0x%X", *(u32*)0x80000034);
 
 	if (vars.neek)
 		{
@@ -427,7 +434,7 @@ int main(int argc, char **argv)
 		{
 		// NOTE: Shutdown() is called inside triiforce
 		MasterInterface (1, 0, 2, "");
-		tfboot(&config.run);
+		BootChannel(&config.run);
 		}
 		
 	// We have an autorun ?
@@ -444,7 +451,7 @@ int main(int argc, char **argv)
 		{
 		// NOTE: Shutdown() is called inside triiforce
 		MasterInterface (1, 0, 2, "");
-		tfboot(&config.autoboot);
+		BootChannel(&config.autoboot);
 		}
 
 	// Uh ?
