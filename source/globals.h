@@ -16,6 +16,7 @@
 #define VER "3.59.0"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
+#define IOS_PREFERRED 58
 #define USE_IOS_DEFAULT 0
 
 #define PATH_PLOADERCFG DEV_MOUNT"://ploader"

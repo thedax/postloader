@@ -448,13 +448,25 @@ static int RebuildCacheFile (void)
 #ifndef DOLPHINE
 	if (config.chnBrowser.nand == NAND_REAL && vars.neek == NEEK_NONE)
 		{
-		Debug ("RebuildCacheFile: Patching NAND permission");
-		Video_WaitPanel (TEX_CHIP, "Patching NAND permission");
-		sleep (1);
-		IOSPATCH_Apply ();
-		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
+		if (vars.ios == IOS_PREFERRED)
 			{
-			grlib_menu ("postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+			Debug ("RebuildCacheFile: Patching NAND permission");
+			Video_WaitPanel (TEX_CHIP, "Patching NAND permission");
+			sleep (1);
+			IOSPATCH_Apply ();
+			if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
+				{
+				grlib_menu ("postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+				return -1;
+				}
+			}
+		else if (vars.ios == IOS_DEFAULT)
+			{
+			Video_WaitPanel (TEX_CHIP, "Please wait...");
+			}
+		else
+			{
+			grlib_menu ("Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
 			return -1;
 			}
 		}

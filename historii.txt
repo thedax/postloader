@@ -2,7 +2,12 @@
 PLOADER - HISTORII
 ====================
 
-postLoader 3.90.0
+postLoader 3.59.1
+
+* Fixed a bug that was preventing postloader to browse real nand if ios249 is used (this heppens it AHPBROT flag is not available)
+* added to xml file <no_ios_reload/>, it is required if executed from HBC
+
+postLoader 3.59.0
 
 * Removed debug output for nandbooter (emulation nand), now is much more faster and nicer. If an error occours, a log file is written to sd
 * nandbooter moved to 0x81330000
@@ -13,6 +18,7 @@ postLoader 3.90.0
 * postLoader need no more to reload 249 to refresh channel cache for emunand (and it is faster)
 * channels filter menu is now on two columns
 * fix an issue with some themes
+* fixed the xml (thx joostinOnline)
 
 postLoader 3.58.3
 
