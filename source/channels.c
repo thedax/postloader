@@ -19,6 +19,7 @@
 #include "channels.h"
 #include "globals.h"
 #include "bin2o.h"
+#include "mystring.h"
 
 extern void __exception_closeall();
 
@@ -635,7 +636,11 @@ s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint) // i
 	items = 0;
 	while ((pent=readdir(pdir)) != NULL) 
 		{
-		if (strlen (pent->d_name) != 8)
+		if (strlen (pent->d_name) != 8 ||
+			ms_strstr (pent->d_name, "4A4F4449") ||
+			ms_strstr (pent->d_name, "AF1BF516") ||
+			ms_strstr (pent->d_name, "504F5354") // postloader
+			)
 			continue;
 		
 		sprintf (subpath, "%s/%s/content", path, pent->d_name);
@@ -694,7 +699,6 @@ int BootChannel(s_run *run)
 	Shutdown (0);
 	
 	u32 level;
-
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 	_CPU_ISR_Disable(level);
 	__exception_closeall();

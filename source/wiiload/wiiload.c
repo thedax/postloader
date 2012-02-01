@@ -356,12 +356,14 @@ static bool StartWiiLoadServer (void)
 		
 		if (pauseWiiload)
 			{
+			Debug ("WiiLoad thread paused");
 			pauseWiiload = 2;
 			do
 				{
 				usleep (250*1000);
 				}
 			while (pauseWiiload && !stopNetworkThread);
+			Debug ("WiiLoad thread resumed");
 			pauseWiiload = 0;
 			}
 		
@@ -484,6 +486,7 @@ void WiiLoad_Pause (void)
 	int tout = 0;
 	while (pauseWiiload == 1 && tout < 500)
 		{
+		Debug ("pauseWiiload = %d, tout = %d", pauseWiiload, tout);
 		usleep (100000);
 		tout++;
 		}

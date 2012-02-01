@@ -4,6 +4,7 @@
  * Copyright (c) 2009 The Lemon Man
  * Copyright (c) 2009 Nicksasa
  * Copyright (c) 2009 WiiPower
+ * Copyright (c) 2011 stfour
  *
  * Distributed under the terms of the GNU General Public License (v2)
  * See http://www.gnu.org/licenses/gpl-2.0.txt for more info.
@@ -21,7 +22,9 @@
 #include <gccore.h>
 #include <fat.h>
 #include <ogc/lwp_watchdog.h>
+#include <ogc/machine/processor.h>
 #include <wiiuse/wpad.h>
+#include <network.h>
 
 #include "main.h"
 #include "tools.h"
@@ -31,6 +34,8 @@
 #include "codes/codes.h"
 #include "codes/patchcode.h"
 #include "nand.h"
+
+#define VER "2.1"
 
 // This must reflect postloader ---------------------------------------------------------------
 typedef struct
@@ -116,6 +121,38 @@ typedef struct _dolheader
 	u32 bss_size;
 	u32 entry_point;
 } dolheader;
+
+s32 IOSReloadBlock(u8 reqios, bool enable)
+{
+	s32 ESHandle = IOS_Open("/dev/es", 0);
+
+	if (ESHandle < 0)
+	{
+		debug("Reload IOS Block failed, cannot open /dev/es\n");
+		return ESHandle;
+	}
+
+	static ioctlv vector[2] ATTRIBUTE_ALIGN(32);
+	static u32 mode ATTRIBUTE_ALIGN(32);
+	static u32 ios ATTRIBUTE_ALIGN(32);
+
+	mode = enable ? 2 : 0;
+	vector[0].data = &mode;
+	vector[0].len  = sizeof(u32);
+
+	if (enable) {
+		ios = reqios;
+		vector[1].data = &ios;
+		vector[1].len  = sizeof(u32);
+	}
+
+	s32 r = IOS_Ioctlv(ESHandle, 0xA0, 2, 0, vector);
+	debug("%s Block IOS Reload for cIOS%uv%u %s\n", (enable ? "Enable" : "Disable"), IOS_GetVersion(), IOS_GetRevision() % 100, r < 0 ? "FAILED!" : "SUCCEEDED!");
+
+	IOS_Close(ESHandle);
+
+	return r;
+}
 
 s32 check_dol(u64 titleid, char *out, u16 bootcontent)
 {
@@ -543,6 +580,14 @@ void setVideoMode()
 	VIDEO_SetBlack(FALSE);
 	}
 
+#define	Sys_Magic	((vu32*)0x80000020)
+#define	Version		((vu32*)0x80000024)
+#define	Arena_L		((vu32*)0x80000030)
+#define	Arena_H		((vu32*)0x80000034)
+#define	BI2			((vu32*)0x800000F4)
+#define	Bus_Speed	((vu32*)0x800000F8)
+#define	CPU_Speed	((vu32*)0x800000Fc)
+
 void bootTitle(u64 titleid)
 	{
 	entrypoint appJump;
@@ -580,24 +625,44 @@ void bootTitle(u64 titleid)
 	// Set the clock
 	settime(secs_to_ticks(time(NULL) - 946684800));
 
+	/* Setup low memory */
+	*(vu32 *)0x80000060 = 0x38A00040;
+	*(vu32 *)0x800000E4 = 0x80431A80;
+	*(vu32 *)0x800000EC = 0x81800000; // Dev Debugger Monitor Address
+	*(vu32 *)0x800000F0 = 0x01800000; // Simulated Memory Size
+	*(vu32 *)0xCD00643C = 0x00000000; // 32Mhz on Bus
+
+	// Patch in info missing from apploader reads
+	*Sys_Magic      = 0x0d15ea5e;
+	*Version        = 1;
+	*Arena_L        = 0x00000000;
+	*Arena_H        = 0x00000000;
+	*BI2            = 0x817E5480;
+	*Bus_Speed      = 0x0E7BE2C0;
+	*CPU_Speed      = 0x2B73A840;
+
+	// From NeoGamme R4 (WiiPower)
+	*(vu32 *)0x800030F0 = 0x0000001C;
+	*(vu32 *)0x8000318C = 0x00000000;
+	*(vu32 *)0x80003190 = 0x00000000;
+
+    // Game ID Online Check
+    memset((void *)0x80000000, 0, 6);
+    *(vu32 *)0x80000000 = TITLE_LOWER(titleid);
+
+	// IOS Version Check (002 error)
+    *(vu32*)0x80003140 = ((requested_ios << 16)) | 0xFFFF;
+    *(vu32*)0x80003188 = ((requested_ios << 16)) | 0xFFFF;
+	
+	DCFlushRange((void*)0x80000000, 0x3F00);
+	
 	// Memory setup when booting the main.dol
 	if (entryPoint != 0x3400)
 		{
-		*(u32 *)0x80000034 = 0;				// Arena High, the apploader does this too
-		DCFlushRange((void*)0x80000034, 4);
-		
-		*(u32 *)0x800000F4 = 0x817FE000;	// BI2, the apploader does this too
-		DCFlushRange((void*)0x800000F4, 4);
-		
-		*(u32 *)0x800000F8 = 0x0E7BE2C0;	// bus speed
-		DCFlushRange((void*)0x800000F8, 4);
-
-		*(u32 *)0x800000FC = 0x2B73A840;	// cpu speed
-		DCFlushRange((void*)0x800000FC, 4);
-
+		/*
 		memset((void *)0x817FE000, 0, 0x2000); // Clearing BI2, or should this be read from somewhere?
 		DCFlushRange((void*)0x817FE000, 0x2000);		
-
+		*/
 		if (hooktypeoption == 0)
 			{
 			*(u32 *)0x80003180 = TITLE_LOWER(titleid);
@@ -608,22 +673,11 @@ void bootTitle(u64 titleid)
 			*(u32 *)0x80003180 = 0;		// No comment required here
 			DCFlushRange((void*)0x80003180, 4);
 			}
+
 		*(u32 *)0x80003184 = 0x81000000;	// Game id address, while there's all 0s at 0x81000000 when using the apploader...
 		DCFlushRange((void*)0x80003184, 4);
 		}
 	
-	// IOS Version Check (002 error)
-    *(vu32*)0x80003140 = ((requested_ios << 16)) | 0xFFFF;
-    *(vu32*)0x80003188 = ((requested_ios << 16)) | 0xFFFF;
-    DCFlushRange((void *)0x80003140, 4);
-    DCFlushRange((void *)0x80003188, 4);
-	
-    // Game ID Online Check
-    memset((void *)0x80000000, 0, 6);
-    *(vu32 *)0x80000000 = TITLE_LOWER(titleid);
-    DCFlushRange((void *)0x80000000, 6);
-
-	/*
 	// Maybe not required at all?	
 	ret = ES_SetUID(titleid);
 	if (ret < 0)
@@ -631,7 +685,7 @@ void bootTitle(u64 titleid)
 		debug("ERR: (bootTitle) ES_SetUID failed %d", ret);
 		return;
 		}	
-	*/
+
 	if (hooktypeoption)
 		{
 		do_codes(titleid);
@@ -646,10 +700,18 @@ void bootTitle(u64 titleid)
 
 	tell_cIOS_to_return_to_channel();
 	
+	/*
 	IRQ_Disable();
 	__IOS_ShutdownSubsystems();
 	__exception_closeall();
+	*/
 
+	u32 level;
+	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+	_CPU_ISR_Disable(level);
+	__exception_closeall();
+	
+	
 	if (entryPoint != 0x3400)
 		{
 		if (hooktypeoption != 0)
@@ -715,17 +777,37 @@ void StoreLogFile (void)
 		fclose(file);
 		}
 	}
+	
+static void Net(void)
+	{
+	s32 result;
+	static char ip[16];
+	
+	debug ("net_init = %d\n", net_init ());
+
+	result = if_config (ip, NULL, NULL, true);
+	debug ("if_config = %d, ip = %s\n", result, ip);
+
+	debug ("net_deinit\n");
+	net_deinit ();
+
+	debug ("net_wc24cleanup\n");
+	net_wc24cleanup();
+	
+	return;
+	}
 
 int main(int argc, char* argv[])
 	{
 	int ret;
 	s_nandbooter nb;
-	//u8 *tfb = (u8 *) 0x90000000;
+
 	u8 *tfb = ((u8 *) 0x93200000);
 
-	//sleep (10);
-
 	memcpy (&nb, tfb, sizeof(s_nandbooter));
+	
+	debug ("NandBooter "VER"\n");
+	debug ("\n");
 	
 	if (ES_GetTitleID(&old_title_id) < 0)
 		{
@@ -733,8 +815,16 @@ int main(int argc, char* argv[])
 		}
 	
 	int ios[7] = { 249, 247 , 248, 249, 250, 251, 252};
-	
+	/*
+	if (IOS_GetVersion() != ios[nb.channel.ios])
+		{
+		debug ("IOS_ReloadIOS\n");
+		IOS_ReloadIOS(ios[nb.channel.ios]);
+		}
+	*/
 	IOS_ReloadIOS(ios[nb.channel.ios]);
+	//Net ();
+	//IOSReloadBlock(IOS_GetVersion(), true);
 	
 	// Configure triiforce options
 	videooption = nb.channel.vmode;
@@ -745,8 +835,6 @@ int main(int argc, char* argv[])
 	ocarinaoption = nb.channel.ocarina;
 	bootmethodoption = nb.channel.bootMode;
 
-	//videoInit(false);
-	
 	debug("nandBooter (b4): postLoader triiforce mod...\n\n");
 	debug("CONF: %d, %d, %d, %d, %d, %d, %d\n", ios[nb.channel.ios], videooption, languageoption, videopatchoption, hooktypeoption, ocarinaoption, bootmethodoption);
 	debug("NAND: %d, %s\n\n", nb.nand, nb.nandPath);

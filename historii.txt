@@ -2,6 +2,15 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.59.2
+
+* nandbooter mooved again a little upper as apploader mode was broken
+* nandemu scanner now skip hbc and postloader channel (POST)
+* priibootergui is now in the apps folder with it's xml-<no_ios_reload/>. This is need by priiloader > 0.8 to enable AHPBROT. Once installed it can be deleted
+* <no_ios_reload/> added to postloader's xml
+* some minor changes
+* readmii.txt updated to v.1.6
+
 postLoader 3.59.1
 
 * Fixed a bug that was preventing postloader to browse real nand if ios249 is used (this heppens it AHPBROT flag is not available)

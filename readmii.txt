@@ -1,4 +1,4 @@
-postLoader3 (readmii.txt 1.5)
+postLoader3 (readmii.txt 1.6)
 
 ========================================
 What postLoader is:
@@ -125,8 +125,12 @@ Keys (interactive mode)
 (B) Show selected application menu, also act as cancel on popup menu
 (-)(+) Change page
 (Home) Show postLoader options menu
-(1)(GCX) Switch from homebrew to channels..
-(2)(GCY) (only in channel mode) Show Filter menu
+(1)(GCX) Go to page
+(2)(GCY) Show filter menu (if available)
+(up) WII Games
+(down) GC games
+(left) Channels
+(right) Homebrew
 
 
 ========================================

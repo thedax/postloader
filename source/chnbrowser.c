@@ -209,14 +209,13 @@ static void ReadTitleConfig (int ia)
 		{
 		if (HexAscii2Bin (buff, &chnConf) != sizeof (s_channelConfig))
 			{
-			Debug ("size fails");
+			Debug ("ReadTitleConfig: Error -> size fails");
 			valid = false;
 			}
 		}
 	
 	if (!valid)
 		{
-		Debug ("%s notvalid", chans[ia].asciiId);
 		chnConf.priority = 5;
 		chnConf.hidden = 0;
 		chnConf.titleId = chans[ia].titleId;
