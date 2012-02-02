@@ -1126,7 +1126,7 @@ static void Redraw (void)
 	
 	char ahpbrot[16];
 	if (vars.ahbprot)
-		strcpy (ahpbrot," AHPBROT");
+		strcpy (ahpbrot,"+");
 	else
 		strcpy (ahpbrot,"");
 		

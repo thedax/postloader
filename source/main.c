@@ -145,22 +145,17 @@ int MasterInterface (int full, int showCursor, int icon, const char *text, ...)
 	
 bool SenseSneek (bool isfsinit)
 	{
-	bool ret = true;
-	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	
-	strcpy (path, "/SNEEK/kernel.bin");
-	
 	if (isfsinit) ISFS_Initialize ();
 	
-	s32 fd = ISFS_Open(path, ISFS_OPEN_READ);
-	if (fd < 0)
-		ret = false;
-	else
-		ISFS_Close (fd);
+	u32 num = 0;
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+
+	strcpy (path, "/SNEEK");
+	s32 ret = ISFS_ReadDir(path, NULL, &num);
 	
 	if (isfsinit) ISFS_Deinitialize ();
 	
-	return ret;
+	return (ret == 0);
 	}
 	
 void CheckNeek (void)
@@ -209,7 +204,9 @@ int main(int argc, char **argv)
 #ifndef DOLPHINE
 	if (vars.neek == NEEK_NONE) // We are not working under neek
 		{
-		if (!USE_IOS_DEFAULT)
+		char buff[32];
+		strcpy (buff, USE_IOS_DEFAULT);
+		if (buff[strlen(buff)-1] == '0')
 			vars.ios = ios_ReloadIOS (-1, &vars.ahbprot); // Let's try to reload
 		
 		if (!vars.ios) // We where not able to patch ahbprot, so reload to standard ios (249...)
@@ -224,19 +221,11 @@ int main(int argc, char **argv)
 
 	ret = Initialize((vars.usbtime == 1) ? 1:0);
 	
-	//grlib_dosm ("PL3");
-	
 	DebugStart (true, "sd://ploader.log");
 	
 	Debug ("-----[postLoader "VER"]-----");
 	Debug ("Initialization done !");
 	
-	Debug ("xfb[0] = 0x%X", xfb[0]);
-	Debug ("xfb[1] = 0x%X", xfb[1]);
-	
-	Debug ("Arena Low = 0x%X", *(u32*)0x80000030);
-	Debug ("Arena  Hi = 0x%X", *(u32*)0x80000034);
-
 	if (vars.neek)
 		{
 		neek_GetNandConfig ();

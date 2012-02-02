@@ -1357,7 +1357,7 @@ static void Redraw (void)
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	char ahpbrot[16];
 	if (vars.ahbprot)
-		strcpy (ahpbrot," AHPBROT");
+		strcpy (ahpbrot,"+");
 	else
 		strcpy (ahpbrot,"");
 	

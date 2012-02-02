@@ -10,6 +10,8 @@ Inside all function to configure  aspect of pl
 
 s_gui gui;
 
+//void gui_TopLine
+
 void gui_Init (void)
 	{
 	memset (&gui, 0, sizeof (s_gui));

@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <wiiuse/wpad.h>
+#include <ogc/lwp_watchdog.h>
 #include "grlib.h"
 
 void Debug (const char *text, ...);
@@ -475,14 +476,38 @@ void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th,
 void grlib_DrawIRCursor (void)
 	{
 	ir_t ir;
+	static u8 alphadec = 16;
+	static s16 alpha = 0; // Start with cursor hidden
+	static u32 cursorActivity = 0;
+	
+	static u32 startms = 0;
+	u32 ms = ticks_to_millisecs(gettime());
 	
 	WPAD_IR (0, &ir);
+	
+	if (ms > startms)
+		{
+		if (cursorActivity == grlibSettings.cursorActivity)
+			{
+			alpha -= alphadec;
+			if (alpha < 0) alpha = 0;
+			}
+		else
+			{
+			alpha = 255;
+			cursorActivity = grlibSettings.cursorActivity;
+			alphadec = 5;
+			}
+		
+		startms = ms+100;
+		}
 	
 	if (ir.valid)
 		{
 		grlib_irPos.x = ir.x;
 		grlib_irPos.y = ir.y;
 		grlib_irPos.valid = 1;
+		alpha = 255;
 		}
 	else
 		{
@@ -491,7 +516,7 @@ void grlib_DrawIRCursor (void)
 
 	GRRLIB_DrawImg( grlib_irPos.x, 
 					grlib_irPos.y, 
-					grlibSettings.pointer[0], 0, 1, 1, RGBA(255, 255, 255, 255) ); 
+					grlibSettings.pointer[0], 0, 1, 1, RGBA(255, 255, 255, alpha) ); 
 					
 	//grlib_DrawOnScreenMessageBMF (0, grlibSettings.fontBMF, "%d, %d", grlibSettings.pointer[0]->handlex, grlibSettings.pointer[0]->handley);
 	}
@@ -544,14 +569,14 @@ int grlib_GetUserInput (void)
 	gcbtn = PAD_ButtonsDown(0);
 	
 	// sticks
-	if (abs (nX) > 10) grlib_irPos.x += (nX / 16);
-	if (abs (nY) > 10) grlib_irPos.y -= (nY / 16);
+	if (abs (nX) > 10) {grlib_irPos.x += (nX / 16); grlibSettings.cursorActivity++;}
+	if (abs (nY) > 10) {grlib_irPos.y -= (nY / 16); grlibSettings.cursorActivity++;}
 	
-	if (abs (gcX) > 10) grlib_irPos.x += (gcX / 16);
-	if (abs (gcY) > 10) grlib_irPos.y -= (gcY / 16);
+	if (abs (gcX) > 10) {grlib_irPos.x += (gcX / 16); grlibSettings.cursorActivity++;}
+	if (abs (gcY) > 10) {grlib_irPos.y -= (gcY / 16); grlibSettings.cursorActivity++;}
 	
-	if (abs (cX) > 10) grlib_irPos.x += (cX / 4);
-	if (abs (cY) > 10) grlib_irPos.y -= (cY / 4);
+	if (abs (cX) > 10) {grlib_irPos.x += (cX / 4); grlibSettings.cursorActivity++;}
+	if (abs (cY) > 10) {grlib_irPos.y -= (cY / 4); grlibSettings.cursorActivity++;}
 	
 	// Check limits
 	if (grlib_irPos.x < 0) grlib_irPos.x = 0;

@@ -588,6 +588,7 @@ s32 get_game_list(u64 **TitleIds, u32 *num, u8 id) // id = 0:00010001, id = 1:00
 			// Also ignore the HBC, "JODI" and 0xaf1bf516 
 			   memcmp(list[i].name, "4a4f4449", 8) != 0 && memcmp(list[i].name, "4A4F4449", 8) != 0 
 			&& memcmp(list[i].name, "af1bf516", 8) != 0 && memcmp(list[i].name, "AF1BF516", 8) != 0
+			&& memcmp(list[i].name, "504f5354", 8) != 0 && memcmp(list[i].name, "504F5354", 8) != 0
 			// And ignore everything that's not using characters or numbers (only check 1st char)
 			&& strtol(list[i].name,NULL,16) >= 0x30000000 && strtol(list[i].name,NULL,16) <= 0x7a000000 )
 			{

@@ -13,11 +13,11 @@
 //#define DOLPHINE
 
 #define BUILD 59
-#define VER "3.59.2"
+#define VER "3.59.3"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define IOS_PREFERRED 58
-#define USE_IOS_DEFAULT 0
+#define USE_IOS_DEFAULT "USE_IOS_249=0"
 
 #define PATH_PLOADERCFG DEV_MOUNT"://ploader"
 #define PATH_CHANNELSPNG PATH_PLOADERCFG"/channels"

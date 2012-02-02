@@ -2,6 +2,15 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.59.3
+
+* Now if the wiimote point outside the tv, the cursor will softly disappear. It return visible when pointing again or using controller sticks. (thx joostinonline for the idea)
+* Changed sneek detection with joostinonline suggested one.
+* Remove close button on channels properties
+* If user pressed (B) in "Select NAND Source" to close the menu, the path to nand become corrupted
+* If someone ( :p ) want postloader to stay always on 249, hexedit postloader .dol file, search for USE_IOS_249=0 and replace with USE_IOS_249=1
+* postLoader channel hidden also in realnand and neek.
+
 postLoader 3.59.2
 
 * nandbooter mooved again a little upper as apploader mode was broken

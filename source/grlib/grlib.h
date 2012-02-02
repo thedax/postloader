@@ -71,7 +71,9 @@ typedef struct
 	
 	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
 	u32 autoCloseMenu;			// 0 disabled, otherwise num of second after whitch it will be closed
+	
 	u32 buttonActivity;			// Every time a button is pressed this is incremented, usefull to track activity
+	u32 cursorActivity;			// Track if the user has moved by sticks
 	
 	// Theme managment
 	s_grlibTheme theme;

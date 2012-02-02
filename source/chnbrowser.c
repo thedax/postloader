@@ -769,8 +769,6 @@ static void ShowAppMenu (int ai)
 			strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[chnConf.ocarina]); strcat (buff, "##105|");
 			strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
 			}
-		strcat (buff, "|");
-		strcat (buff, "Close##-1");
 		
 		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (chans[ai].name, buff);
@@ -954,7 +952,10 @@ static void ShowNandMenu (void)
 	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Select NAND Source", buff);
 	grlibSettings.fontNormBMF = fonts[FNTNORM];
-		
+
+	if (item > 0)
+		config.chnBrowser.nandPath[0] = '\0';
+
 	if (item == 100)
 		{
 		config.chnBrowser.nand = NAND_REAL;
@@ -973,7 +974,6 @@ static void ShowNandMenu (void)
 		browse = 1;
 		}
 	
-	config.chnBrowser.nandPath[0] = '\0';
 	if (item >= 200)
 		{
 		int i = item - 200;
@@ -1149,7 +1149,7 @@ static void Redraw (void)
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	char ahpbrot[16];
 	if (vars.ahbprot)
-		strcpy (ahpbrot," AHPBROT");
+		strcpy (ahpbrot,"+");
 	else
 		strcpy (ahpbrot,"");
 	
