@@ -715,7 +715,7 @@ static int FindSpot (void)
 	return chansSelected;
 	}
 	
-#define CHOPT_IOS 7
+#define CHOPT_IOS 6
 #define CHOPT_VID 8
 #define CHOPT_VIDP 4
 #define CHOPT_LANG 11
@@ -731,7 +731,7 @@ static void ShowAppMenu (int ai)
 	
 	int opt[7] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_BOOT};
 	
-	char *ios[CHOPT_IOS] = { "Default", "247" , "248", "249", "250", "251", "252"};
+	char *ios[CHOPT_IOS] = { "249", "250", "251", "252", "247" , "248"};
 	char *videooptions[CHOPT_VID] = { "Default Video Mode", "Force NTSC480i", "Force NTSC480p", "Force PAL480i", "Force PAL480p", "Force PAL576i", "Force MPAL480i", "Force MPAL480p" };
 	char *videopatchoptions[CHOPT_VIDP] = { "No Video patches", "Smart Video patching", "More Video patching", "Full Video patching" };
 	char *languageoptions[CHOPT_LANG] = { "Default Language", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };

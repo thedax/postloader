@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1.0">
+	<name>postLoader</name>
+	<version>3.59.4</version>
+	<release_date>20120203000000</release_date>
+	<coder>stfour</coder>
+	<short_description>Homebrew browser, channel launcher, neek2o disc loader</short_description>
+	<long_description>-------------------
+What postLoader is:
+-------------------
+* HomeBrew Browser with subfolder and xml support
+* Channel\Title Browser with filters and cover
+* neek2o and Uneek+DI game browser with cover support
+* game loaders forwarder (for CFG, GX and WiiFlow) with cover and filters support
+* DML gamecube browser with USB to SD copy feature
+* Themable user interface
+* Wiiload server
+
+-------------------
+Features:
+-------------------
+
+General:
+* If started from priiloader it gains AHPBROT and spawn full hardware rights to homebrew applications
+* Autoboot your default application\channel: If you don't press (A) in time to enter in interactive mode, postLoader will launch the predefined app (if enabled)
+* Direct access to BOOTMII
+* Support costom splash screen (only from SD device)
+* Full support for UNEEK environment. May work under SNEEK
+* Support for Wiimote and GC controllers
+* Intergrated UNEEK nand switcher
+* wiiload update: If you send postLoader.dol via wiiload, postloader installation will be updated (after confirmation).
+
+oneek2o advanced support
+* USB Access for HOMEBREW (see historii.txt for important notices)
+* Multiple nand support for different region games
+* Built in game cache rebuilder (partially implemented, see historii.txt)
+
+Uneek+DI game browser (see historii.txt)
+* Support covers
+* Support title vote
+
+USB Loaders forwarder
+* Support cfg, gx and wiiflow (actually wiiflow crash)
+* Support covers
+* Support title vote
+* Support ios selection
+
+DML gamecube games
+* Support covers
+* Support title vote
+* Support ios selection
+* Can copy games from USB to SD before execute them
+
+Homebrew:
+* HB Channel replacement: It can be used to browse homebrew application, with it own interface. 
+* Dangerous homebrews can be hidden
+* Full support for meta.xml arguments and all other tags.
+* It support subfolders (see notes)
+* Can browse SD and USB device (FAT32 on first\active partition)
+* WiiLoad support (straight, compressed dol, zip archieve)
+
+Channels:
+* Nand emulation (ciosx\waninkoko on slot 249)
+* AHBPROT is need for real nand browsing (otherwise ios249 is used)
+* Wii System Channel replacemente: Can browse and run Channels, WiiWare and VC.
+* Can run Titles from real and emulated NAND on SD or USB with folder support
+* Titles can be sorted voted and\or hiddened
+* Support interactive application sorting
+* Sort titles by vote\name
+* Titles filters (System channels\wiiware\neogeo\c64... etc)
+* Fast titles search
+* Download title icons from wiitdb
+* Alternate nand folder support (other that classic root)</long_description>
+<no_ios_reload/>
+</app>

@@ -476,7 +476,7 @@ void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th,
 void grlib_DrawIRCursor (void)
 	{
 	ir_t ir;
-	static u8 alphadec = 16;
+	static u8 alphadec = 255;
 	static s16 alpha = 0; // Start with cursor hidden
 	static u32 cursorActivity = 0;
 	
@@ -495,8 +495,8 @@ void grlib_DrawIRCursor (void)
 		else
 			{
 			alpha = 255;
-			cursorActivity = grlibSettings.cursorActivity;
 			alphadec = 5;
+			cursorActivity = grlibSettings.cursorActivity;
 			}
 		
 		startms = ms+100;
@@ -517,8 +517,6 @@ void grlib_DrawIRCursor (void)
 	GRRLIB_DrawImg( grlib_irPos.x, 
 					grlib_irPos.y, 
 					grlibSettings.pointer[0], 0, 1, 1, RGBA(255, 255, 255, alpha) ); 
-					
-	//grlib_DrawOnScreenMessageBMF (0, grlibSettings.fontBMF, "%d, %d", grlibSettings.pointer[0]->handlex, grlibSettings.pointer[0]->handley);
 	}
 	
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

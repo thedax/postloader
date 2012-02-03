@@ -2,6 +2,12 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.59.4
+
+* If you are using wiimote and point outside the tv, the cursor will disappear immediately
+* Removed "default" from IOS selection in emunand channels property
+* Missing from 3.59.3: AHBPROT is replaced by "+" symbol.
+
 postLoader 3.59.3
 
 * Now if the wiimote point outside the tv, the cursor will softly disappear. It return visible when pointing again or using controller sticks. (thx joostinonline for the idea)

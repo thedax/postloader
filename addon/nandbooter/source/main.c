@@ -778,6 +778,7 @@ void StoreLogFile (void)
 		}
 	}
 	
+/*
 static void Net(void)
 	{
 	s32 result;
@@ -796,6 +797,7 @@ static void Net(void)
 	
 	return;
 	}
+*/
 
 int main(int argc, char* argv[])
 	{
@@ -814,7 +816,7 @@ int main(int argc, char* argv[])
 		old_title_id = (0x00010001ULL << 32) | *(u32 *)0x80000000;
 		}
 	
-	int ios[7] = { 249, 247 , 248, 249, 250, 251, 252};
+	int ios[7] = { 249, 250, 251, 252, 247 , 248};
 	/*
 	if (IOS_GetVersion() != ios[nb.channel.ios])
 		{
