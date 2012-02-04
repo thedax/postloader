@@ -2,6 +2,13 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.59.5
+
+* Fixed a possibile miss/corruption of wiiload header. (thx JoostinOnline)
+* Now music is stopped when partition are mounted during wbfs scan, otherwise a code dump will occours...
+
+NOTE: neek2o channel launching mode isn't yet operative...
+
 postLoader 3.59.4
 
 * If you are using wiimote and point outside the tv, the cursor will disappear immediately

@@ -6,6 +6,7 @@
 #include <ogc/machine/processor.h>
 #include <ogc/ipc.h>
 #include <ogc/isfs.h>
+#include "debug.h"
 
 void *allocate_memory(u32 size);
 
@@ -32,9 +33,9 @@ enum {
 
 #define VERSION		04
 
-void CreatePriiloaderSettings (char *nandpath, u8 * iniBuff, s32 iniSize)
+bool CreatePriiloaderSettings (char *nandpath, u8 * iniBuff, s32 iniSize)
 	{
-	if (iniBuff == NULL || iniSize == 0) return;
+	if (iniBuff == NULL || iniSize == 0) return false;
 	
 	s32 fd;
 	Settings *settings=(Settings *)iniBuff;
@@ -43,20 +44,55 @@ void CreatePriiloaderSettings (char *nandpath, u8 * iniBuff, s32 iniSize)
 	
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", nandpath);
 	Debug ("CreatePriiloaderSettings: %s", path);
-	
-	ISFS_CreateFile(path, 0, 3, 3, 3);
+
 	settings->autoboot = AUTOBOOT_FILE;
 	settings->ReturnTo = RETURNTO_AUTOBOOT;
+	
+	ISFS_CreateFile(path, 0, 3, 3, 3);
 	fd = ISFS_Open(path, 1|2 );
 	if( fd < 0 )
 		{
-		return;
+		return false;
 		}
 	if(ISFS_Write( fd, iniBuff, iniSize )<0)
 		{
 		ISFS_Close( fd );
-		return;
+		return false;
 		}
 	ISFS_Close (fd);
 	Debug ("CreatePriiloaderSettings: ok (%d)!", sizeof( Settings ));
+	
+	return true;
+	}
+	
+// The same of above but used in real nand to configure a neek nand on fs
+bool CreatePriiloaderSettingsFS (char *nandpath, u8 * iniBuff, s32 iniSize)
+	{
+	if (iniBuff == NULL || iniSize == 0) return false;
+	
+	FILE *f;
+	Settings *settings=(Settings *)iniBuff;
+	
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", nandpath);
+	Debug ("CreatePriiloaderSettings: %s", path);
+	
+	settings->autoboot = AUTOBOOT_FILE;
+	settings->ReturnTo = RETURNTO_AUTOBOOT;
+
+	f = fopen (path, "wb");
+	if(!f)
+		{
+		return false;
+		}
+	if(fwrite( iniBuff, 1, iniSize, f) != iniSize)
+		{
+		fclose (f);
+		return false;
+		}
+	fclose (f);
+	Debug ("CreatePriiloaderSettings: ok (%d)!", sizeof( Settings ));
+	
+	return true;
 	}

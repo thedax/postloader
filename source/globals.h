@@ -13,7 +13,7 @@
 //#define DOLPHINE
 
 #define BUILD 59
-#define VER "3.59.4"
+#define VER "3.59.5"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define IOS_PREFERRED 58
@@ -457,5 +457,6 @@ bool LiveCheck (int reset);
 void snd_Init (void);
 void snd_Stop (void);
 void snd_Mp3Go (void);
-
+void snd_Pause (void);
+void snd_Resume (void);
 #endif

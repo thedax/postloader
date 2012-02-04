@@ -1471,7 +1471,6 @@ static void cb_filecopy (void)
 		}
 	}
 
-
 static size_t GetGCGameUsbKb (int ai)
 	{
 	char path[300];

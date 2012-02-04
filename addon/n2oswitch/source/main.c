@@ -16,6 +16,8 @@
 #define ARGS_ADDR       ((u8 *) 0x93200000) 
 #define CMDL_ADDR       ((u8 *) 0x93200000+sizeof(struct __argv))
 
+#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
+
 #define Debug printd
 
 typedef void (*entrypoint) (void); 
@@ -86,7 +88,6 @@ void RestoreSM (int nidx)
 
 void RestorePriiloader (int nidx)
 	{
-	s32 ret; 
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	char pathBack[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	
@@ -95,14 +96,14 @@ void RestorePriiloader (int nidx)
 	sprintf (path, "%s/title/00000001/00000002/data/main.bin", nandConfig->NandInfo[nidx]);
 	sprintf (pathBack, "%s/title/00000001/00000002/data/main.bak", nandConfig->NandInfo[nidx]);
 
-	ret = ISFS_Delete (path);
-	ret = ISFS_Rename (pathBack, path);
+	ISFS_Delete (path);
+	ISFS_Rename (pathBack, path);
 		
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", nandConfig->NandInfo[nidx]);
 	sprintf (pathBack, "%s/title/00000001/00000002/data/loader.bak", nandConfig->NandInfo[nidx]);
 
-	ret = ISFS_Delete (path);
-	ret = ISFS_Rename (pathBack, path);
+	ISFS_Delete (path);
+	ISFS_Rename (pathBack, path);
 		
 	ISFS_Deinitialize ();
 	}
@@ -110,10 +111,6 @@ void RestorePriiloader (int nidx)
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv) 
 	{
-	//printf ("\n");
-	
-	//green_fix ();
-	
 	InitVideo ();
 	
 	printd ("---------------------------------------------------------------------------\n");
@@ -123,38 +120,45 @@ int main(int argc, char **argv)
 
 	u32 idx = -1;
 	u32 status = 0;
+	u32 hi, lo;
 	
-	neek_PLNandInfo	(0, &idx, &status);
+	neek_PLNandInfo	(0, &idx, &status, &lo, &hi);
 	printd ("idx = %d", idx);
 	printd ("status = %d", status);
 	
 	if (status == PLNANDSTATUS_NONE)
 		{
 		status = PLNANDSTATUS_BOOTING;
-		neek_PLNandInfo	(1, &idx, &status);
+		neek_PLNandInfo	(1, &idx, &status, &lo, &hi);
 	
-		// Copy the di image
-		memcpy(EXECUTE_ADDR, di_dol, di_dol_size);
-		DCFlushRange((void *) EXECUTE_ADDR, di_dol_size);
+		if (!hi && !lo)
+			{
+			// Copy the di image
+			memcpy(EXECUTE_ADDR, di_dol, di_dol_size);
+			DCFlushRange((void *) EXECUTE_ADDR, di_dol_size);
 
-		// Load the booter
-		memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
-		DCFlushRange(BOOTER_ADDR, booter_dol_size);
-		
-		memset(ARGS_ADDR, 0, sizeof(struct __argv));
-		DCFlushRange(ARGS_ADDR, sizeof(struct __argv));
+			// Load the booter
+			memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
+			DCFlushRange(BOOTER_ADDR, booter_dol_size);
+			
+			memset(ARGS_ADDR, 0, sizeof(struct __argv));
+			DCFlushRange(ARGS_ADDR, sizeof(struct __argv));
 
-		entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
-		
-		//green_fix ();
+			entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
 
-		// bootit !
-		u32 level;
-		SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
-		_CPU_ISR_Disable(level);
-		__exception_closeall();
-		hbboot_ep();
-		_CPU_ISR_Restore(level);
+			// bootit !
+			u32 level;
+			SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+			_CPU_ISR_Disable(level);
+			__exception_closeall();
+			hbboot_ep();
+			_CPU_ISR_Restore(level);
+			}
+		else
+			{
+			WII_Initialize();
+			WII_LaunchTitle(TITLE_ID(hi, lo));
+			}
 		}
 	else if (status == PLNANDSTATUS_BOOTING)
 		{
@@ -162,13 +166,16 @@ int main(int argc, char **argv)
 		RestorePriiloader (nandConfig->NandSel);
 
 		status = PLNANDSTATUS_BOOTED;
-		neek_PLNandInfo	(1, &idx, &status);
+		neek_PLNandInfo	(1, &idx, &status, &lo, &hi);
 		
-		// Go back to previous nand
-		nandConfig->NandSel = idx;
-		neek_WriteNandConfig ();
-		
-		SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+		if (!hi && !lo)
+			{
+			// Go back to previous nand
+			nandConfig->NandSel = idx;
+			neek_WriteNandConfig ();
+			
+			SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+			}
 		}
 		
 	exit (0);

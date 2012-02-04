@@ -20,7 +20,9 @@
 #include "globals.h"
 #include "bin2o.h"
 #include "mystring.h"
+#include "neek.h"
 
+bool CreatePriiloaderSettingsFS (char *nandpath, u8 * iniBuff, s32 iniSize);
 extern void __exception_closeall();
 
 /* Buffer */
@@ -661,7 +663,151 @@ s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint) // i
 	*num = items;
 	return 1;
 	}
+	
+#define NEEK2O_NAND "usb://Nands/pln2o"
+#define NEEK2O_SNEEK "usb://sneek"
 
+bool SetupNeek2o (void)
+	{
+	char path[256];
+	char pathBak[256];
+	char fn[64];
+
+	sprintf (fn, "%s://ploader/n2oswitch.dol", vars.defMount);
+	size_t buffsize;
+	u8 *buff = fsop_ReadFile (fn, 0, &buffsize);
+	if (!buff)
+		return false;
+	
+	s32 ret;
+	size_t loaderIniSize = 0;
+	u8 * loaderIniBuff = NULL;
+	
+	// Save priiloader settings
+	
+	sprintf (path, "%s/title/00000001/00000002/data/main.bin", NEEK2O_NAND);
+	sprintf (pathBak, "%s/title/00000001/00000002/data/main.bak", NEEK2O_NAND);
+
+	ret = unlink (pathBak);
+	Debug ("SetupNeek2o: unlink %s (%d)", pathBak, ret);
+	ret = rename (path, pathBak);
+	Debug ("SetupNeek2o: rename %s %s (%d)", path, pathBak, ret);
+	
+	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
+	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
+	
+	loaderIniBuff = fsop_ReadFile (path, 0, &loaderIniSize);
+
+	if (!loaderIniBuff) return false;
+	
+	ret = unlink (pathBak);
+	Debug ("SetupNeek2o: unlink %s (%d)", pathBak, ret);
+	ret = rename (path, pathBak);
+	Debug ("SetupNeek2o: rename %s %s (%d)", path, pathBak, ret);
+
+	// Store n2oswitch
+	sprintf (path, "%s/title/00000001/00000002/data/main.bin", NEEK2O_NAND);
+	fsop_WriteFile (path, buff, buffsize);
+	
+	CreatePriiloaderSettingsFS (NEEK2O_NAND, loaderIniBuff, loaderIniSize);
+	free (loaderIniBuff);
+
+	// Configure nand cache
+	neek_PrepareNandForChannel (NEEK2O_SNEEK, NEEK2O_NAND);
+
+	return true;
+	}
+
+static void cb_filecopy (void)
+	{
+	static time_t lastt = 0;
+	time_t t = time(NULL);
+	
+	if (t - lastt >= 1)
+		{
+		u32 mb = (u32)((fsop.multy.bytes/1000)/1000);
+		u32 sizemb = (u32)((fsop.multy.size/1000)/1000);
+		u32 elapsed = time(NULL) - fsop.multy.start_t;
+		u32 perc = (mb * 100)/sizemb;
+		
+		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
+		
+		lastt = t;
+		
+		if (grlib_GetUserInput() & WPAD_BUTTON_B)
+			{
+			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
+			if (ret == 0) fsop.breakop = 1;
+			}
+		}
+	}
+
+bool RunChannelNeek2o (s_run *run)
+	{
+	char source[256];
+	char target[256];
+	
+	// Let's copy the title, if needed
+	
+	sprintf(source, "%s/title/%08x/%08x", run->nandPath, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
+	sprintf(target, "%s/title/%08x/%08x", NEEK2O_NAND, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
+	
+	u32 sourceSize = (u32) fsop_GetFolderBytes (source, NULL);
+	u32 targetSize = (u32) fsop_GetFolderBytes (target, NULL);
+	
+	if (sourceSize != targetSize)
+		{
+		fsop_CopyFolder (source, target, cb_filecopy);
+		
+		sprintf(source, "%s/ticket/%08x/%08x.tik", run->nandPath, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
+		sprintf(target, "%s/ticket/%08x/%08x.tik", NEEK2O_NAND, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
+		
+		fsop_CopyFile (source, target, cb_filecopy);
+		}
+	
+	// Install ...
+	SetupNeek2o ();
+	
+	// Create configuration file for n2oswitch ...
+	u32 data[4];
+	data[0] = 0;
+	data[0] = PLNANDSTATUS_NONE;
+	data[0] = TITLE_LOWER(run->channel.titleId);
+	data[0] = TITLE_UPPER(run->channel.titleId);
+	sprintf (target, "%s/nandcfg.pl", NEEK2O_SNEEK);
+	fsop_WriteFile (target, (u8*) data, sizeof(data));
+
+	// Boot neek2o
+	Shutdown (0);
+	IOS_ReloadIOS(254);
+	return true;
+	}
+
+bool RestoreChannelNeek2o (void)
+	{
+	neek_RestoreNandForChannel (NEEK2O_SNEEK, NEEK2O_NAND);
+
+	s32 ret;
+	char path[256];
+	char pathBak[256];
+
+	sprintf (path, "%s/title/00000001/00000002/data/main.bin", NEEK2O_NAND);
+	sprintf (pathBak, "%s/title/00000001/00000002/data/main.bak", NEEK2O_NAND);
+	
+	if (!fsop_FileExist (pathBak)) return true;
+
+	ret = unlink (path);
+	ret = rename (pathBak, path);
+
+	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
+	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
+
+	ret = unlink (path);
+	ret = rename (pathBak, path);
+
+	return true;
+	}
+	
 int BootChannel(s_run *run)
 	{
 	s_nandbooter nb;
@@ -676,6 +822,11 @@ int BootChannel(s_run *run)
 		WII_Initialize();
 		WII_LaunchTitle((u64)(run->channel.titleId));
 		exit(0);  // Use exit() to exit a program, do not use 'return' from main()
+		}
+		
+	if (run->channel.bootMode == 2) //neek2o
+		{
+		RunChannelNeek2o (run);
 		}
 	
 	// Copy the triiforce image

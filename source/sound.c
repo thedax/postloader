@@ -139,3 +139,25 @@ void snd_Stop (void)
 	stopped = 1;
 	songs = 0;
 	}
+
+void snd_Pause (void)
+	{
+	Debug ("snd_Pause");
+	
+	MP3Player_Stop();
+	
+	while (MP3Player_IsPlaying())
+		{
+		usleep (1000*1000);
+		Debug ("stopping...");
+		}
+	if (mp3f) fclose (mp3f);
+	mp3f = NULL;
+	stopped = 1;
+	}
+
+void snd_Resume (void)
+	{
+	Debug ("snd_Resume");
+	stopped = 0;
+	}

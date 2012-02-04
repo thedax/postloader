@@ -216,14 +216,15 @@ char * WBFSSCanner (bool reset)
 	if (reset)
 		{
 		Video_WaitPanel (TEX_HGL, "Please wait...|(mounting partitions)");
-
+		snd_Pause ();
+		
 		Fat_Unmount ();
 
 		if (vars.ios == IOS_DEFAULT)
 			storage=(DISC_INTERFACE*)&__io_wiiums;
 		else
 			storage=(DISC_INTERFACE*)&__io_usbstorage;
-
+		
 		// Mount every partitions on usb
 		USBDevice_Init ();
 		
@@ -243,6 +244,8 @@ char * WBFSSCanner (bool reset)
 		USBDevice_deInit ();
 
 		MountDevices (1);
+		
+		snd_Resume ();
 
 		f = fopen (path, "wb");
 		if (f) 

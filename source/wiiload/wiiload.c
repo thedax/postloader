@@ -169,7 +169,7 @@ static bool WiiLoad (s32 connection)
 			
 	printopt ("WiiLoad begin");
 	
-	net_read(connection, header, 8);
+	NetRead(connection, header, 8, 250);
 
 	if (memcmp(header, "HAXX", 4) != 0) // unsupported protocol
 		{
@@ -180,12 +180,12 @@ static bool WiiLoad (s32 connection)
 	wiiloadVersion[0] = header[4];
 	wiiloadVersion[1] = header[5];
 
-	net_read(connection, &wiiload.buffsize, 4);
+	NetRead(connection, &wiiload.buffsize, 4, 250);
 
 	if (header[4] > 0 || header[5] > 4)
 		{
 		printopt ("compressed file !");
-		net_read(connection, &uncfilesize, 4); // Compressed protocol, read another 4 bytes
+		NetRead(connection, &uncfilesize, 4, 250); // Compressed protocol, read another 4 bytes
 		}
 	
 	wiiload.buff = NULL;
@@ -213,7 +213,7 @@ static bool WiiLoad (s32 connection)
 		if (result <= 0)
 			{
 			--retries;
-			usleep (1000);
+			usleep (10000); // lets what 10 msec
 			}
 		else
 			{

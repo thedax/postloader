@@ -721,7 +721,7 @@ static int FindSpot (void)
 #define CHOPT_LANG 11
 #define CHOPT_HOOK 8
 #define CHOPT_OCA 4
-#define CHOPT_BOOT 2
+#define CHOPT_BOOT 3
 
 static void ShowAppMenu (int ai)
 	{
@@ -737,7 +737,7 @@ static void ShowAppMenu (int ai)
 	char *languageoptions[CHOPT_LANG] = { "Default Language", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
 	char *hooktypeoptions[CHOPT_HOOK] = { "No Ocarina&debugger", "Hooktype: VBI", "Hooktype: KPAD", "Hooktype: Joypad", "Hooktype: GXDraw", "Hooktype: GXFlush", "Hooktype: OSSleepThread", "Hooktype: AXNextFrame" };
 	char *ocarinaoptions[CHOPT_OCA] = { "No Ocarina", "Ocarina from NAND", "Ocarina from SD", "Ocarina from USB" };
-	char *bootmethodoptions[CHOPT_BOOT] = { "Normal boot method", "Load apploader" };
+	char *bootmethodoptions[CHOPT_BOOT] = { "Normal boot method", "Load apploader", "neek2o" };
 	
 	grlib_SetFontBMF(fonts[FNTNORM]);
 

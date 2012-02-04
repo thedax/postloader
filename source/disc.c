@@ -35,8 +35,6 @@ void ReplaceNandSystemMenu (int nidx)
 	fread(buff, 1, buffsize, f );
 	fclose (f);
 	
-	//IOSPATCH_Apply ();
-
 	ISFS_Initialize();
 	
 	int i;
@@ -82,14 +80,7 @@ void ReplaceNandSystemMenu (int nidx)
 		ret = ISFS_Close (fd);
 		Debug ("ReplaceNandSystemMenu: ISFS_Close %s (%d)", path, ret);
 		}
-	/*
-	if (find && !issm)
-		{
-		// Restore filesistem
-		ISFS_Delete (path);
-		ISFS_Rename (pathBack, path);
-		}
-	*/
+
 	ISFS_Deinitialize ();
 	}
 
@@ -203,7 +194,7 @@ void Disc(void)
 		u32 status = PLNANDSTATUS_NONE;
 		char nand[64];
 		
-		neek_PLNandInfo (1, &idx, &status);
+		neek_PLNandInfo (1, &idx, &status, NULL, NULL);
 		
 		if (config.run.game.nand == 1)
 			strcpy (nand, "pl_us");
@@ -224,20 +215,12 @@ void Disc(void)
 		// Replace system menu with 
 		if (ni >= 0)
 			SetupPriiloader (ni);
-			//ReplaceNandSystemMenu (ni);
 		
 		Shutdown (0);
 		
-		//SYS_ResetSystem(SYS_RESTART,0,0);
 		SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 		
 		exit (0);
-		
-		/*
-		IOS_ReloadIOS(56);
-		exit (0);
-		*/
-		//SYS_ResetSystem(SYS_RESTART,0,0);
 		}
 		
 
@@ -256,8 +239,6 @@ void Disc(void)
 
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
 
-	//entrypoint hbboot_ep = (entrypoint) load_dol(booter_dol, NULL);
-	
 	// Shutdown all system
 	grlibSettings.doNotCall_GRRLIB_Exit = true;
 	Shutdown (0);

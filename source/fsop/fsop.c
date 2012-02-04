@@ -24,7 +24,7 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 s_fsop fsop;
 
 
-// return false if the file doesn't exist
+// read a file from disk
 u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded)
 	{
 	FILE *f;
@@ -56,6 +56,25 @@ u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded)
 	if (bytesReaded) *bytesReaded = size;
 
 	return buff;
+	}
+
+// write a buffer to disk
+bool fsop_WriteFile (char *path, u8 *buff, size_t len)
+	{
+	FILE *f;
+	size_t size = 0;
+	
+	f = fopen(path, "wb");
+	if (!f)
+		{
+		return false;
+		}
+
+	size = fwrite (buff, 1, len, f);
+	fclose (f);
+
+	if (size == len) return true;
+	return false;
 	}
 
 // return false if the file doesn't exist

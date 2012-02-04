@@ -14,7 +14,7 @@
 void *allocate_memory(u32 size);
 int AutoUpdate (void);
 bool plneek_ShowMenu (void);
-void CreatePriiloaderSettings (char *nandpath, u8 * iniBuff, s32 iniSize);
+bool CreatePriiloaderSettings (char *nandpath, u8 * iniBuff, s32 iniSize);
 
 // Inside
 bool InstallNeekbooter (void);
@@ -248,13 +248,12 @@ void ShowAboutMenu (void)
 	ConfigWrite ();
 	}
 
-bool InstallNeekbooter (void)
+bool InstallNeekbooter (void)	// if nandpath is null, neekbooter is installed in isfs
 	{
-	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	char fn[64];
 	s32 fd;
 	s32 ret;
-	s32 loaderIniSize = 0;
+	size_t loaderIniSize = 0;
 	u8 * loaderIniBuff = NULL;
 	char *buff = NULL;
 	
@@ -269,6 +268,8 @@ bool InstallNeekbooter (void)
 	buff = allocate_memory (buffsize);
 	fread(buff, 1, buffsize, f );
 	fclose (f);
+	
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	
 	ISFS_Initialize();
 		
