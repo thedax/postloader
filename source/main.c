@@ -253,6 +253,9 @@ int main(int argc, char **argv)
 			neek_PLNandInfoKill ();
 			}
 		}
+	else
+		RemoveNandcfg();
+
 
 	// This is just for testing... no really needed
 	// Identify_SU (0);

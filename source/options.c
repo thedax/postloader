@@ -204,7 +204,7 @@ void ShowAboutMenu (void)
 
 	if (item == 11)
 		{
-		grlib_menu ("Your Wii will now rebooot", "OK");
+		grlib_menu ("Your Wii will now rebooot", "  OK  ");
 
 		Shutdown (0);
 		SYS_ResetSystem(SYS_RESTART,0,0);

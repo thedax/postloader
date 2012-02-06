@@ -730,7 +730,7 @@ static void cb_filecopy (void)
 		u32 elapsed = time(NULL) - fsop.multy.start_t;
 		u32 perc = (mb * 100)/sizemb;
 		
-		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
+		MasterInterface (1, 0, TEX_HGL, "Please wait: %u%% done, copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
 		
 		lastt = t;
 		
@@ -746,20 +746,27 @@ bool RunChannelNeek2o (s_run *run)
 	{
 	char source[256];
 	char target[256];
+	char np[256];
 	
 	// Let's copy the title, if needed
-	
-	sprintf(source, "%s/title/%08x/%08x", run->nandPath, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
+	if (run->nand == 1)
+		sprintf (np, "sd:/%s", run->nandPath);
+	if (run->nand == 2)
+		sprintf (np, "usb:/%s", run->nandPath);
+		
+	sprintf(source, "%s/title/%08x/%08x", np, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
 	sprintf(target, "%s/title/%08x/%08x", NEEK2O_NAND, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
 	
+	Debug ("=======================================================");
 	u32 sourceSize = (u32) fsop_GetFolderBytes (source, NULL);
 	u32 targetSize = (u32) fsop_GetFolderBytes (target, NULL);
-	
-	if (sourceSize != targetSize)
+	Debug ("=======================================================");
+
+	if (sourceSize > targetSize)
 		{
 		fsop_CopyFolder (source, target, cb_filecopy);
 		
-		sprintf(source, "%s/ticket/%08x/%08x.tik", run->nandPath, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
+		sprintf(source, "%s/ticket/%08x/%08x.tik", np, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
 		sprintf(target, "%s/ticket/%08x/%08x.tik", NEEK2O_NAND, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
 		
 		fsop_CopyFile (source, target, cb_filecopy);
@@ -771,9 +778,9 @@ bool RunChannelNeek2o (s_run *run)
 	// Create configuration file for n2oswitch ...
 	u32 data[4];
 	data[0] = 0;
-	data[0] = PLNANDSTATUS_NONE;
-	data[0] = TITLE_LOWER(run->channel.titleId);
-	data[0] = TITLE_UPPER(run->channel.titleId);
+	data[1] = PLNANDSTATUS_NONE;
+	data[2] = TITLE_LOWER(run->channel.titleId);
+	data[3] = TITLE_UPPER(run->channel.titleId);
 	sprintf (target, "%s/nandcfg.pl", NEEK2O_SNEEK);
 	fsop_WriteFile (target, (u8*) data, sizeof(data));
 
@@ -782,6 +789,14 @@ bool RunChannelNeek2o (s_run *run)
 	IOS_ReloadIOS(254);
 	return true;
 	}
+	
+void RemoveNandcfg(void)
+	{
+	char target[256];
+	sprintf (target, "%s/nandcfg.pl", NEEK2O_SNEEK);
+	unlink(target);
+	}
+
 
 bool RestoreChannelNeek2o (void)
 	{
@@ -790,14 +805,6 @@ bool RestoreChannelNeek2o (void)
 	s32 ret;
 	char path[256];
 	char pathBak[256];
-
-	sprintf (path, "%s/title/00000001/00000002/data/main.bin", NEEK2O_NAND);
-	sprintf (pathBak, "%s/title/00000001/00000002/data/main.bak", NEEK2O_NAND);
-	
-	if (!fsop_FileExist (pathBak)) return true;
-
-	ret = unlink (path);
-	ret = rename (pathBak, path);
 
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
 	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
@@ -814,7 +821,8 @@ int BootChannel(s_run *run)
 	u8 *tfb = ((u8 *) 0x93200000); //ARGS_ADDR; // (u8 *) 0x90000000;
 
 	MasterInterface (1, 0, TEX_CHIP, "Executing title...");
-
+	
+	/*
 	if (run->nand == NAND_REAL || vars.neek != NEEK_NONE)
 		{
 		Shutdown (0);
@@ -823,12 +831,12 @@ int BootChannel(s_run *run)
 		WII_LaunchTitle((u64)(run->channel.titleId));
 		exit(0);  // Use exit() to exit a program, do not use 'return' from main()
 		}
-		
-	if (run->channel.bootMode == 2) //neek2o
+	*/
+	if (vars.neek == NEEK_NONE && run->channel.bootMode == 2) //neek2o
 		{
 		RunChannelNeek2o (run);
 		}
-	
+
 	// Copy the triiforce image
 	memcpy(EXECUTE_ADDR, nandbooter_dol, nandbooter_dol_size);
 	DCFlushRange((void *) EXECUTE_ADDR, nandbooter_dol_size);

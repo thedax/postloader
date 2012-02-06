@@ -86,90 +86,47 @@ void ReplaceNandSystemMenu (int nidx)
 
 void SetupPriiloader (int nidx)
 	{
-	bool find = FALSE;
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	char pathBack[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	char *sm[] = {"10000088","10000085","1000008b","1000008e","10000098","10000095","1000009b","1000009e"};
-	char fn[64];
 
-	sprintf (fn, "%s://ploader/n2oswitch.dol", vars.defMount);
-	FILE *f = fopen(fn, "rb");
-	Debug ("SetupPriiloader: fopen %x", f);
-	if (!f) return;
-	fseek( f, 0, SEEK_END);
-	long buffsize = ftell(f);
-	fseek( f, 0, SEEK_SET);
-	char *buff = allocate_memory (buffsize);
-	fread(buff, 1, buffsize, f );
-	fclose (f);
-	
 	ISFS_Initialize();
 	
-	int i;
 	s32 fd;
-	for (i = 0; i < sizeof(sm) / sizeof(char*); i++)
-		{
-		sprintf (path, "%s/title/00000001/00000002/content/%s.app", nandConfig->NandInfo[nidx], sm[i]);
-		
-		fd = ISFS_Open (path, ISFS_OPEN_READ);
-		Debug ("SetupPriiloader: checking %s (%d)", path, fd);
-		if (fd < 0) continue;
-		ISFS_Close (fd);
-		find = TRUE;
-		break;
-		}
-		
-	if (find)
-		{
-		s32 ret;
-		s32 loaderIniSize = 0;
-		u8 * loaderIniBuff = NULL;
-		
-		// Save priiloader settings
-		
-		sprintf (path, "%s/title/00000001/00000002/data/main.bin", nandConfig->NandInfo[nidx]);
-		sprintf (pathBack, "%s/title/00000001/00000002/data/main.bak", nandConfig->NandInfo[nidx]);
 
-		ret = ISFS_Delete (pathBack);
-		Debug ("SetupPriiloader: ISFS_Delete %s (%d)", pathBack, ret);
-		ret = ISFS_Rename (path, pathBack);
-		Debug ("SetupPriiloader: ISFS_Rename %s %s (%d)", path, pathBack, ret);
-		
-		sprintf (path, "%s/title/00000001/00000002/data/loader.ini", nandConfig->NandInfo[nidx]);
-		sprintf (pathBack, "%s/title/00000001/00000002/data/loader.bak", nandConfig->NandInfo[nidx]);
+	s32 ret;
+	s32 loaderIniSize = 0;
+	u8 * loaderIniBuff = NULL;
+	
+	// Save priiloader settings
+	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", nandConfig->NandInfo[nidx]);
+	sprintf (pathBack, "%s/title/00000001/00000002/data/loader.bak", nandConfig->NandInfo[nidx]);
 
-		// Get priiloader loader.ini files contents
-		fd = ISFS_Open (path, ISFS_OPEN_READ);
-		if (fd >= 0)
+	// Get priiloader loader.ini files contents
+	fd = ISFS_Open (path, ISFS_OPEN_READ);
+	if (fd >= 0)
+		{
+		loaderIniSize = ISFS_Seek(fd, 0, 2);
+		
+		if (loaderIniSize)
 			{
-			loaderIniSize = ISFS_Seek(fd, 0, 2);
-			
-			if (loaderIniSize)
-				{
-				loaderIniBuff = allocate_memory (loaderIniSize);
-				ISFS_Seek(fd, 0, 0);
-				ISFS_Read(fd, loaderIniBuff, loaderIniSize);
-				}
-			
-			ISFS_Close (fd);
+			loaderIniBuff = allocate_memory (loaderIniSize);
+			ISFS_Seek(fd, 0, 0);
+			ISFS_Read(fd, loaderIniBuff, loaderIniSize);
 			}
-
-		ret = ISFS_Delete (pathBack);
-		Debug ("SetupPriiloader: ISFS_Delete %s (%d)", pathBack, ret);
-		ret = ISFS_Rename (path, pathBack);
-		Debug ("SetupPriiloader: ISFS_Rename %s %s (%d)", path, pathBack, ret);
-
-		// Store n2oswitch
-		sprintf (path, "%s/title/00000001/00000002/data/main.bin", nandConfig->NandInfo[nidx]);
-		ISFS_CreateFile (path,0,3,3,3);
-		fd = ISFS_Open (path, ISFS_OPEN_RW);
-		ret = ISFS_Write (fd, buff, buffsize);
-		Debug ("SetupPriiloader: ISFS_Write (%d %d)", ret, buffsize);
-		ret = ISFS_Close (fd);
 		
-		CreatePriiloaderSettings ((char*)nandConfig->NandInfo[nidx], loaderIniBuff, loaderIniSize);
-		free (loaderIniBuff);
+		ISFS_Close (fd);
 		}
+
+	// This will simply force boot to installed app (that is neekbooter)
+
+	ret = ISFS_Delete (pathBack);
+	Debug ("SetupPriiloader: ISFS_Delete %s (%d)", pathBack, ret);
+	ret = ISFS_Rename (path, pathBack);
+	Debug ("SetupPriiloader: ISFS_Rename %s %s (%d)", path, pathBack, ret);
+
+	CreatePriiloaderSettings ((char*)nandConfig->NandInfo[nidx], loaderIniBuff, loaderIniSize);
+	free (loaderIniBuff);
+
 	ISFS_Deinitialize ();
 	}
 
@@ -215,6 +172,8 @@ void Disc(void)
 		// Replace system menu with 
 		if (ni >= 0)
 			SetupPriiloader (ni);
+		else
+			grlib_menu ("Error occurred\n\npostLoader wasn't unable to select required nand", "   OK   ");
 		
 		Shutdown (0);
 		

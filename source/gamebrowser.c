@@ -490,7 +490,7 @@ static void UpdateTitlesFromTxt (void)
 		{
 		if (cfg_GetString (titlestxt, games[i].asciiId, buff))
 			{
-			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, buff);
+			//Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, buff);
 			free (games[i].name);
 			games[i].name = ms_utf8_to_ascii (buff);
 			}

@@ -4,10 +4,9 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dirent.h>
 #include "neek.h"
-#include "fsop/fsop.h"
-#include "globals.h"
+
+#define Debug printd
 
 #define DI_CONFIG_SIZE         0x10
 #define DI_GAMEINFO_SIZE       0x80
@@ -46,7 +45,7 @@ void *allocate_memory(u32 size); // from triiforce
 
 NandConfig *nandConfig = NULL;
 
-s32 neek_SelectGame( u32 SlotID )
+s32 UNEEK_SelectGame( u32 SlotID )
 	{
 	s32 fd = IOS_Open("/dev/di", 0 );
 	
@@ -104,8 +103,6 @@ char* neek_GetCDIGames(void)
 	// Read the header
 	ret = ISFS_Read(fd, &DIChead, CDI_CONFIG_SIZE);
 	Debug ("neek_GetCDIConfig [IOS_Read %d]", ret);
-	if (ret != CDI_CONFIG_SIZE)
-		return NULL;
 	
 	Debug ("neek_GetCDIConfig [DICfg->Gamecount %u]", DIChead.Gamecount);
 	u32 cfgSize = (DIChead.Gamecount * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;
@@ -129,12 +126,7 @@ char* neek_GetCDIGames(void)
 	for (i = 0; i < DICfg->Gamecount; i++)
 		{
 		p = (char*)&DICfg->GameInfo[i];
-		
-		// Fix for corrupted diconfig.bin
-		p[CDI_GAME_ID_OFF + 6] = '\0';
-		p[CDI_GAME_ID_OFF + 67] = '\0';
-		
-		//Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[CDI_GAME_ID_OFF], &p[CDI_GAME_TYPE_NAME_OFF]);
+		Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[CDI_GAME_ID_OFF], &p[CDI_GAME_TYPE_NAME_OFF]);
 		obsize += (strlen(&p[CDI_GAME_NAME_OFF]) + strlen (&p[CDI_GAME_ID_OFF]) + 2); // 2 is len of the two "|" "|"
 		}
 		
@@ -210,7 +202,7 @@ char* neek_GetDIGames(void)
 	for (i = 0; i < DICfg->Gamecount; i++)
 		{
 		p = (char*)&DICfg->GameInfo[i];
-		// Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[DI_GAME_ID_OFF], &p[DI_GAME_NAME_OFF]);
+		Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[DI_GAME_ID_OFF], &p[DI_GAME_NAME_OFF]);
 		obsize += (strlen(&p[DI_GAME_NAME_OFF]) + strlen (&p[DI_GAME_ID_OFF]) + 2); // 2 is len of the two "|" "|"
 		}
 		
@@ -283,7 +275,7 @@ void neek_KillDIConfig (void)	// Reboot needed after that call
 	
 	ISFS_Deinitialize ();
 	}
-
+	
 bool neek_GetNandConfig (void)
 	{
 	s32 ret;
@@ -292,9 +284,6 @@ bool neek_GetNandConfig (void)
 	
 	Debug ("neek_GetNandConfig [begin]");
 		
-	if (nandConfig)
-		free (nandConfig);
-	
 	ISFS_Initialize ();
 	
 	sprintf (path, "/sneek/nandcfg.bin");
@@ -303,12 +292,10 @@ bool neek_GetNandConfig (void)
 	Debug ("neek_GetNandConfig [ISFS_Open %d]", fd);
 
 	if (fd <= 0)
-		{
-		Debug ("neek_GetNandConfig [no config file found, only root nand available ?]");
-		Debug ("neek_GetNandConfig [end]");
-		nandConfig = NULL;
 		return false;
-		}
+	
+	if (nandConfig)
+		free (nandConfig);
 	
 	// Read the header
 	ret = ISFS_Read(fd, &NChead, sizeof(NChead));
@@ -342,19 +329,12 @@ bool neek_WriteNandConfig (void)
 	s32 ret;
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	
-	if (nandConfig == NULL)
-		{
-		return false;
-		Debug ("neek_WriteNandConfig [nothing to do]");
-		}
-	
 	Debug ("neek_WriteNandConfig [begin]");
 		
 	ISFS_Initialize ();
 	
 	sprintf (path, "/sneek/nandcfg.bin");
 	
-	ISFS_CreateFile (path, 0, 3, 3, 3);
 	s32 fd = ISFS_Open( path, ISFS_OPEN_WRITE);
 	Debug ("neek_WriteNandConfig [ISFS_Open %d]", fd);
 
@@ -391,7 +371,7 @@ void neek_KillNandConfig (void)	// Reboot needed after that call
 	}
 	
 
-int neek_NandConfigSelect (char *nand)	// Search and select the passed nand
+bool neek_NandConfigSelect (char *nand)	// Search and select the passed nand
 	{
 	int i;
 	int idx = -1;
@@ -410,14 +390,14 @@ int neek_NandConfigSelect (char *nand)	// Search and select the passed nand
 			}
 		}
 
-	if (idx == -1) return -1;
+	if (idx == -1) return FALSE;
 	
 	nandConfig->NandSel = idx;
 	
 	neek_WriteNandConfig ();
 	
 	Debug ("neek_NandConfigSelect [end]");
-	return idx;
+	return TRUE;
 	}
 	
 
@@ -451,10 +431,7 @@ bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode
 	if (!mode)
 		fd = ISFS_Open( path, ISFS_OPEN_READ);
 	else
-		{
-		ISFS_CreateFile (path, 0, 3, 3, 3);
 		fd = ISFS_Open( path, ISFS_OPEN_WRITE);
-		}
 
 	Debug ("neek_PLNandInfo [ISFS_Open %d]", fd);
 
@@ -485,194 +462,20 @@ bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode
 
 	return true;
 	}
-	
-bool neek_PLNandInfoKill (void) // Remove nandcfg.pl... postloader do this when it start
+
+bool neek_PLNandInfoRemove (void) // mode 0 = read, mode 1 = write
 	{
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-
-	Debug ("neek_PLNandInfoKill [begin]");
 	
+	Debug ("neek_PLNandInfoRemove [begin]");
+		
 	ISFS_Initialize ();
 	
 	sprintf (path, "/sneek/nandcfg.pl");
 	ISFS_Delete (path);
-
-	Debug ("neek_PLNandInfoKill [end]");
+	Debug ("neek_PLNandInfoRemove [end]");
 	
 	ISFS_Deinitialize ();
 
-	return true;
-	}
-	
-// This will require obcd extensions
-
-#define CDIINITALGAMECOUNT 1024
-
-bool neek_CreateCDIConfigBrowse (CDIConfig *DICfg, u32 *count, char *path)
-	{
-	DIR *pdir;
-	struct dirent *pent;
-	FILE* f = NULL;
-	char fn[128];
-	char tmp[128];
-	int offset;
-	
-	Debug ("neek_CreateCDIConfigBrowse: [PATH] %s", path);
-	
-	sprintf (fn, "%s://wbfs/", vars.mount[DEV_USB]);
-	offset = strlen (fn);
-
-	pdir=opendir(path);
-	while ((pent=readdir(pdir)) != NULL) 
-		{
-		sprintf (fn, "%s/%s", path, pent->d_name);
-		
-		// Let's check if it is a folder
-		if (strcmp (pent->d_name, ".") != 0 && strcmp (pent->d_name, "..") != 0 && fsop_DirExist (fn))
-			{
-			// recurse it
-			neek_CreateCDIConfigBrowse (DICfg, count, fn);
-			}
-		else if (strstr (pent->d_name, ".wbfs") || strstr (pent->d_name, ".WBFS"))
-			{
-			strcpy (tmp, pent->d_name);
-			tmp[24] = '\0';
-			Video_WaitPanel (TEX_HGL, "%d|%s", (*count)+1, tmp);
-			
-			Debug ("neek_CreateCDIConfigBrowse: [FN] %s", fn);
-			
-			f = fopen(fn, "rb");
-			if (!f) continue;
-			
-			//Get file size
-			fseek( f, 0x200, SEEK_SET);
-			fread( DICfg->GameInfo[*count], 1, CDI_GAMEINFO_SIZE, f);
-			fclose (f);
-			
-			// Set the flag
-			memcpy (&DICfg->GameInfo[*count][0x1C], "WBFS", 4);
-			
-			// Add filename
-			strcpy ((char*)&DICfg->GameInfo[*count][0x60], &fn[offset]);
-			
-			(*count)++;
-			}
-		}
-	closedir(pdir);
-	
-	return TRUE;
-	}
-	
-bool neek_CreateCDIConfig (void)
-	{
-	char path[128];
-	u32 count = 0;
-	u32 cfgSize = 0;
-	
-	sprintf (path, "%s://wbfs", vars.mount[DEV_USB]);	
-	
-	// Create a (big) CDIConfig
-	cfgSize = (CDIINITALGAMECOUNT * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
-	CDIConfig *DICfg = (CDIConfig*) malloc(cfgSize);
-	
-    // Init struct
-	DICfg->SlotID = 0;
-    DICfg->Region = 2;
-    DICfg->Gamecount = count;
-    DICfg->Config = 0;
-	
-	// Ok, we can scan games
-    count = 0;
-	neek_CreateCDIConfigBrowse (DICfg, &count, path);
-	
-	Debug ("neek_CreateCDIConfig: found %d games", count);
-	
-	if (count == 0)
-		return FALSE;
-	
-	// Let's write diconfig.bin
-    DICfg->Gamecount = count;
-	cfgSize = (count * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
-
-	sprintf (path, "%s://sneek/diconfig.bin", vars.mount[DEV_USB]);	
-	FILE *f = fopen(path, "wb");
-	fwrite( DICfg, 1, cfgSize, f);
-	count = 0x00; // This is from a bugs of neek2o
-	fwrite( &count, 1, sizeof(u32), f);
-	count = 0x123456; // This is to check if it fixed
-	fwrite( &count, 1, sizeof(u32), f);
-	fclose (f);
-
-	free (DICfg);
-	
-	return TRUE;
-	}
-	
-/////////////////////////////////////////////////////////////////////
-
-bool neek_PrepareNandForChannel (char *sneekpath, char *nandpath)
-	{
-	char path[256];
-	char pathbak[256];
-		
-	Debug ("neek_PrepareNandForChannel [begin]");
-		
-	sprintf (pathbak, "%s/nandcfg.bak", sneekpath);
-	sprintf (path, "%s/nandcfg.bin", sneekpath);
-
-	unlink (pathbak);
-	rename (path, pathbak);	// Save a copy
-	Debug ("neek_PrepareNandForChannel [rename]");
-
-	u32 cfgSize = NANDCONFIG_NANDINFO_SIZE + NANDCONFIG_CONFIG_SIZE;
-	
-	Debug ("neek_PrepareNandForChannel [cfg=%d]", cfgSize);
-	if (nandConfig != NULL) free (nandConfig);
-	
-	Debug ("neek_PrepareNandForChannel [free]");
-	nandConfig = allocate_memory (cfgSize);
-
-	Debug ("neek_PrepareNandForChannel [alloc=0x%X]", nandConfig);
-	
-	Debug ("neek_PrepareNandForChannel [set1]");
-	nandConfig->NandCnt = 1;
-	nandConfig->NandSel = 0;
-	
-	Debug ("neek_PrepareNandForChannel [set2]");
-	strcpy ((char*)nandConfig->NandInfo, nandpath);
-	Debug ("neek_PrepareNandForChannel [path=%s]", nandpath);
-	
-	FILE *f;
-	f = fopen (path, "wb");
-	if (f)
-		{
-		fwrite (nandConfig, 1, cfgSize, f);
-		fclose (f);
-		}
-
-	Debug ("neek_PrepareNandForChannel [written]");
-	if (nandConfig != NULL) free (nandConfig);
-	nandConfig = NULL;
-	
-	Debug ("neek_PrepareNandForChannel [free]");
-	
-	Debug ("neek_PrepareNandForChannel [end]");
-	return true;
-	}
-
-bool neek_RestoreNandForChannel (char *sneekpath, char *nandpath)
-	{
-	char path[256];
-	char pathbak[256];
-
-	sprintf (pathbak, "%s/nandcfg.bak", sneekpath);
-	sprintf (path, "%s/nandcfg.bin", sneekpath);
-
-	if (!fsop_FileExist (pathbak))
-		return true; // Yes, it is ok...
-		
-	unlink (path);
-	rename (pathbak, path);	// Restore the copy
-	
 	return true;
 	}

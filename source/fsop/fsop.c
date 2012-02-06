@@ -20,6 +20,7 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 
 #include "fsop.h"
 #include "../debug.h"
+#include "../mem2.h"
 
 s_fsop fsop;
 
@@ -241,6 +242,12 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	
 	Debug ("fsop_CopyFile (%s, %s): Started", source, target);
 	
+	if (strstr (source, "usb:") && strstr (target, "usb:"))
+		{
+		Debug ("fsop_CopyFile: buffer size changed to %dKbyte", block / 1024);
+		block = 1024*1048;
+		}
+	
 	fs = fopen(source, "rb");
 	if (!fs)
 		{
@@ -273,7 +280,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	// Return to beginning....
 	fseek( fs, 0, SEEK_SET);
 	
-	buff = malloc (block);
+	buff = mem2_malloc (block);
 	if (buff == NULL) 
 		{
 		fclose (fs);
@@ -301,7 +308,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	fclose (fs);
 	fclose (ft);
 	
-	free (buff);
+	mem2_free (buff);
 	
 	Debug ("fsop_CopyFile: bytes %u, size %u, err %d, breakop %d", bytes, size, err, fsop.breakop);
 	

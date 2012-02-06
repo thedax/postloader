@@ -563,9 +563,6 @@ void setVideoMode()
 	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
 	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
 	
-	*(u32 *)0x800000CC = Video_Mode;
-	DCFlushRange((void*)0x800000CC, sizeof(u32));
-	
 	// Overwrite all progressive video modes as they are broken in libogc
 	if (videomode_interlaced(rmode) == 0)
 		{
@@ -608,6 +605,7 @@ void bootTitle(u64 titleid)
 	bootcontentloaded = (ret == 1);
 
 	determineVideoMode(titleid);
+	setVideoMode();
 	
 	entryPoint = load_dol(dolbuffer);
 
@@ -653,6 +651,8 @@ void bootTitle(u64 titleid)
 	// IOS Version Check (002 error)
     *(vu32*)0x80003140 = ((requested_ios << 16)) | 0xFFFF;
     *(vu32*)0x80003188 = ((requested_ios << 16)) | 0xFFFF;
+
+	*(u32 *)0x800000CC = Video_Mode;
 	
 	DCFlushRange((void*)0x80000000, 0x3F00);
 	
@@ -694,7 +694,6 @@ void bootTitle(u64 titleid)
 	patch_dol(bootcontentloaded);
 	
 	debug("Loading complete, booting...\n");
-	setVideoMode();
 
 	appJump = (entrypoint)entryPoint;
 
@@ -799,6 +798,22 @@ static void Net(void)
 	}
 */
 
+bool SenseSneek (bool isfsinit)
+	{
+	if (isfsinit) ISFS_Initialize ();
+	
+	u32 num = 0;
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+
+	strcpy (path, "/SNEEK");
+	s32 ret = ISFS_ReadDir(path, NULL, &num);
+	
+	if (isfsinit) ISFS_Deinitialize ();
+	
+	return (ret == 0);
+	}
+
+
 int main(int argc, char* argv[])
 	{
 	int ret;
@@ -817,17 +832,20 @@ int main(int argc, char* argv[])
 		}
 	
 	int ios[7] = { 249, 250, 251, 252, 247 , 248};
-	/*
-	if (IOS_GetVersion() != ios[nb.channel.ios])
+	if (!SenseSneek (true))
 		{
-		debug ("IOS_ReloadIOS\n");
+		/*
+		if (IOS_GetVersion() != ios[nb.channel.ios])
+			{
+			debug ("IOS_ReloadIOS\n");
+			IOS_ReloadIOS(ios[nb.channel.ios]);
+			}
+		*/
 		IOS_ReloadIOS(ios[nb.channel.ios]);
+		//Net ();
+		//IOSReloadBlock(IOS_GetVersion(), true);
 		}
-	*/
-	IOS_ReloadIOS(ios[nb.channel.ios]);
-	//Net ();
-	//IOSReloadBlock(IOS_GetVersion(), true);
-	
+		
 	// Configure triiforce options
 	videooption = nb.channel.vmode;
 	languageoption = nb.channel.language;
@@ -862,8 +880,6 @@ int main(int argc, char* argv[])
 			reboot();
 			}
 		}
-	else
-		sleep (1);
 
 	ret = ISFS_Initialize();
 	debug ("ISFS_Initialize: %d\n", ret);

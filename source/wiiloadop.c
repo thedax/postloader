@@ -416,10 +416,6 @@ bool WiiloadPostloaderDolMenu (void)
 			
 			if (IsDevValid(DEV_SD)) 
 				{
-				strcpy (path, "sd://postloader.dol");
-				if (fsop_FileExist (path))
-					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
-
 				strcpy (path, "sd://apps/postloader/boot.dol");
 				if (fsop_FileExist (path))
 					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
@@ -427,14 +423,33 @@ bool WiiloadPostloaderDolMenu (void)
 
 			if (IsDevValid(DEV_USB)) 
 				{
-				strcpy (path, "usb://postloader.dol");
-				if (fsop_FileExist (path))
-					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
-
 				strcpy (path, "usb://apps/postloader/boot.dol");
 				if (fsop_FileExist (path))
 					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
 				}
+			}
+		}
+
+	if (stricmp (wiiload.filename, "neekbooter.dol") == 0 && wiiload.buffsize)
+		{
+		grlibSettings.fontNormBMF = fonts[FNTBIG];
+		grlib_menu ("wiiload: neekbooter.dol updated", "  OK  ");
+		grlibSettings.fontNormBMF = fonts[FNTNORM];
+
+		char path[64];
+		
+		if (IsDevValid(DEV_SD)) 
+			{
+			strcpy (path, "sd://neekbooter.dol");
+			if (fsop_FileExist (path))
+				fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
+			}
+
+		if (IsDevValid(DEV_USB)) 
+			{
+			strcpy (path, "usb://neekbooter.dol");
+			if (fsop_FileExist (path))
+				fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
 			}
 		}
 	
