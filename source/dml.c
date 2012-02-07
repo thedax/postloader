@@ -84,29 +84,36 @@ static void SetGCVideoMode (void)
 	
 	while(!__SYS_SyncSram());
 	
+	// TVPal528IntDf
+	
+	u32 *xfb;
+	static GXRModeObj *rmode;
+	
 	if (config.dmlvideomode == DMLVIDEOMODE_PAL)
 		{
-		u32 *xfb;
-		static GXRModeObj *rmode = &TVPal528IntDf;
-		
-		/* Set video mode to PAL or NTSC */
-		*(u32*)0x800000CC = 1;
-
-		VIDEO_SetBlack(TRUE);
-		VIDEO_Configure(rmode);
-		xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-
-		VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
-		VIDEO_SetNextFramebuffer(xfb);
-
-		VIDEO_Flush();
-		VIDEO_WaitVSync();
-		if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
-
-		VIDEO_SetBlack(FALSE);
-		VIDEO_WaitVSync();
-		if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+		rmode = &TVPal528IntDf;
+		*(u32*)0x800000CC = VI_PAL;
 		}
+	else
+		{
+		rmode = &TVNtsc480IntDf;
+		*(u32*)0x800000CC = VI_NTSC;
+		}
+
+	VIDEO_SetBlack(TRUE);
+	VIDEO_Configure(rmode);
+	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+
+	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
+	VIDEO_SetNextFramebuffer(xfb);
+
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+
+	VIDEO_SetBlack(FALSE);
+	VIDEO_WaitVSync();
+	if (rmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
 	}
 
 s32 StartMIOS (void)
@@ -289,6 +296,11 @@ int DMLRun (char *id)
 
 	if (!IsDevValid(DEV_SD)) return 0;
 	
+	if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
+		config.dmlvideomode = DMLVIDEOMODE_NTSC;
+	else
+		config.dmlvideomode = DMLVIDEOMODE_PAL;
+
 	sprintf (path, "%s://games/boot.bin", vars.mount[DEV_SD]);
 	
 	FILE *f;

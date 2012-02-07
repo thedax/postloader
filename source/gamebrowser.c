@@ -905,11 +905,13 @@ static void ShowAppMenu (int ai)
 				strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
 				}
 			}
+		/*
 		else
 			{
 			grlib_menuAddCheckItem (buff, 108, 1 - gameConf.dmlvideomode, "NTSC mode");
 			grlib_menuAddCheckItem (buff, 109, gameConf.dmlvideomode, "PAL 576i mode");
 			}
+		*/
 		/*
 
 		if (config.chnBrowser.nand != NAND_REAL)

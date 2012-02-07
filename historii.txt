@@ -2,6 +2,12 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.60.3
+
+* dml: full auto selection of video mode. Removed manual mode
+* dml: Added video mode change if game is ntsc
+* postLoader 3.60.2 had wrong internal version
+
 postLoader 3.60.2
 
 * screen saver will hang if covers are on usb
