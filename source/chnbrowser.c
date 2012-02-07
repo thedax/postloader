@@ -113,7 +113,7 @@ static bool DownloadCovers_Get (char *path, char *buff)
 	u8* outbuf=NULL;
 	u32 outlen=0;
 	
-	outbuf = downloadfile (buff, &outlen);
+	outbuf = downloadfile (buff, &outlen, NULL);
 		
 	if (IsPngBuff (outbuf, outlen))
 		{

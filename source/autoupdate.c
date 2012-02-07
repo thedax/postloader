@@ -20,7 +20,7 @@ int AutoUpdate (void)
 	
 	Video_WaitPanel (TEX_HGL, "Checking online update");
 	sprintf (buff, "http://www.ilpistone.com/wii/download/build.txt");
-	outbuf = (char*)downloadfile (buff, &outlen); // outbuf is 0 terminated
+	outbuf = (char*)downloadfile (buff, &outlen, NULL); // outbuf is 0 terminated
 	if (!outbuf) 
 		{
 		Video_WaitPanel (TEX_HGL, "Error getting update informations (%d)", outlen);
@@ -58,7 +58,7 @@ int AutoUpdate (void)
 
 	Video_WaitPanel (TEX_HGL, "Downloading build %d (%d Kb)", build, dolsize/1024);
 	sprintf (buff, "http://www.ilpistone.com/wii/download/postloader.dol");
-	outbuf = (char*)downloadfile (buff, &outlen); // outbuf is 0 terminated
+	outbuf = (char*)downloadfile (buff, &outlen, NULL); // outbuf is 0 terminated
 	if (!outbuf) 
 		{
 		Video_WaitPanel (TEX_HGL, "ERROR: Retriving update dol");
@@ -128,7 +128,7 @@ int AutoUpdate (void)
 		{
 		// This is just to make update count
 		sprintf (buff, "http://www.ilpistone.com/wii/download.php?id=update");
-		outbuf = (char*)downloadfile (buff, &outlen); // outbuf is 0 terminated
+		outbuf = (char*)downloadfile (buff, &outlen, NULL); // outbuf is 0 terminated
 		if (outbuf) free(outbuf);
 
 		Video_WaitPanel (TEX_HGL, "Update ok, now postLoader will reboot wii");

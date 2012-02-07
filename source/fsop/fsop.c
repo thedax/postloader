@@ -12,6 +12,7 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 #include <malloc.h>
 #include <math.h>
 #include <ogcsys.h>
+#include <ogc/lwp_watchdog.h>
 
 #include <dirent.h>
 #include <unistd.h>
@@ -306,6 +307,8 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		
 		if (vc) vc();
 		if (fsop.breakop) break;
+		
+		usleep (1);
 		}
 	while (bytes < size && err == 0);
 
@@ -380,12 +383,12 @@ static bool doCopyFolder (char *source, char *target, fsopCallback vc)
 bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
 	{
 	fsop.breakop = 0;
-	fsop.multy.start_t = time(NULL);
+	fsop.multy.startms = ticks_to_millisecs(gettime());
 	fsop.multy.bytes = 0;
 	fsop.multy.size = fsop_GetFolderBytes (source, vc);
 	
 	Debug ("fsop_CopyFolder");
-	Debug ("fsop.multy.start_t = %u", fsop.multy.start_t);
+	Debug ("fsop.multy.startms = %u", fsop.multy.startms);
 	Debug ("fsop.multy.bytes = %llu", fsop.multy.bytes);
 	Debug ("fsop.multy.size = %llu (%u Mb)", fsop.multy.size, (u32)((fsop.multy.size/1000)/1000));
 	

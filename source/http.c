@@ -86,7 +86,7 @@ u8 *read_message(s32 connection, u32 *size)
 	//The offset variable always points to the first byte of memory that is free in the buffer
 	u32 offset = 0;
 
-	while (1)
+	while (true)
 		{
 		//Fill the buffer with a new batch of bytes from the connection,
 		//starting from where we left of in the buffer till the end of the buffer
@@ -99,6 +99,13 @@ u8 *read_message(s32 connection, u32 *size)
 			free (buffer);
 			return NULL;
 			}
+			
+		if (http.bytes == 0)
+			{
+			//*p = memcmpy (buffer
+			}
+			
+		http.bytes += bytes_read;
 
 		//No more bytes were read into the buffer,
 		//we assume this means the HTTP response is done
@@ -138,10 +145,13 @@ u8 *read_message(s32 connection, u32 *size)
  * Downloads the contents of a URL to memory
  * This method is not threadsafe (because networking is not threadsafe on the Wii)
  */
-u8 *downloadfile (const char *url, u32 *size)
+u8 *downloadfile (const char *url, u32 *size, http_Callback cb)
 	{
 	*size = 0;
 	u8 *buff = NULL;
+	
+	memset (&http, 0, sizeof(s_http));
+	if (cb) http.cb = cb;
 	
 	//Check if the url starts with "http://", if not it is not considered a valid url
 	if (strncmp(url, "http://", strlen("http://")) != 0)

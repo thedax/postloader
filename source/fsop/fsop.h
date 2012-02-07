@@ -6,7 +6,7 @@ typedef void (*fsopCallback)(void);
 typedef struct 
 	{
 	u64 size, bytes; // for operation that uses more than one file
-	time_t start_t;
+	u32 startms;
 	}
 s_fsopmulty;
 

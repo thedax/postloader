@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <wiiuse/wpad.h>
 #include <dirent.h>
+#include <ogc/lwp_watchdog.h>
+
 #include "wiiload/wiiload.h"
 #include "globals.h"
 #include "bin2o.h"
@@ -161,7 +163,7 @@ static bool DownloadCovers_Get (char *path, char *buff)
 	u8* outbuf=NULL;
 	u32 outlen=0;
 	
-	outbuf = downloadfile (buff, &outlen);
+	outbuf = downloadfile (buff, &outlen, NULL);
 		
 	if (IsPngBuff (outbuf, outlen))
 		{
@@ -1466,25 +1468,27 @@ static void Overlay (void)
 
 static void cb_filecopy (void)
 	{
-	static time_t lastt = 0;
-	time_t t = time(NULL);
-	
-	if (t - lastt >= 1)
+	static u32 mstout = 0;
+	u32 ms = ticks_to_millisecs(gettime());
+
+	if (mstout < ms)
 		{
 		u32 mb = (u32)((fsop.multy.bytes/1000)/1000);
 		u32 sizemb = (u32)((fsop.multy.size/1000)/1000);
-		u32 elapsed = time(NULL) - fsop.multy.start_t;
+		u32 elapsed = ms - fsop.multy.startms;
 		u32 perc = (mb * 100)/sizemb;
 		
-		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
+		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
 		
-		lastt = t;
+		mstout = ms + 250;
 		
 		if (grlib_GetUserInput() & WPAD_BUTTON_B)
 			{
 			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
 			if (ret == 0) fsop.breakop = 1;
 			}
+		
+		snd_Mp3Go ();
 		}
 	}
 
@@ -1500,6 +1504,8 @@ static bool MoveGCGame (int ai)
 	{
 	char source[300];
 	char target[300];
+	
+	//snd_Pause ();
 
 	Debug ("MoveGCGame (%s %s): Started", games[ai].name, games[ai].asciiId);
 
@@ -1513,6 +1519,8 @@ static bool MoveGCGame (int ai)
 		Debug ("MoveGCGame: interrupted... removing partial folder");
 		fsop_KillFolderTree (target, NULL);
 		}
+		
+	snd_Resume ();
 	
 	return ret;
 	}

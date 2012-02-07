@@ -2,6 +2,11 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.60.4
+
+* updated same timings during file copy operations
+* added callback support during http download
+
 postLoader 3.60.3
 
 * dml: full auto selection of video mode. Removed manual mode

@@ -13,6 +13,7 @@
 #include <gccore.h>
 #include <ogc/machine/processor.h>
 #include <dirent.h>
+#include <ogc/lwp_watchdog.h>
 
 #include "fsop/fsop.h"
 #include "isfs.h"
@@ -720,19 +721,19 @@ bool SetupNeek2o (void)
 
 static void cb_filecopy (void)
 	{
-	static time_t lastt = 0;
-	time_t t = time(NULL);
-	
-	if (t - lastt >= 1)
+	static u32 mstout = 0;
+	u32 ms = ticks_to_millisecs(gettime());
+
+	if (mstout < ms)
 		{
 		u32 mb = (u32)((fsop.multy.bytes/1000)/1000);
 		u32 sizemb = (u32)((fsop.multy.size/1000)/1000);
-		u32 elapsed = time(NULL) - fsop.multy.start_t;
+		u32 elapsed = time(NULL) - fsop.multy.startms;
 		u32 perc = (mb * 100)/sizemb;
 		
-		MasterInterface (1, 0, TEX_HGL, "Please wait: %u%% done, copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
+		MasterInterface (1, 0, TEX_HGL, "Please wait: %u%% done, copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
 		
-		lastt = t;
+		mstout = ms + 250;
 		
 		if (grlib_GetUserInput() & WPAD_BUTTON_B)
 			{

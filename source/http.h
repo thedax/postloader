@@ -15,7 +15,20 @@ extern "C"
 
 extern const struct block emptyblock;
 
-u8 *downloadfile(const char *url, u32 *size);
+typedef void (*http_Callback)(void); 
+
+typedef struct 
+	{
+	size_t bytes;
+	size_t bytestot;
+	
+	http_Callback cb;
+	}
+s_http;
+
+s_http http;
+
+u8 *downloadfile (const char *url, u32 *size, http_Callback cb);
 s32 GetConnection(char * domain);
 int network_request(int connection, const char * request, char * filename);
 int network_read(int connection, u8 *buf, u32 len);
