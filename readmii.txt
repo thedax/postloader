@@ -1,4 +1,4 @@
-postLoader3 (readmii.txt 1.6)
+postLoader3 (readmii.txt 1.7)
 
 ========================================
 What postLoader is:
@@ -305,6 +305,17 @@ or
 /wbfs/<anycharacter>.wbfs
  
 it is really much faster then neek2o. Reboot seems to be required.
+
+========================================
+Running vc/wiiware from realnand via neek2o
+========================================
+
+* Use modmii to create a fresh nand. Install only priiloader (required) and if you wish postloader channel. Do not add anything more if you want a fast to boot nand
+* name this nand pln2o and put in usb://Nand/pln2o
+* Start that nand, configure it (also the network). Install the new neekbooter (required) in priiloader and make priiloader autoboot it (you can use postloader to do that [home]->System options->Install neekbooter.dol in priiloader, when you running in neek2o/pln2o nand)
+* postLoader will automatically copy (only one time) your vc/wiiware to pln2o nand and execute it.
+* This is a great workaround for WFC games and games that doens't work in d2x emulation
+
 
 CREDITS:
 ----------------------------------------

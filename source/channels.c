@@ -783,10 +783,17 @@ bool RunChannelNeek2o (s_run *run)
 	data[3] = TITLE_UPPER(run->channel.titleId);
 	sprintf (target, "%s/nandcfg.pl", NEEK2O_SNEEK);
 	fsop_WriteFile (target, (u8*) data, sizeof(data));
+	
+	sprintf (target, "%s/nandcfg.ch", NEEK2O_SNEEK);
+	fsop_WriteFile (target, (u8*) &run->channel, sizeof(s_channelConfig));
 
 	// Boot neek2o
+	
+	Neek2oLoadKernel ();
 	Shutdown (0);
-	IOS_ReloadIOS(254);
+	Neek2oBoot ();
+	
+	//IOS_ReloadIOS(254);
 	return true;
 	}
 	
@@ -802,15 +809,14 @@ bool RestoreChannelNeek2o (void)
 	{
 	neek_RestoreNandForChannel (NEEK2O_SNEEK, NEEK2O_NAND);
 
-	s32 ret;
 	char path[256];
 	char pathBak[256];
 
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
 	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
 
-	ret = unlink (path);
-	ret = rename (pathBak, path);
+	unlink (path);
+	rename (pathBak, path);
 
 	return true;
 	}

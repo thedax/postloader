@@ -48,7 +48,7 @@ s32 DebugStart (bool gecko, char *fn)
 void DebugStop (void)
 	{
 	filelog = 0;
-	started = 0;
+	started = 2;
 	}
 
 void Debug (const char *text, ...)
@@ -71,7 +71,7 @@ void Debug (const char *text, ...)
 		usb_sendbuffer( EXI_CHANNEL_1, mex, strlen(mex) );
 		usb_flush(EXI_CHANNEL_1);
 		}
-	
+	if (started == 2) return;
 	if (filelog == 0) return;
 	
 	// If a message start with '@', do not open... it will be cached cache it...

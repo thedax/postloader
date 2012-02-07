@@ -13,6 +13,7 @@
 #include "uneek_fs.h"
 #include "mem2.h"
 #include "channels.h"
+#include "bin2o.h"
 
 extern void __exception_setreload(int t); // In the event of a code dump, app will restart
 int Disc (void);

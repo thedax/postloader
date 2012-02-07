@@ -108,14 +108,39 @@ static void InitializeGui (void)
 		}
 	}
 
+static bool DownloadCovers_Get (char *path, char *buff)
+	{
+	u8* outbuf=NULL;
+	u32 outlen=0;
+	
+	outbuf = downloadfile (buff, &outlen);
+		
+	if (IsPngBuff (outbuf, outlen))
+		{
+		//suficientes bytes
+		FILE *f;
+		
+		f = fopen (path, "wb");
+		if (f)
+			{
+			fwrite (outbuf, outlen, 1, f);
+			fclose (f);
+			}
+		
+		free(outbuf);
+		return (TRUE);
+		}
+		
+	return (FALSE);
+	}
+
 
 static void DownloadCovers (void)
 	{
-	int ia, iimt, ireg, stop;
-	int dw;
+	int ia, ireg, stop;
 	char buff[300];
-	const char *imagetypes[2]={"wwtitlealt", "wwtitle"};
 	const char *regions[4]={"EN", "US", "JA", "other" };
+	char path[PATHMAX];
 	
 	Redraw ();
 	grlib_PushScreen ();
@@ -125,61 +150,56 @@ static void DownloadCovers (void)
 	
 	stop = 0;
 	
+	FILE *f;
+	sprintf (path, "%s://ploader/misschan.txt", vars.defMount);
+	f = fopen (path, "wb");
+	
 	for (ia = 0; ia < chansCnt; ia++)
 		{
-		char path[PATHMAX];
-		dw = 0;
 		Video_WaitPanel (TEX_HGL, "Downloading %s.png (%d of %d)|(B) Stop", chans[ia].asciiId, ia, chansCnt);
 		sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ia].asciiId);
+
 		if (!fsop_FileExist(path))
 			{
-			for (iimt = 0; iimt < 2; iimt++)
+			bool ret = FALSE;
+		
+			if (!ret)
 				{
-				for (ireg = 0; ireg < 5; ireg++)
+				sprintf (buff, "http://www.postloader.freehosting.com/png/%s.png", chans[ia].asciiId);
+				ret = DownloadCovers_Get (path, buff);
+				}
+
+			for (ireg = 0; ireg < 4; ireg ++)
+				{
+				if (!ret)
 					{
-					if (ireg < 4)
-						sprintf (buff, "http://wiitdb.com/wiitdb/artwork/%s/%s/%s.png", imagetypes[iimt], regions[ireg], chans[ia].asciiId);
-					else
-						sprintf (buff, "http://www.ilpistone.com/wii/download/png/%s.png", chans[ia].asciiId);
-					
-					u8* outbuf=NULL;
-					u32 outlen=0;
-					
-					outbuf = downloadfile (buff, &outlen);
-					
-					if (IsPngBuff (outbuf, outlen))
-						{
-						//suficientes bytes
-						FILE *f;
-						
-						f = fopen (path, "wb");
-						if (f)
-							{
-							fwrite (outbuf, outlen, 1, f);
-							fclose (f);
-							}
-						dw = 1;
-						}
-						
-					if (outbuf != NULL)
-						free(outbuf);
-						
-					if (dw) break;
-					
-					if (grlib_GetUserInput () == WPAD_BUTTON_B)
-						{
-						stop = 1;
-						break;
-						}
+					sprintf (buff, "http://art.gametdb.com/wii/wwtitle/%s/%s.png", regions[ireg], chans[ia].asciiId);
+					ret = DownloadCovers_Get (path, buff);
 					}
-					
-				if (dw) break;
-				if (stop) break;
+				if (!ret)
+					{
+					sprintf (buff, "http://art.gametdb.com/wii/wwtitlealt/%s/%s.png", regions[ireg], chans[ia].asciiId);
+					ret = DownloadCovers_Get (path, buff);
+					}
+				}
+				
+			if (!ret)
+				{
+				sprintf (buff, "%s:%s\n", chans[ia].asciiId, chans[ia].name);
+				fwrite (buff, 1, strlen(buff), f);
+				}
+				
+			if (grlib_GetUserInput () == WPAD_BUTTON_B)
+				{
+				stop = 1;
+				break;
 				}
 			}
 		if (stop) break;
 		}
-		
+	
+	fclose (f);
+	
 	WiiLoad_Resume ();
 	
 	ChnBrowse ();

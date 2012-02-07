@@ -41,13 +41,17 @@ u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded)
 	//Get file size
 	fseek( f, 0, SEEK_END);
 	size = ftell(f);
-	if (bytesReaded) *bytesReaded = size;
-	if (size == 0) return NULL;
+	
+	if (size == 0) 
+		{
+		fclose (f);
+		return NULL;
+		}
 	
 	// goto to start
 	fseek( f, 0, SEEK_SET);
 	
-	if (bytes2read < size)
+	if (bytes2read > 0 && bytes2read < size)
 		size = bytes2read;
 	
 	u8 *buff = malloc (size);
@@ -420,6 +424,8 @@ bool fsop_KillFolderTree (char *source, fsopCallback vc)
 			{
 			sprintf (fsop.op, "Removing %s", pent->d_name);
 			unlink (newSource);
+			
+			if (vc) vc();
 			Debug ("fsop_KillFolderTree: removing '%s'", newSource);
 			}
 		}

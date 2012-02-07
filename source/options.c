@@ -81,6 +81,52 @@ void ShowAboutPLMenu (void)
 	}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+static void cb_filecopy (void)
+	{
+	static time_t lastt = 0;
+	time_t t = time(NULL);
+	
+	if (t - lastt >= 1)
+		{
+		u32 mb = (u32)((fsop.multy.bytes/1000)/1000);
+		u32 sizemb = (u32)((fsop.multy.size/1000)/1000);
+		u32 elapsed = time(NULL) - fsop.multy.start_t;
+		u32 perc = (mb * 100)/sizemb;
+		
+		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed) / 1000);
+		
+		lastt = t;
+		
+		if (grlib_GetUserInput() & WPAD_BUTTON_B)
+			{
+			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
+			if (ret == 0) fsop.breakop = 1;
+			}
+		}
+	}
+static void cb_remove1(void)
+	{
+	static time_t lastt = 0;
+	time_t t = time(NULL);
+	
+	if (t - lastt >= 1)
+		{
+		Video_WaitPanel (TEX_HGL, "Please wait|clearing old usb data...");
+		lastt = t;
+		}
+	}
+	
+static void cb_remove2(void)
+	{
+	static time_t lastt = 0;
+	time_t t = time(NULL);
+	
+	if (t - lastt >= 1)
+		{
+		Video_WaitPanel (TEX_HGL, "Please wait|clearing old sd data...");
+		lastt = t;
+		}
+	}
 
 void ShowAboutMenu (void)
 	{
@@ -154,9 +200,9 @@ void ShowAboutMenu (void)
 	if (IsDevValid (DEV_SD))
 		{
 		if (fsop_FileExist (path))
-			grlib_menuAddItem (options, 8,  "Enable boot time USB initialization");
+			grlib_menuAddItem (options, 8,  "Enable USB initialization");
 		else
-			grlib_menuAddItem (options, 7,  "Disable boot time USB initialization");
+			grlib_menuAddItem (options, 7,  "Disable USB initialization");
 		}
 	
 	if (config.autoboot.enabled)
@@ -167,6 +213,10 @@ void ShowAboutMenu (void)
 	
 	if (vars.neek == NEEK_2o && IsDevValid (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 		grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
+		
+	if (IsDevValid (DEV_SD) && IsDevValid (DEV_USB) && strcmp (vars.defMount, vars.mount[DEV_SD]) == 0)
+		grlib_menuAddItem (options, 15,  "Move postLoader cfg folder to USB");
+
 
 	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, 0,  "Close");
@@ -226,6 +276,21 @@ void ShowAboutMenu (void)
 	if (item == 14)
 		{
 		ThemeSelect();
+		}
+
+	if (item == 15)
+		{
+		fsop_KillFolderTree ("usb://ploader", cb_remove1);
+		fsop_CopyFolder ("sd://ploader", "usb://ploader", cb_filecopy);
+		
+		if (!fsop.breakop)
+			{
+			grlib_menu ("Your Wii will now rebooot", "  OK  ");
+
+			fsop_KillFolderTree ("sd://ploader", cb_remove2);
+			Shutdown (0);
+			SYS_ResetSystem(SYS_RESTART,0,0);
+			}
 		}
 
 	if (item == MENU_CHANGENEEK2o)

@@ -186,6 +186,7 @@ static void DownloadCovers (void)
 	{
 	int ia, stop;
 	char buff[300];
+	char path[PATHMAX];
 
 	Redraw ();
 	grlib_PushScreen ();
@@ -194,11 +195,13 @@ static void DownloadCovers (void)
 	WiiLoad_Pause ();
 	
 	stop = 0;
+
+	FILE *f;
+	sprintf (path, "%s://ploader/missgame.txt", vars.defMount);
+	f = fopen (path, "wb");
 	
 	for (ia = 0; ia < gamesCnt; ia++)
 		{
-		char path[PATHMAX];
-
 		Video_WaitPanel (TEX_HGL, "Downloading %s.png (%d of %d)|(B) Stop", games[ia].asciiId, ia, gamesCnt);
 		sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ia].asciiId);
 		
@@ -222,6 +225,12 @@ static void DownloadCovers (void)
 				ret = DownloadCovers_Get (path, buff);
 				}
 				
+			if (!ret)
+				{
+				sprintf (buff, "%s:%s\n", games[ia].asciiId, games[ia].name);
+				fwrite (buff, 1, strlen(buff), f);
+				}
+				
 			if (grlib_GetUserInput () == WPAD_BUTTON_B)
 				{
 				stop = 1;
@@ -231,6 +240,8 @@ static void DownloadCovers (void)
 					
 		if (stop) break;
 		}
+		
+	fclose (f);
 		
 	WiiLoad_Resume ();
 	
@@ -284,10 +295,11 @@ static int ReadGameConfig (int ia)
 		gameConf.hook = 0;
 		gameConf.loader = config.gameDefaultLoader;
 
-		if (CONF_GetRegion() == CONF_REGION_EU)
-			gameConf.dmlvideomode = DMLVIDEOMODE_PAL;
-		else
+		/*CONF_GetRegion() == CONF_REGION_EU*/ 
+		if (games[ia].asciiId[3] == 'E' || games[ia].asciiId[3] == 'J' || games[ia].asciiId[3] == 'N')
 			gameConf.dmlvideomode = DMLVIDEOMODE_NTSC;
+		else
+			gameConf.dmlvideomode = DMLVIDEOMODE_PAL;
 		}
 
 	games[ia].category = gameConf.category;
@@ -1616,6 +1628,9 @@ int GameBrowser (void)
 						Debug ("DMLRun");
 						ReadGameConfig (gamesSelected);
 						config.dmlvideomode = gameConf.dmlvideomode;
+						games[gamesSelected].playcount++;
+						WriteGameConfig (gamesSelected);
+						
 						DMLRun (games[gamesSelected].asciiId);
 						}
 					}

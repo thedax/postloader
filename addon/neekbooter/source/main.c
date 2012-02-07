@@ -251,6 +251,34 @@ void Reload (void)
 	exit (0);
 	}
 
+bool readch (s_channelConfig *cc)
+	{
+	s32 ret;
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	Debug ("neek_PLNandInfo [begin]");
+		
+	ISFS_Initialize ();
+	
+	sprintf (path, "/sneek/nandcfg.ch");
+	
+	s32 fd;
+	
+	fd = ISFS_Open( path, ISFS_OPEN_READ);
+	if (fd <= 0)
+		{
+		return false;
+		}
+	
+	ret = ISFS_Read(fd, cc, sizeof(s_channelConfig));
+	ISFS_Close(fd);
+
+	if (ret >= 0) return true;
+	
+	return false;
+	}
+
+
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv) 
 	{
@@ -312,7 +340,7 @@ int main(int argc, char **argv)
 			{
 			printd ("booting channel");
 			
-			s_nandbooter nb;
+			s_nandbooter nb ATTRIBUTE_ALIGN(32);
 
 			u8 *tfb = ((u8 *) 0x93200000);
 			

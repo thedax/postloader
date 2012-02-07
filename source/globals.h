@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 59
-#define VER "3.59.6"
+#define BUILD 60
+#define VER "3.60.1"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define IOS_PREFERRED 58
@@ -382,6 +382,9 @@ char* Bin2HexAscii (void* buff, size_t insize, size_t*outsize);
 int HexAscii2Bin (char *ascii, void* buff);
 bool IsPngBuff (u8 *buff, int size);
 void LoadTitlesTxt (void);
+
+bool Neek2oLoadKernel (void);
+bool Neek2oBoot (void);
 
 // dol.c
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)

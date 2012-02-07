@@ -180,12 +180,12 @@ static bool WiiLoad (s32 connection)
 	wiiloadVersion[0] = header[4];
 	wiiloadVersion[1] = header[5];
 
-	NetRead(connection, &wiiload.buffsize, 4, 250);
+	NetRead(connection, (u8 *) &wiiload.buffsize, 4, 250);
 
 	if (header[4] > 0 || header[5] > 4)
 		{
 		printopt ("compressed file !");
-		NetRead(connection, &uncfilesize, 4, 250); // Compressed protocol, read another 4 bytes
+		NetRead(connection, (u8*) &uncfilesize, 4, 250); // Compressed protocol, read another 4 bytes
 		}
 	
 	wiiload.buff = NULL;
