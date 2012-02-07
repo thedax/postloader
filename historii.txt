@@ -2,14 +2,20 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.60.2
+
+* screen saver will hang if covers are on usb
+* misschan.txt, missgame.txt are now created on root of sd (if present)
+
 postLoader 3.60.1
 
 * dml: on game never configured postLoader will automatically choose the right video moe (thx FIX94)
 * channel browser: updated cover download.
 * neek2o can be executed without sd in slot. Even if sd is inside, usb has highter priority. /sneek/kernel.bin must be present on the device (THX obcd!!!!)
 * postLoader can now moove its configuration data from sd to usb. ([home]->system option->Move postLoader cfg folder to USB)
-* play count for dml should now work (thank joosting)
+* play count for dml should now work (thank joostin)
 * readmii.txt updated to v.1.7
+* During cover download, misschan.txt and missgame.txt will be created with missing covers
 * various bugs fixed, and newer added :P
 
 postLoader 3.60.0

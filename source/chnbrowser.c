@@ -150,9 +150,12 @@ static void DownloadCovers (void)
 	
 	stop = 0;
 	
-	FILE *f;
-	sprintf (path, "%s://ploader/misschan.txt", vars.defMount);
-	f = fopen (path, "wb");
+	FILE *f = NULL;
+	if (IsDevValid (DEV_SD))
+		{
+		sprintf (path, "%s://ploader/misschan.txt", vars.mount[DEV_SD]);
+		f = fopen (path, "wb");
+		}
 	
 	for (ia = 0; ia < chansCnt; ia++)
 		{
@@ -183,7 +186,7 @@ static void DownloadCovers (void)
 					}
 				}
 				
-			if (!ret)
+			if (!ret && f)
 				{
 				sprintf (buff, "%s:%s\n", chans[ia].asciiId, chans[ia].name);
 				fwrite (buff, 1, strlen(buff), f);
@@ -198,7 +201,7 @@ static void DownloadCovers (void)
 		if (stop) break;
 		}
 	
-	fclose (f);
+	if (f) fclose (f);
 	
 	WiiLoad_Resume ();
 	

@@ -196,9 +196,12 @@ static void DownloadCovers (void)
 	
 	stop = 0;
 
-	FILE *f;
-	sprintf (path, "%s://ploader/missgame.txt", vars.defMount);
-	f = fopen (path, "wb");
+	FILE *f = NULL;
+	if (IsDevValid (DEV_SD))
+		{
+		sprintf (path, "%s://ploader/missgame.txt", vars.defMount);
+		f = fopen (path, "wb");
+		}
 	
 	for (ia = 0; ia < gamesCnt; ia++)
 		{
@@ -225,7 +228,7 @@ static void DownloadCovers (void)
 				ret = DownloadCovers_Get (path, buff);
 				}
 				
-			if (!ret)
+			if (!ret && f)
 				{
 				sprintf (buff, "%s:%s\n", games[ia].asciiId, games[ia].name);
 				fwrite (buff, 1, strlen(buff), f);
@@ -241,7 +244,7 @@ static void DownloadCovers (void)
 		if (stop) break;
 		}
 		
-	fclose (f);
+	if (f) fclose (f);
 		
 	WiiLoad_Resume ();
 	

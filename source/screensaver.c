@@ -26,6 +26,8 @@ static bool Play (char * fn) // return true interrupt the screensaver
 	static int xs = 0;
 	GRRLIB_texImg *img;
 	
+	Debug ("Play: %s", fn);
+	
 	if (fn == NULL)
 		img = GRRLIB_LoadTexturePNG (icon_png);
 	else
@@ -111,10 +113,12 @@ static bool ScreenSaver (void)
 	char path[128];
 	char fn[128];
 	
+	Debug ("ScreenSaver: start"); 
+	
 	fr = grlibSettings.fontBMF_reverse;
 	grlibSettings.fontBMF_reverse = 0;
 	
-	sprintf (path, "%s://ploader/covers", vars.mount[DEV_SD]);
+	sprintf (path, "%s://ploader/covers", vars.defMount);
 		
 	do
 		{
@@ -128,10 +132,10 @@ static bool ScreenSaver (void)
 				
 				ret = Play (fn);
 				if (ret) break;
-				
-				ret = Play (NULL);
-				if (ret) break;
 				}
+
+			ret = Play (NULL);
+			if (ret) break;
 			}
 		}
 	while (!ret);
