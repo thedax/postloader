@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.60.5
+
+* to play mp3, postloader do not use more MP3Player_PlayFile, as seems to hang postloader when multiple disc access are performed (I think disk io ins't thread safe).
+
 postLoader 3.60.4
 
 * updated same timings during file copy operations

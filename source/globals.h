@@ -13,7 +13,7 @@
 //#define DOLPHINE
 
 #define BUILD 60
-#define VER "3.60.3"
+#define VER "3.60.5"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define IOS_PREFERRED 58

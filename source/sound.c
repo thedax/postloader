@@ -16,15 +16,12 @@ sound.c
 
 static s_cfg *mp3 = NULL;
 static s_cfg *mp3playing = NULL;
-static FILE *mp3f = NULL;
+static u8 *mp3buff = NULL;
+
+#define MAXMP3SIZE 4*1024*1024
+
 static int stopped = 0;
 static int songs = 0;
-
-
-static s32 reader(void *fp,void *dat, s32 size)
-	{
-	return fread(dat, 1, size, (FILE *) fp);
-	}
 
 void snd_Mp3Go (void)
 	{
@@ -32,22 +29,19 @@ void snd_Mp3Go (void)
 	
 	if (mp3playing == NULL) mp3playing = mp3;
 	if (mp3playing == NULL) return;
-	
-	if (mp3f) fclose (mp3f);
-		
-	mp3f = fopen (mp3playing->value, "rb");
+			
+	Debug ("snd_Mp3Go: Loading '%s'", mp3playing->value);
 
-	Debug ("Playing '%s'", mp3playing->value);
+	FILE *f = fopen (mp3playing->value, "rb");
+	s32 size = fread (mp3buff, 1, MAXMP3SIZE, f);
+	fclose (f);
+
+	Debug ("snd_Mp3Go: Playing");
 	
-	//MP3Player_PlayBuffer(mp3data, filesize, NULL);
-	MP3Player_PlayFile(mp3f , reader, NULL);
-	
+	MP3Player_PlayBuffer(mp3buff, size, NULL);
+
 	mp3playing = mp3playing->next;
 	}
-
-/*
-
-*/
 
 static void ScanForMp3 (char *path)
 	{
@@ -83,6 +77,12 @@ void snd_Init (void)
 	
 	stopped = 1;
 	
+	if (mp3buff == NULL)
+		mp3buff = mem2_malloc (MAXMP3SIZE);	
+		
+	if (mp3buff == NULL)
+		return;
+	
 	if (mp3 == NULL)
 		{
 		mp3 = cfg_Alloc (NULL, 0);
@@ -108,8 +108,6 @@ void snd_Init (void)
 			ScanForMp3 (path);
 			}
 			
-		//cfg_Debug (mp3);
-		
 		stopped = 0;
 		mp3playing = mp3;
 		snd_Mp3Go ();
@@ -129,12 +127,11 @@ void snd_Stop (void)
 		}
 	ASND_End();
 
-	if (mp3f) fclose (mp3f);
-	mp3f = NULL;
-	
 	cfg_Free (mp3);
 	mp3 = NULL;
 	mp3playing = NULL;
+	
+	free (mp3buff);
 	
 	stopped = 1;
 	songs = 0;
@@ -151,8 +148,6 @@ void snd_Pause (void)
 		usleep (1000*1000);
 		Debug ("stopping...");
 		}
-	if (mp3f) fclose (mp3f);
-	mp3f = NULL;
 	stopped = 1;
 	}
 
