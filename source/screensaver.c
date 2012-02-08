@@ -16,9 +16,13 @@ static void UpdateLiveUSB (void)
 	char path[PATHMAX];
 	
 	sprintf (path, "%s://pllive.dat", vars.mount[DEV_USB]);
-	f = fopen (path, "wb");
-	fwrite (f, 1, sizeof(FILE), f);
-	fclose (f);
+	
+	if (!fsop_FileExist (path))
+		{
+		f = fopen (path, "wb");
+		fwrite (f, 1, sizeof(FILE), f);
+		fclose (f);
+		}
 	}
 
 static bool Play (char * fn) // return true interrupt the screensaver

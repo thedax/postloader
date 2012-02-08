@@ -107,7 +107,7 @@ typedef struct
 	bool noIcon;	// If true, no icon will be draw (also iconFake)
 	u8 transparency;
 	
-	f32 x, y, w, h;	// Icon position (centered)
+	f32 x, y, w, h, xoff, yoff;	// Icon position (centered)
 	
 	GRRLIB_texImg *icon;
 	GRRLIB_texImg *alticon;   // if icon is NULL draw this one

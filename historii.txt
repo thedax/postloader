@@ -2,13 +2,20 @@
 PLOADER - HISTORII
 ====================
 
-postLoader 3.60.6 (untested on real wii)
+postLoader 3.61.0
+
+* added page change effect
+* dml: added cross checking between sd and usb games. If the game size on sd is different from the same game on usb, game on sd is removed
+* changed the way usb device is keeped live.
+* background music is now faded out when required.
+
+postLoader 3.60.6
 
 * fixed a free that was referring to mem2 address. This could probabily lead to a code dump when stopping music. 
 
-postLoader 3.60.5 (untested on real wii)
+postLoader 3.60.5
 
-* to play mp3, postloader do not use more MP3Player_PlayFile, as seems to hang postloader when multiple disc access are performed (I think disk io ins't thread safe).
+* to play mp3, postloader do not use more MP3Player_PlayFile, as seems to hang postloader when multiple disc access are performed (I think disk io ins't thread safe). The backdrow is a little "hang" when switching songs. This will be fixed in the future.
 
 postLoader 3.60.4
 

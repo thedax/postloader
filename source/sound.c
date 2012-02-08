@@ -74,6 +74,7 @@ void snd_Init (void)
 	Debug ("snd_Init");
 	ASND_Init(NULL);
 	MP3Player_Init();
+	MP3Player_Volume(125);
 	
 	stopped = 1;
 	
@@ -118,13 +119,25 @@ void snd_Stop (void)
 	{
 	Debug ("snd_Stop");
 	
-	MP3Player_Stop();
-	
-	while (MP3Player_IsPlaying())
+	if (stopped == 0)
 		{
-		usleep (1000*1000);
-		Debug ("stopping...");
+		u32 i;
+		for (i = 125; i > 0; i-=5)
+			{
+			MP3Player_Volume(i);
+			usleep (20*1000);
+			}
+		
+		MP3Player_Stop();
+		
+		while (MP3Player_IsPlaying())
+			{
+			usleep (1000*1000);
+			Debug ("stopping...");
+			MP3Player_Stop();
+			}
 		}
+		
 	ASND_End();
 
 	cfg_Free (mp3);
@@ -141,13 +154,25 @@ void snd_Pause (void)
 	{
 	Debug ("snd_Pause");
 	
-	MP3Player_Stop();
-	
-	while (MP3Player_IsPlaying())
+	if (stopped == 0)
 		{
-		usleep (1000*1000);
-		Debug ("stopping...");
+		u32 i;
+		for (i = 125; i > 0; i-=5)
+			{
+			MP3Player_Volume(i);
+			usleep (20*1000);
+			}
+
+		MP3Player_Stop();
+		
+		while (MP3Player_IsPlaying())
+			{
+			usleep (1000*1000);
+			Debug ("stopping...");
+			MP3Player_Stop();
+			}
 		}
+		
 	stopped = 1;
 	}
 

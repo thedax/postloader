@@ -332,8 +332,6 @@ char * DMLScanner (void)
 	
 	if (!IsDevValid(DEV_SD)) return 0;
 	
-	//sprintf (path, "%s://", vars.mount[DEV_SD]);
-	
 	sprintf (path, "%s://games", vars.mount[DEV_SD]);
 	
 	fsop_GetFolderKb (path, 0);
@@ -347,9 +345,40 @@ char * DMLScanner (void)
 		if (strlen (pent->d_name) ==  6)
 			{
 			Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
-			GetName (DEV_SD, pent->d_name, name);
-			sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
-			strcat (buff, b);
+			
+			bool skip = false;
+			
+			if (IsDevValid(DEV_USB))
+				{
+				char sdp[256], usbp[256];
+				
+				sprintf (sdp, "%s://games/%s", vars.mount[DEV_SD], pent->d_name);
+				sprintf (usbp, "%s://games/%s", vars.mount[DEV_USB], pent->d_name);
+				
+				if (fsop_DirExist (usbp))
+					{
+					u32 sdkb, usbkb;
+					
+					sdkb = fsop_GetFolderKb (sdp, NULL);
+					usbkb = fsop_GetFolderKb (usbp, NULL);
+					
+					if (sdkb != usbkb)
+						{
+						char mex[256];
+						fsop_KillFolderTree (sdp, NULL);
+						
+						sprintf (mex, "Folder '%s' removed\n as it has the wrong size", sdp);
+						grlib_menu (mex, "   OK   ");
+						skip = true;
+						}
+					}
+				}
+			if (!skip)
+				{
+				GetName (DEV_SD, pent->d_name, name);
+				sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
+				strcat (buff, b);
+				}
 			}
 		}
 		

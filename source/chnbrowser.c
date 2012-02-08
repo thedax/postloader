@@ -29,12 +29,15 @@ static int browse = 0;
 static s_channel *chans;
 static int chansCnt;
 static int chans2Disp;
-static int chansPage; // Page to be displayed
-static int chansPageMax; // 
+static int page; // Page to be displayed
+static int pageMax; // 
 static int chansSelected = -1;	// Current selected app with wimote
 
 static int browserRet = 0;
 static int showHidden = 0;
+
+static u8 redraw = 1;
+static bool redrawIcons = true;
 
 static s_grlib_iconSetting is;
 
@@ -408,7 +411,7 @@ static void AppsSort (void)
 		}
 	while (mooved);
 
-	chansPageMax = chans2Disp / gui.spotsXpage;
+	pageMax = chans2Disp / gui.spotsXpage;
 	}
 	
 static void GetCacheFileName (char *path)
@@ -1152,13 +1155,68 @@ static void CheckFilters()
 		config.chnBrowser.filter[i] = 1;
 	}
 
-static void Redraw (void)
+static void RedrawIcons (int xoff, int yoff)
 	{
 	int i;
 	int ai;	// Application index (corrected by the offset)
-	char sdev[64];
 	
-	Debug ("Redraw: begin!");
+	// Prepare black box
+	for (i = 0; i < gui.spotsXpage; i++)
+		{
+		// Make sure that icon is not in sel state
+		gui.spots[i].ico.sel = false;
+		gui.spots[i].ico.title[0] = '\0';
+		gui.spots[i].ico.xoff = xoff;
+		}
+	
+	// Draw Icons
+	gui.spotsIdx = 0;
+	for (i = 0; i < gui.spotsXpage; i++)
+		{
+		ai = (page * gui.spotsXpage) + i;
+		
+		if (ai < chansCnt && ai < chans2Disp && gui.spotsIdx < SPOTSMAX)
+			{
+			// Draw application png
+			if (gui.spots[gui.spotsIdx].id != ai)
+				{
+				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
+				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
+				}
+			
+			// Need a name ?	
+			if (!gui.spots[gui.spotsIdx].ico.icon)
+				strcpy (gui.spots[gui.spotsIdx].ico.title, chans[ai].name);
+			else
+				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
+
+			// Is it hidden ?
+			if (chans[ai].hidden && showHidden)
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+			else
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
+
+			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
+
+			// Let's add the spot points, to reconize the icon pointed by wiimote
+			gui.spots[gui.spotsIdx].id = ai;
+			
+			gui.spotsIdx++;
+			}
+		else
+			{
+			s_grlib_icon ico;
+			grlib_IconInit (&ico, &gui.spots[i].ico);
+
+			ico.noIcon = true;
+			grlib_IconDraw (&is, &ico);
+			}
+		}
+	}
+
+static void Redraw (void)
+	{
+	char sdev[64];
 	
 	Video_DrawBackgroud (1);
 	
@@ -1193,57 +1251,10 @@ static void Redraw (void)
 			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s) - NAND", neek);
 		}
 		
-	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", chansPage+1, chansPageMax+1);
+	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
 	
-	// Prepare black box
-	s_grlib_icon ico;
-	for (i = 0; i < gui.spotsXpage; i++)
-		{
-		// Make sure that icon is not in sel state
-		gui.spots[i].ico.sel = false;
-		gui.spots[i].ico.title[0] = '\0';
-		grlib_IconInit (&ico, &gui.spots[i].ico);
-
-		ico.noIcon = true;
-		grlib_IconDraw (&is, &ico);
-		}
+	if (redrawIcons) RedrawIcons (0,0);
 	
-	// Draw Icons
-	gui.spotsIdx = 0;
-	for (i = 0; i < gui.spotsXpage; i++)
-		{
-		ai = (chansPage * gui.spotsXpage) + i;
-		
-		if (ai < chansCnt && ai < chans2Disp && gui.spotsIdx < SPOTSMAX)
-			{
-			// Draw application png
-			if (gui.spots[gui.spotsIdx].id != ai)
-				{
-				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
-				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
-				}
-			
-			// Need a name ?	
-			if (!gui.spots[gui.spotsIdx].ico.icon)
-				strcpy (gui.spots[gui.spotsIdx].ico.title, chans[ai].name);
-			else
-				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
-
-			// Is it hidden ?
-			if (chans[ai].hidden && showHidden)
-				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
-			else
-				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
-
-			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
-
-			// Let's add the spot points, to reconize the icon pointed by wiimote
-			gui.spots[gui.spotsIdx].id = ai;
-			
-			gui.spotsIdx++;
-			}
-		}
-
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	
 	if (chansCnt == 0 && nandScanned == 1)
@@ -1251,8 +1262,6 @@ static void Redraw (void)
 		grlib_DrawCenteredWindow ("No titles found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
-		
-	Debug ("Redraw: done!");
 	}
 	
 static void Overlay (void)
@@ -1261,6 +1270,48 @@ static void Overlay (void)
 	return;
 	}
 	
+static void ChangePage (int x1, int x2)
+	{
+	redrawIcons = false;
+
+	Redraw ();
+	grlib_PushScreen ();
+	
+	if (x1 > x2)
+		{
+		do
+			{
+			grlib_PopScreen ();
+			RedrawIcons (x1,0);
+			Overlay ();
+			grlib_GetUserInput();
+			grlib_DrawIRCursor ();
+			grlib_Render();
+			usleep (1);
+			x1-=40;
+			}
+		while (x1 > x2);
+		}
+	else
+		{
+		do
+			{
+			grlib_PopScreen ();
+			RedrawIcons (x1,0);
+			Overlay ();
+			grlib_GetUserInput();
+			grlib_DrawIRCursor ();
+			grlib_Render();
+			usleep (1);
+			x1+=40;
+			}
+		while (x1 < x2);
+		}
+	
+	redrawIcons = true;
+	redraw = 1;
+	}
+
 static void GoToPage (void)
 	{
 	int col, i, page;
@@ -1270,16 +1321,16 @@ static void GoToPage (void)
 	
 	for (col = 0; col < 10; col++)
 		{
-		for (i = 0; i < chansPageMax; i++)
+		for (i = 0; i < pageMax; i++)
 			{
 			page = col + (i * 10);
-			if (page <= chansPageMax)
+			if (page <= pageMax)
 				grlib_menuAddItem (buff, page, "%d", page+1);
 			}
 		if (col < 9) grlib_menuAddColumn (buff);
 		}
 	int item = grlib_menu ("Go to page", buff);
-	if (item >= 0) chansPage = item;
+	if (item >= 0) page = item;
 	}
 	
 static void Conf (bool open)
@@ -1301,7 +1352,6 @@ static void Conf (bool open)
 int ChnBrowser (void)
 	{
 	u32 btn;
-	u8 redraw = 1;
 	
 	Debug ("ChnBrowser (begin)");
 	
@@ -1332,12 +1382,14 @@ int ChnBrowser (void)
 	CheckFilters ();
 	ChnBrowse ();
 	
+	redraw = 1;
+	
 	ConfigWrite ();
 
-	if (config.chnPage >= 0 && config.chnPage <= chansPageMax)
-		chansPage = config.chnPage;
+	if (config.chnPage >= 0 && config.chnPage <= pageMax)
+		page = config.chnPage;
 	else
-		chansPage = 0;
+		page = 0;
 	
 	LiveCheck (1);
 	// Loop forever
@@ -1393,20 +1445,30 @@ int ChnBrowser (void)
 				redraw = 1;
 				}
 			
-			if (btn & WPAD_BUTTON_PLUS) {chansPage++; redraw = 1;}
-			if (btn & WPAD_BUTTON_MINUS)  {chansPage--; redraw = 1;}
+			if (btn & WPAD_BUTTON_MINUS && page > 0)
+				{
+				ChangePage (0, -680);
+				page--; 
+				ChangePage (680, 0);
+				}
+			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
+				{
+				ChangePage (0, 680);
+				page++;
+				ChangePage (-680, 0);
+				}
 			}
 		
 		if (redraw)
 			{
-			if (chansPage < 0)
+			if (page < 0)
 				{
-				chansPage = 0;
+				page = 0;
 				continue;
 				}
-			if (chansPage > chansPageMax)
+			if (page > pageMax)
 				{
-				chansPage = chansPageMax;
+				page = pageMax;
 				continue;
 				}
 			
@@ -1460,7 +1522,7 @@ int ChnBrowser (void)
 		}
 
 	// save current page
-	config.chnPage = chansPage;
+	config.chnPage = page;
 
 	SaveTitlesCache ();
 

@@ -38,14 +38,14 @@ extern s_grlibSettings grlibSettings;
 static s_app *apps;
 static int appsCnt;
 static int apps2Disp;
-static int appsPage; // Page to be displayed
-static int appsPageMax; // 
+static int page; // Page to be displayed
+static int pageMax; // 
 static int appsSelected = -1;	// Current selected app with wimote
 static int spotSelected = -1;
 static int spotSelectedLast = -1;
 
 static u8 redraw = 1;
-
+static bool redrawIcons = true;
 
 static char subpath[64];
 static char submount[6];
@@ -627,7 +627,7 @@ static void AppsSort (void)
 		}
 	while (mooved);
 	
-	appsPageMax = apps2Disp / gui.spotsXpage;
+	pageMax = apps2Disp / gui.spotsXpage;
 	
 	Debug ("AppSort (end)");
 	}
@@ -715,7 +715,7 @@ static int AppsBrowse (void)
 		}
 		
 	
-	appsPage = 0;
+	page = 0;
 	
 	AppsSort ();
 	
@@ -1004,8 +1004,6 @@ static int FindSpot (void)
 	appsSelected = -1;
 	spotSelected = -1;
 	
-	//grlib_printf (XMIDLEINFO, theme.hb_line3Y, GRLIB_ALIGNCENTER, 0, "[[ %d ]]",gui.spotsIdx);
-	
 	for (i = 0; i < gui.spotsIdx; i++)
 		{
 		if (grlib_irPos.x > gui.spots[i].ico.rx1 && grlib_irPos.x < gui.spots[i].ico.rx2 && grlib_irPos.y > gui.spots[i].ico.ry1 && grlib_irPos.y < gui.spots[i].ico.ry2)
@@ -1085,11 +1083,108 @@ void DrawInfo (void)
 		}
 	}
 
-
-static void Redraw (void)
+static void RedrawIcons (int xoff, int yoff)
 	{
 	int i;
 	int ai;	// Application index (corrected by the offset)
+
+	// Prepare black box
+	
+	for (i = 0; i < gui.spotsXpage; i++)
+		{
+		// Make sure that icon is not in sel state, and clean any ambiguity
+		gui.spots[i].ico.sel = false;
+		gui.spots[i].ico.title[0] = '\0';
+		gui.spots[i].ico.iconOverlay[0] = NULL;
+		gui.spots[i].ico.iconOverlay[1] = NULL;
+		gui.spots[i].ico.iconOverlay[2] = NULL;
+		gui.spots[i].ico.xoff = xoff;
+		}
+	
+	gui.spotsIdx = 0;
+
+	int spotIdx = -1;
+	for (i = 0; i < gui.spotsXpage; i++)
+		{
+		ai = (page * gui.spotsXpage) + i;
+		
+		if (ai < appsCnt && ai < apps2Disp && gui.spotsIdx < SPOTSMAX)
+			{
+			if (gui.spots[gui.spotsIdx].id != ai)
+				{
+				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
+				gui.spots[gui.spotsIdx].ico.icon = NULL;
+				
+				if (apps[ai].type != AT_FOLDERUP)
+					{
+					gui.spots[gui.spotsIdx].ico.icon = GetTexture (ai);
+					gui.spots[gui.spotsIdx].ico.alticon = NULL;
+					}
+
+				if (apps[ai].type == AT_FOLDERUP) 
+					gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDERUP];
+
+				if (apps[ai].type == AT_FOLDER) 
+					gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDER];
+				}
+
+			// Check if it is autoboot app
+			if (config.autoboot.enabled && config.autoboot.appMode == APPMODE_HBA)
+				{
+				char path[300];
+				sprintf (path,"%s:/apps/%s%s/", apps[ai].mount, subpath, apps[ai].path);
+				if (strcmp (config.autoboot.path, path) == 0)
+					gui.spots[gui.spotsIdx].ico.iconOverlay[0] = vars.tex[TEX_STAR];
+				}
+
+			// Is it hidden ?
+			if (apps[ai].hidden && showHidden)
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+				
+			// device icon
+			if (apps[ai].mount[0] == 's' || apps[ai].mount[0] == 'S') 
+				gui.spots[gui.spotsIdx].ico.iconOverlay[2] = vars.tex[TEX_SD];
+
+			if (apps[ai].mount[0] == 'u' || apps[ai].mount[0] == 'U') 
+				gui.spots[gui.spotsIdx].ico.iconOverlay[2] = vars.tex[TEX_USB];
+			
+			if (!gui.spots[gui.spotsIdx].ico.icon)
+				{
+				if (apps[ai].name)
+					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].name);
+				else
+					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].path);
+				}
+
+			if (spotSelected == i) // Draw selected icon as last one
+				{
+				spotIdx = gui.spotsIdx;
+				gui.spots[gui.spotsIdx].ico.sel = true;
+				}
+			else
+				grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
+			
+			gui.spots[gui.spotsIdx].id = ai;
+			gui.spotsIdx++;
+			}
+		else
+			{
+			s_grlib_icon ico;
+			grlib_IconInit (&ico, &gui.spots[i].ico);
+
+			ico.noIcon = true;
+			grlib_IconDraw (&is, &ico);
+			}
+		}
+		
+	if (spotIdx >= 0)
+		{
+		grlib_IconDraw (&is, &gui.spots[spotIdx].ico);
+		}
+	}
+
+static void Redraw (void)
+	{
 	char sdev[64];
 
 	Video_DrawBackgroud (1);
@@ -1147,106 +1242,11 @@ static void Redraw (void)
 			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s) - %s", neek, sdev);
 		}
 		
-	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", appsPage+1, appsPageMax+1);
+	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
 	
-	// Prepare black box
-	s_grlib_icon ico;
-	for (i = 0; i < gui.spotsXpage; i++)
-		if (spotSelected != i)
-			{
-			// Make sure that icon is not in sel state, and clean any ambiguity
-			gui.spots[i].ico.sel = false;
-			gui.spots[i].ico.title[0] = '\0';
-			gui.spots[i].ico.iconOverlay[0] = NULL;
-			gui.spots[i].ico.iconOverlay[1] = NULL;
-			gui.spots[i].ico.iconOverlay[2] = NULL;
-			
-			grlib_IconInit (&ico, &gui.spots[i].ico);
-
-			ico.noIcon = true;
-			grlib_IconDraw (&is, &ico);
-			}
-	
-	gui.spotsIdx = 0;
-
-	//Debug ("Redraw [icons]");
-	
-	int drawSpot = 0;
-
-	for (i = 0; i < gui.spotsXpage; i++)
-		{
-		ai = (appsPage * gui.spotsXpage) + i;
-		
-		if (ai < appsCnt && ai < apps2Disp && gui.spotsIdx < SPOTSMAX)
-			{
-			if (gui.spots[gui.spotsIdx].id != ai)
-				{
-				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
-				gui.spots[gui.spotsIdx].ico.icon = NULL;
-				
-				if (apps[ai].type != AT_FOLDERUP)
-					{
-					gui.spots[gui.spotsIdx].ico.icon = GetTexture (ai);
-					gui.spots[gui.spotsIdx].ico.alticon = NULL;
-					}
-
-				if (apps[ai].type == AT_FOLDERUP) 
-					gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDERUP];
-
-				if (apps[ai].type == AT_FOLDER) 
-					gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDER];
-				}
-
-			// Check if it is autoboot app
-			if (config.autoboot.enabled && config.autoboot.appMode == APPMODE_HBA)
-				{
-				char path[300];
-				sprintf (path,"%s:/apps/%s%s/", apps[ai].mount, subpath, apps[ai].path);
-				if (strcmp (config.autoboot.path, path) == 0)
-					gui.spots[gui.spotsIdx].ico.iconOverlay[0] = vars.tex[TEX_STAR];
-				}
-
-			// Is it hidden ?
-			if (apps[ai].hidden && showHidden)
-				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
-				
-			// device icon
-			if (apps[ai].mount[0] == 's' || apps[ai].mount[0] == 'S') 
-				gui.spots[gui.spotsIdx].ico.iconOverlay[2] = vars.tex[TEX_SD];
-
-			if (apps[ai].mount[0] == 'u' || apps[ai].mount[0] == 'U') 
-				gui.spots[gui.spotsIdx].ico.iconOverlay[2] = vars.tex[TEX_USB];
-			
-			if (!gui.spots[gui.spotsIdx].ico.icon)
-				{
-				if (apps[ai].name)
-					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].name);
-				else
-					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].path);
-				}
-
-			if (spotSelected == i) // Draw selected icon as last one
-				{
-				drawSpot = 1;
-				gui.spots[i].ico.sel = true;
-				grlib_IconInit (&ico, &gui.spots[gui.spotsIdx].ico);
-				}
-			else
-				grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
-			
-			gui.spots[gui.spotsIdx].id = ai;
-			gui.spotsIdx++;
-			}
-		}
-		
-	if (drawSpot)
-		{
-		grlib_IconDraw (&is, &ico);
-		}
-
-	grlib_SetFontBMF(fonts[FNTNORM]);
+	if (redrawIcons) RedrawIcons (0,0);
 	}
-
+	
 static void Overlay (void)
 	{
 	Video_DrawWIFI ();
@@ -1254,6 +1254,50 @@ static void Overlay (void)
 	return;
 	}
 		
+static void ChangePage (int x1, int x2)
+	{
+	redrawIcons = false;
+
+	Redraw ();
+	grlib_PushScreen ();
+	
+	if (x1 > x2)
+		{
+		do
+			{
+			grlib_PopScreen ();
+			RedrawIcons (x1,0);
+			Overlay ();
+			DrawInfo ();
+			grlib_GetUserInput();
+			grlib_DrawIRCursor ();
+			grlib_Render();
+			usleep (1);
+			x1-=40;
+			}
+		while (x1 > x2);
+		}
+	else
+		{
+		do
+			{
+			grlib_PopScreen ();
+			RedrawIcons (x1,0);
+			Overlay ();
+			DrawInfo ();
+			grlib_GetUserInput();
+			grlib_DrawIRCursor ();
+			grlib_Render();
+			usleep (1);
+			x1+=40;
+			}
+		while (x1 < x2);
+		}
+	
+	redrawIcons = true;
+	redraw = 1;
+	}
+
 static void GoToPage (void)
 	{
 	int col, i, page;
@@ -1263,16 +1307,16 @@ static void GoToPage (void)
 	
 	for (col = 0; col < 10; col++)
 		{
-		for (i = 0; i < appsPageMax; i++)
+		for (i = 0; i < pageMax; i++)
 			{
 			page = col + (i * 10);
-			if (page <= appsPageMax)
+			if (page <= pageMax)
 				grlib_menuAddItem (buff, page, "%d", page+1);
 			}
 		if (col < 9) grlib_menuAddColumn (buff);
 		}
 	int item = grlib_menu ("Go to page", buff);
-	if (item >= 0) appsPage = item;
+	if (item >= 0) page = item;
 	}
 	
 int AppBrowser (void)
@@ -1302,25 +1346,25 @@ int AppBrowser (void)
 	
 	// Immediately draw the screen...
 	AppsFree ();
-	InitializeGui ();
 	
+	InitializeGui ();
+
 	Redraw ();
 	grlib_PushScreen ();
 	grlib_PopScreen ();
 	grlib_Render();  // Render the frame buffer to the TV
-	
 	AppsBrowse ();
 	
 	ConfigWrite ();
 	
-	if (config.appPage >= 0 && config.appPage <= appsPageMax)
-		appsPage = config.appPage;
+	if (config.appPage >= 0 && config.appPage <= pageMax)
+		page = config.appPage;
 	else
-		appsPage = 0;
+		page = 0;
 
    LiveCheck (1);
    // Loop forever
-    while (browserRet == -1) 
+    while (browserRet == -1)
 		{
 		if (LiveCheck (0)) redraw = 1;
 		
@@ -1427,26 +1471,35 @@ int AppBrowser (void)
 				redraw = 1;
 				}
 			
-			if (btn & WPAD_BUTTON_PLUS) {appsPage++; redraw = 1;}
-			if (btn & WPAD_BUTTON_MINUS)  {appsPage--; redraw = 1;}
+			if (btn & WPAD_BUTTON_MINUS && page > 0)
+				{
+				ChangePage (0, -680);
+				page--; 
+				ChangePage (680, 0);
+				}
+			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
+				{
+				ChangePage (0, 680);
+				page++;
+				ChangePage (-680, 0);
+				}
+			}
 
+		if (page < 0)
+			{
+			page = 0;
+			redraw = 1;
+			}
+		if (page > pageMax)
+			{
+			page = pageMax;
+			redraw = 1;
 			}
 		
 		FindSpot ();
 
 		if (redraw)
 			{
-			if (appsPage < 0)
-				{
-				appsPage = 0;
-				continue;
-				}
-			if (appsPage > appsPageMax)
-				{
-				appsPage = appsPageMax;
-				continue;
-				}
-			
 			Redraw ();
 			grlib_PushScreen ();
 			redraw = 0;
@@ -1492,7 +1545,7 @@ int AppBrowser (void)
 		}
 
 	// save current page
-	config.appPage = appsPage;
+	config.appPage = page;
 
 	SaveSettings ();
 	

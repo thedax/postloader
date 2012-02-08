@@ -73,12 +73,15 @@ static char *flt[CATN] = {
 static s_game *games;
 static int gamesCnt;
 static int games2Disp;
-static int gamesPage; // Page to be displayed
-static int gamesPageMax; // 
+static int page; // Page to be displayed
+static int pageMax; // 
 static int gamesSelected = -1;	// Current selected app with wimote
 
 static int browserRet = 0;
 static int showHidden = 0;
+
+static u8 redraw = 1;
+static bool redrawIcons = true;
 
 static int refreshPng = 0;
 
@@ -471,7 +474,7 @@ static void AppsSort (void)
 		while (mooved);
 		}
 
-	gamesPageMax = games2Disp / gui.spotsXpage;
+	pageMax = games2Disp / gui.spotsXpage;
 	refreshPng = 1;
 	}
 	
@@ -484,16 +487,16 @@ static void GoToPage (void)
 	
 	for (col = 0; col < 10; col++)
 		{
-		for (i = 0; i < gamesPageMax; i++)
+		for (i = 0; i < pageMax; i++)
 			{
 			page = col + (i * 10);
-			if (page <= gamesPageMax)
+			if (page <= pageMax)
 				grlib_menuAddItem (buff, page, "%d", page+1);
 			}
 		if (col < 9) grlib_menuAddColumn (buff);
 		}
 	int item = grlib_menu ("Go to page", buff);
-	if (item >= 0) gamesPage = item;
+	if (item >= 0) page = item;
 	}
 
 static void UpdateTitlesFromTxt (void)
@@ -1360,10 +1363,68 @@ static void ShowMainMenu (void)
 		}
 	}
 
-static void Redraw (void)
+static void RedrawIcons (int xoff, int yoff)
 	{
 	int i;
 	int ai;	// Application index (corrected by the offset)
+	
+	// Prepare black box
+	for (i = 0; i < gui.spotsXpage; i++)
+		{
+		// Make sure that icon is not in sel state
+		gui.spots[i].ico.sel = false;
+		gui.spots[i].ico.title[0] = '\0';
+		gui.spots[i].ico.xoff = xoff;
+		}
+	
+	// Draw Icons
+	gui.spotsIdx = 0;
+	for (i = 0; i < gui.spotsXpage; i++)
+		{
+		ai = (page * gui.spotsXpage) + i;
+		
+		if (ai < gamesCnt && ai < games2Disp && gui.spotsIdx < SPOTSMAX)
+			{
+			// Draw application png
+			if (gui.spots[gui.spotsIdx].id != ai || refreshPng)
+				{
+				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
+				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
+				}
+				
+			if (!gui.spots[gui.spotsIdx].ico.icon)
+				strcpy (gui.spots[gui.spotsIdx].ico.title, games[ai].name);
+			else
+				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
+
+			if (config.gameMode == GM_DML)
+				{
+				if (games[ai].slot)
+					gui.spots[gui.spotsIdx].ico.transparency = 128;
+				else
+					gui.spots[gui.spotsIdx].ico.transparency = 255;
+				}
+				
+			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
+
+			// Let's add the spot points, to reconize the icon pointed by wiimote
+			gui.spots[gui.spotsIdx].id = ai;
+			
+			gui.spotsIdx++;
+			}
+		else
+			{
+			s_grlib_icon ico;
+			grlib_IconInit (&ico, &gui.spots[i].ico);
+
+			ico.noIcon = true;
+			grlib_IconDraw (&is, &ico);
+			}
+		}
+	}
+
+static void Redraw (void)
+	{
 	char sdev[64];
 	
 	Video_DrawBackgroud (1);
@@ -1397,57 +1458,9 @@ static void Redraw (void)
 			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s) - Games", neek);
 		}
 		
-	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", gamesPage+1, gamesPageMax+1);
+	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
 	
-	// Prepare black box
-	s_grlib_icon ico;
-	for (i = 0; i < gui.spotsXpage; i++)
-		{
-		// Make sure that icon is not in sel state
-		gui.spots[i].ico.sel = false;
-		gui.spots[i].ico.title[0] = '\0';
-		grlib_IconInit (&ico, &gui.spots[i].ico);
-
-		ico.noIcon = true;
-		grlib_IconDraw (&is, &ico);
-		}
-	
-	// Draw Icons
-	gui.spotsIdx = 0;
-	for (i = 0; i < gui.spotsXpage; i++)
-		{
-		ai = (gamesPage * gui.spotsXpage) + i;
-		
-		if (ai < gamesCnt && ai < games2Disp && gui.spotsIdx < SPOTSMAX)
-			{
-			// Draw application png
-			if (gui.spots[gui.spotsIdx].id != ai || refreshPng)
-				{
-				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
-				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
-				}
-				
-			if (!gui.spots[gui.spotsIdx].ico.icon)
-				strcpy (gui.spots[gui.spotsIdx].ico.title, games[ai].name);
-			else
-				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
-
-			if (config.gameMode == GM_DML)
-				{
-				if (games[ai].slot)
-					gui.spots[gui.spotsIdx].ico.transparency = 128;
-				else
-					gui.spots[gui.spotsIdx].ico.transparency = 255;
-				}
-				
-			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
-
-			// Let's add the spot points, to reconize the icon pointed by wiimote
-			gui.spots[gui.spotsIdx].id = ai;
-			
-			gui.spotsIdx++;
-			}
-		}
+	if (redrawIcons) RedrawIcons (0,0);
 
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	
@@ -1464,6 +1477,48 @@ static void Overlay (void)
 	{
 	Video_DrawWIFI ();
 	return;
+	}
+
+static void ChangePage (int x1, int x2)
+	{
+	redrawIcons = false;
+
+	Redraw ();
+	grlib_PushScreen ();
+	
+	if (x1 > x2)
+		{
+		do
+			{
+			grlib_PopScreen ();
+			RedrawIcons (x1,0);
+			Overlay ();
+			grlib_GetUserInput();
+			grlib_DrawIRCursor ();
+			grlib_Render();
+			usleep (1);
+			x1-=40;
+			}
+		while (x1 > x2);
+		}
+	else
+		{
+		do
+			{
+			grlib_PopScreen ();
+			RedrawIcons (x1,0);
+			Overlay ();
+			grlib_GetUserInput();
+			grlib_DrawIRCursor ();
+			grlib_Render();
+			usleep (1);
+			x1+=40;
+			}
+		while (x1 < x2);
+		}
+	
+	redrawIcons = true;
+	redraw = 1;
 	}
 
 static void cb_filecopy (void)
@@ -1544,7 +1599,6 @@ static void Conf (bool open)
 int GameBrowser (void)
 	{
 	u32 btn;
-	u8 redraw = 1;
 
 	Debug ("GameBrowser (begin)");
 	
@@ -1571,12 +1625,14 @@ int GameBrowser (void)
 	
 	GameBrowse (0);
 	
+	redraw = 1;
+	
 	ConfigWrite ();
 
-	if (config.gamePage >= 0 && config.gamePage <= gamesPageMax)
-		gamesPage = config.gamePage;
+	if (config.gamePage >= 0 && config.gamePage <= pageMax)
+		page = config.gamePage;
 	else
-		gamesPage = 0;
+		page = 0;
 	
 	LiveCheck (1);
 	
@@ -1673,20 +1729,30 @@ int GameBrowser (void)
 				redraw = 1;
 				}
 			
-			if (btn & WPAD_BUTTON_PLUS) {gamesPage++; redraw = 1;}
-			if (btn & WPAD_BUTTON_MINUS)  {gamesPage--; redraw = 1;}
+			if (btn & WPAD_BUTTON_MINUS && page > 0)
+				{
+				ChangePage (0, -680);
+				page--; 
+				ChangePage (680, 0);
+				}
+			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
+				{
+				ChangePage (0, 680);
+				page++;
+				ChangePage (-680, 0);
+				}
 			}
 		
 		if (redraw)
 			{
-			if (gamesPage < 0)
+			if (page < 0)
 				{
-				gamesPage = 0;
+				page = 0;
 				continue;
 				}
-			if (gamesPage > gamesPageMax)
+			if (page > pageMax)
 				{
-				gamesPage = gamesPageMax;
+				page = pageMax;
 				continue;
 				}
 			
@@ -1740,7 +1806,7 @@ int GameBrowser (void)
 		}
 
 	// save current page
-	config.gamePage = gamesPage;
+	config.gamePage = page;
 	
 	Conf (false);
 

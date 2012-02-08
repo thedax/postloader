@@ -43,10 +43,10 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 	icon->ry1 = icon->y - h / 2.0;
 	icon->ry2 = icon->y + h / 2.0;
 	
-	gro.x1 = icon->rx1;
-	gro.x2 = icon->rx2;
-	gro.y1 = icon->ry1;
-	gro.y2 = icon->ry2;
+	gro.x1 = icon->rx1 - icon->xoff;
+	gro.x2 = icon->rx2 - icon->xoff;
+	gro.y1 = icon->ry1 - icon->yoff;
+	gro.y2 = icon->ry2 - icon->yoff;
 	
 	grlib_MagObject (&grob, &gro, is->border, is->border);
 	
