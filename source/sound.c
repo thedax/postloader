@@ -131,7 +131,7 @@ void snd_Stop (void)
 	mp3 = NULL;
 	mp3playing = NULL;
 	
-	free (mp3buff);
+	mem2_free (mp3buff);
 	
 	stopped = 1;
 	songs = 0;
