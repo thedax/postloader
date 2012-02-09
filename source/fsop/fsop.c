@@ -300,6 +300,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		wb = fwrite(buff, 1, rb, ft );
 		
 		if (wb != wb) err = 1;
+		if (rb == 0) err = 1;
 		bytes += rb;
 		
 		fsop.multy.bytes += rb;

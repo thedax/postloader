@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.61.1
+
+* fixed channel to neek2o execution bug. Thank to AbdallahTerro to help me to track it down.
+
 postLoader 3.61.0
 
 * added page change effect
