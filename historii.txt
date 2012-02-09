@@ -2,6 +2,10 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.62.0
+
+* xml and version updated
+
 postLoader 3.61.2
 
 * Cover textures moved to mem2
