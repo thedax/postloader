@@ -559,6 +559,13 @@ void Boot (void)
 
 int main(int argc, char **argv) 
 	{
+	if (usb_isgeckoalive (EXI_CHANNEL_1))
+		{
+		char buff[32];
+		strcpy (buff, "\nPRIIBOOTERGUI"VER"\n");
+		usb_sendbuffer( EXI_CHANNEL_1, buff, strlen(buff) );
+		}
+	
 	Initialize ();
 	
 	fadeInMsec = 15;

@@ -2,6 +2,12 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.61.2
+
+* Cover textures moved to mem2
+* Implemented a threaded cache system for covers. Now there aren't more pauses on page changes.
+* misschan.txt, missgame.txt are now created on root of sd (if present) (now is true)
+
 postLoader 3.61.1
 
 * fixed channel to neek2o execution bug. Thank to AbdallahTerro to help me to track it down.

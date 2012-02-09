@@ -145,7 +145,7 @@ s32 StartMIOS (void)
 #define MAXGAMES 30
 #define MAXROW 10
 
-static void GetName (int dev, char *id, char *name)
+static bool GetName (int dev, char *id, char *name)
 	{
 	char path[128];
 	
@@ -153,20 +153,23 @@ static void GetName (int dev, char *id, char *name)
 		sprintf (path, "%s://games/%s/game.iso", vars.mount[dev], id);
 	else
 		sprintf (path, "%s://ngc/%s/game.iso", vars.mount[dev], id);
-	
+		
 	FILE *f;
 	f = fopen(path, "rb");
 	if (!f)	
 		{
 		*name = '\0';
-		return;
+		return false;
 		}
 	
 	fseek( f, 0x20, SEEK_SET);
 	fread(name, 1, 32, f);
 	fclose(f);
 	
+	//Debug ("GetName %s -> %s", path, name);
+	
 	name[31] = 0;
+	return true;
 	}
 
 static int VideoModeMenu (void)
@@ -219,7 +222,8 @@ int DMLSelect (void)
 		
 		while ((pent=readdir(pdir)) != NULL) 
 			{
-			if (strlen (pent->d_name) ==  6)
+			//if (strlen (pent->d_name) ==  6)
+			if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
 				{
 				strcpy (buff, pent->d_name);
 				strcpy (files[i], buff);
@@ -245,18 +249,11 @@ int DMLSelect (void)
 			
 		closedir(pdir);
 
-#ifndef DOLPHINE
 		if (i == 0)
 			{
 			grlib_menu ("No GC Games found", "OK");
 			return 0;
 			}
-#else
-		grlib_menuAddItem (menu, i, "fake game 1");
-		grlib_menuAddItem (menu, i, "fake game 2");
-		grlib_menuAddItem (menu, i, "fake game 3");
-
-#endif
 		
 		ret = grlib_menu ("Please select a GameCube Game\n\nPress (+/-) to show options\nPress (B) to close", menu);
 		if (ret == -1) return 0;
@@ -342,6 +339,7 @@ char * DMLScanner (void)
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
+		//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
 		if (strlen (pent->d_name) ==  6)
 			{
 			Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
@@ -375,7 +373,7 @@ char * DMLScanner (void)
 				}
 			if (!skip)
 				{
-				GetName (DEV_SD, pent->d_name, name);
+				if (!GetName (DEV_SD, pent->d_name, name)) continue;
 				sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
 				strcat (buff, b);
 				}
@@ -394,10 +392,11 @@ char * DMLScanner (void)
 		
 		while ((pent=readdir(pdir)) != NULL) 
 			{
-			if (strlen (pent->d_name) ==  6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+			//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
+			if (strlen (pent->d_name) == 6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
 				{
 				Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
-				GetName (DEV_USB, pent->d_name, name);
+				if (!GetName (DEV_USB, pent->d_name, name)) continue;
 				sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
 				strcat (buff, b);
 				}

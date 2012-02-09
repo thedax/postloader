@@ -137,6 +137,27 @@ static bool DownloadCovers_Get (char *path, char *buff)
 	return (FALSE);
 	}
 
+static void FeedCoverCache (void)
+	{
+	char path[128];
+	CoverCache_Pause (true);
+
+	int i;
+	int ai;	// Application index (corrected by the offset)
+
+	for (i = -gui.spotsXpage; i < gui.spotsXpage*2; i++)
+		{
+		ai = (page * gui.spotsXpage) + i;
+		
+		if (ai >= 0 && ai < chansCnt && ai < chans2Disp)
+			{
+			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
+			CoverCache_Add (path, false);
+			}
+		}
+	
+	CoverCache_Pause (false);
+	}
 
 static void DownloadCovers (void)
 	{
@@ -156,7 +177,7 @@ static void DownloadCovers (void)
 	FILE *f = NULL;
 	if (IsDevValid (DEV_SD))
 		{
-		sprintf (path, "%s://ploader/misschan.txt", vars.mount[DEV_SD]);
+		sprintf (path, "%s://misschan.txt", vars.mount[DEV_SD]);
 		f = fopen (path, "wb");
 		}
 	
@@ -209,6 +230,7 @@ static void DownloadCovers (void)
 	WiiLoad_Resume ();
 	
 	ChnBrowse ();
+	FeedCoverCache ();
 	}
 	
 static void WriteTitleConfig (int ia)
@@ -675,14 +697,6 @@ static int ChnBrowse (void)
 	
 	Debug ("ChnBrowse: done!");
 	return chansCnt;
-	}
-
-static GRRLIB_texImg * GetTitleTexture (int ai)
-	{
-	char path[PATHMAX];
-	
-	sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
-	return GRRLIB_LoadTextureFromFile (path);
 	}
 
 static int FindSpot (void)
@@ -1154,11 +1168,12 @@ static void CheckFilters()
 		for (i = 0; i < CHANNELS_MAXFILTERS; i++)
 		config.chnBrowser.filter[i] = 1;
 	}
-
+	
 static void RedrawIcons (int xoff, int yoff)
 	{
 	int i;
 	int ai;	// Application index (corrected by the offset)
+	char path[128];
 	
 	// Prepare black box
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -1178,11 +1193,8 @@ static void RedrawIcons (int xoff, int yoff)
 		if (ai < chansCnt && ai < chans2Disp && gui.spotsIdx < SPOTSMAX)
 			{
 			// Draw application png
-			if (gui.spots[gui.spotsIdx].id != ai)
-				{
-				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
-				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
-				}
+			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
+			gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 			
 			// Need a name ?	
 			if (!gui.spots[gui.spotsIdx].ico.icon)
@@ -1391,7 +1403,9 @@ int ChnBrowser (void)
 	else
 		page = 0;
 	
+	FeedCoverCache ();
 	LiveCheck (1);
+	
 	// Loop forever
     while (browserRet == -1) 
 		{
@@ -1448,30 +1462,23 @@ int ChnBrowser (void)
 			if (btn & WPAD_BUTTON_MINUS && page > 0)
 				{
 				ChangePage (0, -680);
-				page--; 
+				page--;
+				FeedCoverCache ();
 				ChangePage (680, 0);
 				}
 			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
 				{
 				ChangePage (0, 680);
 				page++;
+				FeedCoverCache ();
 				ChangePage (-680, 0);
 				}
 			}
 		
+		if (CoverCache_IsUpdated ()) redraw = 1;
+		
 		if (redraw)
 			{
-			if (page < 0)
-				{
-				page = 0;
-				continue;
-				}
-			if (page > pageMax)
-				{
-				page = pageMax;
-				continue;
-				}
-			
 			Redraw ();
 			grlib_PushScreen ();
 			

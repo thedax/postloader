@@ -810,7 +810,6 @@ void RemoveNandcfg(void)
 	unlink(target);
 	}
 
-
 bool RestoreChannelNeek2o (void)
 	{
 	neek_RestoreNandForChannel (NEEK2O_SNEEK, NEEK2O_NAND);

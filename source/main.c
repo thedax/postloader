@@ -45,9 +45,11 @@ void Subsystems (bool enable)
 		MountDevices (1);
 		DebugStart (true, "sd://ploader.log");
 		WiiLoad (1);
+		CoverCache_Start ();
 		}
 	else
 		{
+		CoverCache_Stop ();
 		WiiLoad (0);
 		grlib_Controllers (false);
 		DebugStop ();
@@ -88,7 +90,10 @@ int Initialize (int silent)
 	// Prepare the background
 	if (!silent) MasterInterface (1, 0, 1, " ");
 
-	return MountDevices (silent);
+	int ret = MountDevices (silent);
+	
+	DebugStart (true, "sd://ploader.log");
+	return ret;
 	}
 	
 static void Redraw (void)
@@ -181,6 +186,13 @@ void CheckNeek (void)
 	
 int main(int argc, char **argv) 
 	{
+	if (usb_isgeckoalive (EXI_CHANNEL_1))
+		{
+		char buff[32];
+		strcpy (buff, "\nPL"VER"\n");
+		usb_sendbuffer( EXI_CHANNEL_1, buff, strlen(buff) );
+		}
+	
 	int i;
 	int ret;
 	time_t t,tout;
@@ -221,8 +233,6 @@ int main(int argc, char **argv)
 		vars.ios = IOS_GetVersion();
 
 	ret = Initialize((vars.usbtime == 1) ? 1:0);
-	
-	DebugStart (true, "sd://ploader.log");
 	
 	Debug ("-----[postLoader "VER"]-----");
 	Debug ("Initialization done !");
@@ -344,6 +354,7 @@ int main(int argc, char **argv)
 		{
 		Video_LoadTheme (1);
 		WiiLoad (1);
+		CoverCache_Start ();
 
 		// Initialise the audio subsystem
 		snd_Init ();

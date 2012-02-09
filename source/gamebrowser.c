@@ -187,6 +187,28 @@ static bool DownloadCovers_Get (char *path, char *buff)
 	return (FALSE);
 	}
 
+static void FeedCoverCache (void)
+	{
+	char path[128];
+	CoverCache_Pause (true);
+
+	int i;
+	int ai;	// Application index (corrected by the offset)
+
+	for (i = -gui.spotsXpage; i < gui.spotsXpage*2; i++)
+		{
+		ai = (page * gui.spotsXpage) + i;
+		
+		if (ai >= 0 && ai < gamesCnt && ai < games2Disp)
+			{
+			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
+			CoverCache_Add (path, false);
+			}
+		}
+	
+	CoverCache_Pause (false);
+	}
+
 static void DownloadCovers (void)
 	{
 	int ia, stop;
@@ -204,7 +226,7 @@ static void DownloadCovers (void)
 	FILE *f = NULL;
 	if (IsDevValid (DEV_SD))
 		{
-		sprintf (path, "%s://ploader/missgame.txt", vars.defMount);
+		sprintf (path, "%s://missgame.txt", vars.mount[DEV_SD]);
 		f = fopen (path, "wb");
 		}
 	
@@ -254,6 +276,7 @@ static void DownloadCovers (void)
 	WiiLoad_Resume ();
 	
 	GameBrowse (0);
+	FeedCoverCache ();
 	}
 
 static void WriteGameConfig (int ia)
@@ -610,14 +633,6 @@ static int GameBrowse (int forcescan)
 
 	Debug ("end GameBrowse");
 	return gamesCnt;
-	}
-
-static GRRLIB_texImg * GetTitleTexture (int ai)
-	{
-	char path[PATHMAX];
-	
-	sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
-	return GRRLIB_LoadTextureFromFile (path);
 	}
 
 static int FindSpot (void)
@@ -1367,6 +1382,7 @@ static void RedrawIcons (int xoff, int yoff)
 	{
 	int i;
 	int ai;	// Application index (corrected by the offset)
+	char path[128];
 	
 	// Prepare black box
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -1385,12 +1401,8 @@ static void RedrawIcons (int xoff, int yoff)
 		
 		if (ai < gamesCnt && ai < games2Disp && gui.spotsIdx < SPOTSMAX)
 			{
-			// Draw application png
-			if (gui.spots[gui.spotsIdx].id != ai || refreshPng)
-				{
-				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
-				gui.spots[gui.spotsIdx].ico.icon = GetTitleTexture (ai);
-				}
+			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
+			gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 				
 			if (!gui.spots[gui.spotsIdx].ico.icon)
 				strcpy (gui.spots[gui.spotsIdx].ico.title, games[ai].name);
@@ -1633,7 +1645,8 @@ int GameBrowser (void)
 		page = config.gamePage;
 	else
 		page = 0;
-	
+
+	FeedCoverCache ();
 	LiveCheck (1);
 	
 	// Loop forever
@@ -1732,30 +1745,23 @@ int GameBrowser (void)
 			if (btn & WPAD_BUTTON_MINUS && page > 0)
 				{
 				ChangePage (0, -680);
-				page--; 
+				page--;
+				FeedCoverCache ();
 				ChangePage (680, 0);
 				}
 			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
 				{
 				ChangePage (0, 680);
 				page++;
+				FeedCoverCache ();
 				ChangePage (-680, 0);
 				}
 			}
 		
+		if (CoverCache_IsUpdated ()) redraw = 1;
+		
 		if (redraw)
 			{
-			if (page < 0)
-				{
-				page = 0;
-				continue;
-				}
-			if (page > pageMax)
-				{
-				page = pageMax;
-				continue;
-				}
-			
 			Redraw ();
 			grlib_PushScreen ();
 			

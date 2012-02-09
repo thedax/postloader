@@ -22,7 +22,7 @@ void gui_Clean (void)
 	int i;
 	for (i = 0; i < SPOTSMAX; i++)
 		{
-		if (gui.spots[i].ico.icon) GRRLIB_FreeTexture (gui.spots[i].ico.icon);
+		//if (gui.spots[i].ico.icon) GRRLIB_FreeTexture (gui.spots[i].ico.icon);
 		gui.spots[i].ico.icon = NULL;
 		gui.spots[i].id = -1;
 		}

@@ -462,4 +462,14 @@ void snd_Stop (void);
 void snd_Mp3Go (void);
 void snd_Pause (void);
 void snd_Resume (void);
+
+// covercache.c
+void CoverCache_Pause (bool yes);
+void CoverCache_Start (void);
+void CoverCache_Flush (void);
+void CoverCache_Stop (void);
+void CoverCache_Add (char *id, bool pt);
+bool CoverCache_IsUpdated (void);
+GRRLIB_texImg *CoverCache_Get (char *id);
+GRRLIB_texImg *CoverCache_GetCopy (char *id);
 #endif

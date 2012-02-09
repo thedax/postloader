@@ -167,7 +167,7 @@ u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 	
 	closedir(pdir);
 	
-	Debug ("fsop_GetFolderBytes (%s) = %llu", source, bytes);
+	//Debug ("fsop_GetFolderBytes (%s) = %llu", source, bytes);
 	
 	return bytes;
 	}

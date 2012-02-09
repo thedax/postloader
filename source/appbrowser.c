@@ -116,6 +116,29 @@ static void InitializeGui (void)
 		}
 	}
 
+static void FeedCoverCache (void)
+	{
+	char path[PATHMAX];
+
+	CoverCache_Pause (true);
+
+	int i;
+	int ai;	// Application index (corrected by the offset)
+
+	for (i = -gui.spotsXpage; i < gui.spotsXpage*2; i++)
+		{
+		ai = (page * gui.spotsXpage) + i;
+		
+		if (ai >= 0 && ai < appsCnt && ai < apps2Disp)
+			{
+			sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, subpath, apps[ai].path);
+			CoverCache_Add (path, false);
+			}
+		}
+	
+	CoverCache_Pause (false);
+	}
+
 static void AppsFree (void)
 	{
 	int i;
@@ -722,14 +745,6 @@ static int AppsBrowse (void)
 	return appsCnt;
 	}
 
-static GRRLIB_texImg * GetTexture (int ai)
-	{
-	char path[PATHMAX];
-	
-	sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, subpath, apps[ai].path);
-	return GRRLIB_LoadTextureFromFile (path);
-	}
-		
 static void ShowAppMenu (int ai)
 	{
 	int len = 64;  // Give some space
@@ -1082,11 +1097,20 @@ void DrawInfo (void)
 			}
 		}
 	}
-
+	
+static GRRLIB_texImg * GetTexture (int ai)
+	{
+	char path[PATHMAX];
+	
+	sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, subpath, apps[ai].path);
+	return GRRLIB_LoadTextureFromFile (path);
+	}
+		
 static void RedrawIcons (int xoff, int yoff)
 	{
 	int i;
 	int ai;	// Application index (corrected by the offset)
+	char path[128];
 
 	// Prepare black box
 	
@@ -1112,8 +1136,8 @@ static void RedrawIcons (int xoff, int yoff)
 			{
 			if (gui.spots[gui.spotsIdx].id != ai)
 				{
-				if (gui.spots[gui.spotsIdx].ico.icon) GRRLIB_FreeTexture (gui.spots[gui.spotsIdx].ico.icon);
-				gui.spots[gui.spotsIdx].ico.icon = NULL;
+				sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, subpath, apps[ai].path);
+				gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 				
 				if (apps[ai].type != AT_FOLDERUP)
 					{
@@ -1362,7 +1386,9 @@ int AppBrowser (void)
 	else
 		page = 0;
 
+   FeedCoverCache ();
    LiveCheck (1);
+   
    // Loop forever
     while (browserRet == -1)
 		{
@@ -1475,12 +1501,14 @@ int AppBrowser (void)
 				{
 				ChangePage (0, -680);
 				page--; 
+				FeedCoverCache ();
 				ChangePage (680, 0);
 				}
 			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
 				{
 				ChangePage (0, 680);
 				page++;
+				FeedCoverCache ();
 				ChangePage (-680, 0);
 				}
 			}
