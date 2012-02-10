@@ -2,6 +2,11 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.63.1
+
+* neekbooter 1.1: when channel from real nand is executed via neek2o, on "return to menu", /sneek folder return to it's original state and wii rebooted
+* added a new download site for covers
+
 postLoader 3.63.0
 
 * Much better page transition

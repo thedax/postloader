@@ -75,15 +75,15 @@ void printd(const char *text, ...)
 	
 	if (geckoinit <= 0) return;
 	
-	char Buffer[1024];
+	char buff[1024];
 	va_list args;
 
 	va_start(args, text);
-	vsprintf(Buffer, text, args);
+	vsprintf(buff, text, args);
 	va_end(args);
 
-	strcat (Buffer, "\n");
+	strcat (buff, "\n");
 
-	usb_sendbuffer( EXI_CHANNEL_1, Buffer, strlen(Buffer) );
+	usb_sendbuffer( EXI_CHANNEL_1, buff, strlen(buff) );
 	usb_flush(EXI_CHANNEL_1);
 	}

@@ -790,6 +790,9 @@ bool RestoreChannelNeek2o (void)
 	sprintf (path, "%s/nandcfg.pl", NEEK2O_SNEEK);
 	unlink(path);
 
+	sprintf (path, "%s/nandcfg.ch", NEEK2O_SNEEK);
+	unlink(path);
+
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
 	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
 

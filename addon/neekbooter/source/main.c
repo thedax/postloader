@@ -11,7 +11,7 @@
 #include "neek.h"
 #include "bin2o.h"
 
-#define VER "[1.0]"
+#define VER "[1.1]"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -278,6 +278,50 @@ bool readch (s_channelConfig *cc)
 	return false;
 	}
 
+void RestoreSneekFolder (void)
+	{
+	s32 fd;
+
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	char pathBak[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	Debug ("RestoreSneekFolder [begin]");
+		
+	ISFS_Initialize ();
+	
+	sprintf (path, "/sneek/nandcfg.pl");
+	ISFS_Delete (path);
+
+	sprintf (path, "/sneek/nandcfg.ch");
+	ISFS_Delete (path);
+
+	sprintf (path, "/title/00000001/00000002/data/loader.ini");
+	sprintf (pathBak, "/title/00000001/00000002/data/loader.bak");
+	
+	fd = ISFS_Open(pathBak, ISFS_OPEN_READ);
+	if (fd > 0)
+		{
+		ISFS_Close(fd);
+		
+		ISFS_Delete (path);
+		ISFS_Rename (pathBak, path);
+		}
+
+	sprintf (path, "/sneek/nandcfg.bin");
+	sprintf (pathBak, "/sneek/nandcfg.bak");
+
+	fd = ISFS_Open(pathBak, ISFS_OPEN_READ);
+	if (fd > 0)
+		{
+		ISFS_Close(fd);
+		
+		ISFS_Delete (path);
+		ISFS_Rename (pathBak, path);
+		}
+
+	Debug ("RestoreSneekFolder [end]");
+	}
+
 
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv) 
@@ -286,10 +330,10 @@ int main(int argc, char **argv)
 	
 	InitVideo ();
 	
-	printd ("---------------------------------------------------------------------------\n");
-	printd ("                        neekbooter "VER" by stfour\n");
-	printd ("                       (part of postLoader project)\n");
-	printd ("---------------------------------------------------------------------------\n");
+	printd ("---------------------------------------------------------------------------");
+	printd ("                        neekbooter "VER" by stfour");
+	printd ("                       (part of postLoader project)");
+	printd ("---------------------------------------------------------------------------");
 
 	u32 idx = -1;
 	u32 status = 0;
@@ -395,7 +439,11 @@ int main(int argc, char **argv)
 			SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 			}
 		else
+			{
+			// restore sneek files
+			RestoreSneekFolder ();
 			SYS_ResetSystem(SYS_RESTART,0,0);
+			}
 		}
 		
 	exit (0);

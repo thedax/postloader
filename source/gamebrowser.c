@@ -241,6 +241,11 @@ static void DownloadCovers (void)
 			
 			if (!ret)
 				{
+				sprintf (buff, "http://www.postloader.freehosting.com/png/%s.png", games[ia].asciiId);
+				ret = DownloadCovers_Get (path, buff);
+				}
+			if (!ret)
+				{
 				sprintf (buff, "http://art.gametdb.com/wii/cover/US/%s.png", games[ia].asciiId);
 				ret = DownloadCovers_Get (path, buff);
 				}
