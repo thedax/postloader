@@ -199,7 +199,7 @@ static void FeedCoverCache (void)
 		{
 		ai = (page * gui.spotsXpage) + i;
 		
-		if (ai >= 0 && ai < gamesCnt && ai < games2Disp)
+		if (ai >= 0 && ai < gamesCnt)
 			{
 			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
 			CoverCache_Add (path, false);
@@ -497,31 +497,10 @@ static void AppsSort (void)
 		while (mooved);
 		}
 
-	pageMax = games2Disp / gui.spotsXpage;
+	pageMax = (games2Disp-1) / gui.spotsXpage;
 	refreshPng = 1;
 	}
 	
-static void GoToPage (void)
-	{
-	int col, i, page;
-	char buff[1024];
-	
-	*buff = '\0';
-	
-	for (col = 0; col < 10; col++)
-		{
-		for (i = 0; i < pageMax; i++)
-			{
-			page = col + (i * 10);
-			if (page <= pageMax)
-				grlib_menuAddItem (buff, page, "%d", page+1);
-			}
-		if (col < 9) grlib_menuAddColumn (buff);
-		}
-	int item = grlib_menu ("Go to page", buff);
-	if (item >= 0) page = item;
-	}
-
 static void UpdateTitlesFromTxt (void)
 	{
 	LoadTitlesTxt ();
@@ -1491,46 +1470,78 @@ static void Overlay (void)
 	return;
 	}
 
-static void ChangePage (int x1, int x2)
+static int ChangePage (int next)
 	{
-	redrawIcons = false;
+	if (next)
+		{
+		if (page == pageMax) return page;
+		page++;
+		}
+	else
+		{
+		if (page == 0) return page;
+		page--;
+		}
+		
+	FeedCoverCache ();
 
+	redrawIcons = false;
 	Redraw ();
 	grlib_PushScreen ();
 	
-	if (x1 > x2)
+	int x = 0, lp;
+	
+	if (!next)
 		{
 		do
 			{
+			x-=20;
+
 			grlib_PopScreen ();
-			RedrawIcons (x1,0);
+
+			lp = page;
+			RedrawIcons (x + 640,0);
+			page = lp+1;
+			RedrawIcons (x,0);
+			page = lp;
+			
 			Overlay ();
 			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
+			
 			usleep (1);
-			x1-=40;
 			}
-		while (x1 > x2);
+		while (x > -640);
 		}
 	else
 		{
 		do
 			{
+			x+=20;
+
 			grlib_PopScreen ();
-			RedrawIcons (x1,0);
+
+			lp = page;
+			RedrawIcons (x - 640,0);
+			page = lp-1;
+			RedrawIcons (x,0);
+			page = lp;
+			
 			Overlay ();
 			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
+			
 			usleep (1);
-			x1+=40;
 			}
-		while (x1 < x2);
+		while (x < 640);
 		}
 	
 	redrawIcons = true;
 	redraw = 1;
+	
+	return page;
 	}
 
 static void cb_filecopy (void)
@@ -1590,6 +1601,93 @@ static bool MoveGCGame (int ai)
 	snd_Resume ();
 	
 	return ret;
+	}
+
+static bool QuerySelection (int ai)
+	{
+	int i;
+	float mag = 1.0;
+	int spot = -1;
+	int incX = 1, incY = 1;
+	int y = 220;
+	
+	for (i = 0; i < gui.spotsIdx; i++)
+		{
+		if (ai == gui.spots[i].id)
+			spot = i;
+		}
+	
+	if (spot < 0) return false;
+
+	s_grlib_icon ico;
+	grlib_IconInit (&ico, &gui.spots[spot].ico);
+	ico.sel = true;
+	
+	s_grlib_iconSetting istemp;
+	memcpy (&istemp, &is, sizeof(s_grlib_iconSetting));
+	
+	s_grlibobj black;
+	black.x1 = 0;
+	black.y1 = 0;
+	black.x2 = grlib_GetScreenW();
+	black.y2 = grlib_GetScreenH();
+	black.color = RGBA(0,0,0,192);
+	black.bcolor = RGBA(0,0,0,192);
+	
+	while (true)
+		{
+		grlib_PopScreen ();
+		grlib_DrawSquare (&black);
+
+		istemp.magXSel = mag;
+		istemp.magYSel = mag;
+		
+		incX = abs(ico.x - 320);
+		if (incX > 10) incX = 10;
+
+		incY = abs(ico.y - y);
+		if (incY > 10) incY = 10;
+
+		if (ico.x < 320) ico.x += incX;
+		if (ico.x > 320) ico.x -= incX;
+
+		if (ico.y < y) ico.y += incY;
+		if (ico.y > y) ico.y -= incY;
+		
+		grlib_IconDraw (&istemp, &ico);
+
+		Overlay ();
+		grlib_GetUserInput();
+		grlib_DrawIRCursor ();
+		grlib_Render();
+		
+		if (mag < 2.3) mag += 0.05;
+		if (mag >= 2.3 && ico.x == 320 && ico.y == y) break;
+		}
+	
+	int fr = grlibSettings.fontBMF_reverse;
+	u32 btn;
+	while (true)
+		{
+		grlib_PopScreen ();
+		grlib_DrawSquare (&black);
+		grlib_IconDraw (&istemp, &ico);
+		Overlay ();
+		
+		grlibSettings.fontBMF_reverse = 0;
+		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, games[ai].name);		
+		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
+		grlibSettings.fontBMF_reverse = fr;
+		
+		grlib_GetUserInput();
+		grlib_DrawIRCursor ();
+		grlib_Render();
+
+		btn = grlib_GetUserInput();
+		if (btn & WPAD_BUTTON_A) return true;
+		if (btn & WPAD_BUTTON_B) return false;
+		}
+	return true;
 	}
 
 static void Conf (bool open)
@@ -1664,12 +1762,18 @@ int GameBrowser (void)
 			
 			if (btn & WPAD_BUTTON_1) 
 				{
-				GoToPage ();
+				page = GoToPage (page, pageMax);
+				FeedCoverCache ();
 				redraw = 1;
 				}
 			
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
 				{
+				if (!QuerySelection (gamesSelected))
+					{
+					redraw = 1;
+					continue;
+					}
 				if (config.gameMode == GM_WII)
 					{
 					ReadGameConfig (gamesSelected);
@@ -1678,8 +1782,6 @@ int GameBrowser (void)
 					
 					memcpy (&config.run.game, &gameConf, sizeof(s_gameConfig));
 					config.run.neekSlot = games[gamesSelected].slot;
-					//config.run.nand = config.chnBrowser.nand;
-					//strcpy (config.run.nandPath, config.chnBrowser.nandPath);
 					strcpy (config.run.asciiId, games[gamesSelected].asciiId);
 					
 					browserRet = INTERACTIVE_RET_GAMESEL;
@@ -1712,6 +1814,7 @@ int GameBrowser (void)
 						config.dmlvideomode = gameConf.dmlvideomode;
 						games[gamesSelected].playcount++;
 						WriteGameConfig (gamesSelected);
+						Conf (false);	// Store configuration on disc
 						
 						DMLRun (games[gamesSelected].asciiId);
 						}
@@ -1744,17 +1847,11 @@ int GameBrowser (void)
 			
 			if (btn & WPAD_BUTTON_MINUS && page > 0)
 				{
-				ChangePage (0, -680);
-				page--;
-				FeedCoverCache ();
-				ChangePage (680, 0);
+				page = ChangePage (0);
 				}
 			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
 				{
-				ChangePage (0, 680);
-				page++;
-				FeedCoverCache ();
-				ChangePage (-680, 0);
+				page = ChangePage (1);
 				}
 			}
 		

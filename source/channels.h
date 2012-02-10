@@ -35,6 +35,5 @@ s32 get_game_list(u64 **TitleIds, u32 *num, u8 id);
 s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint);
 char *get_name(u64 titleid, char *nandmountpoint);
 
-void RemoveNandcfg(void);
-
+bool RestoreChannelNeek2o (void);
 #endif 

@@ -2,6 +2,17 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.63.0
+
+* Much better page transition
+* Play count should be recorderd now also for dml
+* Go To Page works again
+* fixed: If your last page is completely full, there will be an empty one created too.
+* Much more reliable cover cache system
+* Now pl uses nandpath.bin instead of recreate a nandcfg.bin that causes "confusion" to neek2o. Also make backup and restore nandcfg.bin
+* Added a confirmation before executing any items
+* Corrected an huge memory leak introduced with version 3.61.2 in homebrew mode
+
 postLoader 3.62.0
 
 * xml and version updated

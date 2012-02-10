@@ -78,3 +78,27 @@ int Menu_SelectBrowsingMode (void)
 	
 	return -1;
 	}
+	
+int GoToPage (int page, int pageMax)
+	{
+	int col, i, newpage;
+	char buff[1024];
+	
+	*buff = '\0';
+	
+	for (col = 0; col < 10; col++)
+		{
+		for (i = 0; i < pageMax; i++)
+			{
+			newpage = col + (i * 10);
+			if (newpage <= pageMax)
+				grlib_menuAddItem (buff, newpage, "%d", newpage+1);
+			}
+		if (col < 9) grlib_menuAddColumn (buff);
+		}
+	int item = grlib_menu ("Go to page", buff);
+	if (item >= 0) page = item;
+	
+	return page;
+	}
+	

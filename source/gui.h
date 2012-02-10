@@ -24,3 +24,4 @@ void gui_Clean (void);
 
 int ChooseDPadReturnMode (u32 btn);
 int Menu_SelectBrowsingMode (void);
+int GoToPage (int page, int pageMax);

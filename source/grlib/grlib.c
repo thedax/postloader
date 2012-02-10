@@ -529,6 +529,7 @@ int grlib_GetUserInput (void)
 	s8  gcX, gcY;
 	int nX, nY;
 	int cX, cY;
+	u32 mstout = ticks_to_millisecs(gettime())+200;
 	
 	struct expansion_t e; //nunchuk
 	
@@ -589,7 +590,7 @@ int grlib_GetUserInput (void)
 		grlibSettings.buttonActivity ++;
 		// Wait until button is released
 		
-		while (WPAD_ButtonsDown(0)) WPAD_ScanPads();
+		while (WPAD_ButtonsDown(0) && ticks_to_millisecs(gettime()) < mstout) WPAD_ScanPads();
 		return wbtn;
 		}
 
@@ -600,7 +601,7 @@ int grlib_GetUserInput (void)
 		
 		// Wait until button is released
 		
-		while (PAD_ButtonsDown(0)) PAD_ScanPads();
+		while (PAD_ButtonsDown(0) && ticks_to_millisecs(gettime()) < mstout) PAD_ScanPads();
 		
 		// Convert to wiimote values
 		if (gcbtn & PAD_TRIGGER_R) return WPAD_BUTTON_PLUS;
@@ -622,7 +623,7 @@ int grlib_GetUserInput (void)
 		{
 		grlibSettings.buttonActivity ++;
 		
-		while (e.classic.btns)
+		while (e.classic.btns && ticks_to_millisecs(gettime()) < mstout)
 			{
 			WPAD_ScanPads();  // Scan the Wiimotes
 			WPAD_Expansion( 0, &e );

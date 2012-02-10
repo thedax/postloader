@@ -33,7 +33,7 @@ bool neek_PLNandInfoKill (void); // Remove nandcfg.pl... postloader do this when
 
 bool neek_CreateCDIConfig (void);
 
-bool neek_RestoreNandForChannel (char *sneekpath, char *nandpath);
 bool neek_PrepareNandForChannel (char *sneekpath, char *nandpath);
+bool neek_RestoreNandForChannel (char *sneekpath);
 
 bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi); // mode 0 = read, mode 1 = write;;

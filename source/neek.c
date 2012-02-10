@@ -304,8 +304,7 @@ bool neek_GetNandConfig (void)
 
 	if (fd <= 0)
 		{
-		Debug ("neek_GetNandConfig [no config file found, only root nand available ?]");
-		Debug ("neek_GetNandConfig [end]");
+		Debug ("neek_GetNandConfig [no config file found, only root nand available ?] [end]");
 		nandConfig = NULL;
 		return false;
 		}
@@ -610,69 +609,44 @@ bool neek_CreateCDIConfig (void)
 	
 /////////////////////////////////////////////////////////////////////
 
+/*
+Create a nandpath.bin pointing to the required nand
+*/
 bool neek_PrepareNandForChannel (char *sneekpath, char *nandpath)
 	{
 	char path[256];
-	char pathbak[256];
 		
 	Debug ("neek_PrepareNandForChannel [begin]");
 		
-	sprintf (pathbak, "%s/nandcfg.bak", sneekpath);
-	sprintf (path, "%s/nandcfg.bin", sneekpath);
+	sprintf (path, "%s/nandpath.bin", sneekpath);
+	
+	char *p = strstr (nandpath, "//");
+	if (p == NULL) 
+		p = path;
+	else
+		p ++;
 
-	unlink (pathbak);
-	rename (path, pathbak);	// Save a copy
-	Debug ("neek_PrepareNandForChannel [rename]");
-
-	u32 cfgSize = NANDCONFIG_NANDINFO_SIZE + NANDCONFIG_CONFIG_SIZE;
-	
-	Debug ("neek_PrepareNandForChannel [cfg=%d]", cfgSize);
-	if (nandConfig != NULL) free (nandConfig);
-	
-	Debug ("neek_PrepareNandForChannel [free]");
-	nandConfig = allocate_memory (cfgSize);
-
-	Debug ("neek_PrepareNandForChannel [alloc=0x%X]", nandConfig);
-	
-	Debug ("neek_PrepareNandForChannel [set1]");
-	nandConfig->NandCnt = 1;
-	nandConfig->NandSel = 0;
-	
-	Debug ("neek_PrepareNandForChannel [set2]");
-	strcpy ((char*)nandConfig->NandInfo, nandpath);
-	Debug ("neek_PrepareNandForChannel [path=%s]", nandpath);
-	
 	FILE *f;
 	f = fopen (path, "wb");
 	if (f)
 		{
-		fwrite (nandConfig, 1, cfgSize, f);
+		fwrite (p, 1, strlen(p)+1, f); // +1, as we need also the 0
 		fclose (f);
 		}
 
-	Debug ("neek_PrepareNandForChannel [written]");
-	if (nandConfig != NULL) free (nandConfig);
-	nandConfig = NULL;
-	
-	Debug ("neek_PrepareNandForChannel [free]");
-	
 	Debug ("neek_PrepareNandForChannel [end]");
 	return true;
 	}
 
-bool neek_RestoreNandForChannel (char *sneekpath, char *nandpath)
+/*
+just remove nandpath.bin
+*/
+bool neek_RestoreNandForChannel (char *sneekpath)
 	{
 	char path[256];
-	char pathbak[256];
 
-	sprintf (pathbak, "%s/nandcfg.bak", sneekpath);
-	sprintf (path, "%s/nandcfg.bin", sneekpath);
-
-	if (!fsop_FileExist (pathbak))
-		return true; // Yes, it is ok...
-		
+	sprintf (path, "%s/nandpath.bin", sneekpath);
 	unlink (path);
-	rename (pathbak, path);	// Restore the copy
 	
 	return true;
 	}

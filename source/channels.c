@@ -673,29 +673,9 @@ bool SetupNeek2o (void)
 	char path[256];
 	char pathBak[256];
 
-	/*
-	char fn[64];
-	sprintf (fn, "%s://ploader/n2oswitch.dol", vars.defMount);
-	size_t buffsize;
-	u8 *buff = fsop_ReadFile (fn, 0, &buffsize);
-	if (!buff)
-		return false;
-	*/
-	
 	s32 ret;
 	size_t loaderIniSize = 0;
 	u8 * loaderIniBuff = NULL;
-	
-	// Save priiloader settings
-	/*
-	sprintf (path, "%s/title/00000001/00000002/data/main.bin", NEEK2O_NAND);
-	sprintf (pathBak, "%s/title/00000001/00000002/data/main.bak", NEEK2O_NAND);
-
-	ret = unlink (pathBak);
-	Debug ("SetupNeek2o: unlink %s (%d)", pathBak, ret);
-	ret = rename (path, pathBak);
-	Debug ("SetupNeek2o: rename %s %s (%d)", path, pathBak, ret);
-	*/
 	
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
 	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
@@ -709,12 +689,6 @@ bool SetupNeek2o (void)
 	ret = rename (path, pathBak);
 	Debug ("SetupNeek2o: rename %s %s (%d)", path, pathBak, ret);
 
-	// Store n2oswitch
-	/*
-	sprintf (path, "%s/title/00000001/00000002/data/main.bin", NEEK2O_NAND);
-	fsop_WriteFile (path, buff, buffsize);
-	*/
-	
 	CreatePriiloaderSettingsFS (NEEK2O_NAND, loaderIniBuff, loaderIniSize);
 	free (loaderIniBuff);
 
@@ -793,8 +767,11 @@ bool RunChannelNeek2o (s_run *run)
 	sprintf (target, "%s/nandcfg.ch", NEEK2O_SNEEK);
 	fsop_WriteFile (target, (u8*) &run->channel, sizeof(s_channelConfig));
 
+	sprintf (source, "%s/nandcfg.bin", NEEK2O_SNEEK);
+	sprintf (target, "%s/nandcfg.bak", NEEK2O_SNEEK);
+	fsop_CopyFile (source, target, NULL);
+
 	// Boot neek2o
-	
 	Neek2oLoadKernel ();
 	Shutdown (0);
 	Neek2oBoot ();
@@ -803,26 +780,33 @@ bool RunChannelNeek2o (s_run *run)
 	return true;
 	}
 	
-void RemoveNandcfg(void)
-	{
-	char target[256];
-	sprintf (target, "%s/nandcfg.pl", NEEK2O_SNEEK);
-	unlink(target);
-	}
-
 bool RestoreChannelNeek2o (void)
 	{
-	neek_RestoreNandForChannel (NEEK2O_SNEEK, NEEK2O_NAND);
+	neek_RestoreNandForChannel (NEEK2O_SNEEK);
 
 	char path[256];
 	char pathBak[256];
 
+	sprintf (path, "%s/nandcfg.pl", NEEK2O_SNEEK);
+	unlink(path);
+
 	sprintf (path, "%s/title/00000001/00000002/data/loader.ini", NEEK2O_NAND);
 	sprintf (pathBak, "%s/title/00000001/00000002/data/loader.bak", NEEK2O_NAND);
 
-	unlink (path);
-	rename (pathBak, path);
-
+	if (fsop_FileExist (pathBak))
+		{
+		unlink (path);
+		rename (pathBak, path);
+		}
+		
+	sprintf (path, "%s/nandcfg.bin", NEEK2O_SNEEK);
+	sprintf (pathBak, "%s/nandcfg.bak", NEEK2O_SNEEK);
+	if (fsop_FileExist (pathBak))
+		{
+		unlink (path);
+		rename (pathBak, path);
+		}
+		
 	return true;
 	}
 	

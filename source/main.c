@@ -265,7 +265,9 @@ int main(int argc, char **argv)
 			}
 		}
 	else
-		RemoveNandcfg();
+		{
+		RestoreChannelNeek2o();
+		}
 
 
 	// This is just for testing... no really needed

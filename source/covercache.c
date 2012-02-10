@@ -18,6 +18,7 @@ typedef struct
 	{
 	char id[128];
 	GRRLIB_texImg *cover;
+	u32 age;
 	}
 s_cc; // covercache
 
@@ -27,8 +28,9 @@ static int idx = 0;	// used to add elements
 static int running = 0;
 static int pausethread = 0;
 static int update = 0;
+static int age = 0;
 
-static GRRLIB_texImg *MoveText2Mem2 (GRRLIB_texImg *tex)
+static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex)
 	{
 	if (!tex) return NULL;
 	
@@ -72,34 +74,37 @@ static void *thread (void *arg)
 
 	Debug ("covercache thread started");
 	int i = 0;
-	
+
 	while (running)
 		{
 		usleep (1000); // 10 msec
 		
-		if (*cc[i].id != '\0' && !cc[i].cover)
+		for (i = 0; i < MAXITEMS; i++)
 			{
-			tex = GRRLIB_LoadTextureFromFile (cc[i].id);
-			
-			cc[i].cover = MoveText2Mem2 (tex);
-			
-			if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
-			
-			update++;
-			DCFlushRange(&update, sizeof(update));
-			}
-			
-		if (pausethread == 1)
-			{
-			pausethread = 2;
-			while (pausethread == 2 && running)
+			if (*cc[i].id != '\0' && !cc[i].cover)
 				{
-				usleep (10000); // 10 msec
+				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
+				//Debug ("cache: loading %s -> 0x%X", cc[i].id, tex);
+				cc[i].cover = MoveTex2Mem2 (tex);
+				
+				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
+				
+				update++;
+				DCFlushRange(&update, sizeof(update));
 				}
+				
+			if (pausethread == 1)
+				{
+				pausethread = 2;
+				while (pausethread == 2 && running)
+					{
+					usleep (10000); // 10 msec
+					}
+				}
+			
+			usleep (10);
+			if (!running) break;
 			}
-		
-		i++;
-		if (i >= MAXITEMS) i = 0;
 		}
 	
 	running = 2;
@@ -113,7 +118,7 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 		{
 		pausethread = 1;
 
-		s32 tout = 100;
+		s32 tout = 500;
 		while (pausethread == 1 && tout-- > 0)
 			{
 			usleep (10000); // 10 msec
@@ -146,7 +151,9 @@ void CoverCache_Flush (void)	// empty the cache
 			}
 			
 		*cc[i].id = '\0';
+		cc[i].age = 0;
 		}
+	age = 0;
 	}
 	
 void CoverCache_Stop (void)
@@ -155,7 +162,7 @@ void CoverCache_Stop (void)
 		{
 		running = 0;
 
-		s32 tout = 100;
+		s32 tout = 500;
 		while (running == 0 && tout-- > 0)
 			{
 			usleep (10000); // 10 msec
@@ -175,9 +182,19 @@ void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt 
 	
 	if (pt) CoverCache_Pause (true);
 	
+	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
+	
+	Debug ("CoverCache_Add: %s", id);
+
+	// Let's check if the item already exists...
 	for (i = 0; i < MAXITEMS; i++)
 		{
-		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0) return;
+		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0) 
+			{
+			Debug ("CoverCache_Add: -> already in cache");
+			if (pt) CoverCache_Pause (false);
+			return;
+			}
 		}
 	
 	// first search blank...
@@ -185,13 +202,34 @@ void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt 
 		{
 		if (*cc[i].id == '\0')
 			{
+			Debug ("CoverCache_Add: -> on empty");
+			
 			strcpy (cc[i].id, id);
+			cc[i].age = age;
 			found = true;
 			break;
 			}
 		}
+		
+	// If we haven't found the item search for the oldest one
 	if (!found)
 		{
+		u32 minage = 0xFFFFFFFF;
+		int minageidx = 0;
+		
+		for (i = 0; i < MAXITEMS; i++)
+			{
+			if (&cc[i].id != '\0' && cc[i].age < minage)
+				{
+				minage = cc[i].age;
+				minageidx = i;
+				}
+			}
+		
+		idx = minageidx;
+		
+		Debug ("CoverCache_Add: -> replaced %d", idx);
+		
 		if (cc[idx].cover) 
 			{
 			FreeMem2Tex (cc[idx].cover);
@@ -199,13 +237,11 @@ void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt 
 			}
 			
 		strcpy (cc[idx].id, id);
-		
-		idx ++;
-		if (idx >= MAXITEMS)
-			idx = 0;
+		cc[idx].age = age;
 		}
 
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
+	age ++;
 	
 	if (pt) CoverCache_Pause (false);
 	}
@@ -215,11 +251,14 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 	if (running == 0) return NULL;
 
 	int i;
+	
+	//Debug ("CoverCache_Get: %s", id);
 
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
 			{
+			//Debug ("CoverCache_Get: found!");
 			return cc[i].cover;
 			}
 		}
