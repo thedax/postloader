@@ -29,6 +29,9 @@ void snd_Mp3Go (void)
 	
 	if (mp3playing == NULL) mp3playing = mp3;
 	if (mp3playing == NULL) return;
+	
+	MP3Player_Stop(); // that's doesn't really needed, but sometimes wii freeze
+	CoverCache_Pause (true);
 			
 	Debug ("snd_Mp3Go: Loading '%s'", mp3playing->value);
 
@@ -38,6 +41,7 @@ void snd_Mp3Go (void)
 
 	Debug ("snd_Mp3Go: Playing");
 	
+	CoverCache_Pause (false);
 	MP3Player_PlayBuffer(mp3buff, size, NULL);
 
 	mp3playing = mp3playing->next;

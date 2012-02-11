@@ -89,6 +89,8 @@ static void SetGCVideoMode (void)
 	u32 *xfb;
 	static GXRModeObj *rmode;
 	
+	//config.dmlvideomode = DMLVIDEOMODE_PAL;
+	
 	if (config.dmlvideomode == DMLVIDEOMODE_PAL)
 		{
 		rmode = &TVPal528IntDf;

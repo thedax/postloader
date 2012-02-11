@@ -357,8 +357,6 @@ int main(int argc, char **argv)
 		Video_LoadTheme (1);
 		WiiLoad (1);
 		CoverCache_Start ();
-
-		// Initialise the audio subsystem
 		snd_Init ();
 		
 		do

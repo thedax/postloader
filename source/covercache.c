@@ -114,6 +114,8 @@ static void *thread (void *arg)
 
 void CoverCache_Pause (bool yes) // return after putting thread in 
 	{
+	if (running == 0) return;
+	
 	if (yes && pausethread == 0)
 		{
 		pausethread = 1;
@@ -137,6 +139,14 @@ void CoverCache_Start (void)
 	threadStack = (u8 *) memalign(32, STACKSIZE);
 	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 30);
 	LWP_ResumeThread(hthread);
+	
+	// Let's wait until thread is running...
+	running = 0;
+	s32 tout = 500;
+	while (running == 0 && tout-- > 0)
+		{
+		usleep (10000); // 10 msec
+		}
 	}
 
 void CoverCache_Flush (void)	// empty the cache

@@ -11,7 +11,7 @@
 #include "neek.h"
 #include "bin2o.h"
 
-#define VER "[1.1]"
+#define VER "[1.2]"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -265,16 +265,16 @@ bool readch (s_channelConfig *cc)
 	s32 fd;
 	
 	fd = ISFS_Open( path, ISFS_OPEN_READ);
-	if (fd <= 0)
+	ret = -1;
+	if (fd > 0)
 		{
-		return false;
+		ret = ISFS_Read(fd, cc, sizeof(s_channelConfig));
+		ISFS_Close(fd);
 		}
 	
-	ret = ISFS_Read(fd, cc, sizeof(s_channelConfig));
-	ISFS_Close(fd);
-
-	if (ret >= 0) return true;
+	ISFS_Deinitialize ();
 	
+	if (ret >= 0) return true;	
 	return false;
 	}
 
@@ -318,7 +318,9 @@ void RestoreSneekFolder (void)
 		ISFS_Delete (path);
 		ISFS_Rename (pathBak, path);
 		}
-
+	
+	ISFS_Deinitialize ();
+	
 	Debug ("RestoreSneekFolder [end]");
 	}
 
