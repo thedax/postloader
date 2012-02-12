@@ -132,7 +132,7 @@ static void USBDevice_deInit()
 	USB_Deinitialize();
 }
 
-#define BUFFSIZE (1024*16)
+#define BUFFSIZE (1024*64)
 #define GISIZE 0xEC
 static int count = 0;
 static int part = 0;
@@ -150,6 +150,12 @@ bool ScanWBFS (char *ob, char *path)
 	while ((pent=readdir(pdir)) != NULL) 
 		{
 		sprintf (fn, "%s/%s", path, pent->d_name);
+		
+		if (strlen (ob) > BUFFSIZE - 64)
+			{
+			Debug ("ScanWBFS: too many entryes");
+			break;
+			}
 		
 		// Let's check if it is a folder
 		if (strcmp (pent->d_name, ".") != 0 && strcmp (pent->d_name, "..") != 0 && fsop_DirExist (fn))

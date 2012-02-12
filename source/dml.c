@@ -205,6 +205,7 @@ int DMLRun (char *id)
 	
 char * DMLScanner (void)
 	{
+	static bool xcheck = true; // do that one time only
 	DIR *pdir;
 	struct dirent *pent;
 	char path[128];
@@ -233,7 +234,7 @@ char * DMLScanner (void)
 			
 			bool skip = false;
 			
-			if (IsDevValid(DEV_USB))
+			if (xcheck && IsDevValid(DEV_USB))
 				{
 				char sdp[256], usbp[256];
 				
@@ -269,6 +270,8 @@ char * DMLScanner (void)
 		}
 		
 	closedir(pdir);
+	
+	xcheck = false;
 
 	if (IsDevValid(DEV_USB))
 		{

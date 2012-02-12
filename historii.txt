@@ -2,6 +2,11 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.63.4
+
+* wbfs scanner: incremented buffer size.
+* dml: crosscheck is done only one time per session.
+
 postLoader 3.63.3
 
 * dml: mp3 music is stopped before starting copy a game from usb to sd
