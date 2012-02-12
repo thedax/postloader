@@ -281,6 +281,7 @@ bool readch (s_channelConfig *cc)
 void RestoreSneekFolder (void)
 	{
 	s32 fd;
+	int ret;
 
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	char pathBak[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
@@ -289,11 +290,17 @@ void RestoreSneekFolder (void)
 		
 	ISFS_Initialize ();
 	
-	sprintf (path, "/sneek/nandcfg.pl");
-	ISFS_Delete (path);
+	sprintf (path, "/sneek/nandpath.bin");
+	ret = ISFS_Delete (path);
+	Debug ("RestoreSneekFolder: delete '%s' = %d", path, ret);
 
-	sprintf (path, "/sneek/nandcfg.ch");
+	sprintf (path, "/sneek/nandcfg.pl");
+	ret = ISFS_Delete (path);
+	Debug ("RestoreSneekFolder: delete '%s' = %d", path, ret);
+
+	ret = sprintf (path, "/sneek/nandcfg.ch");
 	ISFS_Delete (path);
+	Debug ("RestoreSneekFolder: delete '%s' = %d", path, ret);
 
 	sprintf (path, "/title/00000001/00000002/data/loader.ini");
 	sprintf (pathBak, "/title/00000001/00000002/data/loader.bak");
@@ -303,8 +310,10 @@ void RestoreSneekFolder (void)
 		{
 		ISFS_Close(fd);
 		
-		ISFS_Delete (path);
-		ISFS_Rename (pathBak, path);
+		ret = ISFS_Delete (path);
+		Debug ("RestoreSneekFolder: delete '%s' = %d", path, ret);		
+		ret = ISFS_Rename (pathBak, path);
+		Debug ("RestoreSneekFolder: rename '%s'->'%s' = %d", pathBak, path, ret);
 		}
 
 	sprintf (path, "/sneek/nandcfg.bin");
@@ -315,8 +324,10 @@ void RestoreSneekFolder (void)
 		{
 		ISFS_Close(fd);
 		
-		ISFS_Delete (path);
-		ISFS_Rename (pathBak, path);
+		ret = ISFS_Delete (path);
+		Debug ("RestoreSneekFolder: delete '%s' = %d", path, ret);
+		ret = 		ISFS_Rename (pathBak, path);
+		Debug ("RestoreSneekFolder: rename '%s'->'%s' = %d", pathBak, path, ret);
 		}
 	
 	ISFS_Deinitialize ();

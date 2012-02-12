@@ -144,7 +144,9 @@ bool ScanWBFS (char *ob, char *path)
 	FILE* f = NULL;
 	char fn[128];
 	char tmp[128];
+	char buff[128];
     char gi[GISIZE];
+	int i;
 
 	pdir=opendir(path);
 	while ((pent=readdir(pdir)) != NULL) 
@@ -176,17 +178,30 @@ bool ScanWBFS (char *ob, char *path)
 			fseek (f, 0x200, 0);
 			fread( gi, 1, GISIZE, f);
 			
+			char *p = ob;
+			
 			// Add title
 			gi[0x20 + 64] = 0;		// Make sure to not oveflow
-			strcat (ob, &gi[0x20]);
+			strcpy (buff, &gi[0x20]);
+			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}			
+			if (strlen(buff) == 0) *p = 0;
+			strcat (ob, buff);
 			strcat (ob, "\1");
+			
 			// Add id
 			gi[0x00 + 6] = 0;		// Make sure to not oveflow
-			strcat (ob, &gi[0x0]);
+			strcpy (buff, &gi[0x0]);
+			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}
+			if (strlen(buff) == 0) *p = 0;
+			strcat (ob, buff);
 			strcat (ob, "\1");
+			
 			// Add partition
 			sprintf (tmp, "%d", part);
-			strcat (ob, tmp);
+			strcpy (buff, tmp);
+			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}
+			if (strlen(buff) == 0) *p = 0;
+			strcat (ob, buff);
 			strcat (ob, "\1");
 			
 			fclose (f);
@@ -279,11 +294,16 @@ char * WBFSSCanner (bool reset)
 		}
 	
 	// Adjust the ob
+	
+	Debug ("WBFSSCanner: adjust ob");
+	
 	int i, l;
 	l = strlen(ob);
 	for (i = 0; i < l; i++)
 		if (ob[i] == '\1')
 			ob[i] = '\0';
+	
+	Debug ("WBFSSCanner: adjust ob");
 	
 	return ob;
 	}

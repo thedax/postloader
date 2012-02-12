@@ -2,6 +2,11 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.64.0
+
+* wbfs scanner: again more checking
+* neekbooter 1.2: there is an error on neekbooter 1.1. I forgot to delete 'nandpath.bin' on return to menu'. 
+
 postLoader 3.63.4
 
 * wbfs scanner: incremented buffer size.
