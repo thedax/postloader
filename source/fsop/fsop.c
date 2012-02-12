@@ -308,8 +308,6 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		
 		if (vc) vc();
 		if (fsop.breakop) break;
-		
-		usleep (1);
 		}
 	while (bytes < size && err == 0);
 

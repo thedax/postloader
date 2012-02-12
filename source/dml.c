@@ -174,121 +174,6 @@ static bool GetName (int dev, char *id, char *name)
 	return true;
 	}
 
-static int VideoModeMenu (void)
-	{
-	int ret;
-	char menu[256];
-
-	do
-		{
-		*menu = '\0';
-		grlib_menuAddCheckItem (menu, 100, 1 - config.dmlvideomode, "NTSC mode");
-		grlib_menuAddCheckItem (menu, 101, config.dmlvideomode, "PAL 576i mode");
-
-		ret = grlib_menu ("DML options\n\nPress (+/-) to return to game list\nPress (B) to close", menu);
-		
-		if (ret == -1) return 0;
-		if (ret == MNUBTN_PLUS || ret == MNUBTN_MINUS) return 1;
-		
-		if (ret == 100)	config.dmlvideomode = DMLVIDEOMODE_NTSC;
-		if (ret == 101)	config.dmlvideomode = DMLVIDEOMODE_PAL;
-		}
-	while (ret >= 100 || ret < 0);
-	
-	return 1;
-	}
-
-int DMLSelect (void)
-	{
-	int ret;
-	int i, j;
-	DIR *pdir;
-	struct dirent *pent;
-	char path[128];
-	char menu[2048];
-	char files[MAXGAMES][64];
-	char buff[64];
-	char name[64];
-	
-	if (!IsDevValid(DEV_SD)) return 0;
-	
-	sprintf (path, "%s://games", vars.mount[DEV_SD]);
-	
-	do
-		{
-		*menu = '\0';
-		i = 0;
-		j = 0;
-		
-		pdir=opendir(path);
-		
-		while ((pent=readdir(pdir)) != NULL) 
-			{
-			//if (strlen (pent->d_name) ==  6)
-			if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-				{
-				strcpy (buff, pent->d_name);
-				strcpy (files[i], buff);
-				
-				GetName (DEV_SD, files[i], name);
-				grlib_menuAddItem (menu, i, "%s", name);
-				
-				i++;
-				j++;
-			
-				if (j == MAXROW)
-					{
-					grlib_menuAddColumn (menu);
-					j = 0;
-					}
-				
-				if (i == MAXGAMES)
-					{
-					break;
-					}
-				}
-			}
-			
-		closedir(pdir);
-
-		if (i == 0)
-			{
-			grlib_menu ("No GC Games found", "OK");
-			return 0;
-			}
-		
-		ret = grlib_menu ("Please select a GameCube Game\n\nPress (+/-) to show options\nPress (B) to close", menu);
-		if (ret == -1) return 0;
-		if (ret == MNUBTN_PLUS || ret == MNUBTN_MINUS)
-			{
-			if (!VideoModeMenu ()) break;
-			}
-
-		if (ret == 100)	config.dmlvideomode = DMLVIDEOMODE_NTSC;
-		if (ret == 101)	config.dmlvideomode = DMLVIDEOMODE_PAL;
-		}
-	while (ret >= 100 || ret < 0);
-	
-	
-	sprintf (path, "%s://games/boot.bin", vars.mount[DEV_SD]);
-	
-	FILE *f;
-	f = fopen(path, "wb");
-	if (!f)	return -1;
-	fwrite(files[ret], 1, 6, f);
-	fclose(f);
-	
- 	memcpy ((char *)0x80000000, files[ret], 6);
-	
-	ConfigWrite ();
-	
-	Shutdown (0);
-	
-	StartMIOS ();
-	
-	return 1;
-	}
-	
 int DMLRun (char *id)
 	{
 	char path[128];
@@ -353,7 +238,7 @@ char * DMLScanner (void)
 				char sdp[256], usbp[256];
 				
 				sprintf (sdp, "%s://games/%s", vars.mount[DEV_SD], pent->d_name);
-				sprintf (usbp, "%s://games/%s", vars.mount[DEV_USB], pent->d_name);
+				sprintf (usbp, "%s://ngc/%s", vars.mount[DEV_USB], pent->d_name);
 				
 				if (fsop_DirExist (usbp))
 					{
@@ -373,6 +258,7 @@ char * DMLScanner (void)
 						}
 					}
 				}
+	
 			if (!skip)
 				{
 				if (!GetName (DEV_SD, pent->d_name, name)) continue;
@@ -463,7 +349,6 @@ int DMLInstall (char *gamename, size_t reqKb)
 		i = 0;
 		j = 0;
 		
-		//sprintf (path, "%s://games", vars.mount[DEV_SD]);
 		pdir=opendir(path);
 		
 		while ((pent=readdir(pdir)) != NULL) 
@@ -473,7 +358,7 @@ int DMLInstall (char *gamename, size_t reqKb)
 				strcpy (files[i], pent->d_name);
 				
 				GetName (DEV_SD, files[i], name);
-				if (strlen (name) > 12)
+				if (strlen (name) > 20)
 					{
 					name[12] = 0;
 					strcat(name, "...");

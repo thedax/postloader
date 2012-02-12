@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <wiiuse/wpad.h>
+#include <sdcard/wiisd_io.h>
 #include <fat.h>
 #include <ntfs.h>
 #include <dirent.h>
@@ -197,6 +198,9 @@ char * WBFSSCanner (bool reset)
 	count = 0;
 	char *ob = calloc (1, BUFFSIZE);
 	
+	memset (&partinfo, 0, sizeof(partinfo)); // Part num, or part num + 10 for ntfs
+	memset (&mounted, 0, sizeof(mounted));
+	
 	sprintf (path, "%s://ploader/wbfs.cfg", vars.defMount);
 	
 	if (reset == 0)
@@ -219,6 +223,10 @@ char * WBFSSCanner (bool reset)
 		snd_Pause ();
 		
 		Fat_Unmount ();
+		
+		// Let's remount sd, required for debugging
+		Debug ("WBFSSCanner: mounting sd for debugging");
+		fatMountSimple("sd", &__io_wiisd);
 
 		if (vars.ios == IOS_DEFAULT)
 			storage=(DISC_INTERFACE*)&__io_wiiums;
@@ -226,8 +234,10 @@ char * WBFSSCanner (bool reset)
 			storage=(DISC_INTERFACE*)&__io_usbstorage;
 		
 		// Mount every partitions on usb
+		Debug ("WBFSSCanner: mounting devs");
 		USBDevice_Init ();
 		
+		Debug ("WBFSSCanner: scannning");
 		int i;
 		for (i = USB1; i <= USB4; i++)
 			{
@@ -241,18 +251,25 @@ char * WBFSSCanner (bool reset)
 				}
 			}
 		
+		Debug ("WBFSSCanner: unomount usb");
 		USBDevice_deInit ();
+		
+		Debug ("WBFSSCanner: unomount sd");
+		fatUnmount("sd:/");
+		__io_wiisd.shutdown();
 
+		Debug ("WBFSSCanner: remounting standard devs");
 		MountDevices (1);
 		
-		snd_Resume ();
-
+		Debug ("WBFSSCanner: writing cache file");
 		f = fopen (path, "wb");
 		if (f) 
 			{
 			fwrite (ob, 1, strlen(ob)+1, f);
 			fclose (f);
 			}
+		
+		snd_Resume ();
 		}
 	
 	// Adjust the ob

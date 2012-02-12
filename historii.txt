@@ -2,6 +2,13 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.63.3
+
+* dml: mp3 music is stopped before starting copy a game from usb to sd
+* dml: cross checking between sd and usb games fixed. 
+* wbfs scanner: added some more checking
+* wbfs scanner: should be able to keep debug on sd on
+
 postLoader 3.63.2
 
 * Again it seems that mp3 playback can hang postloader in some situations. Added a semaphore for cover cache thread.

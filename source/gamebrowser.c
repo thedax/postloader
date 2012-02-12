@@ -189,6 +189,8 @@ static bool DownloadCovers_Get (char *path, char *buff)
 
 static void FeedCoverCache (void)
 	{
+	Debug ("AppsSort: begin");
+	
 	char path[128];
 	CoverCache_Pause (true);
 
@@ -207,6 +209,8 @@ static void FeedCoverCache (void)
 		}
 	
 	CoverCache_Pause (false);
+	
+	Debug ("AppsSort: end");
 	}
 
 static void DownloadCovers (void)
@@ -281,7 +285,6 @@ static void DownloadCovers (void)
 	WiiLoad_Resume ();
 	
 	GameBrowse (0);
-	FeedCoverCache ();
 	}
 
 static void WriteGameConfig (int ia)
@@ -367,6 +370,8 @@ static void StructFree (void)
 #define SKIP 10
 static void AppsSort (void)
 	{
+	Debug ("AppsSort: begin");
+	
 	int i;
 	int mooved;
 	s_game app;
@@ -504,10 +509,13 @@ static void AppsSort (void)
 
 	pageMax = (games2Disp-1) / gui.spotsXpage;
 	refreshPng = 1;
+	
+	Debug ("AppsSort: end");
 	}
 	
 static void UpdateTitlesFromTxt (void)
 	{
+	Debug ("UpdateTitlesFromTxt: begin");
 	LoadTitlesTxt ();
 	if (titlestxt == NULL) return;
 
@@ -524,6 +532,7 @@ static void UpdateTitlesFromTxt (void)
 		
 		if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Parsing...");
 		}
+	Debug ("UpdateTitlesFromTxt: end");
 	}
 
 static int GameBrowse (int forcescan)
@@ -541,7 +550,7 @@ static int GameBrowse (int forcescan)
 		char *p;
 		
 		Video_WaitPanel (TEX_HGL, "Please wait...");
-		
+		CoverCache_Pause (true);
 		if (config.gameMode == GM_WII)
 			{
 			if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
@@ -551,7 +560,7 @@ static int GameBrowse (int forcescan)
 			}
 		else
 			titles = DMLScanner ();
-			
+		CoverCache_Pause (false);	
 		if (!titles) return 0;
 		
 		p = titles;
@@ -609,13 +618,14 @@ static int GameBrowse (int forcescan)
 		free (titles);
 		}
 
-	UpdateTitlesFromTxt ();
-	
-	AppsSort ();
-	
 	scanned = 1;
 
 	Debug ("end GameBrowse");
+
+	UpdateTitlesFromTxt ();
+	AppsSort ();
+	FeedCoverCache ();
+
 	return gamesCnt;
 	}
 
@@ -1570,8 +1580,6 @@ static void cb_filecopy (void)
 			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
 			if (ret == 0) fsop.breakop = 1;
 			}
-		
-		snd_Mp3Go ();
 		}
 	}
 
@@ -1588,7 +1596,7 @@ static bool MoveGCGame (int ai)
 	char source[300];
 	char target[300];
 	
-	//snd_Pause ();
+	snd_Pause ();
 
 	Debug ("MoveGCGame (%s %s): Started", games[ai].name, games[ai].asciiId);
 
@@ -1738,10 +1746,6 @@ int GameBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	
-	GameBrowse (0);
-	
-	redraw = 1;
-	
 	ConfigWrite ();
 
 	if (config.gamePage >= 0 && config.gamePage <= pageMax)
@@ -1749,8 +1753,10 @@ int GameBrowser (void)
 	else
 		page = 0;
 
-	FeedCoverCache ();
+	GameBrowse (0);
 	LiveCheck (1);
+
+	redraw = 1;
 	
 	// Loop forever
     while (browserRet == -1) 

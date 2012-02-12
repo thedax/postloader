@@ -84,7 +84,6 @@ static void *thread (void *arg)
 			if (*cc[i].id != '\0' && !cc[i].cover)
 				{
 				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
-				//Debug ("cache: loading %s -> 0x%X", cc[i].id, tex);
 				cc[i].cover = MoveTex2Mem2 (tex);
 				
 				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
@@ -194,14 +193,11 @@ void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt 
 	
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
-	Debug ("CoverCache_Add: %s", id);
-
 	// Let's check if the item already exists...
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0) 
 			{
-			Debug ("CoverCache_Add: -> already in cache");
 			if (pt) CoverCache_Pause (false);
 			return;
 			}
@@ -212,8 +208,6 @@ void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt 
 		{
 		if (*cc[i].id == '\0')
 			{
-			Debug ("CoverCache_Add: -> on empty");
-			
 			strcpy (cc[i].id, id);
 			cc[i].age = age;
 			found = true;
@@ -238,8 +232,6 @@ void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt 
 		
 		idx = minageidx;
 		
-		Debug ("CoverCache_Add: -> replaced %d", idx);
-		
 		if (cc[idx].cover) 
 			{
 			FreeMem2Tex (cc[idx].cover);
@@ -262,13 +254,10 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 
 	int i;
 	
-	//Debug ("CoverCache_Get: %s", id);
-
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
 			{
-			//Debug ("CoverCache_Get: found!");
 			return cc[i].cover;
 			}
 		}
