@@ -203,79 +203,56 @@ int DMLRun (char *id)
 	return 1;
 	}
 	
-char * DMLScanner (void)
+
+void DMLResetCache (void)
+	{
+	char cachepath[128];
+	sprintf (cachepath, "%s://ploader/dml.cfg", vars.defMount);
+	unlink (cachepath);
+	}
+
+#define BUFFSIZE (1024*64)
+
+void cb_DML (void)
+	{
+	Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+	}
+
+char * DMLScanner  (bool reset)
 	{
 	static bool xcheck = true; // do that one time only
 	DIR *pdir;
 	struct dirent *pent;
+	char cachepath[128];
 	char path[128];
 	char name[32];
 	char b[128];
-	char *buff = malloc (8192); // Yes, we are wasting space...
+	FILE *f;
+	char *buff = calloc (1, BUFFSIZE); // Yes, we are wasting space...
 	
-	*buff = 0;
-	
-	if (!IsDevValid(DEV_SD)) return 0;
-	
-	sprintf (path, "%s://games", vars.mount[DEV_SD]);
-	
-	fsop_GetFolderKb (path, 0);
-	
-	Debug ("DML: scanning %s", path);
-	
-	pdir=opendir(path);
-	
-	while ((pent=readdir(pdir)) != NULL) 
+	sprintf (cachepath, "%s://ploader/dml.cfg", vars.defMount);
+
+	if (reset == 0)
 		{
-		//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-		if (strlen (pent->d_name) ==  6)
+		f = fopen (cachepath, "rb");
+		if (!f) 
+			reset = 1;
+		else
 			{
-			Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+			fread (buff, 1, BUFFSIZE-1, f);
+			fclose (f);
 			
-			bool skip = false;
-			
-			if (xcheck && IsDevValid(DEV_USB))
-				{
-				char sdp[256], usbp[256];
-				
-				sprintf (sdp, "%s://games/%s", vars.mount[DEV_SD], pent->d_name);
-				sprintf (usbp, "%s://ngc/%s", vars.mount[DEV_USB], pent->d_name);
-				
-				if (fsop_DirExist (usbp))
-					{
-					u32 sdkb, usbkb;
-					
-					sdkb = fsop_GetFolderKb (sdp, NULL);
-					usbkb = fsop_GetFolderKb (usbp, NULL);
-					
-					if (sdkb != usbkb)
-						{
-						char mex[256];
-						fsop_KillFolderTree (sdp, NULL);
-						
-						sprintf (mex, "Folder '%s' removed\n as it has the wrong size", sdp);
-						grlib_menu (mex, "   OK   ");
-						skip = true;
-						}
-					}
-				}
-	
-			if (!skip)
-				{
-				if (!GetName (DEV_SD, pent->d_name, name)) continue;
-				sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
-				strcat (buff, b);
-				}
+			buff[BUFFSIZE-1] = 0;
 			}
 		}
-		
-	closedir(pdir);
 	
-	xcheck = false;
-
-	if (IsDevValid(DEV_USB))
+	if (reset == 1)
 		{
-		sprintf (path, "%s://ngc", vars.mount[DEV_USB]);
+		if (!IsDevValid(DEV_SD)) return 0;
+		
+		sprintf (path, "%s://games", vars.mount[DEV_SD]);
+		
+		fsop_GetFolderKb (path, 0);
 		
 		Debug ("DML: scanning %s", path);
 		
@@ -284,16 +261,81 @@ char * DMLScanner (void)
 		while ((pent=readdir(pdir)) != NULL) 
 			{
 			//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-			if (strlen (pent->d_name) == 6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+			if (strlen (pent->d_name) ==  6)
 				{
 				Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
-				if (!GetName (DEV_USB, pent->d_name, name)) continue;
-				sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
-				strcat (buff, b);
+				
+				bool skip = false;
+				
+				if (xcheck && IsDevValid(DEV_USB))
+					{
+					char sdp[256], usbp[256];
+					
+					sprintf (sdp, "%s://games/%s", vars.mount[DEV_SD], pent->d_name);
+					sprintf (usbp, "%s://ngc/%s", vars.mount[DEV_USB], pent->d_name);
+					
+					if (fsop_DirExist (usbp))
+						{
+						u32 sdkb, usbkb;
+						
+						sdkb = fsop_GetFolderKb (sdp, cb_DML);
+						usbkb = fsop_GetFolderKb (usbp, cb_DML);
+						
+						if (sdkb != usbkb)
+							{
+							char mex[256];
+							fsop_KillFolderTree (sdp, cb_DML);
+							
+							sprintf (mex, "Folder '%s' removed\n as it has the wrong size", sdp);
+							grlib_menu (mex, "   OK   ");
+							skip = true;
+							}
+						}
+					}
+		
+				if (!skip)
+					{
+					if (!GetName (DEV_SD, pent->d_name, name)) continue;
+					sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
+					strcat (buff, b);
+					}
 				}
 			}
 			
 		closedir(pdir);
+		
+		xcheck = false;
+
+		if (IsDevValid(DEV_USB))
+			{
+			sprintf (path, "%s://ngc", vars.mount[DEV_USB]);
+			
+			Debug ("DML: scanning %s", path);
+			
+			pdir=opendir(path);
+			
+			while ((pent=readdir(pdir)) != NULL) 
+				{
+				//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
+				if (strlen (pent->d_name) == 6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+					{
+					Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+					if (!GetName (DEV_USB, pent->d_name, name)) continue;
+					sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
+					strcat (buff, b);
+					}
+				}
+				
+			closedir(pdir);
+			}
+		
+		Debug ("WBFSSCanner: writing cache file");
+		f = fopen (cachepath, "wb");
+		if (f) 
+			{
+			fwrite (buff, 1, strlen(buff)+1, f);
+			fclose (f);
+			}
 		}
 
 	int i, l;
@@ -410,6 +452,8 @@ int DMLInstall (char *gamename, size_t reqKb)
 			
 			Debug ("DMLInstall deleting '%s'", gamepath);
 			fsop_KillFolderTree (gamepath, NULL);
+			
+			DMLResetCache (); // rebuild the cache next time
 			}
 			
 		devKb = fsop_GetFreeSpaceKb (path);

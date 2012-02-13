@@ -544,79 +544,79 @@ static int GameBrowse (int forcescan)
 	gui_Clean ();
 	StructFree ();
 
+	int i;
+	char *titles;
+	char *p;
+	
+	Video_WaitPanel (TEX_HGL, "Please wait...");
+	CoverCache_Pause (true);
+	if (config.gameMode == GM_WII)
 		{
-		int i;
-		char *titles;
-		char *p;
-		
-		Video_WaitPanel (TEX_HGL, "Please wait...");
-		CoverCache_Pause (true);
-		if (config.gameMode == GM_WII)
-			{
-			if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
-				titles = neek_GetGames ();
-			else
-				titles = WBFSSCanner (forcescan);
-			}
+		if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
+			titles = neek_GetGames ();
 		else
-			titles = DMLScanner ();
-		CoverCache_Pause (false);	
-		if (!titles) return 0;
-		
-		p = titles;
-		i = 0;
-		
-		Debug ("GameBrowse [begin]");
-				
-		do
+			titles = WBFSSCanner (forcescan);
+		}
+	else
+		{
+		titles = DMLScanner (forcescan);
+		}
+	CoverCache_Pause (false);	
+	if (!titles) return 0;
+	
+	p = titles;
+	i = 0;
+	
+	Debug ("GameBrowse [begin]");
+			
+	do
+		{
+		if (*p != '\0' && strlen(p))
 			{
-			if (*p != '\0' && strlen(p))
+			// Add name
+			games[i].name = malloc (strlen(p));
+			strcpy (games[i].name, p);
+			p += (strlen(p) + 1);
+			
+			// Add id
+			strcpy (games[i].asciiId, p);
+			p += (strlen(p) + 1);
+
+			if (config.gameMode == GM_WII)
 				{
-				// Add name
-				games[i].name = malloc (strlen(p));
-				strcpy (games[i].name, p);
-				p += (strlen(p) + 1);
-				
-				// Add id
-				strcpy (games[i].asciiId, p);
-				p += (strlen(p) + 1);
-
-				if (config.gameMode == GM_WII)
-					{
-					// Setup slot
-					if (vars.neek != NEEK_NONE)
-						games[i].slot = i;
-					else
-						{
-						// Add slot
-						strcpy (slot, p);
-						p += (strlen(p) + 1);
-
-						games[i].slot = atoi (slot); // PArtition number
-						}
-					}
+				// Setup slot
+				if (vars.neek != NEEK_NONE)
+					games[i].slot = i;
 				else
 					{
+					// Add slot
 					strcpy (slot, p);
 					p += (strlen(p) + 1);
 
-					games[i].slot = atoi (slot); // sd = 0 / usb = 1 ?
+					games[i].slot = atoi (slot); // PArtition number
 					}
-				
-				if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
-				ReadGameConfig (i);
-				
-				i ++;
 				}
 			else
-				break;
+				{
+				strcpy (slot, p);
+				p += (strlen(p) + 1);
+
+				games[i].slot = atoi (slot); // sd = 0 / usb = 1 ?
+				}
+			
+			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
+			ReadGameConfig (i);
+			
+			i ++;
 			}
-		while (TRUE);
-		
-		gamesCnt = i;
-		
-		free (titles);
+		else
+			break;
 		}
+	while (TRUE);
+	
+	gamesCnt = i;
+	
+	free (titles);
 
 	scanned = 1;
 
@@ -919,6 +919,11 @@ static void ShowAppMenu (int ai)
 				strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
 				}
 			}
+		else
+			{
+			if (games[ai].slot == 0)
+				grlib_menuAddItem (buff, 7, "Remove from SD");
+			}
 		/*
 		else
 			{
@@ -978,20 +983,6 @@ static void ShowAppMenu (int ai)
 	while (TRUE);
 	gameConf.language --;
 	
-	if (item == 1)
-		{
-		memcpy (&config.autoboot.channel, &gameConf, sizeof (s_gameConfig));
-		config.autoboot.appMode = APPMODE_CHAN;
-		config.autoboot.enabled = TRUE;
-
-		config.autoboot.nand = config.chnBrowser.nand;
-		strcpy (config.autoboot.nandPath, config.chnBrowser.nandPath);
-
-		strcpy (config.autoboot.asciiId, games[ai].asciiId);
-		strcpy (config.autoboot.path, games[ai].name);
-		ConfigWrite();
-		}
-
 	if (item == 5)
 		{
 		ShowGameFilterMenu (ai);
@@ -1027,6 +1018,19 @@ static void ShowAppMenu (int ai)
 		games[ai].hidden = 1;
 		WriteGameConfig (ai);
 		AppsSort ();
+		}
+
+	if (item == 7)
+		{
+		char path[256];
+		
+		int ret = grlib_menu ("Are you sure you want to delete this game ? ", "   YES   ~NO");
+		if (ret == 0)
+			{
+			sprintf (path, "sd://games/%s", games[ai].asciiId);
+			fsop_KillFolderTree (path, NULL);
+			GameBrowse (1);
+			}
 		}
 
 	if (item == 4)
@@ -1219,7 +1223,10 @@ static void ShowGamesOptions (void)
 		}
 	else
 		{
-		strcat (buff, "Rebuild game list (ntfs/fat)...##13|");
+		if (config.gameMode == GM_WII)
+			strcat (buff, "Rebuild game list (ntfs/fat)...##13|");
+		else
+			strcat (buff, "Rebuild game list (DML)...##13|");
 		}
 	
 	strcat (buff, "Reset configuration files...##11||");
@@ -1597,6 +1604,7 @@ static bool MoveGCGame (int ai)
 	char target[300];
 	
 	snd_Pause ();
+	DMLResetCache ();
 
 	Debug ("MoveGCGame (%s %s): Started", games[ai].name, games[ai].asciiId);
 

@@ -2,6 +2,13 @@
 PLOADER - HISTORII
 ====================
 
+postLoader 3.65.0
+
+* dml: added cache... no more wait time. Cache, as usual, must be rebuilt manually (or automatically when install a game from usb to sd or remove a game)
+* dml: added an option to remove a game from sd (press [B] on the game)
+* dml: some little optimization on ui when searching for games
+* priibooterGUI 1.0b: added different way to call HBC
+
 postLoader 3.64.0
 
 * wbfs scanner: again more checking

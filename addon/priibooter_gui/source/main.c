@@ -14,13 +14,22 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "1.0"
+#define VER "1.0b"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
 
 #define POSTLOADER_SDAPP "sd://apps/postloader/boot.dol"
 #define POSTLOADER_USBAPP "usb://apps/postloader/boot.dol"
+
+#define PLNEEK_SDFOLDER "sd://ploader"
+#define PLNEEK_USBFOLDER "usb://ploader"
+
+#define TITLE_ID(x,y) (((u64)(x) << 32) | (y)) // Needed for launching channels
+
+char plfolder[64];
+char pldir[64];
+char pldat[64];
 
 #define NANDSUBS 10
 static char nandsubs[NANDSUBS][32] = 
@@ -438,7 +447,7 @@ bool SavePLN (void)
 
 	//printd ("Storing nand folder informations");
 
-	f = fopen (PLNEEK_DIR, "wb");
+	f = fopen (PLNEEK_SDDIR, "wb");
 	if (!f) return FALSE;
 	
 	fwrite (&pln, sizeof(s_plneek), 1, f);
@@ -451,7 +460,7 @@ bool LoadPLN (void)
 	{
 	FILE *f;
 
-	f = fopen (PLNEEK_DIR, "rb");
+	f = fopen (PLNEEK_SDDIR, "rb");
 	if (!f) 
 		{
 		pln.bootMode = PLN_BOOT_REAL;
@@ -621,8 +630,8 @@ int main(int argc, char **argv)
 
 	if (sd)
 		{
-		//printd ("Checking "PLNEEK_DAT"");
-		nandSource = (char*)fsop_GetBuffer (PLNEEK_DAT, NULL, NULL);
+		//printd ("Checking "PLNEEK_SDDAT"");
+		nandSource = (char*)fsop_GetBuffer (PLNEEK_SDDAT, NULL, NULL);
 		}
 		
 	if (nandSource)
@@ -636,7 +645,7 @@ int main(int argc, char **argv)
 		if (*p == '/') p++;
 		
 		strcpy (pln.name, p);
-		//printd (PLNEEK_DAT" found -> '%s'", nandSource);
+		//printd (PLNEEK_SDDAT" found -> '%s'", nandSource);
 
 		// If nandSource isn't null, we have to copy selected nand. But before check if we have a nand on the root... if exist it must be backed up
 		StoreCurrentNand ();
@@ -646,11 +655,16 @@ int main(int argc, char **argv)
 		}
 	
 	// After read remove the configuration file. If something fail, doesn't do it again
-	remove (PLNEEK_DAT);
+	remove (PLNEEK_SDDAT);
 
 	GetNandsFolders ();
 
 	Boot ();	
+
+	WII_Initialize();
+	WII_LaunchTitle(TITLE_ID(0x00010001,0xAF1BF516)); // HBC v1.0.7+
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x4a4f4449)); // HBC JODI
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x48415858)); // HBC HAXX 
 	
     exit(0);  // Use exit() to exit a program, do not use 'return' from main()
 	}

@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define BUILD 64
-#define VER "3.64.0"
+#define BUILD 65
+#define VER "3.65.0"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define IOS_PREFERRED 58
@@ -448,8 +448,9 @@ void RunLoader(void);
 int ThemeSelect (void);
 
 // DML
+void DMLResetCache (void);
 int DMLSelect (void);
-char * DMLScanner (void);
+char * DMLScanner  (bool reset);
 int DMLRun (char *id);
 int DMLInstall (char *gamename, size_t reqKb);
 

@@ -241,7 +241,6 @@ char * WBFSSCanner (bool reset)
 	if (reset)
 		{
 		Video_WaitPanel (TEX_HGL, "Please wait...|(mounting partitions)");
-		snd_Pause ();
 		
 		Fat_Unmount ();
 		
@@ -289,8 +288,6 @@ char * WBFSSCanner (bool reset)
 			fwrite (ob, 1, strlen(ob)+1, f);
 			fclose (f);
 			}
-		
-		snd_Resume ();
 		}
 	
 	// Adjust the ob

@@ -12,7 +12,7 @@ bool plneek_GetNandName (void)
 
 	*vars.neekName = '\0';
 	
-	f = fopen (PLNEEK_DIR, "rb");
+	f = fopen (PLNEEK_SDDIR, "rb");
 	if (!f) 
 		return FALSE;
 	
@@ -26,7 +26,7 @@ static bool GetNandDir (void)
 	{
 	FILE *f;
 	
-	f = fopen (PLNEEK_DIR, "rb");
+	f = fopen (PLNEEK_SDDIR, "rb");
 	if (!f) return FALSE;
 	
 	fread (pln, sizeof(s_plneek), 1, f);
@@ -39,7 +39,7 @@ static bool WriteDatFile (char *buff)
 	{
 	FILE *f;
 	
-	f = fopen (PLNEEK_DAT, "wb");
+	f = fopen (PLNEEK_SDDAT, "wb");
 	if (!f) return FALSE;
 	
 	fwrite (buff, strlen(buff)+1, 1, f); // Add 0 term
@@ -65,7 +65,7 @@ bool plneek_ShowMenu (void)
 		
 		char title[300];
 		sprintf (title, 
-			"Cannot open "PLNEEK_DIR"\n\nUNEEK nands folder must be\nin usb://nands\n\nOr plneek.dol isn't in sd root\nor priibooter.dol isn't updated (%d,%d)",
+			"Cannot open "PLNEEK_SDDIR"\n\nUNEEK nands folder must be\nin usb://nands\n\nOr plneek.dol isn't in sd root\nor priibooter.dol isn't updated (%d,%d)",
 			gnd, pln->nandsCnt);
 			
 		grlib_menu (title, menu);
@@ -112,7 +112,7 @@ bool plneek_ShowMenu (void)
 			}
 		else
 			{
-			grlib_menu ("There was an error updating "PLNEEK_DAT, "OK");
+			grlib_menu ("There was an error updating "PLNEEK_SDDAT, "OK");
 			}
 		}
 	

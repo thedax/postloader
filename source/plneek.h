@@ -3,8 +3,11 @@
 
 #define NAND_MAX 16
 
-#define PLNEEK_DIR "sd://ploader/plneek.dir"
-#define PLNEEK_DAT "sd://ploader/plneek.dat"
+#define PLNEEK_SDDIR "sd://ploader/plneek.dir"
+#define PLNEEK_SDDAT "sd://ploader/plneek.dat"
+
+#define PLNEEK_USBDIR "usb://ploader/plneek.dir"
+#define PLNEEK_USBDAT "usb://ploader/plneek.dat"
 
 #define PLN_BOOT_REAL 0
 #define PLN_BOOT_NEEK 1
