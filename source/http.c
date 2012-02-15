@@ -1,4 +1,5 @@
 #include "http.h"
+#include "debug.h"
 
 /**
  * Emptyblock is a statically defined variable for functions to return if they are unable
@@ -66,22 +67,23 @@ static s32 server_connect(u32 ipaddress, u32 socket_port) {
  * @param s32 connection The connection identifier to suck the response out of
  * @return block A 'block' struct (see http.h) in which the buffer is located
  */
+ 
+ #define CONTENTLENGHT "Content-Length:"
 u8 *read_message(s32 connection, u32 *size)
 {
 	//Create a block of memory to put in the response
 	u8 *buffer;
 	u32 bytes;
+	bool contentLength = false;
+	bool fileStart = false;
 	
 	*size = 0;
 	
-	buffer = malloc(HTTP_BUFFER_SIZE);
+	buffer = calloc(1, HTTP_BUFFER_SIZE);
 	bytes = HTTP_BUFFER_SIZE;
 
 	if (buffer == NULL) 
-		{
-		
 		return NULL;
-		}
 
 	//The offset variable always points to the first byte of memory that is free in the buffer
 	u32 offset = 0;
@@ -100,21 +102,46 @@ u8 *read_message(s32 connection, u32 *size)
 			return NULL;
 			}
 			
-		if (http.bytes == 0)
-			{
-			//*p = memcmpy (buffer
-			}
-			
-		http.bytes += bytes_read;
-
 		//No more bytes were read into the buffer,
 		//we assume this means the HTTP response is done
-		if(bytes_read == 0)
-			{
+		
+		//Debug ("read_message->net_read = %d", bytes_read);
+
+		if (bytes_read == 0) 
 			break;
-			}
 
 		offset += bytes_read;
+
+		if (!contentLength && offset < (HTTP_BUFFER_SIZE - strlen (CONTENTLENGHT)))
+			{
+			char *p = strstr ((char*)buffer, CONTENTLENGHT);
+			if (p)
+				{
+				p += strlen (CONTENTLENGHT);
+				if (strstr (p, "\r\n"))
+					{
+					http.size = atoi(p);
+					Debug ("read_message->contentLenght = %d", http.size);
+					contentLength = true;
+					}
+				}
+			}
+			
+		if (!fileStart && offset < (HTTP_BUFFER_SIZE - 4))
+			{
+			char *p = strstr ((char*)buffer, "\r\n\r\n");
+			if (p)
+				{
+				p += 4;
+				http.headersize = (void*)p - (void*)buffer;
+				Debug ("read_message->headersize = %d", http.headersize);
+				fileStart = true;
+				}
+			}
+			
+		http.bytes = offset - http.headersize;
+		
+		if (http.cb) http.cb();
 
 		//Check if we have enough buffer left over,
 		//if not expand it with an additional HTTP_BUFFER_GROWTH worth of bytes

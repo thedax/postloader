@@ -842,7 +842,6 @@ static void ShowAppMenu (int ai)
 
 		strcpy (config.autoboot.asciiId, chans[chansSelected].asciiId);
 		strcpy (config.autoboot.path, chans[chansSelected].name);
-		ConfigWrite();
 		}
 
 	if (item == 2)
@@ -1494,8 +1493,6 @@ int ChnBrowser (void)
 	
 	redraw = 1;
 	
-	ConfigWrite ();
-
 	if (config.chnPage >= 0 && config.chnPage <= pageMax)
 		page = config.chnPage;
 	else
@@ -1551,14 +1548,12 @@ int ChnBrowser (void)
 			if (btn & WPAD_BUTTON_2)
 				{
 				ShowFilterMenu ();
-				ConfigWrite ();
 				redraw = 1;
 				}
 				
 			if (btn & WPAD_BUTTON_HOME)
 				{
 				ShowMainMenu ();
-				ConfigWrite ();
 				redraw = 1;
 				}
 			

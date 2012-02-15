@@ -37,16 +37,10 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		
 	// Calculate icon bounds
 
-	icon->rx1 = icon->x - w / 2.0;
-	icon->rx2 = icon->x + w / 2.0;
-
-	icon->ry1 = icon->y - h / 2.0;
-	icon->ry2 = icon->y + h / 2.0;
-	
-	gro.x1 = icon->rx1 - icon->xoff;
-	gro.x2 = icon->rx2 - icon->xoff;
-	gro.y1 = icon->ry1 - icon->yoff;
-	gro.y2 = icon->ry2 - icon->yoff;
+	gro.x1 = (icon->x - w / 2.0) - icon->xoff;
+	gro.x2 = (icon->x + w / 2.0) - icon->xoff;
+	gro.y1 = (icon->y - h / 2.0) - icon->yoff;
+	gro.y2 = (icon->y + h / 2.0) - icon->yoff;
 	
 	grlib_MagObject (&grob, &gro, is->border, is->border);
 	
@@ -55,8 +49,6 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 	if (is->themed)		{
 		// Draw mask (if exist)
 		if (!icon->noIcon)	grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE);
-		//Debug ("theme.frameBack = 0x%X 0x%X", theme.frameBack, is->bkgTex);
-		
 		}
 	else
 		{
@@ -122,7 +114,6 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		if (is->themed)
 			{
 			grlib_DrawSquareThemed (&grob, is->fgrTex, NULL, 0, 0, DSTF_NONE);
-			//grlib_MagObject (&grob, &grob, 2, 2);
 			grlib_DrawSquareThemed (&grob, is->fgrSelTex, NULL, 0, 0, DSTF_NONE);
 			}
 		else
@@ -147,4 +138,11 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 			grlib_DrawEmptySquare (&grob);
 			}
 		}
+		
+	icon->rx1 = grob.x1;
+	icon->rx2 = grob.x2;
+
+	icon->ry1 = grob.y1;
+	icon->ry2 = grob.y2;
+		
 	}

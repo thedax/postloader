@@ -30,7 +30,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 	static int xs = 0;
 	GRRLIB_texImg *img;
 	
-	Debug ("Play: %s", fn);
+	//Debug ("Play: %s", fn);
 	
 	if (fn == NULL)
 		img = GRRLIB_LoadTexturePNG (icon_png);

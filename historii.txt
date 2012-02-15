@@ -1,6 +1,9 @@
-====================
-PLOADER - HISTORII
-====================
+postLoader 3.66.0
+
+* Reintroduced online update. Now updates are in zipped format and can contain all files that need to be updated. Press [home]->check online for updates
+* dml: sd->usb crosscheck allows 2Kb of difference to let gct codes to be stored only on sd.
+* dml: multiple disc is now supported. The only folder name scheme supported is the one from discex
+* code clean and refinement
 
 postLoader 3.65.0
 

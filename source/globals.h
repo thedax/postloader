@@ -12,8 +12,7 @@
 
 //#define DOLPHINE
 
-#define BUILD 65
-#define VER "3.65.0"
+#define VER "3.66.0"
 #define CFGVER "PLCFGV0009"
 #define IOS_DEFAULT 249
 #define IOS_PREFERRED 58
@@ -386,6 +385,8 @@ void LoadTitlesTxt (void);
 bool Neek2oLoadKernel (void);
 bool Neek2oBoot (void);
 
+bool ReloadPostloader (void);
+
 // dol.c
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -396,6 +397,7 @@ u32 load_dol(const void *dolstart, struct __argv *argv);
 void DolBoot (s_run *run);
 int DolBootPrepare (s_run *run);
 int DolBootPrepareWiiload (void);
+void DirectDolBoot (char *fn);
 
 // io.c
 s32 Fat_Mount(int dev, int updateVideo);
@@ -431,7 +433,7 @@ int ChnBrowser (void);
 int GameBrowser (void);
 
 // wiiloadzip
-int ZipUnpack (char *path, char *target, char *dols);
+int ZipUnpack (char *path, char *target, char *dols, int *errcnt);
 void WiiloadZipMenu (void);
 bool WiiloadPostloaderDolMenu (void);
 

@@ -79,7 +79,7 @@ int ThemeSelect (void)
 	strcat (path, "/");
 	strcat (path, files[ret]);
 	
-	ZipUnpack (path, targpath, NULL);
+	ZipUnpack (path, targpath, NULL, NULL);
 	
 	sprintf (targpath, "%s://ploader/theme/ploader.png", vars.defMount);
 	if (fsop_FileExist (targpath) && IsDevValid (DEV_SD))

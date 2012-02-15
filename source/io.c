@@ -92,6 +92,8 @@ s32 Fat_Mount(int dev, int silent)
 	
 void Fat_Unmount(void)
 	{
+	ConfigWrite ();
+
 	int i;
 	char mount[64];
 	

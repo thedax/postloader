@@ -515,9 +515,6 @@ static int AppsSetDefault (int ia)
 	else
 		strcpy (config.autoboot.args, "");
 		
-	// Update setup
-	ConfigWrite ();
-	
 	return 1;
 	}
 
@@ -534,9 +531,6 @@ static int AppsSetRun (int ia)
 	else
 		strcpy (config.run.args, "");
 		
-	// Update setup
-	ConfigWrite ();
-	
 	config.run.enabled = 1;
 	
 	return 1;
@@ -1461,8 +1455,6 @@ int AppBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the frame buffer to the TV
 	AppsBrowse ();
-	
-	ConfigWrite ();
 	
 	if (config.appPage >= 0 && config.appPage <= pageMax)
 		page = config.appPage;

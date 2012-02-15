@@ -76,7 +76,7 @@ static int ZipCheck (char *path)	// Dols contains a list of found dols
 	return DU_NONE;
 	}
 
-int ZipUnpack (char *path, char *target, char *dols)
+int ZipUnpack (char *path, char *target, char *dols, int *errcnt)
 	{
 	int ioerr, err, bytes;
 	u8 *b;
@@ -89,6 +89,8 @@ int ZipUnpack (char *path, char *target, char *dols)
 	unz_file_info fi;
 	int execFound = 0;
 	int count = 0;
+	
+	if (errcnt) *errcnt = 0;
 	
 	grlib_Redraw ();
 	grlib_PushScreen ();
@@ -201,6 +203,8 @@ int ZipUnpack (char *path, char *target, char *dols)
 	unzClose (uf);
 	
 	Debug (dols);
+	
+	if (errcnt) *errcnt = ioerr;
 	
 	if (ioerr) 
 		return false;
@@ -323,12 +327,12 @@ void WiiloadZipMenu (void)
 		if (ret == 10)
 			{
 			sprintf (target, "%s://apps", vars.mount[DEV_SD]);
-			ZipUnpack (path, target, dols);
+			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 20)
 			{
 			sprintf (target, "%s://apps", vars.mount[DEV_USB]);
-			ZipUnpack (path, target, dols);
+			ZipUnpack (path, target, dols, NULL);
 			}
 		}
 		
@@ -365,27 +369,27 @@ void WiiloadZipMenu (void)
 		if (ret == 10)
 			{
 			sprintf (target, "%s://", vars.mount[DEV_SD]);
-			ZipUnpack (path, target, dols);
+			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 11)
 			{
 			sprintf (target, "%s://apps", vars.mount[DEV_SD]);
-			ZipUnpack (path, target, dols);
+			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 20)
 			{
 			sprintf (target, "%s://", vars.mount[DEV_USB]);
-			ZipUnpack (path, target, dols);
+			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 21)
 			{
 			sprintf (target, "%s://apps", vars.mount[DEV_USB]);
-			ZipUnpack (path, target, dols);
+			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 30)
 			{
 			sprintf (target, "%s", vars.tempPath);
-			ZipUnpack (path, vars.tempPath, dols);
+			ZipUnpack (path, vars.tempPath, dols, NULL);
 			}
 		
 		if (ret > 0)

@@ -324,3 +324,22 @@ bool Neek2oBoot (void)
 	DoMini (kernel, kernelsize);
 	return true;
 	}
+
+bool ReloadPostloader (void)
+	{
+	char path[64];
+	
+	if (IsDevValid (DEV_SD))
+		{
+		sprintf (path, "%s://apps/postloader/boot.dol", vars.mount[DEV_SD]);
+		if (fsop_FileExist (path)) DirectDolBoot (path);
+		}
+
+	if (IsDevValid (DEV_USB))
+		{
+		sprintf (path, "%s://apps/postloader/boot.dol", vars.mount[DEV_USB]);
+		if (fsop_FileExist (path)) DirectDolBoot (path);
+		}
+	
+	return false;
+	}

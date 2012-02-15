@@ -187,6 +187,18 @@ static bool DownloadCovers_Get (char *path, char *buff)
 	return (FALSE);
 	}
 
+void MakeCoverPath (int ai, char *path)
+	{
+	char asciiId[10];
+	
+	strcpy (asciiId, games[ai].asciiId);
+
+	if (config.gameMode == GM_DML)
+		asciiId[6] = 0;
+
+	sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, asciiId);
+	}
+
 static void FeedCoverCache (void)
 	{
 	Debug ("AppsSort: begin");
@@ -203,7 +215,7 @@ static void FeedCoverCache (void)
 		
 		if (ai >= 0 && ai < gamesCnt)
 			{
-			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
+			MakeCoverPath (ai, path);
 			CoverCache_Add (path, false);
 			}
 		}
@@ -651,7 +663,7 @@ static int FindSpot (void)
 			
 			if (vars.neek == NEEK_NONE) // only on real nand
 				{
-				char part[32];
+				char part[64];
 				
 				if (config.gameMode == GM_WII)
 					{
@@ -680,7 +692,14 @@ static int FindSpot (void)
 			strcat (info, "(");
 			strcat (info, games[gamesSelected].asciiId);
 			strcat (info, ")");
-			
+			if (config.gameMode == GM_DML && strlen (games[gamesSelected].asciiId) == 7)
+				{
+				char b[32];
+				sprintf (b, " DISC %s", &games[gamesSelected].asciiId[6]);
+				
+				strcat (info, b);
+				}
+
 			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, info);
 			
 			t = time(NULL);
@@ -1402,7 +1421,7 @@ static void RedrawIcons (int xoff, int yoff)
 		
 		if (ai < gamesCnt && ai < games2Disp && gui.spotsIdx < SPOTSMAX)
 			{
-			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ai].asciiId);
+			MakeCoverPath (ai, path);
 			gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 				
 			if (!gui.spots[gui.spotsIdx].ico.icon)
@@ -1419,7 +1438,7 @@ static void RedrawIcons (int xoff, int yoff)
 				}
 				
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
-
+			
 			// Let's add the spot points, to reconize the icon pointed by wiimote
 			gui.spots[gui.spotsIdx].id = ai;
 			
@@ -1754,15 +1773,13 @@ int GameBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	
-	ConfigWrite ();
+	GameBrowse (0);
+	LiveCheck (1);
 
 	if (config.gamePage >= 0 && config.gamePage <= pageMax)
 		page = config.gamePage;
 	else
 		page = 0;
-
-	GameBrowse (0);
-	LiveCheck (1);
 
 	redraw = 1;
 	
@@ -1853,14 +1870,12 @@ int GameBrowser (void)
 			if (btn & WPAD_BUTTON_2)
 				{
 				ShowFilterMenu ();
-				ConfigWrite ();
 				redraw = 1;
 				}
 				
 			if (btn & WPAD_BUTTON_HOME)
 				{
 				ShowMainMenu ();
-				ConfigWrite ();
 				redraw = 1;
 				}
 			

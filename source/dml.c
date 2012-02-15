@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <gccore.h>
@@ -213,12 +215,12 @@ void DMLResetCache (void)
 
 #define BUFFSIZE (1024*64)
 
-void cb_DML (void)
+static void cb_DML (void)
 	{
 	Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 	}
 
-char * DMLScanner  (bool reset)
+char *DMLScanner  (bool reset)
 	{
 	static bool xcheck = true; // do that one time only
 	DIR *pdir;
@@ -261,7 +263,7 @@ char * DMLScanner  (bool reset)
 		while ((pent=readdir(pdir)) != NULL) 
 			{
 			//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-			if (strlen (pent->d_name) ==  6)
+			if (strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7)
 				{
 				Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 				
@@ -276,12 +278,12 @@ char * DMLScanner  (bool reset)
 					
 					if (fsop_DirExist (usbp))
 						{
-						u32 sdkb, usbkb;
+						int sdkb, usbkb;
 						
 						sdkb = fsop_GetFolderKb (sdp, cb_DML);
 						usbkb = fsop_GetFolderKb (usbp, cb_DML);
 						
-						if (sdkb != usbkb)
+						if (abs (sdkb - usbkb) > 2)
 							{
 							char mex[256];
 							fsop_KillFolderTree (sdp, cb_DML);
@@ -317,7 +319,7 @@ char * DMLScanner  (bool reset)
 			while ((pent=readdir(pdir)) != NULL) 
 				{
 				//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-				if (strlen (pent->d_name) == 6 && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+				if ((strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7) && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
 					{
 					Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 					if (!GetName (DEV_USB, pent->d_name, name)) continue;

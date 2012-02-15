@@ -177,16 +177,12 @@ void DolBoot (s_run *run)
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
-	
-	//entrypoint hbboot_ep = (entrypoint) load_dol(booter_dol, NULL);
-
 	int fix = 0;
 	if (run) 
 		fix = run->fixCrashOnExit;
 	
 	Shutdown (fix);
 
-	//if (run->iosReload || !vars.ahbprot) ios_ReloadIOS (-1, NULL);
 	// Try to reload os... maybe this is not needed when NOT executed under homebrew, but a lot of 
 	// programs (like WiiMC) aren't able to find any usb device
 	ios_ReloadIOS (-1, NULL);
@@ -199,3 +195,13 @@ void DolBoot (s_run *run)
 	_CPU_ISR_Restore(level);
 	}
 	
+void DirectDolBoot (char *fn)
+	{
+	s_run run;
+	
+	memset (&run, 0, sizeof (s_run));
+	sprintf (run.filename, fn);
+	
+	DolBootPrepare (&run);
+	DolBoot (&run);
+	}

@@ -19,8 +19,9 @@ typedef void (*http_Callback)(void);
 
 typedef struct 
 	{
+	size_t headersize;
 	size_t bytes;
-	size_t bytestot;
+	size_t size;
 	
 	http_Callback cb;
 	}

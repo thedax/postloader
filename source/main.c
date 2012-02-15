@@ -377,8 +377,6 @@ int main(int argc, char **argv)
 		Video_LoadTheme (0);
 		}
 	
-	ConfigWrite ();
-	
 	if (ret == INTERACTIVE_RET_BOOTMII)
 		{
 		Shutdown (0);
@@ -458,6 +456,8 @@ int main(int argc, char **argv)
 		BootChannel(&config.autoboot);
 		}
 
+	Shutdown (0);
+	
 	// Uh ?
     exit(0);  // Use exit() to exit a program, do not use 'return' from main()
 	}

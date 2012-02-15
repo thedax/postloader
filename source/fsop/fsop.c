@@ -393,10 +393,6 @@ bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
 	Debug ("fsop.multy.bytes = %llu", fsop.multy.bytes);
 	Debug ("fsop.multy.size = %llu (%u Mb)", fsop.multy.size, (u32)((fsop.multy.size/1000)/1000));
 	
-	//return false;
-	
-	//fsop_KillFolderTree (target, vc);
-	
 	return doCopyFolder (source, target, vc);
 	}
 	
