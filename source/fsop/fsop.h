@@ -7,6 +7,7 @@ typedef struct
 	{
 	u64 size, bytes; // for operation that uses more than one file
 	u32 startms;
+	u32 elapsed;
 	}
 s_fsopmulty;
 

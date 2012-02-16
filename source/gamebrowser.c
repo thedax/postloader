@@ -1587,25 +1587,16 @@ static int ChangePage (int next)
 
 static void cb_filecopy (void)
 	{
-	static u32 mstout = 0;
-	u32 ms = ticks_to_millisecs(gettime());
-
-	if (mstout < ms)
+	u32 mb = (u32)(fsop.multy.bytes/1000000);
+	u32 sizemb = (u32)(fsop.multy.size/1000000);
+	u32 perc = (mb * 100)/sizemb;
+	
+	Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/fsop.multy.elapsed));
+	
+	if (grlib_GetUserInput() & WPAD_BUTTON_B)
 		{
-		u32 mb = (u32)((fsop.multy.bytes/1000)/1000);
-		u32 sizemb = (u32)((fsop.multy.size/1000)/1000);
-		u32 elapsed = ms - fsop.multy.startms;
-		u32 perc = (mb * 100)/sizemb;
-		
-		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
-		
-		mstout = ms + 250;
-		
-		if (grlib_GetUserInput() & WPAD_BUTTON_B)
-			{
-			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
-			if (ret == 0) fsop.breakop = 1;
-			}
+		int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "   Yes   ##0~No##-1");
+		if (ret == 0) fsop.breakop = 1;
 		}
 	}
 
@@ -1773,13 +1764,17 @@ int GameBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	
+	page = config.gamePage;
 	GameBrowse (0);
+
 	LiveCheck (1);
 
 	if (config.gamePage >= 0 && config.gamePage <= pageMax)
 		page = config.gamePage;
 	else
 		page = 0;
+		
+	FeedCoverCache ();
 
 	redraw = 1;
 	

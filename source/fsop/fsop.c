@@ -244,8 +244,10 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	u8 *buff = NULL;
 	u32 size;
 	u32 bytes, rb,wb;
-	u32 block = 65536;
+	u32 block = 32768;
 	FILE *fs = NULL, *ft = NULL;
+	u32 vcskip, ms;
+	
 	
 	Debug ("fsop_CopyFile (%s, %s): Started", source, target);
 	
@@ -287,7 +289,8 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	// Return to beginning....
 	fseek( fs, 0, SEEK_SET);
 	
-	buff = mem2_malloc (block);
+	//buff = mem2_malloc (block);
+	buff = memalign( 32, block);  
 	if (buff == NULL) 
 		{
 		fclose (fs);
@@ -296,6 +299,7 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		}
 	
 	bytes = 0;
+	vcskip = 0;
 	do
 		{
 		rb = fread(buff, 1, block, fs );
@@ -308,7 +312,14 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		fsop.multy.bytes += rb;
 		fsop.bytes = bytes;
 		
-		if (vc) vc();
+		ms = ticks_to_millisecs(gettime());
+		if (ms > vcskip && vc) 
+			{
+			fsop.multy.elapsed = ms - fsop.multy.startms;
+			vc();
+			vcskip = ticks_to_millisecs(gettime()) + 200;
+			}
+			
 		if (fsop.breakop) break;
 		}
 	while (bytes < size && err == 0);
@@ -316,7 +327,8 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	fclose (fs);
 	fclose (ft);
 	
-	mem2_free (buff);
+	free (buff);
+	//mem2_free (buff);
 	
 	Debug ("fsop_CopyFile: bytes %u, size %u, err %d, breakop %d", bytes, size, err, fsop.breakop);
 	

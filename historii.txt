@@ -1,3 +1,8 @@
+postLoader 3.66.1
+
+* Fixed a bug introduced in 3.66.0 that make covers do not updated correctly in game mode if page != 0
+* Lowered to 32Kb and aligned to 32 bit the copy buffer for files. Gained some Kb/sec during game copy.
+
 postLoader 3.66.0
 
 * Reintroduced online update. Now updates are in zipped format and can contain all files that need to be updated. Press [home]->check online for updates

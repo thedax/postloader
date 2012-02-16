@@ -170,8 +170,6 @@ static bool GetName (int dev, char *id, char *name)
 	fread(name, 1, 32, f);
 	fclose(f);
 	
-	//Debug ("GetName %s -> %s", path, name);
-	
 	name[31] = 0;
 	return true;
 	}
@@ -196,8 +194,6 @@ int DMLRun (char *id)
 	fclose(f);
 	
  	memcpy ((char *)0x80000000, id, 6);
-	
-	ConfigWrite ();
 	
 	Shutdown (0);
 	
