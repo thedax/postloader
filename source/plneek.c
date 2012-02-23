@@ -27,6 +27,8 @@ static bool GetNandDir (void)
 	FILE *f;
 	
 	f = fopen (PLNEEK_SDDIR, "rb");
+	if (!f) f = fopen (PLNEEK_USBDIR, "rb");
+
 	if (!f) return FALSE;
 	
 	fread (pln, sizeof(s_plneek), 1, f);
@@ -40,8 +42,10 @@ static bool WriteDatFile (char *buff)
 	FILE *f;
 	
 	f = fopen (PLNEEK_SDDAT, "wb");
-	if (!f) return FALSE;
+	if (!f) f = fopen (PLNEEK_USBDAT, "wb");
 	
+	if (!f) return FALSE;
+
 	fwrite (buff, strlen(buff)+1, 1, f); // Add 0 term
 	fclose (f);
 	

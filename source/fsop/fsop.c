@@ -146,8 +146,6 @@ u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
-		if (vc) vc();
-		
 		// Skip it
 		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
 			continue;
@@ -164,6 +162,8 @@ u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 			size_t s;
 			fsop_GetFileSizeBytes (newSource, &s);
 			bytes += s;
+
+			if (vc) vc();
 			}
 		}
 	

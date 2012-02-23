@@ -14,6 +14,7 @@
 #include "mem2.h"
 #include "channels.h"
 #include "bin2o.h"
+#include "devices.h"
 
 extern void __exception_setreload(int t); // In the event of a code dump, app will restart
 int Disc (void);
@@ -49,11 +50,12 @@ void Subsystems (bool enable)
 		}
 	else
 		{
+		ConfigWrite ();
 		CoverCache_Stop ();
 		WiiLoad (0);
 		grlib_Controllers (false);
 		DebugStop ();
-		Fat_Unmount ();
+		UnmountDevices ();
 		}
 	}
 
@@ -91,6 +93,7 @@ int Initialize (int silent)
 	if (!silent) MasterInterface (1, 0, 1, " ");
 
 	int ret = MountDevices (silent);
+	grlibSettings.usesGestures = config.usesGestures;
 	
 	DebugStart (true, "sd://ploader.log");
 	return ret;
@@ -178,7 +181,7 @@ void CheckNeek (void)
 		{
 		vars.neek = NEEK_USB;
 		vars.usbtime = 1;
-		vars.ios = ios_ReloadIOS (-1, &vars.ahbprot); // Let's try to reload
+		vars.ios = ios_ReloadIOS (IOS_SNEEK, &vars.ahbprot); // Let's try to reload
 		
 		init_uneek_fs (ISFS_OPEN_READ|ISFS_OPEN_WRITE);
 		}
@@ -188,16 +191,17 @@ int main(int argc, char **argv)
 	{
 	if (usb_isgeckoalive (EXI_CHANNEL_1))
 		{
-		char buff[32];
-		strcpy (buff, "\nPL"VER"\n");
-		usb_sendbuffer( EXI_CHANNEL_1, buff, strlen(buff) );
+		gprintf ("\nPL"VER"\n");
+		gprintf ("MAGIC: %c-%c-%c-%c\n", HBMAGIC_ADDR[0],	HBMAGIC_ADDR[1], HBMAGIC_ADDR[2], HBMAGIC_ADDR[3]);
 		}
-	
+
 	int i;
 	int ret;
 	time_t t,tout;
 	
-	__exception_setreload(3); 	
+	__exception_setreload(3);
+
+	ExtConfigRead ();
 	
 	memset (&vars, 0, sizeof(s_vars));
 	
@@ -217,15 +221,16 @@ int main(int argc, char **argv)
 #ifndef DOLPHINE
 	if (vars.neek == NEEK_NONE) // We are not working under neek
 		{
-		char buff[32];
-		strcpy (buff, USE_IOS_DEFAULT);
-		if (buff[strlen(buff)-1] == '0')
+		if (extConfig.use249)
+			vars.ios = ios_ReloadIOS (IOS_CIOS, &vars.ahbprot);
+		else
 			vars.ios = ios_ReloadIOS (-1, &vars.ahbprot); // Let's try to reload
-		
-		if (!vars.ios) // We where not able to patch ahbprot, so reload to standard ios (249...)
+		/*
+		if (!vars.ios) // We where not able to patch ahbprot, so reload cios (249...)
 			{
-			vars.ios = ios_ReloadIOS (IOS_DEFAULT, &vars.ahbprot);
+			vars.ios = ios_ReloadIOS (IOS_CIOS, &vars.ahbprot);
 			}
+		*/
 		}
 #endif
 
@@ -287,8 +292,8 @@ int main(int argc, char **argv)
 		
 		strcpy (buff, "Boot to WiiMenu##0");
 		
-		if (IsDevValid(DEV_SD)) strcat (buff, "|Create on SD and start postLoader##1");
-		if (IsDevValid(DEV_USB)) strcat (buff, "|Create on USB and start postLoader##2");
+		if (devices_Get(DEV_SD)) strcat (buff, "|Create on SD and start postLoader##1");
+		if (devices_Get(DEV_USB)) strcat (buff, "|Create on USB and start postLoader##2");
 		
 		sprintf (mex, "Welcome to postLoader"VER"\n\n"
 						"No configuration file was found.\n\n"
@@ -324,9 +329,9 @@ int main(int argc, char **argv)
 		plneek_GetNandName ();
 	
 	Debug ("Autoboot = %d", config.autoboot.enabled);
-	if (!config.autoboot.enabled) interactive = 1;
+	if (!config.autoboot.enabled) vars.interactive = 1;
 
-	if (!interactive)
+	if (!vars.interactive)
 		{
 		MasterInterface (1, 0, 1, " ");
 		
@@ -337,22 +342,21 @@ int main(int argc, char **argv)
 		
 		while (time(NULL) < tout)
 			{
-			if (MasterInterface (0, 0, 2, "Press (A) to enter in interactive mode...") == 1) interactive = 1;
+			if (MasterInterface (0, 0, 2, "Press (A) to enter in interactive mode...") == 1) vars.interactive = 1;
 			mssleep (10);
 			
-			if (interactive || (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) break;
+			if (vars.interactive || (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) break;
 			}
 		}
 		
-	sprintf (vars.tempPath, "%s://ploader/temp", vars.defMount);
 	
 	ret = INTERACTIVE_RET_NONE;
 	
-	cfg_Alloc ("sd://ploader/theme/theme.cfg", 256);
-	
+	sprintf (vars.tempPath, "%s://ploader/temp", vars.defMount);
+
 	grlibSettings.autoCloseMenu = 60;
 	
-	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && interactive)
+	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && vars.interactive)
 		{
 		Video_LoadTheme (1);
 		WiiLoad (1);
@@ -417,10 +421,11 @@ int main(int argc, char **argv)
 
 	if (ret == INTERACTIVE_RET_WIILOAD) // boot a channel
 		{
+		ExtConfigWrite ();
 		if (DolBootPrepareWiiload ())
 			{
 			// NOTE: Shutdown() is called inside dolboot
-			DolBoot (NULL);
+			DolBoot ();
 			}
 		}
 
@@ -429,7 +434,11 @@ int main(int argc, char **argv)
 		if (DolBootPrepare (&config.run))
 			{
 			// NOTE: Shutdown() is called inside dolboot
-			DolBoot (&config.run);
+			if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
+				ReloadPostloaderChannel ();
+			
+			// if previous fails
+			DolBoot ();
 			}
 		}
 	if (ret == INTERACTIVE_RET_CHANSEL) // boot a channel
@@ -445,7 +454,7 @@ int main(int argc, char **argv)
 		if (DolBootPrepare (&config.autoboot))
 			{
 			// NOTE: Shutdown() is called inside dolboot
-			DolBoot (&config.autoboot);
+			DolBoot ();
 			}
 		}
 

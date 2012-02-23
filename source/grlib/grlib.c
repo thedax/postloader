@@ -523,19 +523,83 @@ void grlib_DrawIRCursor (void)
 // This function scan for controllers and return the right common value
 // it also support analog sticks for move cursor on the screen
 
+#define MAXG 6
 int grlib_GetUserInput (void)
 	{
 	u32  wbtn, gcbtn, cbtn;
 	s8  gcX, gcY;
 	int nX, nY;
 	int cX, cY;
-	u32 mstout = ticks_to_millisecs(gettime())+200;
 	
+	static float g[MAXG];
+	static int gidx = -1;
+	static u32 gestureDisable = 0;
+	
+	u32 ms = ticks_to_millisecs(gettime());
+	u32 mstout = ms+200;
+		
 	struct expansion_t e; //nunchuk
+	
+	if (gidx == -1)
+		{
+		memset (&g, 0, sizeof(g));
+		gidx = 0;
+		}
 	
 	WPAD_ScanPads();  // Scan the Wiimotes
 	wbtn = WPAD_ButtonsDown(0);
 
+	if (grlibSettings.usesGestures && ms > gestureDisable)
+		{
+		WPADData *wp = WPAD_Data (0);
+		g[gidx] = wp->gforce.x;
+		/*
+		int gidx2 = gidx - 10;
+		int gidx3 = gidx - 20;
+		if (gidx2 < 0) gidx2 = (MAXG-1) - gidx2;
+		if (gidx3 < 0) gidx3 = (MAXG-1) - gidx3;
+		
+		if (g[gidx2] < -2.0 && g[gidx] > -1.5 && g[gidx3] > -1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			return WPAD_BUTTON_MINUS;
+			//Debug ("left");
+			}
+		if (g[gidx2] > 2.0 && g[gidx] < 1.5 && g[gidx3] < 1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			return WPAD_BUTTON_PLUS;
+			//Debug ("right");
+			}
+		*/
+		int i;
+		float mean = 0;
+		for (i = 0; i < MAXG; i++)
+			mean+=g[i];
+		mean /= (float) MAXG;
+		
+		// gprintf ("%.2f\n", mean);
+
+		if (mean < -1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			gestureDisable = ms+1000;
+			return WPAD_BUTTON_MINUS;
+			}
+		if (mean > 1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			gestureDisable = ms+1000;
+			return WPAD_BUTTON_PLUS;
+			}
+		
+		if (++gidx >= MAXG) gidx = 0;
+		}
+	
+	//Debug ("wm = %.1f,%.1f,%.1f", wp->gforce.x,wp->gforce.y,wp->gforce.z);
+	//Debug ("wm = %.1f,%.1f,%.1f", wp->orient.roll,wp->orient.pitch,wp->orient.yaw);
+	
+	
 	WPAD_Expansion( 0, &e );
 	
 	if (e.type != WPAD_EXP_NUNCHUK)

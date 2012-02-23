@@ -1,3 +1,24 @@
+postLoader 3.67.0
+
+* dml: fixed the bug that could prevent displaying of games on more than one disc (from usb only)..
+* when changing sort mode, cover cache where not updated
+* cover cache is now using mutex for thread locking
+* now when emunand is changed, cover cache is correctly updated
+* postloader forwarder channel updated to v4.
+* postloader can now fully work under ciosx. This give some beneficts, like better hdd compatibility and highter transfer speed (+200Kb/sec on dml game transfer). If you choose to use ios249 and you want to keep ahbprot for spawned homebrews, postloader channels V4 is required to be on system (both real and neek). ([home]->system options->Advanced options)
+* added support for ntfs (but actually on first partition is used for homebrew/dml, also remember that emunand, neek and a lot of hb doesn't works with ntfs)
+* postloader is now able to save some setting (like ios/onlyusb/etc...) directly in the boot.dol
+* ploader.sd file is no more used. The flag for USB Init (yes/no) is now embedded in boot.dol ([home]->system options->Advanced options)
+* added experimental gestures (enable in [home]->system options->Advanced options)
+* embed some configuration params (ios, sd only mode, hb execution mode...) on the executable
+* priibooter_gui: can now boot neek2o without any SD inside (thank you obcd)
+* priibooter_gui: support hdd with first ntfs partion
+* priibooter_gui: nouw can store it's configuration file on usb device (before only on sd)
+* neek2o: now is forced ios56
+* updated libwiiuse library to support latest wiimotes
+* a lot of code clean and various little fixes
+* postloader forwarder channel is now in the distribution
+
 postLoader 3.66.1
 
 * Fixed a bug introduced in 3.66.0 that make covers do not updated correctly in game mode if page != 0

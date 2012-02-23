@@ -1,5 +1,7 @@
 #include <gccore.h>
 #include "globals.h"
+#include "mystring.h"
+#include "devices.h"
 
 /*
 ioConfig manage the configuration file
@@ -66,5 +68,81 @@ bool ConfigRead (void)
 		
 	fclose (f);
 	
+	return TRUE;
+	}
+
+//////////////////////////////////////////////////
+
+bool ExtConfigWrite (void)
+	{
+	char path[PATHMAX];
+	char idStart[16];
+	char idStop[16];
+	size_t size;
+	u8 *bootdol;
+	u8 *cfg;
+	
+	memcpy (idStart, EXTCONFIG, EXTCONFIGOFFS);
+	idStart[EXTCONFIGOFFS] = '\0';
+	
+	memcpy (idStop, &EXTCONFIG[EXTCONFIGSIZE+EXTCONFIGOFFS], EXTCONFIGOFFS);
+	idStop[EXTCONFIGOFFS] = '\0';
+	
+	int dev;
+	for (dev = 0; dev <= 1; dev++)
+		if (devices_Get (dev))
+			{
+			sprintf (path, "%s:/%s/boot.dol", devices_Get (dev), HBAPPFOLDER);
+			
+			bootdol = fsop_ReadFile (path, 0, &size);
+			if (bootdol)
+				{
+				gprintf ("ExtConfigWrite: searching signature\n");
+				cfg = ms_FindStringInBuffer (bootdol, size, idStart);
+				if (cfg)
+					{
+					gprintf ("ExtConfigWrite: signature found\n");
+					
+					cfg += EXTCONFIGOFFS;
+					memcpy (cfg, &extConfig, sizeof (s_extConfig));
+
+					gprintf ("extConfig.use249 = %d\n", extConfig.use249);
+					gprintf ("extConfig.disableUSB = %d\n", extConfig.disableUSB);
+					gprintf ("extConfig.disableUSBneek = %d\n", extConfig.disableUSBneek);
+
+					gprintf ("ExtConfigWrite: fsop_WriteFile %s %d\n", path, size);
+					fsop_WriteFile (path, bootdol, size);
+					free (bootdol);
+					}
+				}
+			}
+		
+	return TRUE;
+	}
+	
+bool ExtConfigRead (void)
+	{
+	char buff[17];
+	strcpy (buff, "0123456789ABCDEF");
+
+	int ret = memcmp (&EXTCONFIG[EXTCONFIGOFFS], buff, 16);
+	gprintf ("ExtConfigRead: memcmp ret = %d\n", ret);
+	
+	// Check if it is intialized....
+	if (ret == 0)
+		{
+		gprintf ("ExtConfigRead: valid data not found\n");
+		memset (&extConfig, 0, sizeof (s_extConfig));
+		}
+	else
+		{
+		gprintf ("ExtConfigRead: found valid data\n");
+		memcpy (&extConfig, &EXTCONFIG[EXTCONFIGOFFS], sizeof (s_extConfig));
+		}
+		
+	gprintf ("extConfig.use249 = %d\n", extConfig.use249);
+	gprintf ("extConfig.disableUSB = %d\n", extConfig.disableUSB);
+	gprintf ("extConfig.disableUSBneek = %d\n", extConfig.disableUSBneek);
+		
 	return TRUE;
 	}

@@ -11,6 +11,7 @@
 #include <sys/stat.h> //for mkdir 
 #include "bin2o.h"
 #include "globals.h"
+#include "devices.h"
 
 extern void __exception_closeall();
 
@@ -97,9 +98,9 @@ bool NandExits (int dev)
 	{
 	char path[PATHMAX];
 	
-	if (vars.mount[dev][0] == '\0') return FALSE;
+	if (!devices_Get (dev)) return FALSE;
 	
-	sprintf (path, "%s://title/00000001", vars.mount[dev]);
+	sprintf (path, "%s://title/00000001", devices_Get (dev));
 	return fsop_DirExist(path);
 	}
 
@@ -300,14 +301,14 @@ bool Neek2oLoadKernel (void)
 	Debug ("Neek2oLoadKernel: begin");
 
 	*path = '\0';
-	if (IsDevValid(DEV_USB))
+	if (devices_Get(DEV_USB))
 		{
-		sprintf (path, "%s://sneek/kernel.bin", vars.mount[DEV_USB]);
+		sprintf (path, "%s://sneek/kernel.bin", devices_Get(DEV_USB));
 		kernel = fsop_ReadFile (path, 0, &kernelsize);
 		}
-	if (!kernel && IsDevValid(DEV_SD))
+	if (!kernel && devices_Get(DEV_SD))
 		{
-		sprintf (path, "%s://sneek/kernel.bin", vars.mount[DEV_SD]);
+		sprintf (path, "%s://sneek/kernel.bin", devices_Get(DEV_SD));
 		kernel = fsop_ReadFile (path, 0, &kernelsize);
 		}
 
@@ -329,17 +330,26 @@ bool ReloadPostloader (void)
 	{
 	char path[64];
 	
-	if (IsDevValid (DEV_SD))
+	if (devices_Get(DEV_SD))
 		{
-		sprintf (path, "%s://apps/postloader/boot.dol", vars.mount[DEV_SD]);
+		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_SD));
 		if (fsop_FileExist (path)) DirectDolBoot (path);
 		}
 
-	if (IsDevValid (DEV_USB))
+	if (devices_Get(DEV_USB))
 		{
-		sprintf (path, "%s://apps/postloader/boot.dol", vars.mount[DEV_USB]);
+		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_USB));
 		if (fsop_FileExist (path)) DirectDolBoot (path);
 		}
 	
+	return false;
+	}
+	
+bool ReloadPostloaderChannel (void)
+	{
+	Shutdown (HBMAGIC_ADDR[4]);
+	
+	WII_Initialize();
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x504f5354)); // postLoader2 Channel POST
 	return false;
 	}

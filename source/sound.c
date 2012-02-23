@@ -13,6 +13,7 @@ sound.c
 #include "globals.h"
 #include "mem2.h"
 #include "fsop/fsop.h"
+#include "devices.h"
 
 static s_cfg *mp3 = NULL;
 static s_cfg *mp3playing = NULL;
@@ -95,21 +96,21 @@ void snd_Init (void)
 		
 		char path[128];
 		
-		if (IsDevValid(DEV_SD))
+		if (devices_Get(DEV_SD))
 			{
-			sprintf (path, "%s://ploader/mp3", vars.mount[DEV_SD]);
+			sprintf (path, "%s://ploader/mp3", devices_Get(DEV_SD));
 			ScanForMp3 (path);
 
-			sprintf (path, "%s://mp3", vars.mount[DEV_SD]);
+			sprintf (path, "%s://mp3", devices_Get(DEV_SD));
 			ScanForMp3 (path);
 			}
 			
-		if (IsDevValid(DEV_USB))
+		if (devices_Get(DEV_USB))
 			{
-			sprintf (path, "%s://ploader/mp3", vars.mount[DEV_USB]);
+			sprintf (path, "%s://ploader/mp3", devices_Get(DEV_USB));
 			ScanForMp3 (path);
 
-			sprintf (path, "%s://mp3", vars.mount[DEV_USB]);
+			sprintf (path, "%s://mp3", devices_Get(DEV_USB));
 			ScanForMp3 (path);
 			}
 			

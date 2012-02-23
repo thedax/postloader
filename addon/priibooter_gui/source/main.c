@@ -8,13 +8,18 @@
 #include <sys/unistd.h>
 #include "grlib/grlib.h"
 #include "common.h"
+#include "debug.h"
 #include "fsop.h"
 #include "cfg.h"
+#include "devices.h"
+#include "../build/bin2o.h"
+
+#define USBTOUT 15
 
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "1.0b"
+#define VER "2.1"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -22,29 +27,25 @@
 #define POSTLOADER_SDAPP "sd://apps/postloader/boot.dol"
 #define POSTLOADER_USBAPP "usb://apps/postloader/boot.dol"
 
-#define PLNEEK_SDFOLDER "sd://ploader"
-#define PLNEEK_USBFOLDER "usb://ploader"
-
 #define TITLE_ID(x,y) (((u64)(x) << 32) | (y)) // Needed for launching channels
 
-char plfolder[64];
-char pldir[64];
-char pldat[64];
+char dev[64];
+char cfg[64];
 
 #define NANDSUBS 10
 static char nandsubs[NANDSUBS][32] = 
-{
-        "IMPORT",
-        "META",
-        "SHARED1",
-        "SHARED2",
-        "SYS",
-        "TICKET",
-        "TITLE",
-        "TMP",
-        "WFS",
-        "SNEEK"
-};
+	{
+	"IMPORT",
+	"META",
+	"SHARED1",
+	"SHARED2",
+	"SYS",
+	"TICKET",
+	"TITLE",
+	"TMP",
+	"WFS",
+	"SNEEK"
+	};
 
 extern const u8 background_png[];
 extern const u8 fnorm_bmf[];
@@ -82,6 +83,9 @@ bool IsNandFolder (char *path);
 
 extern void __exception_setreload(int t); // In the event of a code dump, app will exit after 3 seconds
 
+bool Neek2oLoadKernel (void);
+bool Neek2oBoot (void);
+
 static void Redraw (void) // Refresh screen
 	{
 	int fr;
@@ -114,6 +118,8 @@ static void Redraw (void) // Refresh screen
 			strcpy (buff, "You are in System Menu' mode");
 		if (pln.bootMode == PLN_BOOT_HBC)
 			strcpy (buff, "You are in HomeBrewChannel mode");
+		if (pln.bootMode == PLN_BOOT_NEEK2O)
+			strcpy (buff, "You are in neek2o mode");
 			
 		strcat (buff, ": Press any key to change");
 			
@@ -235,7 +241,7 @@ int ScanForTheme (int dev)
 	grlibSettings.theme.texWindowBk = GRRLIB_LoadTextureFromFile (path);
 	
 	sprintf (path, "%s://ploader/theme/theme.cfg", mnt);
-	cfg = (char*)fsop_GetBuffer (path, NULL, NULL);
+	cfg = (char*)fsop_ReadFile (path, 0, NULL);
 
 	if (cfg)
 		{
@@ -441,13 +447,13 @@ void MoveNewNand (void)
 /*
 As pl have no accesso to usb, we need to store the available nands to sd
 */
-bool SavePLN (void)
+bool SavePLN (char *path)
 	{
 	FILE *f;
 
 	//printd ("Storing nand folder informations");
 
-	f = fopen (PLNEEK_SDDIR, "wb");
+	f = fopen (path, "wb");
 	if (!f) return FALSE;
 	
 	fwrite (&pln, sizeof(s_plneek), 1, f);
@@ -456,11 +462,11 @@ bool SavePLN (void)
 	return TRUE;
 	}
 
-bool LoadPLN (void)
+bool LoadPLN (char *path)
 	{
 	FILE *f;
 
-	f = fopen (PLNEEK_SDDIR, "rb");
+	f = fopen (path, "rb");
 	if (!f) 
 		{
 		pln.bootMode = PLN_BOOT_REAL;
@@ -495,9 +501,10 @@ int ChooseNewMode (void)
 		{
 		menu[0] = '\0';
 		grlib_menuAddCheckItem (menu, 100, (pln.bootMode == PLN_BOOT_REAL), "postLoader");
-		grlib_menuAddCheckItem (menu, 101, (pln.bootMode == PLN_BOOT_NEEK), "NEEK");
+		grlib_menuAddCheckItem (menu, 101, (pln.bootMode == PLN_BOOT_NEEK), "BOOTMII");
 		grlib_menuAddCheckItem (menu, 102, (pln.bootMode == PLN_BOOT_SM), "WII System menu");
 		grlib_menuAddCheckItem (menu, 103, (pln.bootMode == PLN_BOOT_HBC), "Homebrew Channel");
+		grlib_menuAddCheckItem (menu, 104, (pln.bootMode == PLN_BOOT_NEEK2O), "neek2o");
 		grlib_menuAddSeparator (menu);
 		grlib_menuAddItem (menu, 1, "Start selected item");
 		grlib_menuAddItem (menu, 2, "Save and start selected item");
@@ -508,6 +515,7 @@ int ChooseNewMode (void)
 		if (ret == 101) pln.bootMode = PLN_BOOT_NEEK;
 		if (ret == 102) pln.bootMode = PLN_BOOT_SM;
 		if (ret == 103) pln.bootMode = PLN_BOOT_HBC;
+		if (ret == 104) pln.bootMode = PLN_BOOT_NEEK2O;
 		}
 	while (ret > 2);
 	
@@ -521,7 +529,7 @@ void Boot (void)
 	if (keypressed)
 		{
 		grlibSettings.wiiswitch_reset = 0;
-		if (ChooseNewMode () == 2) SavePLN ();
+		if (ChooseNewMode () == 2) SavePLN (cfg);
 		}
 		
 	if (grlibSettings.wiiswitch_reset)
@@ -532,12 +540,10 @@ void Boot (void)
 	WPAD_Shutdown();
 	PAD_Reset(0xf0000000);
 
-	//grlib_dosm ("pln.bootMode = %d", pln.bootMode);
-
 	if (pln.bootMode == PLN_BOOT_NEEK)
 		{
-		Fat_Unmount ();
 		grlib_Exit ();
+		devices_Unmount ();
 		IOS_ReloadIOS (254); 
 		}
 
@@ -550,31 +556,52 @@ void Boot (void)
 
 		if (!found) BootToMenu ();
 				
-		Fat_Unmount ();
+		devices_Unmount ();
 		grlib_Exit ();
 		BootExecFile ();
-		
-		//grlib_dosm ("failed = %d", found);
 		}
 		
 	if (pln.bootMode == PLN_BOOT_SM)
 		{
 		grlib_Exit ();
+		devices_Unmount ();
 		BootToMenu ();
+		}
+
+	if (pln.bootMode == PLN_BOOT_NEEK2O)
+		{
+		Neek2oLoadKernel ();
+		grlib_Exit ();
+		devices_Unmount ();
+		Neek2oBoot ();
 		}
 	}
 
 //=============================================================================================================================
 
+int cb_Mount (void)
+	{
+	static time_t t = 0;
+	
+	if (t == 0) 
+		t = time(0);
+	
+	if (time(0) - t > 5)
+		sprintf (mex2,"Mounting USB devices: %d seconds remaining...", USBTOUT - (int)(time(0) - t));
+	
+	Redraw ();
+	
+	return 1;
+	}
+
 int main(int argc, char **argv) 
 	{
-	if (usb_isgeckoalive (EXI_CHANNEL_1))
-		{
-		char buff[32];
-		strcpy (buff, "\nPRIIBOOTERGUI"VER"\n");
-		usb_sendbuffer( EXI_CHANNEL_1, buff, strlen(buff) );
-		}
+	char path[128];
 	
+	DebugStart (true, NULL);
+
+	Debug ("\nPRIIBOOTERGUI"VER"\n");
+
 	Initialize ();
 	
 	fadeInMsec = 15;
@@ -589,34 +616,47 @@ int main(int argc, char **argv)
 	Redraw ();
 	
 	// Let's mount devices
-	int sd,usb;
+	devices_Mount (DEVMODE_IOS, USBTOUT, cb_Mount);
+
+	*dev = '\0';
+	*cfg = '\0';
 	
-	sd = Fat_Mount (DEV_SD, NULL);
-	if (sd)
+	if (devices_Get (DEV_SD))
 		{
 		ScanForTheme (DEV_SD);
 
-		if (sd && !fsop_DirExist ("sd://ploader"))
-			mkdir ("sd://ploader", S_IREAD | S_IWRITE);
+		strcpy (dev, devices_Get (DEV_SD)); // assign default device
+		
+		sprintf (path, "%s://ploader", dev);
+		if (!fsop_DirExist (path)) fsop_MakeFolder (path);
 			
-		LoadPLN ();
+		sprintf (cfg, "%s://ploader//plneek.dir", dev);
+		LoadPLN (cfg);
+		
+		if (fsop_FileExist (POSTLOADER_SDAPP)) pl_sd = 1;
 		}
 	
-	usb = Fat_Mount (DEV_USB, &keypressed);
-	if (usb && themeLoaded == 0)
+	if (devices_Get (DEV_USB))
 		{
-		ScanForTheme (DEV_USB);
+		if (themeLoaded == 0) ScanForTheme (DEV_USB);
+		
+		if (*dev == '\0') 
+			{
+			strcpy (dev, devices_Get (DEV_USB)); // assign default device
+
+			sprintf (path, "%s://ploader", dev);
+			if (!fsop_DirExist (path)) fsop_MakeFolder (path);
+
+			sprintf (cfg, "%s://ploader//plneek.dir", dev);
+			LoadPLN (cfg);
+			}
+
+		if (fsop_FileExist (POSTLOADER_USBAPP))	pl_usb = 1;
 		}
 	
 	fadeInMsec = 5;
 	while (!fadeIn (0));
 	
-	if (sd && fsop_FileExist (POSTLOADER_SDAPP))
-		pl_sd = 1;
-
-	if (usb && fsop_FileExist (POSTLOADER_USBAPP))
-		pl_usb = 1;
-
 	if (pl_sd == 0 && pl_usb == 0)
 		{
 		grlib_menu ("Warning: postLoader.dol not found on sd/usb", " Ok ");
@@ -628,10 +668,15 @@ int main(int argc, char **argv)
 	// On the sd we should have plneek.dat... it will instruct us what to do
 	nandSource = NULL;
 
-	if (sd)
+	if (devices_Get (DEV_SD))
 		{
 		//printd ("Checking "PLNEEK_SDDAT"");
-		nandSource = (char*)fsop_GetBuffer (PLNEEK_SDDAT, NULL, NULL);
+		nandSource = (char*)fsop_ReadFile (PLNEEK_SDDAT, 0, NULL);
+		}
+	if (!nandSource && devices_Get (DEV_USB))
+		{
+		//printd ("Checking "PLNEEK_SDDAT"");
+		nandSource = (char*)fsop_ReadFile (PLNEEK_USBDAT, 0, NULL);
 		}
 		
 	if (nandSource)
@@ -668,3 +713,4 @@ int main(int argc, char **argv)
 	
     exit(0);  // Use exit() to exit a program, do not use 'return' from main()
 	}
+

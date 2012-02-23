@@ -1,3 +1,4 @@
+#include <gccore.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -88,4 +89,23 @@ char *ms_utf8_to_ascii (char *string)
 		}
  
 	return buff;
+	}
+	
+u8 *ms_FindStringInBuffer (u8 *buffer, size_t size, char *string)
+	{
+	int stringLen = strlen (string);
+	
+	if (size < stringLen) return NULL;
+	
+	int i, j;
+	for (i = 0; i < size-stringLen; i++)
+		{
+		for (j = 0; j < stringLen; j++)
+			{
+			if (buffer[i + j] != string[j]) break;
+			}
+		if (j == stringLen) return buffer + i;
+		}
+	
+	return NULL;
 	}

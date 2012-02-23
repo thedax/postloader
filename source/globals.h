@@ -12,14 +12,17 @@
 
 //#define DOLPHINE
 
-#define VER "3.66.1"
+#define VER "3.67.0"
 #define CFGVER "PLCFGV0009"
-#define IOS_DEFAULT 249
+#define IOS_CIOS 249
 #define IOS_PREFERRED 58
-#define USE_IOS_DEFAULT "USE_IOS_249=0"
+#define IOS_SNEEK 56
 
-#define PATH_PLOADERCFG DEV_MOUNT"://ploader"
-#define PATH_CHANNELSPNG PATH_PLOADERCFG"/channels"
+#define EXTCONFIG "$EXTCONF$>0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF<$EXTCONF$"
+#define EXTCONFIGOFFS 10
+#define EXTCONFIGSIZE 256
+
+#define HBAPPFOLDER "/apps/postloader"
 
 #define FNTNORM 0
 #define FNTSMALL 1
@@ -27,10 +30,6 @@
 
 #define CFG_HOME_PRIILOAER 0x4461636F
 #define PRIILOADER_TOMENU  0x50756E65
-
-#define DEV_NONE -1
-#define DEV_SD 0
-#define DEV_USB 1
 
 #define DMLVIDEOMODE_NTSC 0
 #define DMLVIDEOMODE_PAL 1
@@ -88,8 +87,6 @@ typedef void (*entrypoint) (void);
 
 #define CHANNELS_MAXFILTERS 12
 
-#define DEVMAX 2 // sd, usb
-
 #define GAMEFLT_PLATFORM 		(1 <<  0)
 #define GAMEFLT_ACTION			(1 <<  1)
 #define GAMEFLT_SPORT			(1 <<  2)
@@ -143,13 +140,13 @@ typedef struct
 	int ios;						// Current ios
 	int ahbprot;
 	char defMount[5]; 				// this is the default mount point, used for example to store setup. If usb is availabile, it will be usb
-	char mount[DEVMAX][5]; 			// Keep mount point
 	GRRLIB_texImg *tex[MAXTEX];		// textures used globally... are created in video.c
 	char neekName[PLN_NAME_LEN]; 	// Name of current neek nand image
 	
 	char tempPath[64]; 				// Temp folder
 	int usbtime;
 	int themeReloaded;				// Signal that a new theme was reloaded
+	int interactive;				// used for selecting interactive mode upon boot
 	}
 s_vars;
 
@@ -319,7 +316,8 @@ typedef struct
 	int chnPage; 			// last page
 	int appPage;			// 
 	int appDev;				// 0 both, 1 sd, 2 usb
-	int gamePage;			// 
+	int gamePageWii;		// 
+	int gamePageGC;		// 
 	u32 gameFilter;			// 
 	u32 gameSort;			// 0 vote, 1 name, 2 playcount
 	u32 gameMode;			// GM_WII, GM_DML
@@ -332,15 +330,29 @@ typedef struct
 	char pwd[PWDMAXLEN+1];	// Classic wii pwd RLUD12AB, up to 8 chars
 	
 	u32 dmlvideomode;		// Current video mode for dml
+	u8 usesGestures;
+
+	bool runHBwithForwarder;
 	}
 s_config;
+
+/*
+s_extConfig is embeded in postloader dol
+*/
+typedef struct 
+	{
+	bool use249;
+	bool disableUSB;		// If true, boottime usb init is disabled
+	bool disableUSBneek;	// If true, boottime usb init is disabled (under neek)
+	}
+s_extConfig;
 
 extern s_grlibSettings grlibSettings;
 
 #ifdef MAIN
 	s_config config;
+	s_extConfig extConfig;
 	int sdStatus = -1;
-	int interactive = 0;
 	GRRLIB_bytemapFont *fonts[3];
 	s_vars vars;
 	s_theme theme;
@@ -350,8 +362,8 @@ extern s_grlibSettings grlibSettings;
 									"MSega Megadrive","NNintendo64","PTurboGraFX","QTurboGraFXCD", " Other"};
 #else
 	extern s_config config;
+	extern s_extConfig extConfig;
 	extern int sdStatus;
-	extern int interactive;
 	extern GRRLIB_bytemapFont *fonts[3];
 	extern s_vars vars;
 	extern s_theme theme;
@@ -386,33 +398,33 @@ bool Neek2oLoadKernel (void);
 bool Neek2oBoot (void);
 
 bool ReloadPostloader (void);
+bool ReloadPostloaderChannel (void);
 
 // dol.c
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
 #define ARGS_ADDR       ((u8 *) 0x93200000)
+#define HBMAGIC_ADDR    ((u8 *) 0x93200000-8)
 #define CMDL_ADDR       ((u8 *) 0x93200000+sizeof(struct __argv))
 
 u32 load_dol(const void *dolstart, struct __argv *argv);
-void DolBoot (s_run *run);
+void DolBoot (void);
 int DolBootPrepare (s_run *run);
 int DolBootPrepareWiiload (void);
 void DirectDolBoot (char *fn);
+void FastDolBoot (void);
 
 // io.c
-s32 Fat_Mount(int dev, int updateVideo);
-void Fat_Unmount(void);
-s32 Fat_Mount(int dev, int silent);	// Return false if there is no setup file
 bool SetDefMount (int dev);
-bool IsDevValid (int dev);
 bool CheckForPostLoaderFolders (void);
 bool MountDevices (bool silent);
+bool UnmountDevices (void);
 
 // ioConfig
 bool ConfigWrite (void);
 bool ConfigRead (void);
-int ManageTitleConfig (char *asciiId, int write, s_channelConfig *config);
-int ManageGameConfig (char *asciiId, int write, s_gameConfig *gameConfig);
+bool ExtConfigWrite (void);
+bool ExtConfigRead (void);
 
 // video.c
 void Video_Init (void);

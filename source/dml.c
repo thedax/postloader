@@ -8,8 +8,10 @@
 #include <dirent.h>
 #include "globals.h"
 #include "fsop/fsop.h"
+#include "devices.h"
 
 #define SEP 0xFF
+#define SEP2 0x1
 
 #define BC 0x0000000100000100ULL
 #define MIOS 0x0000000100000101ULL
@@ -154,9 +156,9 @@ static bool GetName (int dev, char *id, char *name)
 	char path[128];
 	
 	if (dev == DEV_SD)
-		sprintf (path, "%s://games/%s/game.iso", vars.mount[dev], id);
+		sprintf (path, "%s://games/%s/game.iso", devices_Get(dev), id);
 	else
-		sprintf (path, "%s://ngc/%s/game.iso", vars.mount[dev], id);
+		sprintf (path, "%s://ngc/%s/game.iso", devices_Get(dev), id);
 		
 	FILE *f;
 	f = fopen(path, "rb");
@@ -178,14 +180,14 @@ int DMLRun (char *id)
 	{
 	char path[128];
 
-	if (!IsDevValid(DEV_SD)) return 0;
+	if (!devices_Get(DEV_SD)) return 0;
 	
 	if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
 		config.dmlvideomode = DMLVIDEOMODE_NTSC;
 	else
 		config.dmlvideomode = DMLVIDEOMODE_PAL;
 
-	sprintf (path, "%s://games/boot.bin", vars.mount[DEV_SD]);
+	sprintf (path, "%s://games/boot.bin", devices_Get(DEV_SD));
 	
 	FILE *f;
 	f = fopen(path, "wb");
@@ -224,6 +226,7 @@ char *DMLScanner  (bool reset)
 	char cachepath[128];
 	char path[128];
 	char name[32];
+	char src[32];
 	char b[128];
 	FILE *f;
 	char *buff = calloc (1, BUFFSIZE); // Yes, we are wasting space...
@@ -246,9 +249,9 @@ char *DMLScanner  (bool reset)
 	
 	if (reset == 1)
 		{
-		if (!IsDevValid(DEV_SD)) return 0;
+		if (devices_Get(DEV_SD)) return 0;
 		
-		sprintf (path, "%s://games", vars.mount[DEV_SD]);
+		sprintf (path, "%s://games", devices_Get(DEV_SD));
 		
 		fsop_GetFolderKb (path, 0);
 		
@@ -265,12 +268,12 @@ char *DMLScanner  (bool reset)
 				
 				bool skip = false;
 				
-				if (xcheck && IsDevValid(DEV_USB))
+				if (xcheck && devices_Get(DEV_USB))
 					{
 					char sdp[256], usbp[256];
 					
-					sprintf (sdp, "%s://games/%s", vars.mount[DEV_SD], pent->d_name);
-					sprintf (usbp, "%s://ngc/%s", vars.mount[DEV_USB], pent->d_name);
+					sprintf (sdp, "%s://games/%s", devices_Get(DEV_SD), pent->d_name);
+					sprintf (usbp, "%s://ngc/%s", devices_Get(DEV_USB), pent->d_name);
 					
 					if (fsop_DirExist (usbp))
 						{
@@ -279,7 +282,7 @@ char *DMLScanner  (bool reset)
 						sdkb = fsop_GetFolderKb (sdp, cb_DML);
 						usbkb = fsop_GetFolderKb (usbp, cb_DML);
 						
-						if (abs (sdkb - usbkb) > 2)
+						if (abs (sdkb - usbkb) > 2) // Let 2kb difference for codes
 							{
 							char mex[256];
 							fsop_KillFolderTree (sdp, cb_DML);
@@ -304,9 +307,9 @@ char *DMLScanner  (bool reset)
 		
 		xcheck = false;
 
-		if (IsDevValid(DEV_USB))
+		if (devices_Get(DEV_USB))
 			{
-			sprintf (path, "%s://ngc", vars.mount[DEV_USB]);
+			sprintf (path, "%s://ngc", devices_Get(DEV_USB));
 			
 			Debug ("DML: scanning %s", path);
 			
@@ -315,7 +318,8 @@ char *DMLScanner  (bool reset)
 			while ((pent=readdir(pdir)) != NULL) 
 				{
 				//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-				if ((strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7) && strstr (buff, pent->d_name) == NULL)	// Make sure to not add the game twice
+				sprintf (src, "%c%s%c", SEP, pent->d_name, SEP); // make sure to find the exact name
+				if ((strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7) && strstr (buff, src) == NULL)	// Make sure to not add the game twice
 					{
 					Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 					if (!GetName (DEV_USB, pent->d_name, name)) continue;
@@ -340,7 +344,7 @@ char *DMLScanner  (bool reset)
 	
 	l = strlen (buff);
 	for (i = 0; i < l; i++)
-		if (buff[i] == SEP)
+		if (buff[i] == SEP || buff[i] == SEP2)
 			buff[i] = 0;
 
 	return buff;
@@ -371,13 +375,13 @@ int DMLInstall (char *gamename, size_t reqKb)
 	
 	Debug ("DMLInstall (%s): Started", gamename);
 
-	if (!IsDevValid(DEV_SD))
+	if (!devices_Get(DEV_SD))
 		{
 		Debug ("DMLInstall (%s): ERR SD Device invalid", gamename);
 		return 0;
 		}
 	
-	sprintf (path, "%s://games", vars.mount[DEV_SD]);
+	sprintf (path, "%s://games", devices_Get(DEV_SD));
 
 	devKb = fsop_GetFreeSpaceKb (path);
 	if (devKb > reqKb) 
@@ -446,7 +450,7 @@ int DMLInstall (char *gamename, size_t reqKb)
 		if (ret >= 0)
 			{
 			char gamepath[128];
-			sprintf (gamepath, "%s://games/%s", vars.mount[DEV_SD], files[ret]);
+			sprintf (gamepath, "%s://games/%s", devices_Get(DEV_SD), files[ret]);
 			
 			Debug ("DMLInstall deleting '%s'", gamepath);
 			fsop_KillFolderTree (gamepath, NULL);

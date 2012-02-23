@@ -6,6 +6,7 @@ wiiload zip manage the transfer of full zip file.
 #include "zip/unzip.h"
 #include "wiiload/wiiload.h"
 #include "mystring.h"
+#include "devices.h"
 
 #define DU_ONLYROOT 3
 #define DU_UNZIPAPP 2	// Application is installed in temp folder
@@ -313,8 +314,8 @@ void WiiloadZipMenu (void)
 		{
 		char title[256];
 		
-		if (IsDevValid(DEV_SD)) grlib_menuAddItem (menu, 10, "Install to SD device");
-		if (IsDevValid(DEV_USB)) grlib_menuAddItem (menu, 20, "Install to USB device");
+		if (devices_Get(DEV_SD)) grlib_menuAddItem (menu, 10, "Install to SD device");
+		if (devices_Get(DEV_USB)) grlib_menuAddItem (menu, 20, "Install to USB device");
 		
 		grlib_menuAddSeparator (menu);
 		
@@ -326,12 +327,12 @@ void WiiloadZipMenu (void)
 		char target[300];
 		if (ret == 10)
 			{
-			sprintf (target, "%s://apps", vars.mount[DEV_SD]);
+			sprintf (target, "%s://apps", devices_Get(DEV_SD));
 			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 20)
 			{
-			sprintf (target, "%s://apps", vars.mount[DEV_USB]);
+			sprintf (target, "%s://apps", devices_Get(DEV_USB));
 			ZipUnpack (path, target, dols, NULL);
 			}
 		}
@@ -340,7 +341,7 @@ void WiiloadZipMenu (void)
 		{
 		char title[256];
 
-		if (IsDevValid(DEV_SD)) 
+		if (devices_Get(DEV_SD)) 
 			{
 			grlib_menuAddItem (menu, 10, "Unpack to sd://");
 			grlib_menuAddItem (menu, 11, "Unpack to sd://apps");
@@ -348,7 +349,7 @@ void WiiloadZipMenu (void)
 				grlib_menuAddItem (menu, 12, "Unpack to sd://apps/%s", nametarget);
 			grlib_menuAddSeparator (menu);
 			}
-		if (IsDevValid(DEV_USB))
+		if (devices_Get(DEV_USB))
 			{
 			grlib_menuAddItem (menu, 20, "Unpack to usb://");
 			grlib_menuAddItem (menu, 21, "Unpack to usb://apps");
@@ -368,22 +369,22 @@ void WiiloadZipMenu (void)
 		char target[300];
 		if (ret == 10)
 			{
-			sprintf (target, "%s://", vars.mount[DEV_SD]);
+			sprintf (target, "%s://", devices_Get(DEV_SD));
 			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 11)
 			{
-			sprintf (target, "%s://apps", vars.mount[DEV_SD]);
+			sprintf (target, "%s://apps", devices_Get(DEV_SD));
 			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 20)
 			{
-			sprintf (target, "%s://", vars.mount[DEV_USB]);
+			sprintf (target, "%s://", devices_Get(DEV_USB));
 			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 21)
 			{
-			sprintf (target, "%s://apps", vars.mount[DEV_USB]);
+			sprintf (target, "%s://apps", devices_Get(DEV_USB));
 			ZipUnpack (path, target, dols, NULL);
 			}
 		if (ret == 30)
@@ -418,14 +419,14 @@ bool WiiloadPostloaderDolMenu (void)
 			{
 			char path[64];
 			
-			if (IsDevValid(DEV_SD)) 
+			if (devices_Get(DEV_SD)) 
 				{
 				strcpy (path, "sd://apps/postloader/boot.dol");
 				if (fsop_FileExist (path))
 					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
 				}
 
-			if (IsDevValid(DEV_USB)) 
+			if (devices_Get(DEV_USB)) 
 				{
 				strcpy (path, "usb://apps/postloader/boot.dol");
 				if (fsop_FileExist (path))
@@ -442,14 +443,14 @@ bool WiiloadPostloaderDolMenu (void)
 
 		char path[64];
 		
-		if (IsDevValid(DEV_SD)) 
+		if (devices_Get(DEV_SD)) 
 			{
 			strcpy (path, "sd://neekbooter.dol");
 			if (fsop_FileExist (path))
 				fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
 			}
 
-		if (IsDevValid(DEV_USB)) 
+		if (devices_Get(DEV_USB)) 
 			{
 			strcpy (path, "usb://neekbooter.dol");
 			if (fsop_FileExist (path))

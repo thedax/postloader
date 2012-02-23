@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "ios.h"
 #include "http.h"
+#include "devices.h"
 
 static int ShowInfo (char *buff, char *ver)
 	{
@@ -173,21 +174,21 @@ int AutoUpdate (void)
 		
 		cb_mode = 1;
 		
-		if (IsDevValid (DEV_SD))
+		if (devices_Get(DEV_SD))
 			{
-			sprintf (target, "%s://apps/postloader/boot.dol", vars.mount[DEV_SD]);
+			sprintf (target, "%s://apps/postloader/boot.dol", devices_Get(DEV_SD));
 			if (fsop_FileExist (target))
 				{
-				sprintf (target, "%s://", vars.mount[DEV_SD]);
+				sprintf (target, "%s://", devices_Get(DEV_SD));
 				fsop_CopyFolder (buff, target, cb_au);
 				}
 			}
-		if (IsDevValid (DEV_USB))
+		if (devices_Get (DEV_USB))
 			{
-			sprintf (target, "%s://apps/postloader/boot.dol", vars.mount[DEV_USB]);
+			sprintf (target, "%s://apps/postloader/boot.dol", devices_Get(DEV_USB));
 			if (fsop_FileExist (target))
 				{
-				sprintf (target, "%s://", vars.mount[DEV_USB]);
+				sprintf (target, "%s://", devices_Get(DEV_USB));
 				fsop_CopyFolder (buff, target, cb_au);
 				}
 			}

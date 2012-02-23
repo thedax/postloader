@@ -68,6 +68,7 @@ typedef struct
 	
 	bool wiiswitch_reset;		// true if user press reset
 	bool wiiswitch_poweroff;	// true if user use wiimote or button on the console
+	bool usesGestures;
 	
 	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
 	u32 autoCloseMenu;			// 0 disabled, otherwise num of second after whitch it will be closed
@@ -186,6 +187,7 @@ int grlib_menuAddItem (char *menu, int id, const char *itemsstring, ...);
 int grlib_menuAddSeparator (char *menu);
 int grlib_menuAddColumn (char *menu);
 int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...);
+int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *yesno, const char *itemsstring, ...);
 int grlib_menu (char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
 
 void grlib_Message (const char *text, ...);

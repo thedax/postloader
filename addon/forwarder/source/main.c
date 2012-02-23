@@ -21,6 +21,7 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
 #define ARGS_ADDR       ((u8 *) 0x93200000)
 #define CMDL_ADDR       ((u8 *) 0x93200000+sizeof(struct __argv))
+#define HBMAGIC_ADDR    ((u8 *) 0x93200000-8)
 
 #define NEEK 1
 
@@ -152,6 +153,21 @@ bool GetFileToBoot (void)
 
 int main(int argc, char *argv[])
 	{
+	if (
+		HBMAGIC_ADDR[0] == 'P' &&
+		HBMAGIC_ADDR[1] == 'O' &&
+		HBMAGIC_ADDR[2] == 'S' &&
+		HBMAGIC_ADDR[3] == 'T'
+	   )
+		{
+		HBMAGIC_ADDR[0] = 'X';
+		HBMAGIC_ADDR[1] = 'X';
+		HBMAGIC_ADDR[2] = 'X';
+		HBMAGIC_ADDR[3] = 'X';
+
+		goto directstart;
+		}
+	
 	if (!GetFileToBoot ())
 		{
 		InitVideo ();
@@ -189,6 +205,8 @@ int main(int argc, char *argv[])
 
 	memmove(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
+
+directstart:
 
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);

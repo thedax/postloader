@@ -10,6 +10,7 @@
 #include "hbcstub.h"
 #include "identify.h"
 #include "neek.h"
+#include "devices.h"
 
 // Outside
 void *allocate_memory(u32 size);
@@ -131,189 +132,255 @@ static void cb_remove2(void)
 		}
 	}
 
+void ShowAdvancedOptions (void)
+	{
+	int item;
+	char buff[1024];
+	char options[300];
+	
+	grlib_SetFontBMF(fonts[FNTNORM]);
+	
+	do
+		{
+		strcpy (buff, "Advanced Options\n\n");
+		strcat (buff, "Important notice: postLoader forwarder channel V4 must be installed to use\n this option and keep the ability to run homebrews with ahbprot.");
+		
+		*options = '\0';
+		
+		if (vars.neek == NEEK_NONE)
+			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSB, "(NO)|(YES)", "Search USB Dev. ");
+		else
+			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSBneek, "(NO)|(YES)", "Search USB Dev. ");
+
+		if (vars.neek == NEEK_NONE)
+			{
+			grlib_menuAddCustomCheckItem (options, 2, extConfig.use249, "(YES)|(NO)", "Use cIOSX (249) ");
+			}
+
+		if (vars.neek == NEEK_NONE)
+			{
+			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, "(YES)|(NO)", "Use pl3 channel to run homebrews ");
+			}
+			
+		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, "(YES)|(NO)", "Use wiimotion gestures ");
+			
+		grlib_menuAddItem (options, 4,  "Restart/Reboot...");
+
+		grlib_menuAddSeparator (options);
+		grlib_menuAddItem (options, -1,  "Close");
+		
+		grlibSettings.fontNormBMF = fonts[FNTBIG];
+		item = grlib_menu (buff, options);
+		grlibSettings.fontNormBMF = fonts[FNTNORM];
+		
+		if (item == 1)
+			{
+			if (vars.neek == NEEK_NONE)
+				extConfig.disableUSB = !extConfig.disableUSB;
+			else
+				extConfig.disableUSBneek = !extConfig.disableUSBneek;
+			}
+			
+		if (item == 2)
+			{
+			extConfig.use249 = !extConfig.use249;
+			}
+			
+		if (item == 3)
+			{
+			config.runHBwithForwarder = !config.runHBwithForwarder;
+			}
+
+		if (item == 4)
+			{
+			int ret = grlib_menu ("What do you want to do ?\n", "  Restart  ##0~Reboot##1~Cancel##-1");
+
+			ConfigWrite ();
+			ExtConfigWrite ();
+
+			if (ret == 0)
+				{
+				ReloadPostloader ();
+				}
+			if (ret == 1)
+				{
+				Shutdown (0);
+				SYS_ResetSystem(SYS_RESTART,0,0);
+				}
+			}
+
+		if (item == 5)
+			{
+			config.usesGestures = !config.usesGestures;
+			}
+
+		}
+	while (item != -1);
+	
+	// Update grlib setting...
+	grlibSettings.usesGestures = config.usesGestures;
+	}
+
+
 void ShowAboutMenu (void)
 	{
 	int item;
 	char buff[1024];
 	char options[300];
-	char path[256];
-	
-	if (vars.neek == NEEK_NONE)
-		strcpy (path, "sd://ploader.sd");
-	else
-		strcpy (path, "sd://ploader/sdonly.nek");
 	
 	grlib_SetFontBMF(fonts[FNTNORM]);
 	
-	strcpy (buff, "Options:\n");
-	strcat (buff, "-------------------------\n");
-	strcat (buff, "Current autoboot setting:\n");
-	if (!config.autoboot.enabled)
-		strcat (buff, "* Autoboot is disabled");
-	else
+	do
 		{
-		if (config.autoboot.appMode == APPMODE_HBA)
+		strcpy (buff, "Options:\n");
+		strcat (buff, "-------------------------\n");
+		strcat (buff, "Current autoboot setting:\n");
+		if (!config.autoboot.enabled)
+			strcat (buff, "* Autoboot is disabled");
+		else
 			{
-			strcat (buff, "* Homebrew application:\n");
-			strcat (buff, "* PATH: ");
-			strcat (buff, config.autoboot.path);
-			strcat (buff, "\n");
-			strcat (buff, "* FILE: ");
-			strcat (buff, config.autoboot.filename);
-			strcat (buff, "\n");
-			strcat (buff, "* ARGS: ");
-			strcat (buff, config.autoboot.args);
+			if (config.autoboot.appMode == APPMODE_HBA)
+				{
+				strcat (buff, "* Homebrew application:\n");
+				strcat (buff, "* PATH: ");
+				strcat (buff, config.autoboot.path);
+				strcat (buff, "\n");
+				strcat (buff, "* FILE: ");
+				strcat (buff, config.autoboot.filename);
+				strcat (buff, "\n");
+				strcat (buff, "* ARGS: ");
+				strcat (buff, config.autoboot.args);
+				}
+			if (config.autoboot.appMode == APPMODE_CHAN)
+				{
+				strcat (buff, "* Channel application:\n");
+				strcat (buff, "* NAND: ");
+				if (config.autoboot.nand == NAND_REAL)
+					strcat (buff, "Real NAND");
+				if (config.autoboot.nand == NAND_EMUSD)
+					strcat (buff, "Emulated on SD");
+				if (config.autoboot.nand == NAND_EMUUSB)
+					strcat (buff, "Emulated on USB");
+				
+				strcat (buff, "\n");
+
+				strcat (buff, "* TITLE: ");
+				strcat (buff, config.autoboot.asciiId);
+				strcat (buff, "\n");
+
+				strcat (buff, "* NAME: ");
+				strcat (buff, config.autoboot.path);
+				}
 			}
-		if (config.autoboot.appMode == APPMODE_CHAN)
-			{
-			strcat (buff, "* Channel application:\n");
-			strcat (buff, "* NAND: ");
-			if (config.autoboot.nand == NAND_REAL)
-				strcat (buff, "Real NAND");
-			if (config.autoboot.nand == NAND_EMUSD)
-				strcat (buff, "Emulated on SD");
-			if (config.autoboot.nand == NAND_EMUUSB)
-				strcat (buff, "Emulated on USB");
+		
+		*options = '\0';
+		
+		grlib_menuAddItem (options, 1,  "About postLoader"VER);
+		grlib_menuAddItem (options, 14,  "Change theme...");
+
+		grlib_menuAddSeparator (options);
+
+		if (vars.neek == NEEK_2o)
+			menu_SwitchNandAddOption (options);
+		else
+			grlib_menuAddItem (options, 10,  "Change UNEEK nand");
+
+		if (config.autoboot.enabled)
+			grlib_menuAddItem (options, 6,  "Disable autoboot");
+		
+		grlib_menuAddItem (options, 2,  "Online update...");
+		
+		grlib_menuAddItem (options, 7,  "Advanced options...");
+		
+		if (vars.neek == NEEK_2o && devices_Get (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
+			grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
 			
-			strcat (buff, "\n");
+		if (devices_Get (DEV_SD) && devices_Get (DEV_USB) && strcmp (vars.defMount, devices_Get(DEV_SD)) == 0)
+			grlib_menuAddItem (options, 15,  "Move postLoader cfg folder to USB");
 
-			strcat (buff, "* TITLE: ");
-			strcat (buff, config.autoboot.asciiId);
-			strcat (buff, "\n");
 
-			strcat (buff, "* NAME: ");
-			strcat (buff, config.autoboot.path);
-			}
-		}
-	
-	options[0] = '\0';
-	
-	grlib_menuAddItem (options, 1,  "About postLoader"VER);
-	grlib_menuAddItem (options, 14,  "Change theme...");
-
-	grlib_menuAddSeparator (options);
-
-	grlib_menuAddItem (options, 11,  "Reboot...");
-
-	if (vars.neek == NEEK_2o)
-		menu_SwitchNandAddOption (options);
-	else
-		grlib_menuAddItem (options, 10,  "Change UNEEK nand");
-
-	if (IsDevValid (DEV_SD))
-		{
-		if (fsop_FileExist (path))
-			grlib_menuAddItem (options, 8,  "Enable USB initialization");
-		else
-			grlib_menuAddItem (options, 7,  "Disable USB initialization");
-		}
-	
-	if (config.autoboot.enabled)
-		grlib_menuAddItem (options, 6,  "Disable autoboot");
-	
-	grlib_menuAddItem (options, 2,  "Check online for updates");
-	//grlib_menuAddItem (options, 12,  "Clean channel/games configuration files...");
-	
-	if (vars.neek == NEEK_2o && IsDevValid (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
-		grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
+		grlib_menuAddSeparator (options);
+		grlib_menuAddItem (options, -1,  "Close");
 		
-	if (IsDevValid (DEV_SD) && IsDevValid (DEV_USB) && strcmp (vars.defMount, vars.mount[DEV_SD]) == 0)
-		grlib_menuAddItem (options, 15,  "Move postLoader cfg folder to USB");
-
-
-	grlib_menuAddSeparator (options);
-	grlib_menuAddItem (options, 0,  "Close");
-	
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
-	item = grlib_menu (buff, options);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
-	
-	if (item == 1)
-		{
-		ShowAboutPLMenu ();
-		}
-
-	if (item == 2)
-		{
-		AutoUpdate ();
-		}
-
-	if (item == 7)
-		{
-		FILE *f;
-		f = fopen (path, "wb");
-		if (f) fclose(f);
-		}
-
-	if (item == 8)
-		{
-		unlink (path);
-		}
-
-	if (item == 10)
-		{
-		plneek_ShowMenu ();
-		}
-
-	if (item == 11)
-		{
-		grlib_menu ("Your Wii will now rebooot", "  OK  ");
-
-		Shutdown (0);
-		SYS_ResetSystem(SYS_RESTART,0,0);
-		}
-
-	if (item == 12)
-		{
-		CleanTitleConfiguration();
-		}
-
-	if (item == 13)
-		{
-		if (InstallNeekbooter())
-			grlib_menu ("Succesfully installed", "OK");
-		else
-			grlib_menu ("Something gone wrong. Is priiloader installed in nand ?", "OK");
-		}
-
-	if (item == 14)
-		{
-		ThemeSelect();
-		}
-
-	if (item == 15)
-		{
-		fsop_KillFolderTree ("usb://ploader", cb_remove1);
-		fsop_CopyFolder ("sd://ploader", "usb://ploader", cb_filecopy);
+		grlibSettings.fontNormBMF = fonts[FNTBIG];
+		item = grlib_menu (buff, options);
+		grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
-		if (!fsop.breakop)
+		if (item == 1)
 			{
-			grlib_menu ("Your Wii will now rebooot", "  OK  ");
+			ShowAboutPLMenu ();
+			}
 
-			fsop_KillFolderTree ("sd://ploader", cb_remove2);
-			Shutdown (0);
-			SYS_ResetSystem(SYS_RESTART,0,0);
+		if (item == 2)
+			{
+			AutoUpdate ();
+			}
+
+		if (item == 7)
+			{
+			ShowAdvancedOptions ();
+			}
+
+		if (item == 10)
+			{
+			plneek_ShowMenu ();
+			}
+
+		if (item == 12)
+			{
+			CleanTitleConfiguration();
+			}
+
+		if (item == 13)
+			{
+			if (InstallNeekbooter())
+				grlib_menu ("Succesfully installed", "OK");
+			else
+				grlib_menu ("Something gone wrong. Is priiloader installed in nand ?", "OK");
+			}
+
+		if (item == 14)
+			{
+			ThemeSelect();
+			}
+
+		if (item == 15)
+			{
+			fsop_KillFolderTree ("usb://ploader", cb_remove1);
+			fsop_CopyFolder ("sd://ploader", "usb://ploader", cb_filecopy);
+			
+			if (!fsop.breakop)
+				{
+				grlib_menu ("Your Wii will now rebooot", "  OK  ");
+
+				fsop_KillFolderTree ("sd://ploader", cb_remove2);
+				Shutdown (0);
+				SYS_ResetSystem(SYS_RESTART,0,0);
+				item = -1;
+				}
+			}
+
+		if (item == MENU_CHANGENEEK2o)
+			{
+			menu_SwitchNand();
+			}
+
+		if (item == 6)
+			{
+			int item = grlib_menu ("Please confirm:\n\n"
+									"You are about to clear autorun application/channel\n"
+									"Continue ?\n",
+									"OK|Cancel");
+			if (item == 0)
+				{
+				config.autoboot.enabled = 0;
+				}
 			}
 		}
-
-	if (item == MENU_CHANGENEEK2o)
-		{
-		menu_SwitchNand();
-		}
-
-	if (item == 6)
-		{
-		int item = grlib_menu ("Please confirm:\n\n"
-								"You are about to clear autorun application/channel\n"
-								"Continue ?\n",
-								"OK|Cancel");
-		if (item == 0)
-			{
-			config.autoboot.enabled = 0;
-			}
-		}
-
+	while (item != -1);
+	
 	ConfigWrite ();
+	ExtConfigWrite ();
 	}
 
 bool InstallNeekbooter (void)	// if nandpath is null, neekbooter is installed in isfs

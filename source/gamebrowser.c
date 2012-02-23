@@ -15,6 +15,7 @@
 #include "neek.h"
 #include "mystring.h"
 #include "cfg.h"
+#include "devices.h"
 
 #define CHNMAX 1024
 
@@ -201,10 +202,11 @@ void MakeCoverPath (int ai, char *path)
 
 static void FeedCoverCache (void)
 	{
-	Debug ("AppsSort: begin");
-	
 	char path[128];
 	CoverCache_Pause (true);
+
+	if (page > pageMax) page = pageMax;
+	if (page < 0) page = 0;
 
 	int i;
 	int ai;	// Application index (corrected by the offset)
@@ -221,8 +223,6 @@ static void FeedCoverCache (void)
 		}
 	
 	CoverCache_Pause (false);
-	
-	Debug ("AppsSort: end");
 	}
 
 static void DownloadCovers (void)
@@ -240,9 +240,9 @@ static void DownloadCovers (void)
 	stop = 0;
 
 	FILE *f = NULL;
-	if (IsDevValid (DEV_SD))
+	if (devices_Get(DEV_SD))
 		{
-		sprintf (path, "%s://missgame.txt", vars.mount[DEV_SD]);
+		sprintf (path, "%s://missgame.txt", devices_Get(DEV_SD));
 		f = fopen (path, "wb");
 		}
 	
@@ -574,7 +574,14 @@ static int GameBrowse (int forcescan)
 		titles = DMLScanner (forcescan);
 		}
 	CoverCache_Pause (false);	
-	if (!titles) return 0;
+	if (!titles) 
+		{
+		games2Disp = 0;
+		gamesCnt = 0;
+		page = 0;
+		pageMax = 0;
+		return 0;
+		}
 	
 	p = titles;
 	i = 0;
@@ -1338,6 +1345,7 @@ static void ShowMainMenu (void)
 		config.gameSort ++;
 		if (config.gameSort > 2) config.gameSort = 0;
 		AppsSort ();
+		FeedCoverCache ();
 		goto start;
 		}
 
@@ -1453,6 +1461,12 @@ static void RedrawIcons (int xoff, int yoff)
 			grlib_IconDraw (&is, &ico);
 			}
 		}
+
+	if (gamesCnt == 0)
+		{
+		grlib_DrawCenteredWindow ("No games found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
+		Video_DrawIcon (TEX_EXCL, 320, 250);
+		}
 	}
 
 static void Redraw (void)
@@ -1485,9 +1499,9 @@ static void Redraw (void)
 			strcpy (neek, "neek");
 
 		if (strlen(vars.neekName))
-			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s %s) - Games", neek, vars.neekName);
+			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s %s) - %s", neek, vars.neekName, sdev);
 		else
-			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s) - Games", neek);
+			grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader"VER" (%s) - %s", neek, sdev);
 		}
 		
 	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
@@ -1740,6 +1754,7 @@ static void Conf (bool open)
 int GameBrowser (void)
 	{
 	u32 btn;
+	int gameModeLast = config.gameMode;
 
 	Debug ("GameBrowser (begin)");
 	
@@ -1764,16 +1779,16 @@ int GameBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	
-	page = config.gamePage;
+	page = config.gamePageWii;
 	GameBrowse (0);
 
 	LiveCheck (1);
 
-	if (config.gamePage >= 0 && config.gamePage <= pageMax)
-		page = config.gamePage;
+	if (config.gameMode == GM_WII)
+		page = config.gamePageWii;
 	else
-		page = 0;
-		
+		page = config.gamePageGC;
+
 	FeedCoverCache ();
 
 	redraw = 1;
@@ -1790,13 +1805,6 @@ int GameBrowser (void)
 			{
 			browserRet = ChooseDPadReturnMode (btn);
 			if (browserRet != -1) break;
-			
-			if (btn & WPAD_BUTTON_1) 
-				{
-				page = GoToPage (page, pageMax);
-				FeedCoverCache ();
-				redraw = 1;
-				}
 			
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
 				{
@@ -1862,8 +1870,19 @@ int GameBrowser (void)
 				redraw = 1;
 				}
 
+			if (btn & WPAD_BUTTON_1) 
+				{
+				if (gamesCnt == 0) continue;
+
+				page = GoToPage (page, pageMax);
+				FeedCoverCache ();
+				redraw = 1;
+				}
+			
 			if (btn & WPAD_BUTTON_2)
 				{
+				if (gamesCnt == 0) continue;
+				
 				ShowFilterMenu ();
 				redraw = 1;
 				}
@@ -1938,7 +1957,10 @@ int GameBrowser (void)
 		}
 
 	// save current page
-	config.gamePage = page;
+	if (gameModeLast == GM_WII)
+		config.gamePageWii = page;
+	else
+		config.gamePageGC = page;
 	
 	Conf (false);
 

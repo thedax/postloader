@@ -7,6 +7,7 @@
 #include "bin2o.h"
 #include "gui.h"
 #include "mystring.h"
+#include "devices.h"
 
 // 192x112
 // 128x48
@@ -724,11 +725,11 @@ static int AppsBrowse (void)
 		}
 	else
 		{
-		if ((config.appDev == 0 || config.appDev == 1) && IsDevValid(DEV_SD))
-			ScanApps (vars.mount[DEV_SD]);
+		if ((config.appDev == 0 || config.appDev == 1) && devices_Get(DEV_SD))
+			ScanApps (devices_Get(DEV_SD));
 
-		if ((config.appDev == 0 || config.appDev == 2) && IsDevValid(DEV_USB))
-			ScanApps (vars.mount[DEV_USB]);
+		if ((config.appDev == 0 || config.appDev == 2) && devices_Get(DEV_USB))
+			ScanApps (devices_Get(DEV_USB));
 		}
 		
 	
@@ -1199,17 +1200,17 @@ static void Redraw (void)
 		{
 		strcpy (sdev, "");
 		
-		if ((config.appDev == 0 || config.appDev == 1) && IsDevValid(DEV_SD))
+		if ((config.appDev == 0 || config.appDev == 1) && devices_Get(DEV_SD))
 			{
 			strcat (sdev, "[");
-			strcat (sdev, vars.mount[DEV_SD]);
+			strcat (sdev, devices_Get(DEV_SD));
 			strcat (sdev, "] ");
 			}
 
-		if ((config.appDev == 0 || config.appDev == 2) && IsDevValid(DEV_USB))
+		if ((config.appDev == 0 || config.appDev == 2) && devices_Get(DEV_USB))
 			{
 			strcat (sdev, "[");
-			strcat (sdev, vars.mount[DEV_USB]);
+			strcat (sdev, devices_Get(DEV_USB));
 			strcat (sdev, "] ");
 			}
 			

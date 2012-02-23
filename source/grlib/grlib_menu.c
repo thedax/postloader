@@ -80,6 +80,39 @@ int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstr
 	return 1;
 	}
 
+int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *yesno, const char *itemsstring, ...)
+	{
+	char buff[256];
+	char sid[16];
+	char yn[64];
+	
+	if (menu == NULL) return 0;
+
+	if (itemsstring != NULL)
+		{
+		va_list argp;
+		va_start(argp, itemsstring);
+		vsprintf(buff, itemsstring, argp);
+		va_end(argp);
+		}
+
+	strcpy (yn, yesno);
+	char *p = strstr (yn, "|");
+	if (!p) return 0;
+	*p = '\0';
+
+	if (check)
+		strcat (buff, yn);
+	else
+		strcat (buff, ++p);
+
+	strcat (menu, buff);
+	sprintf (sid, "##%d|", id);
+	strcat (menu, sid);
+	
+	return 1;
+	}
+
 int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3... etc,
 	{
 	int i,j;

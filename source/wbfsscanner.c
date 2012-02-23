@@ -8,129 +8,7 @@
 #include "usbstorage.h"
 
 #include "globals.h"
-
-//these are the only stable and speed is good
-#define CACHE 8
-#define SECTORS 64
-
-const DISC_INTERFACE* storage = NULL;
-
-#define le32(i) (((((u32) i) & 0xFF) << 24) | ((((u32) i) & 0xFF00) << 8) | \
-                ((((u32) i) & 0xFF0000) >> 8) | ((((u32) i) & 0xFF000000) >> 24))
-
-enum
-{
-    SD = 0,
-    USB1,
-    USB2,
-    USB3,
-    USB4,
-    MAXDEVICES
-};
-
-static int partinfo[MAXDEVICES] = {0}; // Part num, or part num + 10 for ntfs
-static int mounted[MAXDEVICES] = {0}; // Part num, or part num + 10 for ntfs
-
-static const char DeviceName[MAXDEVICES][6] =
-{
-    "sd",
-    "usb1",
-    "usb2",
-    "usb3",
-    "usb4"
-};
-
-typedef struct _PARTITION_RECORD {
-    u8 status;                              /* Partition status; see above */
-    u8 chs_start[3];                        /* Cylinder-head-sector address to first block of partition */
-    u8 type;                                /* Partition type; see above */
-    u8 chs_end[3];                          /* Cylinder-head-sector address to last block of partition */
-    u32 lba_start;                          /* Local block address to first sector of partition */
-    u32 block_count;                        /* Number of blocks in partition */
-} __attribute__((__packed__)) PARTITION_RECORD;
-
-
-typedef struct _MASTER_BOOT_RECORD {
-    u8 code_area[446];                      /* Code area; normally empty */
-    PARTITION_RECORD partitions[4];         /* 4 primary partitions */
-    u16 signature;                          /* MBR signature; 0xAA55 */
-} __attribute__((__packed__)) MASTER_BOOT_RECORD;
-
-static int USBDevice_Init()
-{
-    time_t start = time(0);
-
-    while (time(0) - start < 5) // 5 sec
-    {
-        if(storage->startup() && storage->isInserted())
-            break;
-
-        usleep(200000); // 1/5 sec
-    }
-
-    if(!storage->startup() || !storage->isInserted())
-        return -1;
-
-    int i;
-    MASTER_BOOT_RECORD mbr;
-    char BootSector[512];
-
-    storage->readSectors(0, 1, &mbr);
-	
-	int partnfs = 0, partfat = 0;
-
-    for(i = 0; i < 4; ++i)
-    {
-        if(mbr.partitions[i].type == 0)
-            continue;
-
-        storage->readSectors(le32(mbr.partitions[i].lba_start), 1, BootSector);
-
-        if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
-        {
-            //! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
-            if(memcmp(BootSector + 0x36, "FAT", 3) == 0 || memcmp(BootSector + 0x52, "FAT", 3) == 0)
-            {
-                if (fatMount(DeviceName[USB1+i], storage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS))
-					{
-					partinfo[USB1+i] = partfat;
-					partfat++;
-					mounted[USB1+i] = 1;
-					}
-            }
-            else if (memcmp(BootSector + 0x03, "NTFS", 4) == 0)
-            {
-				if (ntfsMount(DeviceName[USB1+i], storage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE))
-					{
-					partinfo[USB1+i] = partnfs + 10;
-					partnfs++;
-					mounted[USB1+i] = 1;
-					}
-            }
-        }
-    }
-	
-	return partnfs + partfat;
-
-	return -1;
-}
-
-static void USBDevice_deInit()
-{
-    int dev;
-    char Name[20];
-
-    for(dev = USB1; dev <= USB4; ++dev)
-    {
-        sprintf(Name, "%s:/", DeviceName[dev]);
-        fatUnmount(Name);
-        ntfsUnmount(Name, true);
-        //ext2Unmount(Name);
-    }
-	//Let's not shutdown so it stays awake for the application
-	storage->shutdown();
-	USB_Deinitialize();
-}
+#include "devices.h"
 
 #define BUFFSIZE (1024*64)
 #define GISIZE 0xEC
@@ -219,9 +97,6 @@ char * WBFSSCanner (bool reset)
 	count = 0;
 	char *ob = calloc (1, BUFFSIZE);
 	
-	memset (&partinfo, 0, sizeof(partinfo)); // Part num, or part num + 10 for ntfs
-	memset (&mounted, 0, sizeof(mounted));
-	
 	sprintf (path, "%s://ploader/wbfs.cfg", vars.defMount);
 	
 	if (reset == 0)
@@ -240,47 +115,24 @@ char * WBFSSCanner (bool reset)
 	
 	if (reset)
 		{
-		Video_WaitPanel (TEX_HGL, "Please wait...|(mounting partitions)");
-		
-		Fat_Unmount ();
-		
 		// Let's remount sd, required for debugging
-		Debug ("WBFSSCanner: mounting sd for debugging");
-		fatMountSimple("sd", &__io_wiisd);
 
-		if (vars.ios == IOS_DEFAULT)
-			storage=(DISC_INTERFACE*)&__io_wiiums;
-		else
-			storage=(DISC_INTERFACE*)&__io_usbstorage;
-		
 		// Mount every partitions on usb
-		Debug ("WBFSSCanner: mounting devs");
-		USBDevice_Init ();
-		
+
 		Debug ("WBFSSCanner: scannning");
 		int i;
-		for (i = USB1; i <= USB4; i++)
+		for (i = DEV_USB; i < DEV_MAX; i++)
 			{
-			if (mounted[i])
+			if (devices_Get(i))
 				{
-				part = partinfo[i];
+				part = devices_PartitionInfo(i);
 				char path[64];
 				
-				sprintf (path, "usb%d://wbfs", i);
+				sprintf (path, "%s://wbfs", devices_Get(i));
 				ScanWBFS (ob, path);
 				}
 			}
-		
-		Debug ("WBFSSCanner: unomount usb");
-		USBDevice_deInit ();
-		
-		Debug ("WBFSSCanner: unomount sd");
-		fatUnmount("sd:/");
-		__io_wiisd.shutdown();
 
-		Debug ("WBFSSCanner: remounting standard devs");
-		MountDevices (1);
-		
 		Debug ("WBFSSCanner: writing cache file");
 		f = fopen (path, "wb");
 		if (f) 

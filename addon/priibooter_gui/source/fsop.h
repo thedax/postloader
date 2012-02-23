@@ -1,29 +1,35 @@
 #ifndef _FSOP
 #define _FSOP
 
-enum
-	{
-	FSOP_OK = 0,
-	FSOP_FOPEN,
-	FSOP_FILEISEMPTY,
-	FSOP_CANNOTMALLOC
-	};
-
 typedef void (*fsopCallback)(void); 
 
 typedef struct 
 	{
-	char op[64];	// Calling process can set filename or any other info that fit
-	int size;
-	int bytes;
+	u64 size, bytes; // for operation that uses more than one file
+	u32 startms;
+	u32 elapsed;
+	}
+s_fsopmulty;
+
+typedef struct 
+	{
+	char op[256];	// Calling process can set filename or any other info that fit
+	
+	u32 size, bytes;
+
+	s_fsopmulty multy;
 	
 	int flag1;		// user defined flag
+	bool breakop;	// allow to stop a long operation
 	}
 s_fsop;
 
 extern s_fsop fsop;
 
-u8 *fsop_GetBuffer (char *fn, int *size, fsopCallback vc);
+u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded);
+bool fsop_WriteFile (char *path, u8 *buff, size_t len);
+u32 fsop_CountDirItems (char *source);
+bool fsop_GetFileSizeBytes (char *path, size_t *filesize);	// for me stats st_size report always 0 :(
 bool fsop_StoreBuffer (char *fn, u8 *buff, int size, fsopCallback vc);
 bool fsop_FileExist (char *fn);
 bool fsop_DirExist (char *path);
@@ -33,5 +39,9 @@ bool fsop_CopyFolder (char *source, char *target, fsopCallback vc);
 bool fsop_KillFolderTree (char *source, fsopCallback vc);
 bool fsop_CreateFolderTree (char *path);
 int fsop_CountFolderTree (char *path);
+
+u32 fsop_GetFolderKb (char *source, fsopCallback vc);
+u64 fsop_GetFolderBytes (char *source, fsopCallback vc);
+u32 fsop_GetFreeSpaceKb (char *path);
 
 #endif

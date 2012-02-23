@@ -7,6 +7,8 @@
 #include "mem2.h"
 #include "globals.h"
 
+mutex_t mutex;
+
 #define MAXITEMS 128
 
 #define STACKSIZE	8192
@@ -26,7 +28,6 @@ static s_cc *cc;
 
 static int idx = 0;	// used to add elements
 static int running = 0;
-static int pausethread = 0;
 static int update = 0;
 static int age = 0;
 
@@ -84,21 +85,16 @@ static void *thread (void *arg)
 			if (*cc[i].id != '\0' && !cc[i].cover)
 				{
 				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
+
+				LWP_MutexLock (mutex);
 				cc[i].cover = MoveTex2Mem2 (tex);
 				
 				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
 				
 				update++;
 				DCFlushRange(&update, sizeof(update));
-				}
+				LWP_MutexUnlock (mutex);	
 				
-			if (pausethread == 1)
-				{
-				pausethread = 2;
-				while (pausethread == 2 && running)
-					{
-					usleep (10000); // 10 msec
-					}
 				}
 			
 			usleep (10);
@@ -115,18 +111,14 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	{
 	if (running == 0) return;
 	
-	if (yes && pausethread == 0)
+	if (yes)
 		{
-		pausethread = 1;
-
-		s32 tout = 500;
-		while (pausethread == 1 && tout-- > 0)
-			{
-			usleep (10000); // 10 msec
-			}
+		LWP_MutexLock (mutex);
 		}
-	if (!yes)
-		pausethread = 0;
+	else
+		{
+		LWP_MutexUnlock (mutex);
+		}
 	}
 	
 void CoverCache_Start (void)
@@ -135,6 +127,8 @@ void CoverCache_Start (void)
 	cc = mem2_malloc (MAXITEMS * sizeof(s_cc));
 	memset (cc, 0, MAXITEMS * sizeof(s_cc));
 
+	mutex = LWP_MUTEX_NULL;
+	LWP_MutexInit (&mutex, false);
 	threadStack = (u8 *) memalign(32, STACKSIZE);
 	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 30);
 	LWP_ResumeThread(hthread);
@@ -151,6 +145,9 @@ void CoverCache_Start (void)
 void CoverCache_Flush (void)	// empty the cache
 	{
 	int i;
+	
+	LWP_MutexLock (mutex);
+	
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (cc[i].cover) 
@@ -163,6 +160,8 @@ void CoverCache_Flush (void)	// empty the cache
 		cc[i].age = 0;
 		}
 	age = 0;
+	
+	LWP_MutexUnlock (mutex);
 	}
 	
 void CoverCache_Stop (void)
@@ -177,10 +176,13 @@ void CoverCache_Stop (void)
 			usleep (10000); // 10 msec
 			}
 		}
-	
 	CoverCache_Flush ();
+
 	
 	free (threadStack);
+	
+	LWP_MutexDestroy (mutex);
+
 	mem2_free (cc);
 	}
 		
@@ -253,32 +255,25 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 	if (running == 0) return NULL;
 
 	int i;
-	
+	GRRLIB_texImg *tex = NULL;
+
+	LWP_MutexLock (mutex);
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
 			{
-			return cc[i].cover;
+			tex = cc[i].cover;
+			break;
 			}
 		}
-	return NULL;
+	LWP_MutexUnlock (mutex);
+
+	return tex;
 	}
 	
 GRRLIB_texImg *CoverCache_GetCopy (char *id) // this will return a COPY of the required texture
 	{
-	if (running == 0) return NULL;
-
-	int i;
-	
-	for (i = 0; i < MAXITEMS; i++)
-		{
-		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
-			{
-			return grlib_CreateTexFromTex (cc[i].cover);
-			}
-		}
-	
-	return NULL;
+	return grlib_CreateTexFromTex (CoverCache_Get (id));
 	}
 	
 bool CoverCache_IsUpdated (void) // this will return the same text

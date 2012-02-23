@@ -44,7 +44,7 @@ LIBS	:=
 #LIBS	+= -lpngu 
 LIBS	+= -lpng
 #LIBS	+= -ljpeg 
-LIBS	+= -lz -lfat
+LIBS	+= -lz -lfat -lntfs
 LIBS	+= -lwiiuse
 #LIBS	+= -lmodplay -laesnd
 LIBS	+= -lbte -logc -lm
@@ -171,6 +171,14 @@ $(OUTPUT).elf: $(OFILES)
 # This rule links in binary data with the .ttf extension
 #---------------------------------------------------------------------------------
 %.dol.o	:	%.dol
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	$(bin2o)
+ 
+#---------------------------------------------------------------------------------
+# This rule links in binary data with the .ttf extension
+#---------------------------------------------------------------------------------
+%.bin.o	:	%.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	$(bin2o)

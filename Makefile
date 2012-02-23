@@ -52,13 +52,12 @@ LIBS	+= -lz -lfat -lntfs
 LIBS	+= -lwiiuse
 LIBS	+= -lmad -lasnd
 LIBS	+= -lbte -logc -lm
-#LIBS	+= -lfreetype
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS :=
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

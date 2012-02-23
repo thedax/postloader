@@ -12,10 +12,10 @@ static u8 *CFGSearch (size_t *filesize)
 	{
 	u8 *buff = NULL;
 	
-	if (!buff) buff = ReadFile2Buffer ("sd://apps/USBLoader_cfg/boot.dol", filesize, NULL, 1);
-	if (!buff) buff = ReadFile2Buffer ("sd://apps/USBLoader/boot.dol", filesize, NULL, 1);
-	if (!buff) buff = ReadFile2Buffer ("usb://apps/USBLoader_cfg/boot.dol", filesize, NULL, 1);
-	if (!buff) buff = ReadFile2Buffer ("usb://apps/USBLoader/boot.dol", filesize, NULL, 1);
+	if (!buff) buff = fsop_ReadFile ("sd://apps/USBLoader_cfg/boot.dol", 0, filesize);
+	if (!buff) buff = fsop_ReadFile ("sd://apps/USBLoader/boot.dol", 0, filesize);
+	if (!buff) buff = fsop_ReadFile ("usb://apps/USBLoader_cfg/boot.dol", 0, filesize);
+	if (!buff) buff = fsop_ReadFile ("usb://apps/USBLoader/boot.dol", 0, filesize);
 	
 	return buff;
 	}
@@ -24,8 +24,8 @@ static u8 *GXSearch (size_t *filesize)
 	{
 	u8 *buff = NULL;
 	
-	if (!buff) buff = ReadFile2Buffer ("sd://apps/usbloader_gx/boot.dol", filesize, NULL, 1);
-	if (!buff) buff = ReadFile2Buffer ("usb://apps/usbloader_gx/boot.dol", filesize, NULL, 1);
+	if (!buff) buff = fsop_ReadFile ("sd://apps/usbloader_gx/boot.dol", 0, filesize);
+	if (!buff) buff = fsop_ReadFile ("usb://apps/usbloader_gx/boot.dol", 0, filesize);
 	
 	return buff;
 	}
@@ -34,8 +34,8 @@ static u8 *WFSearch (size_t *filesize)
 	{
 	u8 *buff = NULL;
 	
-	if (!buff) buff = ReadFile2Buffer ("sd://apps/wiiflow/boot.dol", filesize, NULL, 1);
-	if (!buff) buff = ReadFile2Buffer ("usb://apps/wiiflow/boot.dol", filesize, NULL, 1);
+	if (!buff) buff = fsop_ReadFile ("sd://apps/wiiflow/boot.dol", 0, filesize);
+	if (!buff) buff = fsop_ReadFile ("usb://apps/wiiflow/boot.dol", 0, filesize);
 	
 	return buff;
 	}

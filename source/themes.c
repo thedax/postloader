@@ -10,6 +10,7 @@ Themes selection menu
 
 #include "wiiload/wiiload.h"
 #include "globals.h"
+#include "devices.h"
 
 #define MAXTHEMES 24
 #define MAXROW 8
@@ -82,7 +83,7 @@ int ThemeSelect (void)
 	ZipUnpack (path, targpath, NULL, NULL);
 	
 	sprintf (targpath, "%s://ploader/theme/ploader.png", vars.defMount);
-	if (fsop_FileExist (targpath) && IsDevValid (DEV_SD))
+	if (fsop_FileExist (targpath) && devices_Get (DEV_SD))
 		{
 		i = grlib_menu ("This theme contain a splash screen\n\nDo you want to install it ?", "Yes##1~No##-1~Remove##0");
 		if (i != -1)

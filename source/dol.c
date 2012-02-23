@@ -12,6 +12,7 @@
 #include "globals.h"
 #include "ios.h"
 #include "bin2o.h"
+#include "hbcstub.h"
 
 extern s32 __IOS_ShutdownSubsystems();
 extern void __exception_closeall();
@@ -127,6 +128,8 @@ int DolBootPrepare (s_run *run)
 	int i,l;
 	char bootpath[PATHMAX+256]; // we need also args...
 	char path[PATHMAX];
+	
+	Video_LoadTheme (0); // Make sure that theme isn't loaded
 		
 	MasterInterface (1, 0, 2, "Loading DOL...");
 
@@ -163,13 +166,20 @@ int DolBootPrepare (s_run *run)
 			
 	memmove(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
+	
+	HBMAGIC_ADDR[0] = 'P';
+	HBMAGIC_ADDR[1] = 'O';
+	HBMAGIC_ADDR[2] = 'S';
+	HBMAGIC_ADDR[3] = 'T';
+	HBMAGIC_ADDR[4] = run->fixCrashOnExit;
+	DCFlushRange(HBMAGIC_ADDR, 8);
 
 	mssleep (500);
 
 	return 1;
 	}
 	
-void DolBoot (s_run *run)
+void DolBoot (void)
 	{
 	u32 level;
 	
@@ -177,11 +187,8 @@ void DolBoot (s_run *run)
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
-	int fix = 0;
-	if (run) 
-		fix = run->fixCrashOnExit;
 	
-	Shutdown (fix);
+	Shutdown (HBMAGIC_ADDR[4]);
 
 	// Try to reload os... maybe this is not needed when NOT executed under homebrew, but a lot of 
 	// programs (like WiiMC) aren't able to find any usb device
@@ -203,5 +210,33 @@ void DirectDolBoot (char *fn)
 	sprintf (run.filename, fn);
 	
 	DolBootPrepare (&run);
-	DolBoot (&run);
+	DolBoot ();
 	}
+	
+void FastDolBoot (void)
+	{
+	u32 level;
+	
+	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
+	DCFlushRange(BOOTER_ADDR, booter_dol_size);
+
+	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
+	
+	if (!HBMAGIC_ADDR[4])
+		{
+		*(u32*)0x80001804 = (u32) 0L;
+		*(u32*)0x80001808 = (u32) 0L;
+		DCFlushRange((void*)0x80001804,8);
+		}
+		
+	// Also modify it
+	Set_Stub (((u64)(1) << 32) | (2));
+
+	// Execute dol
+	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+	_CPU_ISR_Disable(level);
+	__exception_closeall();
+	hbboot_ep();
+	_CPU_ISR_Restore(level);
+	}
+	

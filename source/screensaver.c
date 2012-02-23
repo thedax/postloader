@@ -7,15 +7,16 @@
 #include <dirent.h>
 #include "globals.h"
 #include "bin2o.h"
+#include "devices.h"
 
 static void UpdateLiveUSB (void)
 	{
-	if (!IsDevValid (DEV_USB)) return;
+	if (!devices_Get (DEV_USB)) return;
 	
 	FILE *f;
 	char path[PATHMAX];
 	
-	sprintf (path, "%s://pllive.dat", vars.mount[DEV_USB]);
+	sprintf (path, "%s://pllive.dat", devices_Get (DEV_USB));
 	
 	if (!fsop_FileExist (path))
 		{
@@ -189,7 +190,7 @@ bool LiveCheck (int reset)
 		ss = 0;
 		}
 		
-	if ((ct - t) > 30 && IsDevValid(DEV_USB))
+	if ((ct - t) > 30 && devices_Get(DEV_USB))
 		{
 		t = ct;
 		UpdateLiveUSB ();

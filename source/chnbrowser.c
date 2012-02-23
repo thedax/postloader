@@ -13,6 +13,7 @@
 #include "gui.h"
 #include "mystring.h"
 #include "cfg.h"
+#include "devices.h"
 
 #define CHNMAX 1024
 
@@ -142,6 +143,9 @@ static void FeedCoverCache (void)
 	char path[128];
 	CoverCache_Pause (true);
 
+	if (page > pageMax) page = pageMax;
+	if (page < 0) page = 0;
+
 	int i;
 	int ai;	// Application index (corrected by the offset)
 
@@ -175,9 +179,9 @@ static void DownloadCovers (void)
 	stop = 0;
 	
 	FILE *f = NULL;
-	if (IsDevValid (DEV_SD))
+	if (devices_Get (DEV_SD))
 		{
-		sprintf (path, "%s://misschan.txt", vars.mount[DEV_SD]);
+		sprintf (path, "%s://misschan.txt", devices_Get(DEV_SD));
 		f = fopen (path, "wb");
 		}
 	
@@ -507,7 +511,7 @@ static int RebuildCacheFile (void)
 				return -1;
 				}
 			}
-		else if (vars.ios == IOS_DEFAULT)
+		else if (vars.ios == IOS_CIOS)
 			{
 			Video_WaitPanel (TEX_CHIP, "Please wait...");
 			}
@@ -1063,6 +1067,7 @@ static void ShowNandOptions (void)
 		{
 		RebuildCacheFile ();
 		ChnBrowse ();
+		FeedCoverCache ();
 		}
 
 	if (item == 10)
@@ -1586,6 +1591,7 @@ int ChnBrowser (void)
 		if (browse)
 			{
 			ChnBrowse ();
+			FeedCoverCache ();
 			browse = 0;
 			redraw = 1;
 			}

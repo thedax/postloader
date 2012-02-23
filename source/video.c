@@ -316,7 +316,7 @@ void Video_LoadTheme (int init)
 			}
 		#endif
 		}
-	else
+	else if (theme.ok)
 		{
 		theme.ok = 0;
 		grlibSettings.theme.enabled = false;

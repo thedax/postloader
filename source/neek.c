@@ -8,6 +8,7 @@
 #include "neek.h"
 #include "fsop/fsop.h"
 #include "globals.h"
+#include "devices.h"
 
 #define DI_CONFIG_SIZE         0x10
 #define DI_GAMEINFO_SIZE       0x80
@@ -518,7 +519,7 @@ bool neek_CreateCDIConfigBrowse (CDIConfig *DICfg, u32 *count, char *path)
 	
 	Debug ("neek_CreateCDIConfigBrowse: [PATH] %s", path);
 	
-	sprintf (fn, "%s://wbfs/", vars.mount[DEV_USB]);
+	sprintf (fn, "%s://wbfs/", devices_Get(DEV_USB));
 	offset = strlen (fn);
 
 	pdir=opendir(path);
@@ -568,7 +569,7 @@ bool neek_CreateCDIConfig (void)
 	u32 count = 0;
 	u32 cfgSize = 0;
 	
-	sprintf (path, "%s://wbfs", vars.mount[DEV_USB]);	
+	sprintf (path, "%s://wbfs", devices_Get(DEV_USB));	
 	
 	// Create a (big) CDIConfig
 	cfgSize = (CDIINITALGAMECOUNT * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
@@ -593,7 +594,7 @@ bool neek_CreateCDIConfig (void)
     DICfg->Gamecount = count;
 	cfgSize = (count * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
 
-	sprintf (path, "%s://sneek/diconfig.bin", vars.mount[DEV_USB]);	
+	sprintf (path, "%s://sneek/diconfig.bin", devices_Get(DEV_USB));	
 	FILE *f = fopen(path, "wb");
 	fwrite( DICfg, 1, cfgSize, f);
 	count = 0x00; // This is from a bugs of neek2o

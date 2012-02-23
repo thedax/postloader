@@ -91,8 +91,8 @@ int ios_ReloadIOS(int ios, int *ahbprot)
 		return ios; // Wow, it's works
 		}
 		
-	// mmm... anyway re-load, but ahpbrot
+	// mmm... anyway re-load, but ahpbrot will be lost
 	IOS_ReloadIOS(ios);
 		
-	return 0;
+	return ios;
     }
