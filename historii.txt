@@ -1,3 +1,8 @@
+postLoader 3.67.1
+
+* dml game scanner is working again
+* priibooter_gui (2.2): background fade-in during hdd initialization was missing
+
 postLoader 3.67.0
 
 * dml: fixed the bug that could prevent displaying of games on more than one disc (from usb only)..

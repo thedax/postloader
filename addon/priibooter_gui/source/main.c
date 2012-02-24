@@ -19,7 +19,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "2.1"
+#define VER "2.2"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -589,8 +589,8 @@ int cb_Mount (void)
 	if (time(0) - t > 5)
 		sprintf (mex2,"Mounting USB devices: %d seconds remaining...", USBTOUT - (int)(time(0) - t));
 	
-	Redraw ();
-	
+	fadeIn (0);
+
 	return 1;
 	}
 

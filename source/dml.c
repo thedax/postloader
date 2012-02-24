@@ -249,7 +249,7 @@ char *DMLScanner  (bool reset)
 	
 	if (reset == 1)
 		{
-		if (devices_Get(DEV_SD)) return 0;
+		if (!devices_Get(DEV_SD)) return 0;
 		
 		sprintf (path, "%s://games", devices_Get(DEV_SD));
 		

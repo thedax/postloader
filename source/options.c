@@ -219,6 +219,7 @@ void ShowAdvancedOptions (void)
 	
 	// Update grlib setting...
 	grlibSettings.usesGestures = config.usesGestures;
+	ExtConfigWrite ();
 	}
 
 
@@ -380,7 +381,6 @@ void ShowAboutMenu (void)
 	while (item != -1);
 	
 	ConfigWrite ();
-	ExtConfigWrite ();
 	}
 
 bool InstallNeekbooter (void)	// if nandpath is null, neekbooter is installed in isfs

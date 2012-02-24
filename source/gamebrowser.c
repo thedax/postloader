@@ -573,6 +573,7 @@ static int GameBrowse (int forcescan)
 		{
 		titles = DMLScanner (forcescan);
 		}
+	
 	CoverCache_Pause (false);	
 	if (!titles) 
 		{
