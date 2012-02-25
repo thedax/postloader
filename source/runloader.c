@@ -29,7 +29,7 @@ void RunLoader(void)
 	
 	if (config.run.game.loader == 0) // CFG
 		{
-		sprintf (argb, "boot.dol;%s;partition=%s;intro=0;theme=pl;ios=%d", config.run.asciiId, part, ios);
+		sprintf (argb, "%s;partition=%s;intro=0;theme=pl;ios=%d", config.run.asciiId, part, ios);
 
 		DirectDolBoot ("sd://apps/USBLoader_cfg/boot.dol", argb);
 		DirectDolBoot ("sd://apps/USBLoader/boot.dol", argb);
@@ -38,14 +38,14 @@ void RunLoader(void)
 		}
 	if (config.run.game.loader == 1) // GX
 		{
-		sprintf (argb, "boot.dol;%s;ios=%d", config.run.asciiId, ios);
+		sprintf (argb, "%s;ios=%d", config.run.asciiId, ios);
 
 		DirectDolBoot ("sd://apps/usbloader_gx/boot.dol", argb);
 		DirectDolBoot ("usb://apps/usbloader_gx/boot.dol", argb);
 		}
 	if (config.run.game.loader == 2) // WF
 		{
-		sprintf (argb, "boot.dol;%s;ios=%d", config.run.asciiId, ios);
+		sprintf (argb, "%s;ios=%d", config.run.asciiId, ios);
 
 		DirectDolBoot ("sd://apps/wiiflow/boot.dol", argb);
 		DirectDolBoot ("usb://apps/wiiflow/boot.dol", argb);

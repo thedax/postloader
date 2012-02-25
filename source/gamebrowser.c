@@ -1859,8 +1859,6 @@ int GameBrowser (void)
 						DMLRun (games[gamesSelected].asciiId);
 						}
 					}
-				
-				browse = 1;
 				}
 				
 			/////////////////////////////////////////////////////////////////////////////////////////////
