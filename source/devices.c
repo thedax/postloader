@@ -14,6 +14,7 @@
 #include "usbstorage.h"
 #include "devices.h"
 #include "debug.h"
+#include "fsop/fsop.h"
 
 //these are the only stable and speed is good
 #define CACHE 8
@@ -83,7 +84,11 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 	int partnfs = 0, partfat = 0;
 
     storage->readSectors(0, 1, &mbr);
-
+	
+	/*
+	if (mounted[DEV_SD])
+		fsop_WriteFile ("sd://mbr.dat", (u8*)&mbr, sizeof (mbr));
+	*/
     for (i = 0; i < 4; ++i)
 		{
 		gprintf ("USBDevice_Init: partcount %d, parttyp = %d\n", i, mbr.partitions[i].type);
@@ -92,7 +97,14 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
             continue;
 
         storage->readSectors(le32(mbr.partitions[i].lba_start), 1, BootSector);
-
+		/*
+		if (mounted[DEV_SD])
+			{
+			char path[300];
+			sprintf (path,"sd://part%d.dat",i);
+			fsop_WriteFile (path, (u8*)BootSector, sizeof (BootSector));
+			}
+		*/
         if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
 			{
             //! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.

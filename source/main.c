@@ -434,10 +434,6 @@ int main(int argc, char **argv)
 		if (DolBootPrepare (&config.run))
 			{
 			// NOTE: Shutdown() is called inside dolboot
-			if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
-				ReloadPostloaderChannel ();
-			
-			// if previous fails
 			DolBoot ();
 			}
 		}

@@ -333,13 +333,13 @@ bool ReloadPostloader (void)
 	if (devices_Get(DEV_SD))
 		{
 		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_SD));
-		if (fsop_FileExist (path)) DirectDolBoot (path);
+		if (fsop_FileExist (path)) DirectDolBoot (path, NULL);
 		}
 
 	if (devices_Get(DEV_USB))
 		{
 		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_USB));
-		if (fsop_FileExist (path)) DirectDolBoot (path);
+		if (fsop_FileExist (path)) DirectDolBoot (path, NULL);
 		}
 	
 	return false;

@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "3.67.1"
+#define VER "3.67.2"
 #define CFGVER "PLCFGV0009"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -411,7 +411,7 @@ u32 load_dol(const void *dolstart, struct __argv *argv);
 void DolBoot (void);
 int DolBootPrepare (s_run *run);
 int DolBootPrepareWiiload (void);
-void DirectDolBoot (char *fn);
+bool DirectDolBoot (char *fn, char *arguments);
 void FastDolBoot (void);
 
 // io.c

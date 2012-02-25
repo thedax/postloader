@@ -183,6 +183,9 @@ void DolBoot (void)
 	{
 	u32 level;
 	
+	if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
+		ReloadPostloaderChannel ();
+	
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
@@ -202,15 +205,32 @@ void DolBoot (void)
 	_CPU_ISR_Restore(level);
 	}
 	
-void DirectDolBoot (char *fn)
+bool DirectDolBoot (char *fn, char *arguments)
 	{
 	s_run run;
-	
+	char path[PATHMAX]; 		// Full app path with also the device
+
 	memset (&run, 0, sizeof (s_run));
-	sprintf (run.filename, fn);
+
+	strcpy (path, fn);
 	
-	DolBootPrepare (&run);
+	int i = strlen(path)-1;
+	while (i >= 0)
+		{
+		if (path[i] == '/') break;
+		i--;
+		}
+		
+	strcpy (run.filename, &path[i + 1]);
+	path[i + 1] = 0;
+	strcpy (run.path, path);
+	
+	if (arguments) sprintf (run.args, arguments);
+	
+	if (!DolBootPrepare (&run)) return false;
 	DolBoot ();
+	
+	return true;
 	}
 	
 void FastDolBoot (void)
