@@ -879,6 +879,7 @@ static void ShowFilterMenu (void)
 #define CHOPT_OCA 4
 #define CHOPT_NAND 5
 #define CHOPT_LOADER 3
+#define CHOPT_DMLVIDEOMODE 3
 
 static void ShowAppMenu (int ai)
 	{
@@ -886,11 +887,12 @@ static void ShowAppMenu (int ai)
 	char b[64];
 	int item;
 	
-	int opt[8] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_NAND, CHOPT_LOADER};
+	int opt[9] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_NAND, CHOPT_LOADER,CHOPT_DMLVIDEOMODE};
 
 	char *ios[CHOPT_IOS] = { "249", "250" , "222", "223", "248", "251", "252"};
 	char *nand[CHOPT_NAND] = { "Default", "USA" , "EURO", "JAP", "Korean"};
 	char *loader[CHOPT_NAND] = { "CFG", "GX", "WiiFlow"};
+	char *dmlvideomode[CHOPT_NAND] = { "Game", "PAL", "NTSC"};
 	/*
 	char *videooptions[CHOPT_VID] = { "Default Video Mode", "Force NTSC480i", "Force NTSC480p", "Force PAL480i", "Force PAL480p", "Force PAL576i", "Force MPAL480i", "Force MPAL480p" };
 	char *videopatchoptions[CHOPT_VIDP] = { "No Video patches", "Smart Video patching", "More Video patching", "Full Video patching" };
@@ -950,6 +952,8 @@ static void ShowAppMenu (int ai)
 			{
 			if (games[ai].slot == 0)
 				grlib_menuAddItem (buff, 7, "Remove from SD");
+				
+			strcat (buff, "Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlvideomode]); strcat (buff, "##108|");
 			}
 		/*
 		else
@@ -1001,8 +1005,7 @@ static void ShowAppMenu (int ai)
 			if (i == 5) { gameConf.ocarina ++; if (gameConf.ocarina >= opt[i]) gameConf.ocarina = 0; }
 			if (i == 6) { gameConf.nand ++; if (gameConf.nand >= opt[i]) gameConf.nand = 0; }
 			if (i == 7) { gameConf.loader ++; if (gameConf.loader >= opt[i]) gameConf.loader = 0; }
-			if (i == 8)	gameConf.dmlvideomode = DMLVIDEOMODE_NTSC;
-			if (i == 9)	gameConf.dmlvideomode = DMLVIDEOMODE_PAL;
+			if (i == 8) { gameConf.dmlvideomode ++; if (gameConf.dmlvideomode >= opt[i]) gameConf.dmlvideomode = 0; }
 			}
 		else
 			break;

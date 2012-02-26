@@ -121,10 +121,11 @@ int DolBootPrepareWiiload (void)
 	return 1;
 	}
 
+static u8 *execBuffer = NULL;
+static size_t filesize;
+
 int DolBootPrepare (s_run *run)
 	{
-	u8 *buffer;
-	size_t filesize;
 	int i,l;
 	char bootpath[PATHMAX+256]; // we need also args...
 	char path[PATHMAX];
@@ -135,14 +136,10 @@ int DolBootPrepare (s_run *run)
 
 	sprintf (path, "%s%s", run->path, run->filename);
 
-	buffer = ReadFile2Buffer (path, &filesize, NULL, FALSE);
-	if (!buffer) return 0;
+	execBuffer = ReadFile2Buffer (path, &filesize, NULL, FALSE);
+	if (!execBuffer) return 0;
 	
 	MasterInterface (1, 0, 3, "Booting...");
-
-	memcpy(EXECUTE_ADDR, buffer, filesize);
-	DCFlushRange((void *) EXECUTE_ADDR, filesize);
-	free (buffer);
 
 	strcpy (bootpath, path);
 	strcat (bootpath, ";");
@@ -183,21 +180,30 @@ void DolBoot (void)
 	{
 	u32 level;
 	
+	gprintf ("DolBoot\n");
+
+	Shutdown (HBMAGIC_ADDR[4]);
+
+	memcpy(EXECUTE_ADDR, execBuffer, filesize);
+	DCFlushRange((void *) EXECUTE_ADDR, filesize);
+	free (execBuffer);
+
 	if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
 		ReloadPostloaderChannel ();
 	
+	gprintf ("booter_dol\n");
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
 	
-	Shutdown (HBMAGIC_ADDR[4]);
-
 	// Try to reload os... maybe this is not needed when NOT executed under homebrew, but a lot of 
 	// programs (like WiiMC) aren't able to find any usb device
+	gprintf ("reload\n");
 	ios_ReloadIOS (-1, NULL);
 	
 	// Execute dol
+	gprintf ("execute\n");
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 	_CPU_ISR_Disable(level);
 	__exception_closeall();

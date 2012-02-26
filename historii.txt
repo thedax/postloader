@@ -1,3 +1,8 @@
+postLoader 3.67.4
+
+* Fixed channels name for neek2o
+* Maybe loaders execution is now fixed. This bug may be present for any hb launched and seems connected to cover cache thread
+
 postLoader 3.67.3
 
 * Corrected parameters for loaders (bug introduced in 3.67.2)

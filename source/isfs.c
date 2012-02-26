@@ -232,6 +232,8 @@ u8 * readalloc_file_from_nand(char *filepath, s32 *error, size_t bytes2read, siz
 		}
 	
 	u8 *buffer = allocate_memory(bytes2read);
+
+	if (!buffer)
 		{
 		ISFS_Close(Fd);
 		if (error) *error = -4;

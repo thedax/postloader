@@ -43,6 +43,7 @@ static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex)
 
 	u32 size = tex->w * tex->h * 4;
 	newTex->data = mem2_malloc (size);
+	
 	if (!newTex->data) 
 		{
 		mem2_free (newTex);
@@ -132,19 +133,12 @@ void CoverCache_Start (void)
 	threadStack = (u8 *) memalign(32, STACKSIZE);
 	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 30);
 	LWP_ResumeThread(hthread);
-	
-	// Let's wait until thread is running...
-	running = 0;
-	s32 tout = 500;
-	while (running == 0 && tout-- > 0)
-		{
-		usleep (10000); // 10 msec
-		}
 	}
 
 void CoverCache_Flush (void)	// empty the cache
 	{
 	int i;
+	Debug ("CoverCache_Flush");
 	
 	LWP_MutexLock (mutex);
 	
@@ -152,6 +146,7 @@ void CoverCache_Flush (void)	// empty the cache
 		{
 		if (cc[i].cover) 
 			{
+			Debug ("CoverCache_Flush: %d '%s'", i, cc[i].id);
 			FreeMem2Tex (cc[i].cover);
 			cc[i].cover = NULL;
 			}
@@ -166,24 +161,28 @@ void CoverCache_Flush (void)	// empty the cache
 	
 void CoverCache_Stop (void)
 	{
+	Debug ("CoverCache_Flush");
 	if (running)
 		{
 		running = 0;
 
-		s32 tout = 500;
-		while (running == 0 && tout-- > 0)
-			{
-			usleep (10000); // 10 msec
-			}
+		Debug ("CoverCache_Flush #1");
+		LWP_JoinThread (hthread, NULL);
+
+		Debug ("CoverCache_Flush #2");
+		CoverCache_Flush ();
+
+		Debug ("CoverCache_Flush #3");
+		free (threadStack);
+
+		Debug ("CoverCache_Flush #4");
+		LWP_MutexDestroy (mutex);
+
+		Debug ("CoverCache_Flush #5");
+		mem2_free (cc);
+
+		Debug ("CoverCache_Flush #6");
 		}
-	CoverCache_Flush ();
-
-	
-	free (threadStack);
-	
-	LWP_MutexDestroy (mutex);
-
-	mem2_free (cc);
 	}
 		
 void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt is true, thread will be paused

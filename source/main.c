@@ -50,17 +50,25 @@ void Subsystems (bool enable)
 		}
 	else
 		{
+		Debug ("ConfigWrite");
 		ConfigWrite ();
+		Debug ("CoverCache_Stop");
 		CoverCache_Stop ();
+		Debug ("WiiLoad");
 		WiiLoad (0);
+		Debug ("grlib_Controllers");
 		grlib_Controllers (false);
+		Debug ("DebugStop");
 		DebugStop ();
+		Debug ("UnmountDevices");
 		UnmountDevices ();
 		}
 	}
 
 void Shutdown(bool doNotKillHBC)
 	{
+	Debug ("Shutdown !");
+	
 	snd_Stop ();
 	cfg_Free (titlestxt);
 

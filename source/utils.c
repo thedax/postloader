@@ -38,7 +38,8 @@ u8 *ReadFile2Buffer (char *path, size_t *filesize, int *err, bool silent)
 	u8 *buff = NULL;
 	int size;
 	int bytes;
-	int block = 65536;
+	//int block = 65536;
+	int block = 131072;
 	FILE* f = NULL;
 	
 	Debug ("begin ReadFile2Buffer %s", path);

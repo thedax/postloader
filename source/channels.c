@@ -288,19 +288,6 @@ static char *get_name_from_banner_buffer(u8 *buffer)
 	return out;
 }
 
-static int find_string_in_buffer (u8 *buff, int buffsize, char *string)
-	{
-	int i, l;
-	
-	l = strlen(string);
-	for (i = 0; i < buffsize-i; i++)
-		{
-		if (memcmp(&buff[i], string, l) == 0)
-			return i;
-		}
-	return -1;
-	}
-	
 // to identify title we should look of 0x00 0x00 0x00 0x00 0x00 [Printable char]
 static char *find_title_name (u8 *buff, int buffsize)
 	{
@@ -318,8 +305,10 @@ static char *find_title_name (u8 *buff, int buffsize)
 	
 	int start, j;
 	
-	start = find_string_in_buffer (buff, buffsize, "IMET");
-	if (start < 0) return NULL;
+	p = (char*)ms_FindStringInBuffer (buff, buffsize, "IMET");
+	if (!p) return NULL;
+	
+	start = (u8*)p - buff;
 	
 	p = (char*)buff+start;
 	eob = (char *) ((buff+buffsize) - (patternLen+2));
@@ -390,9 +379,12 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
     char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 	u8 *buffer;
 	size_t readed;
+	
+	Debug ("read_name_from_banner_app '%s'", nandmountpoint);
 
-	if (!nandmountpoint && strlen(nandmountpoint) > 0)
+	if (!nandmountpoint || (nandmountpoint && strlen (nandmountpoint) == 0))
 		{
+		Debug ("read_name_from_banner_app: nandmode");
 		u32 num;
 		s32 ret;
 		dirent_t *list = NULL;
@@ -407,9 +399,14 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 			{        
 			if (strstr(list[cnt].name, ".app") != NULL || strstr(list[cnt].name, ".APP") != NULL) 
 				{
+				s32 err;
+				
 				sprintf(path, "/title/%08x/%08x/content/%s", TITLE_UPPER(titleid), TITLE_LOWER(titleid), list[cnt].name);
 	  
-				buffer = readalloc_file_from_nand (path, NULL, 368, &readed);
+				buffer = readalloc_file_from_nand (path, &err, 368, &readed);
+				
+				Debug ("read_name_from_banner_app: '%s'->0x%X [%d]", path, buffer, err);
+				
 				if (!buffer) continue;
 				
 				char * out = find_title_name (buffer, readed);
@@ -426,6 +423,8 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 		}
 	else
 		{
+		Debug ("read_name_from_banner_app: fsmode");
+		
 		DIR *pdir;
 		struct dirent *pent;
 		char fnpath[256];
@@ -439,8 +438,10 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 				continue;
 			
 			sprintf (fnpath, "%s/%s", path, pent->d_name);
-			//Debug ("read_name_from_banner_app: '%s'", fnpath);
 			buffer = fsop_ReadFile (fnpath, 368, &readed);
+			
+			Debug ("read_name_from_banner_app: '%s'->0x%X", fnpath, buffer);
+			
 			if (!buffer) continue;
 
 			char * out = find_title_name (buffer, readed);
