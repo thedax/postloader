@@ -103,7 +103,7 @@ static void *thread (void *arg)
 			}
 		}
 	
-	running = 2;
+	running = -1;
 	
 	return NULL;
 	}
@@ -161,27 +161,31 @@ void CoverCache_Flush (void)	// empty the cache
 	
 void CoverCache_Stop (void)
 	{
-	Debug ("CoverCache_Flush");
+	Debug ("CoverCache_Stop");
 	if (running)
 		{
 		running = 0;
+		while (running != -1)
+			{
+			usleep (100);
+			}
 
-		Debug ("CoverCache_Flush #1");
+		Debug ("CoverCache_Stop #1");
 		LWP_JoinThread (hthread, NULL);
-
-		Debug ("CoverCache_Flush #2");
+		
+		Debug ("CoverCache_Stop #2");
 		CoverCache_Flush ();
 
-		Debug ("CoverCache_Flush #3");
+		Debug ("CoverCache_Stop #3");
 		free (threadStack);
 
-		Debug ("CoverCache_Flush #4");
+		Debug ("CoverCache_Stop #4");
 		LWP_MutexDestroy (mutex);
 
-		Debug ("CoverCache_Flush #5");
+		Debug ("CoverCache_Stop #5");
 		mem2_free (cc);
 
-		Debug ("CoverCache_Flush #6");
+		Debug ("CoverCache_Stop #6");
 		}
 	}
 		

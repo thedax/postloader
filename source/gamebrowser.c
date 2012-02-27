@@ -879,7 +879,7 @@ static void ShowFilterMenu (void)
 #define CHOPT_OCA 4
 #define CHOPT_NAND 5
 #define CHOPT_LOADER 3
-#define CHOPT_DMLVIDEOMODE 3
+#define CHOPT_DMLVIDEOMODE 4
 
 static void ShowAppMenu (int ai)
 	{
@@ -892,7 +892,7 @@ static void ShowAppMenu (int ai)
 	char *ios[CHOPT_IOS] = { "249", "250" , "222", "223", "248", "251", "252"};
 	char *nand[CHOPT_NAND] = { "Default", "USA" , "EURO", "JAP", "Korean"};
 	char *loader[CHOPT_NAND] = { "CFG", "GX", "WiiFlow"};
-	char *dmlvideomode[CHOPT_NAND] = { "Game", "PAL", "NTSC"};
+	char *dmlvideomode[CHOPT_NAND] = { "Game", "WII", "NTSC", "PAL"};
 	/*
 	char *videooptions[CHOPT_VID] = { "Default Video Mode", "Force NTSC480i", "Force NTSC480p", "Force PAL480i", "Force PAL480p", "Force PAL576i", "Force MPAL480i", "Force MPAL480p" };
 	char *videopatchoptions[CHOPT_VIDP] = { "No Video patches", "Smart Video patching", "More Video patching", "Full Video patching" };
@@ -1230,6 +1230,45 @@ static void ChangeDefaultLoader (void)
 		Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
 		}
 	}
+
+static void ChangeDefaultDMLMode (void)
+	{
+	char buff[1024];
+	
+	buff[0] = '\0';
+	
+	// "CFG", "GX", "WiiFlow"
+	
+	grlib_menuAddItem (buff, 0, "From game ID");
+	grlib_menuAddItem (buff, 1, "WII current configuration");
+	grlib_menuAddItem (buff, 2, "Force NTSC");
+	grlib_menuAddItem (buff, 3, "Force PAL");
+	
+	int item = grlib_menu ("Select your default DML Video mode", buff);
+	if (item >= 0)
+		{
+		config.gameDefaultLoader = item;
+			
+		Redraw();
+		grlib_PushScreen();
+
+		int i;
+		for (i = 0; i < gamesCnt; i++)
+			{
+			int ret = ReadGameConfig (i);
+
+			if (ret > 0)
+				{
+				gameConf.dmlvideomode = item;
+				Debug ("(update)ReadGameConfig %d, %d", i, ret);
+				WriteGameConfig (i);
+				}
+			
+			Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
+			}
+		}
+	}
+	
 	
 static void ShowGamesOptions (void)
 	{
@@ -1243,6 +1282,10 @@ static void ShowGamesOptions (void)
 	if (config.gameMode == GM_WII)
 		{
 		strcat (buff, "Set default loader...##15|");
+		}
+	else
+		{
+		strcat (buff, "Set default DML videomode...##16|");
 		}
 	strcat (buff, "|");
 	
@@ -1303,6 +1346,11 @@ static void ShowGamesOptions (void)
 		{
 		ChangeDefaultLoader ();
 		}
+
+	if (item == 16)
+		{
+		ChangeDefaultDMLMode ();
+		}
 	}
 
 static void ShowMainMenu (void)
@@ -1326,9 +1374,9 @@ static void ShowMainMenu (void)
 	grlib_menuAddItem (buff,  3, "Select filters");
 
 	if (showHidden)
-		grlib_menuAddItem (buff,  6, "Hide hidden titles");
+		grlib_menuAddItem (buff,  6, "Hide hidden games");
 	else
-		grlib_menuAddItem (buff,  7, "Show hidden titles");
+		grlib_menuAddItem (buff,  7, "Show hidden games");
 		
 	grlib_menuAddColumn (buff);
 	grlib_menuAddItem (buff,  4, "Run System menu");
@@ -1448,6 +1496,10 @@ static void RedrawIcons (int xoff, int yoff)
 				else
 					gui.spots[gui.spotsIdx].ico.transparency = 255;
 				}
+				
+			// Is it hidden ?
+			if (games[ai].hidden && showHidden)
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
 				
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 			
@@ -1854,12 +1906,11 @@ int GameBrowser (void)
 						{
 						Debug ("DMLRun");
 						ReadGameConfig (gamesSelected);
-						config.dmlvideomode = gameConf.dmlvideomode;
 						games[gamesSelected].playcount++;
 						WriteGameConfig (gamesSelected);
 						Conf (false);	// Store configuration on disc
 						
-						DMLRun (games[gamesSelected].asciiId);
+						DMLRun (games[gamesSelected].asciiId, gameConf.dmlvideomode);
 						}
 					}
 				}

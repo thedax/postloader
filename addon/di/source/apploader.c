@@ -7,6 +7,7 @@
 #include "patchcode.h"
 #include "disc.h"
 #include "videopatch.h"
+#include "debug.h"
 
 /* Constants */
 #define APPLDR_OFFSET	0x2440
@@ -48,68 +49,80 @@ static void __noprint(const char *fmt, ...)
 
 s32 Apploader_Run(entry_point *entry, u8 vidMode, GXRModeObj *vmode, bool vipatch, bool countryString, u8 patchVidModes)
 {
-        void *dst = NULL;
-        int len = 0;
-        int offset = 0;
-        app_init  appldr_init;
-        app_main  appldr_main;
-        app_final appldr_final;
+	Debug ("Apploader_Run (begin)");
+	
+	void *dst = NULL;
+	int len = 0;
+	int offset = 0;
+	app_init  appldr_init;
+	app_main  appldr_main;
+	app_final appldr_final;
 
-        /* Read apploader header */
-        s32 ret = WDVD_Read(buffer, 0x20, APPLDR_OFFSET);
-        if (ret < 0) return ret;
+	/* Read apploader header */
+	s32 ret = WDVD_Read(buffer, 0x20, APPLDR_OFFSET);
+	Debug ("WDVD_Read #1 = %d", ret);
+	if (ret < 0) return ret;
 
-        /* Calculate apploader length */
-        u32 appldr_len = buffer[5] + buffer[6];
+	/* Calculate apploader length */
+	u32 appldr_len = buffer[5] + buffer[6];
 
-        SYS_SetArena1Hi(APPLOADER_END);
+	SYS_SetArena1Hi(APPLOADER_END);
 
-        /* Read apploader code */
-        // Either you limit memory usage or you don't touch the heap after that, because this is writing at 0x1200000
-        ret = WDVD_Read(APPLOADER_START, appldr_len, APPLDR_OFFSET + 0x20);
-        if (ret < 0) return ret;
+	/* Read apploader code */
+	// Either you limit memory usage or you don't touch the heap after that, because this is writing at 0x1200000
+	ret = WDVD_Read(APPLOADER_START, appldr_len, APPLDR_OFFSET + 0x20);
+	Debug ("WDVD_Read #2 = %d", ret);
+	if (ret < 0) return ret;
 
-        DCFlushRange(APPLOADER_START, appldr_len);
+	DCFlushRange(APPLOADER_START, appldr_len);
 
-        /* Set apploader entry function */
-        app_entry appldr_entry = (app_entry)buffer[4];
+	/* Set apploader entry function */
+	app_entry appldr_entry = (app_entry)buffer[4];
 
-        /* Call apploader entry */
-        appldr_entry(&appldr_init, &appldr_main, &appldr_final);
+	/* Call apploader entry */
+	Debug ("appldr_entry");
+	appldr_entry(&appldr_init, &appldr_main, &appldr_final);
 
-        /* Initialize apploader */
-        appldr_init(__noprint);
-        
-        bool hookpatched = false;
+	/* Initialize apploader */
+	
+	appldr_init(__noprint);
+	Debug ("appldr_init");
+	bool hookpatched = false;
 
-        while (appldr_main(&dst, &len, &offset))
-        {
-                /* Read data from DVD */
-                WDVD_Read(dst, len, (u64)(offset << 2));
-                if(maindolpatches(dst, len, vidMode, vmode, vipatch, countryString, patchVidModes))
-                        hookpatched = true;
-        }
+	while (appldr_main(&dst, &len, &offset))
+		{
+		/* Read data from DVD */
+		ret = WDVD_Read(dst, len, (u64)(offset << 2));
+		Debug ("WDVD_Read #3 = %d", ret);
+		
+		if (maindolpatches(dst, len, vidMode, vmode, vipatch, countryString, patchVidModes))
+			hookpatched = true;
+		}
+		
+	Debug ("appldr_main (done)");
 
-        if (hooktype != 0 && !hookpatched)
-        {
-                //gprintf("Error: Could not patch the hook\n");
-                //gprintf("Ocarina and debugger won't work\n");
-        }
-        
-        PrinceOfPersiaPatch();
+	if (hooktype != 0 && !hookpatched)
+		{
+		//gprintf("Error: Could not patch the hook\n");
+		//gprintf("Ocarina and debugger won't work\n");
+		}
+	
+	PrinceOfPersiaPatch();
 
-        /* Set entry point from apploader */
-        *entry = appldr_final();
-        
-        // IOSReloadBlock(IOS_GetVersion());
-        *(vu32 *)0x80003140 = *(vu32 *)0x80003188; // IOS Version Check
-        *(vu32 *)0x80003180 = *(vu32 *)0x80000000; // Game ID Online Check
-        *(vu32 *)0x80003184 = 0x80000000;
+	/* Set entry point from apploader */
+	*entry = appldr_final();
+	
+	// IOSReloadBlock(IOS_GetVersion());
+	*(vu32 *)0x80003140 = *(vu32 *)0x80003188; // IOS Version Check
+	*(vu32 *)0x80003180 = *(vu32 *)0x80000000; // Game ID Online Check
+	*(vu32 *)0x80003184 = 0x80000000;
 
-        DCFlushRange((void*)0x80000000, 0x3f00);
+	DCFlushRange((void*)0x80000000, 0x3f00);
+	
+	Debug ("Apploader_Run (end)");
 
-        return 0;
-}
+	return 0;
+	}
 
 static void PatchCountryStrings(void *Address, int Size)
 {

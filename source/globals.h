@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define VER "3.67.3"
-#define CFGVER "PLCFGV0009"
+#define VER "3.68.0"
+#define CFGVER "PLCFGV0010"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
 #define IOS_SNEEK 56
@@ -465,7 +465,7 @@ int ThemeSelect (void);
 void DMLResetCache (void);
 int DMLSelect (void);
 char * DMLScanner  (bool reset);
-int DMLRun (char *id);
+int DMLRun (char *id, u32 videomode);
 int DMLInstall (char *gamename, size_t reqKb);
 
 // ScreenSaver

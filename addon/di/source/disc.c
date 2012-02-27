@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ogcsys.h>
 #include <unistd.h>
+#include <fat.h>
 #include <ogc/lwp_watchdog.h>
 #include <ogc/machine/processor.h>
 
@@ -11,6 +12,7 @@
 #include "wdvd.h"
 #include "videopatch.h"
 #include "patchcode.h"
+#include "debug.h"
 
 void printd(const char *text, ...);
 
@@ -156,21 +158,19 @@ void __Disc_SelectVMode(u8 videoselected)
 
 void __Disc_SetVMode(void)
 {
-	static GXRModeObj *rmode = NULL;
-	
-	VIDEO_Init();
-	rmode = VIDEO_GetPreferredMode(NULL);
-	VIDEO_Configure(rmode);
-
-
 	/* Set video mode register */
 	*(vu32 *)0x800000CC = vmode_reg;
 
 	/* Set video mode */
 	if (vmode != 0)
-	{
+		{
 		VIDEO_Configure(vmode);
-	}
+		}
+	else
+		{
+		vmode = VIDEO_GetPreferredMode(NULL);
+		VIDEO_Configure(vmode);
+		}
 	
 	/* Setup video  */
 	VIDEO_SetBlack(FALSE);
@@ -340,90 +340,102 @@ s32 Disc_IsGC(void)
 
 s32 Disc_BootPartition(u64 offset, u8 vidMode, bool vipatch, bool countryString, u8 patchVidMode)
 {
-        entry_point p_entry;
+	Debug ("Disc_BootPartition (begin)");
 
-        s32 ret = WDVD_OpenPartition(offset, 0, 0, 0, Tmd_Buffer);
-        if (ret < 0) return ret;
+	entry_point p_entry;
 
-        /* Select an appropriate video mode */
-        __Disc_SelectVMode(vidMode);
+	s32 ret = WDVD_OpenPartition(offset, 0, 0, 0, Tmd_Buffer);
+	Debug ("WDVD_OpenPartition = %d", ret);
+	if (ret < 0) return ret;
 
-        /* Setup low memory */;
-        __Disc_SetLowMem();
+	/* Select an appropriate video mode */
+	Debug ("__Disc_SelectVMode");
+	__Disc_SelectVMode(vidMode);
 
-        /* Run apploader */
-        ret = Apploader_Run(&p_entry, vidMode, vmode, vipatch, countryString, patchVidMode);
-        
-		// free_wip();
-        if (ret < 0) return ret;
+	/* Setup low memory */;
+	Debug ("__Disc_SetLowMem");
+	__Disc_SetLowMem();
+
+	/* Run apploader */
+	ret = Apploader_Run(&p_entry, vidMode, vmode, vipatch, countryString, patchVidMode);
+	Debug ("Apploader_Run = %d", ret);
+	
+	// free_wip();
+	if (ret < 0) return ret;
 
 /*        
-		if (hooktype != 0)
-                ocarina_do_code();
+	if (hooktype != 0)
+			ocarina_do_code();
 
-		gprintf("\n\nEntry Point is: %0x8\n", p_entry);
-		gprintf("Lowmem:\n\n");
+	gprintf("\n\nEntry Point is: %0x8\n", p_entry);
+	gprintf("Lowmem:\n\n");
 //      ghexdump((void*)0x80000000, 0x3f00);
 */
 
-        /* Set time */
-        __Disc_SetTime();
+	/* Set time */
+	__Disc_SetTime();
+	Debug ("__Disc_SetTime");
 
-        /* Set an appropriate video mode */
-        __Disc_SetVMode();
+	/* Set an appropriate video mode */
+	Debug ("__Disc_SetVMode");
+	__Disc_SetVMode();
 
-        u8 temp_data[4];
+	u8 temp_data[4];
 
-        // fix for PeppaPig
-        memcpy((char *) &temp_data, (void*)0x800000F4,4);
+	// fix for PeppaPig
+	memcpy((char *) &temp_data, (void*)0x800000F4,4);
 
-        usleep(100 * 1000);
+	usleep(100 * 1000);
+	
+	Debug("Goodbye log !");
+	DebugStop ();
+	fatUnmount ("sd");
 
-        /* Shutdown IOS subsystems */
-        SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+	/* Shutdown IOS subsystems */
+	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 
-         /* Originally from tueidj - taken from NeoGamme (thx) */
-        *(vu32*)0xCC003024 = 1;
-        
-        // fix for PeppaPig
-        memcpy((void*)0x800000F4,(char *) &temp_data, 4);
+	 /* Originally from tueidj - taken from NeoGamme (thx) */
+	*(vu32*)0xCC003024 = 1;
+	
+	// fix for PeppaPig
+	memcpy((void*)0x800000F4,(char *) &temp_data, 4);
 
-        appentrypoint = (u32) p_entry;
-        
-        //gprintf("Jumping to entrypoint\n");
-        
-        if (hooktype != 0)
-        {
-                __asm__(
-                        "lis %r3, appentrypoint@h\n"
-                        "ori %r3, %r3, appentrypoint@l\n"
-                        "lwz %r3, 0(%r3)\n"
-                        "mtlr %r3\n"
-                        "nop\n"
-                        "lis %r3, 0x8000\n"
-                        "nop\n"
-                        "ori %r3, %r3, 0x18A8\n"
-                        "nop\n"
-                        "mtctr %r3\n"
-                        "bctr\n"
-                );
-        }
-        else
-        {
-                __asm__(
-                        "lis %r3, appentrypoint@h\n"
-                        "ori %r3, %r3, appentrypoint@l\n"
-                        "lwz %r3, 0(%r3)\n"
-                        "mtlr %r3\n"
-                        "blr\n"
-                );
-        }
+	appentrypoint = (u32) p_entry;
+	
+	Debug("Jumping to entrypoint");
+	
+	if (hooktype != 0)
+		{
+		__asm__(
+				"lis %r3, appentrypoint@h\n"
+				"ori %r3, %r3, appentrypoint@l\n"
+				"lwz %r3, 0(%r3)\n"
+				"mtlr %r3\n"
+				"nop\n"
+				"lis %r3, 0x8000\n"
+				"nop\n"
+				"ori %r3, %r3, 0x18A8\n"
+				"nop\n"
+				"mtctr %r3\n"
+				"bctr\n"
+		);
+		}
+	else
+		{
+		__asm__(
+				"lis %r3, appentrypoint@h\n"
+				"ori %r3, %r3, appentrypoint@l\n"
+				"lwz %r3, 0(%r3)\n"
+				"mtlr %r3\n"
+				"blr\n"
+		);
+		}
 
-        return 0;
-}
+	return 0;
+	}
 
 s32 Disc_OpenPartition(u8 *id)
-{
+	{
 	u64 offset;
 
 	if (Disc_SetUSB(id) < 0) return -1;
@@ -431,7 +443,7 @@ s32 Disc_OpenPartition(u8 *id)
 	if (__Disc_FindPartition(&offset) < 0) return -3;
 	if (WDVD_OpenPartition(offset, 0, 0, 0, Tmd_Buffer) < 0) return -4;
 	return 0;
-}
+	}
 
 s32 Disc_WiiBoot(u8 vidMode, bool vipatch, bool countryString, u8 patchVidModes)
 {

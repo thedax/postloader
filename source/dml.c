@@ -176,15 +176,30 @@ static bool GetName (int dev, char *id, char *name)
 	return true;
 	}
 
-int DMLRun (char *id)
+int DMLRun (char *id, u32 videomode)
 	{
 	char path[128];
 
 	if (!devices_Get(DEV_SD)) return 0;
 	
-	if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
+	if (videomode == 0) // GAME
+		{
+		if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
+			config.dmlvideomode = DMLVIDEOMODE_NTSC;
+		else
+			config.dmlvideomode = DMLVIDEOMODE_PAL;
+		}
+	if (videomode == 1) // WII
+		{
+		if (CONF_GetRegion() == CONF_REGION_EU)
+			config.dmlvideomode = DMLVIDEOMODE_PAL;
+		else
+			config.dmlvideomode = DMLVIDEOMODE_NTSC;
+		}
+	if (videomode == 2)
 		config.dmlvideomode = DMLVIDEOMODE_NTSC;
-	else
+
+	if (videomode == 3)
 		config.dmlvideomode = DMLVIDEOMODE_PAL;
 
 	sprintf (path, "%s://games/boot.bin", devices_Get(DEV_SD));

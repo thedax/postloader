@@ -1,3 +1,12 @@
+postLoader 3.67.5
+
+* Corrected internal build number
+* DML: Video mode selection is back again, with more per-game options (Game/Wii/Force NTSC/Force PAL) and an option to change default setting for all games
+* DI: Added debug output (to gecko and sd:/ploader.log)
+* DI: Mooved entrypoint
+* Added "the little ghost" icon to hidden channels/games when "show hidden items" is selected
+* Finally cover cache thread should be correctly terminated
+
 postLoader 3.67.4
 
 * Fixed channels name for neek2o

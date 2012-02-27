@@ -1212,6 +1212,10 @@ static void RedrawIcons (int xoff, int yoff)
 			else
 				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
 
+			// Is it hidden ?
+			if (chans[ai].hidden && showHidden)
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 
 			// Let's add the spot points, to reconize the icon pointed by wiimote
