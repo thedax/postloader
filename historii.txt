@@ -1,3 +1,7 @@
+postLoader 3.68.0
+
+* Corrected build number in historii.txt
+
 postLoader 3.67.5
 
 * Corrected internal build number
