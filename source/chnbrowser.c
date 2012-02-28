@@ -14,6 +14,7 @@
 #include "mystring.h"
 #include "cfg.h"
 #include "devices.h"
+#include "neek.h"
 
 #define CHNMAX 1024
 
@@ -691,6 +692,9 @@ static int ChnBrowse (void)
 			chansCnt++;
 			}
 		}
+		
+	if (vars.neek != NEEK_NONE)
+		neek_UID_Dump ();
 
 	UpdateTitlesFromTxt ();
 	AppsSort ();

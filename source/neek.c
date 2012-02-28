@@ -41,6 +41,14 @@ typedef struct
         u8              GameInfo[][DI_GAMEINFO_SIZE];
 } DIConfig;
 
+typedef struct
+{
+	u64 title_id;
+	u16 padding;
+	u16 uid;
+
+}__attribute__((packed))UIDSYS;
+
 void Debug (const char *text, ...);
 
 void *allocate_memory(u32 size); // from triiforce
@@ -648,6 +656,45 @@ bool neek_RestoreNandForChannel (char *sneekpath)
 
 	sprintf (path, "%s/nandpath.bin", sneekpath);
 	unlink (path);
+	
+	return true;
+	}
+
+
+bool neek_UID_Dump (void)
+	{
+	ISFS_Initialize ();
+
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	UIDSYS uid ATTRIBUTE_ALIGN(32);
+
+	strcpy(path,"/sys/uid.sys");
+
+	s32 fd = ISFS_Open(path, ISFS_OPEN_READ);
+	if (fd < 0)
+		{
+		Debug("ISFS_Open for %s failed %d\n", path, fd);
+		return -1;
+		}
+	
+	s32 ret;
+	s32 pos = 0;
+	int c = 0;
+	do
+		{
+		//ISFS_Seek (fd, pos, SEEK_SET);
+		ret = ISFS_Read(fd, &uid, sizeof(uid));
+		if (ret > 0)
+			{
+			Debug ("UID: %08X: %08X - %08X - %u (%d - %d)", pos, TITLE_UPPER (uid.title_id), TITLE_LOWER (uid.title_id), uid.uid, ret, sizeof(UIDSYS));
+			}
+		//pos += sizeof(UIDSYS);
+		c++;
+		if (c > 100) break;
+		}
+	while (ret > 0);
+	
+	ISFS_Deinitialize ();
 	
 	return true;
 	}

@@ -348,8 +348,6 @@ bool ReloadPostloader (void)
 	
 bool ReloadPostloaderChannel (void)
 	{
-	Shutdown (HBMAGIC_ADDR[4]);
-	
 	WII_Initialize();
 	WII_LaunchTitle(TITLE_ID(0x00010001,0x504f5354)); // postLoader2 Channel POST
 	return false;
