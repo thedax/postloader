@@ -9,6 +9,7 @@
 #include "globals.h"
 #include "fsop/fsop.h"
 #include "devices.h"
+#include "mystring.h"
 
 #define SEP 0xFF
 #define SEP2 0x1
@@ -75,6 +76,25 @@ static void SetGCVideoMode (void)
 	syssram *sram;
 	sram = __SYS_LockSram();
 
+	if(VIDEO_HaveComponentCable())
+			sram->flags |= 0x80; //set progressive flag
+	else
+			sram->flags &= 0x7F; //clear progressive flag
+
+	if (config.dmlvideomode == DMLVIDEOMODE_NTSC)
+	{
+			rmode = &TVNtsc480IntDf;
+			sram->flags &= 0xFE; // Clear bit 0 to set the video mode to NTSC
+			sram->ntd &= 0xBF; //clear pal60 flag
+	}
+	else
+	{
+			rmode = &TVPal528IntDf;
+			sram->flags |= 0x01; // Set bit 0 to set the video mode to PAL
+			sram->ntd |= 0x40; //set pal60 flag
+	}
+
+	/*
 	if (config.dmlvideomode == DMLVIDEOMODE_NTSC)
 		{
 		sram->flags = sram->flags & ~(1 << 0);	// Clear bit 0 to set the video mode to NTSC
@@ -83,6 +103,7 @@ static void SetGCVideoMode (void)
 		{
 		sram->flags = sram->flags |  (1 << 0);	// Set bit 0 to set the video mode to PAL
 		}
+	*/
 	
 	__SYS_UnlockSram(1); // 1 -> write changes
 	
@@ -312,6 +333,9 @@ char *DMLScanner  (bool reset)
 				if (!skip)
 					{
 					if (!GetName (DEV_SD, pent->d_name, name)) continue;
+					
+					ms_strtoupper (pent->d_name);
+
 					sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
 					strcat (buff, b);
 					}
@@ -321,29 +345,35 @@ char *DMLScanner  (bool reset)
 		closedir(pdir);
 		
 		xcheck = false;
-
-		if (devices_Get(DEV_USB))
+		
+		int i;
+		for (i = DEV_USB; i < DEV_MAX; i++)
 			{
-			sprintf (path, "%s://ngc", devices_Get(DEV_USB));
-			
-			Debug ("DML: scanning %s", path);
-			
-			pdir=opendir(path);
-			
-			while ((pent=readdir(pdir)) != NULL) 
+			if (devices_Get(i))
 				{
-				//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-				sprintf (src, "%c%s%c", SEP, pent->d_name, SEP); // make sure to find the exact name
-				if ((strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7) && strstr (buff, src) == NULL)	// Make sure to not add the game twice
-					{
-					Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
-					if (!GetName (DEV_USB, pent->d_name, name)) continue;
-					sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_USB, SEP);
-					strcat (buff, b);
-					}
-				}
+				sprintf (path, "%s://ngc", devices_Get(i));
 				
-			closedir(pdir);
+				Debug ("DML: scanning %s", path);
+				
+				pdir=opendir(path);
+				
+				while ((pent=readdir(pdir)) != NULL) 
+					{
+					//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
+					ms_strtoupper (pent->d_name);
+
+					sprintf (src, "%c%s%c", SEP, pent->d_name, SEP); // make sure to find the exact name
+					if ((strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7) && strstr (buff, src) == NULL)	// Make sure to not add the game twice
+						{
+						Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+						if (!GetName (i, pent->d_name, name)) continue;
+						sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, i, SEP);
+						strcat (buff, b);
+						}
+					}
+					
+				closedir(pdir);
+				}
 			}
 		
 		Debug ("WBFSSCanner: writing cache file");

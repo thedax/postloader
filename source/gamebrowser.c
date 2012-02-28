@@ -621,7 +621,7 @@ static int GameBrowse (int forcescan)
 				strcpy (slot, p);
 				p += (strlen(p) + 1);
 
-				games[i].slot = atoi (slot); // sd = 0 / usb = 1 ?
+				games[i].slot = atoi (slot); // sd = 0 / usb = 1...3?
 				}
 			
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
@@ -685,7 +685,7 @@ static int FindSpot (void)
 					if (games[gamesSelected].slot == DEV_SD)
 						sprintf (part, " (SD)");
 					else
-						sprintf (part, " (USB)");
+						sprintf (part, " (USB%d)", games[gamesSelected].slot);
 					}
 					
 				strcat (info, part);
@@ -1688,7 +1688,7 @@ static bool MoveGCGame (int ai)
 
 	Debug ("MoveGCGame (%s %s): Started", games[ai].name, games[ai].asciiId);
 
-	sprintf (source, "usb://ngc/%s", games[ai].asciiId);
+	sprintf (source, "%s://ngc/%s", devices_Get (games[ai].slot), games[ai].asciiId);
 	sprintf (target, "sd://games/%s", games[ai].asciiId);
 
 	bool ret = fsop_CopyFolder (source, target, cb_filecopy);
@@ -1909,7 +1909,7 @@ int GameBrowser (void)
 						games[gamesSelected].playcount++;
 						WriteGameConfig (gamesSelected);
 						Conf (false);	// Store configuration on disc
-						
+						config.gamePageGC = page;
 						DMLRun (games[gamesSelected].asciiId, gameConf.dmlvideomode);
 						}
 					}

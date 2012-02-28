@@ -123,6 +123,8 @@ int DolBootPrepareWiiload (void)
 
 static u8 *execBuffer = NULL;
 static size_t filesize;
+static struct __argv arg;
+static bool fixCrashOnExit;
 
 int DolBootPrepare (s_run *run)
 	{
@@ -144,7 +146,6 @@ int DolBootPrepare (s_run *run)
 	strcpy (bootpath, path);
 	strcat (bootpath, ";");
 
-	struct __argv arg;
 	memset (&arg, 0, sizeof(struct __argv));
 	
 	if (strlen(run->args) > 0 || NeedArgs(EXECUTE_ADDR))
@@ -160,17 +161,9 @@ int DolBootPrepare (s_run *run)
 			if (arg.commandLine[i] == ';')
 				arg.commandLine[i] = 0;
 		}
+		
+	fixCrashOnExit = run->fixCrashOnExit;
 			
-	memmove(ARGS_ADDR, &arg, sizeof(arg));
-	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
-	
-	HBMAGIC_ADDR[0] = 'P';
-	HBMAGIC_ADDR[1] = 'O';
-	HBMAGIC_ADDR[2] = 'S';
-	HBMAGIC_ADDR[3] = 'T';
-	HBMAGIC_ADDR[4] = run->fixCrashOnExit;
-	DCFlushRange(HBMAGIC_ADDR, 8);
-
 	mssleep (500);
 
 	return 1;
@@ -182,7 +175,17 @@ void DolBoot (void)
 	
 	gprintf ("DolBoot\n");
 
-	Shutdown (HBMAGIC_ADDR[4]);
+	Shutdown (fixCrashOnExit);
+
+	memmove(ARGS_ADDR, &arg, sizeof(arg));
+	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
+	
+	HBMAGIC_ADDR[0] = 'P';
+	HBMAGIC_ADDR[1] = 'O';
+	HBMAGIC_ADDR[2] = 'S';
+	HBMAGIC_ADDR[3] = 'T';
+	HBMAGIC_ADDR[4] = fixCrashOnExit;
+	DCFlushRange(HBMAGIC_ADDR, 8);
 
 	memcpy(EXECUTE_ADDR, execBuffer, filesize);
 	DCFlushRange((void *) EXECUTE_ADDR, filesize);

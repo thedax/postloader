@@ -1,3 +1,11 @@
+postLoader 3.68.2
+
+* little adjustments to dol/elf boot code
+* dml: updated gc sram video modes configuration
+* dml: usb ngc folder can be on any of the four fat32/ntfs (primary) partition supported by postloader
+* dml: last browser page where not saved when launching game
+* initial code for uid.sys managment under neek2o
+
 postLoader 3.68.1
 
 * fixed xml version number (thx XFlak)

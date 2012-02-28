@@ -4,6 +4,8 @@ fsop contains coomprensive set of function for file and folder handling
 
 en exposed s_fsop fsop structure can be used by callback to update operation status
 
+(c) 2012 stfour
+
 ////////////////////////////////////////////////////////////////////////////////////////*/
 
 #include <stdio.h>
@@ -362,7 +364,7 @@ static bool doCopyFolder (char *source, char *target, fsopCallback vc)
 	// If target folder doesn't exist, create it !
 	if (!fsop_DirExist (target))
 		{
-		fsop_MakeFolder (target);
+		fsop_CreateFolderTree (target);
 		}
 
 	pdir=opendir(source);
@@ -401,6 +403,8 @@ bool fsop_CopyFolder (char *source, char *target, fsopCallback vc)
 	fsop.multy.size = fsop_GetFolderBytes (source, vc);
 	
 	Debug ("fsop_CopyFolder");
+	Debug ("fsop_CopyFolder: source '%s'", source);
+	Debug ("fsop_CopyFolder: target '%s'", target);
 	Debug ("fsop.multy.startms = %u", fsop.multy.startms);
 	Debug ("fsop.multy.bytes = %llu", fsop.multy.bytes);
 	Debug ("fsop.multy.size = %llu (%u Mb)", fsop.multy.size, (u32)((fsop.multy.size/1000)/1000));
