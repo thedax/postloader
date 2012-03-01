@@ -25,6 +25,8 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 #include "../debug.h"
 #include "../mem2.h"
 
+#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
+
 s_fsop fsop;
 
 
@@ -104,7 +106,7 @@ bool fsop_GetFileSizeBytes (char *path, size_t *filesize)	// for me stats st_siz
 	if (filesize) *filesize = size;
 	fclose (f);
 	
-	Debug ("fsop_GetFileSizeBytes (%s) = %u", path, size);
+	//Debug ("fsop_GetFileSizeBytes (%s) = %u", path, size);
 	
 	return true;
 	}
@@ -180,7 +182,7 @@ u32 fsop_GetFolderKb (char *source, fsopCallback vc)
 	{
 	u32 ret = (u32) round ((double)fsop_GetFolderBytes (source, vc) / 1000.0);
 
-	Debug ("fsop_GetFolderKb (%s) = %u", source, ret);
+	//Debug ("fsop_GetFolderKb (%s) = %u", source, ret);
 
 	return ret;
 	}
@@ -191,7 +193,7 @@ u32 fsop_GetFreeSpaceKb (char *path) // Return free kb on the device passed
 	
 	statvfs (path, &s);
 	
-	u32 ret = (u32)round( ((double)s.f_bfree / 1000.0) * s.f_bsize);
+	u32 ret = (u32)round( ((double)s.f_bfree / 1000.0) * (double)s.f_bsize);
 	
 	Debug ("fsop_GetFreeSpaceKb (%s) = %u", path, ret);
 	
@@ -238,26 +240,50 @@ bool fsop_DirExist (char *path)
 	return false;
 	}
 
+//////////////////////////////////////////////////////////////////////////////////////
+#define STACKSIZE	8192
+static u8 *copybuff = NULL;
+static FILE *fs = NULL, *ft = NULL;
+static u32 block = 32768;
+static u32 blockIdx = 0;
+static u32 blockInfo[2] = {0,0};
+static u32 blockReady = 0;
+static u32 stopThread;
+
+static void *thread_CopyFileReader (void *arg)
+	{
+	u32 rb;
+	
+	stopThread = 0;
+	
+	do
+		{
+		SET (rb, fread(&copybuff[blockIdx*block], 1, block, fs ));
+		SET (blockInfo[blockIdx], rb);
+		SET (blockReady, 1);
+		
+		while (blockReady && !stopThread) usleep(1);
+		}
+	while (stopThread == 0);
+	
+	stopThread = -1;
+	DCFlushRange(&stopThread, sizeof(stopThread));
+	
+	return NULL;
+	}
+
 bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	{
+	block = (32768*2);
 	int err = 0;
 	fsop.breakop = 0;
 	
-	u8 *buff = NULL;
 	u32 size;
 	u32 bytes, rb,wb;
-	u32 block = 32768;
-	FILE *fs = NULL, *ft = NULL;
 	u32 vcskip, ms;
-	
+	bool threaded = 1;
 	
 	Debug ("fsop_CopyFile (%s, %s): Started", source, target);
-	
-	if (strstr (source, "usb:") && strstr (target, "usb:"))
-		{
-		Debug ("fsop_CopyFile: buffer size changed to %dKbyte", block / 1024);
-		block = 1024*1048;
-		}
 	
 	fs = fopen(source, "rb");
 	if (!fs)
@@ -291,46 +317,124 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 	// Return to beginning....
 	fseek( fs, 0, SEEK_SET);
 	
-	//buff = mem2_malloc (block);
-	buff = memalign( 32, block);  
-	if (buff == NULL) 
+	if (source[0] == target[0] || size < (1024 * 1024 * 10))
 		{
-		fclose (fs);
-		Debug ("fsop_CopyFile: ERR Unable to allocate buffers");
-		return false;
+		Debug ("fsop_CopyFile: buffer size changed to %dKbyte", block / 1024);
+		block *= 2; // grow blocksize
+		threaded = 0; // do not use threaded mode on the same device
 		}
-	
+		
 	bytes = 0;
 	vcskip = 0;
-	do
+	if (!threaded) // Use
 		{
-		rb = fread(buff, 1, block, fs );
-		wb = fwrite(buff, 1, rb, ft );
-		
-		if (wb != wb) err = 1;
-		if (rb == 0) err = 1;
-		bytes += rb;
-		
-		fsop.multy.bytes += rb;
-		fsop.bytes = bytes;
-		
-		ms = ticks_to_millisecs(gettime());
-		if (ms > vcskip && vc) 
+		copybuff = memalign( 32, block);  
+		if (copybuff == NULL) 
 			{
-			fsop.multy.elapsed = ms - fsop.multy.startms;
-			vc();
-			vcskip = ticks_to_millisecs(gettime()) + 200;
+			fclose (fs);
+			Debug ("fsop_CopyFile: ERR Unable to allocate buffers");
+			return false;
 			}
+
+		do
+			{
+			rb = fread(copybuff, 1, block, fs );
+			wb = fwrite(copybuff, 1, rb, ft );
 			
-		if (fsop.breakop) break;
+			if (wb != wb) err = 1;
+			if (rb == 0) err = 1;
+			bytes += rb;
+			
+			fsop.multy.bytes += rb;
+			fsop.bytes = bytes;
+			
+			ms = ticks_to_millisecs(gettime());
+			if (ms > vcskip && vc) 
+				{
+				fsop.multy.elapsed = ms - fsop.multy.startms;
+				vc();
+				vcskip = ticks_to_millisecs(gettime()) + 200;
+				}
+				
+			if (fsop.breakop) break;
+			}
+		while (bytes < size && err == 0);
 		}
-	while (bytes < size && err == 0);
+	else
+		{
+		Debug ("fsop_CopyFile: using threaded mode");
+		
+		u8 * threadStack = NULL;
+		lwp_t hthread = LWP_THREAD_NULL;
+		
+		copybuff = memalign( 32, block * 2);  // We use doublebuffer
+		if (copybuff == NULL) 
+			{
+			fclose (fs);
+			Debug ("fsop_CopyFile: ERR Unable to allocate buffers");
+			return false;
+			}
+
+		blockIdx = 0;
+		blockReady = 0;
+		blockInfo[0] = 0;
+		blockInfo[1] = 0;
+		
+		Debug ("fsop_CopyFile: prep");
+		threadStack = (u8 *) memalign(32, STACKSIZE);
+		LWP_CreateThread (&hthread, thread_CopyFileReader, NULL, threadStack, STACKSIZE, 30);
+		
+		u32 bi;
+		do
+			{
+			while (!blockReady && !fsop.breakop) usleep (1); // Let's wait for incoming block from the thread
+			if (fsop.breakop) break;
+			
+			bi = blockIdx;
+
+			// let's th thread to read the next buff
+			SET (blockIdx, 1 - blockIdx);
+			SET (blockReady, 0);
+
+			rb = blockInfo[bi];
+			// write current block
+			wb = fwrite(&copybuff[bi*block], 1, rb, ft );
+			
+			if (wb != wb) err = 1;
+			if (rb == 0) err = 1;
+			bytes += rb;
+			
+			fsop.multy.bytes += rb;
+			fsop.bytes = bytes;
+			
+			ms = ticks_to_millisecs(gettime());
+			if (ms > vcskip && vc) 
+				{
+				fsop.multy.elapsed = ms - fsop.multy.startms;
+				vc();
+				vcskip = ticks_to_millisecs(gettime()) + 200;
+				}
+			}
+		while (bytes < size && err == 0);
+		
+		Debug ("fsop_CopyFile: stopping");
+		
+		stopThread = 1;
+		DCFlushRange(&stopThread, sizeof(stopThread));
+		
+		while (stopThread != -1)
+			{
+			usleep (5);
+			}
+
+		Debug ("fsop_CopyFile: LWP_JoinThread");
+		LWP_JoinThread (hthread, NULL);
+		}
 
 	fclose (fs);
 	fclose (ft);
 	
-	free (buff);
-	//mem2_free (buff);
+	free (copybuff);
 	
 	Debug ("fsop_CopyFile: bytes %u, size %u, err %d, breakop %d", bytes, size, err, fsop.breakop);
 	

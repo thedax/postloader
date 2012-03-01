@@ -27,11 +27,10 @@ THE SOFTWARE.
 #include <fat.h>
 #include <wchar.h>
 #include <ft2build.h>
-#include <pngu.h>
 #include <stdio.h>
 #include <jpeglib.h>
 #include <string.h>
-
+#include "pngu.h"
 
 #define __GRRLIB_CORE__
 #include "grrlib.h"

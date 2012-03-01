@@ -12,12 +12,8 @@ void ms_strtoupper(char *str1)
 	{
 	if (!str1) return;
 	
-	Debug ("ms_strtoupper (in): '%s'", str1);
-		
 	int i;
 	for (i = 0; i < strlen(str1); i++) str1[i] = (char)toupper((int)str1[i]);
-	
-	Debug ("ms_strtoupper(out): '%s'", str1);
 	}
 
 char *ms_strstr(char *str1, char *str2)

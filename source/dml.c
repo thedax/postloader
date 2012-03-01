@@ -429,6 +429,9 @@ int DMLInstall (char *gamename, size_t reqKb)
 	sprintf (path, "%s://games", devices_Get(DEV_SD));
 
 	devKb = fsop_GetFreeSpaceKb (path);
+	
+	Debug ("***** devKb = %u, reqKb = %u", devKb, reqKb);
+	
 	if (devKb > reqKb) 
 		{
 		Debug ("DMLInstall (%s): OK there is enaught space", gamename);

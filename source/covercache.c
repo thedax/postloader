@@ -7,12 +7,12 @@
 #include "mem2.h"
 #include "globals.h"
 
-mutex_t mutex;
+static mutex_t mutex;
 
+#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
 #define MAXITEMS 128
 
 #define STACKSIZE	8192
-
 static u8 * threadStack = NULL;
 static lwp_t hthread = LWP_THREAD_NULL;
 
@@ -132,7 +132,6 @@ void CoverCache_Start (void)
 	LWP_MutexInit (&mutex, false);
 	threadStack = (u8 *) memalign(32, STACKSIZE);
 	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 30);
-	LWP_ResumeThread(hthread);
 	}
 
 void CoverCache_Flush (void)	// empty the cache

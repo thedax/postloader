@@ -4,6 +4,8 @@
 
 #include "isfs.h"
 
+void *allocate_memory(u32 size);
+
 s32 __FileCmp(const void *a, const void *b)
 {
 	dirent_t *hdr1 = (dirent_t *)a;

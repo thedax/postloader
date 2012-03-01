@@ -1674,7 +1674,7 @@ static size_t GetGCGameUsbKb (int ai)
 	{
 	char path[300];
 	
-	sprintf (path, "usb://ngc/%s", games[ai].asciiId);
+	sprintf (path, "%s://ngc/%s",  devices_Get (games[ai].slot), games[ai].asciiId);
 	return fsop_GetFolderKb (path, NULL);
 	}
 
@@ -1912,6 +1912,8 @@ int GameBrowser (void)
 						config.gamePageGC = page;
 						DMLRun (games[gamesSelected].asciiId, gameConf.dmlvideomode);
 						}
+					
+					redraw = 1;
 					}
 				}
 				

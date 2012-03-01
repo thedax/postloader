@@ -446,7 +446,6 @@ void WiiLoad_Start(char *tempPath)
 		}
 
 	LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 30);
-	LWP_ResumeThread(networkthread);
 	}
 
 void WiiLoad_Stop(void)

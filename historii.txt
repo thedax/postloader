@@ -1,7 +1,22 @@
+postLoader 3.68.3
+
+* Corrected a possible bug on free space calc. on devices
+* Added double buffered threaded file copy. (see note)
+* recompiled with latest devkit/ntfs portlib.
+* code clean
+
+NOTE: (dml copy to SD samsung class 10): 
+
+IOS58: single thread:   ~2088 Kb/sec
+IOS58: multiple thread: ~2687 Kb/sec
+
+CIOSX: single thread:   ~2224 Kb/sec
+CIOSX: multiple thread: ~2495 Kb/sec
+
 postLoader 3.68.2
 
 * little adjustments to dol/elf boot code
-* dml: updated gc sram video modes configuration
+* dml: updated gc sram video modes configuration (thx FIX94)
 * dml: usb ngc folder can be on any of the four fat32/ntfs (primary) partition supported by postloader
 * dml: last browser page where not saved when launching game
 * initial code for uid.sys managment under neek2o
