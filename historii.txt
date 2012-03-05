@@ -1,3 +1,8 @@
+postLoader 3.68.5
+
+* Recompiled with R24
+* Changed network init... (unnecessary as shuld be a bug in devkit R25)
+
 postLoader 3.68.3
 
 * Corrected a possible bug on free space calc. on devices

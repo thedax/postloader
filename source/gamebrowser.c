@@ -234,7 +234,7 @@ static void DownloadCovers (void)
 	Redraw ();
 	grlib_PushScreen ();
 	
-	Video_WaitPanel (TEX_HGL, "Stopping wiiload thread");
+	Video_WaitPanel (TEX_HGL, "Pausing wiiload thread");
 	WiiLoad_Pause ();
 	
 	stop = 0;

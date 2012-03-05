@@ -15,6 +15,8 @@
 #define PORT	4299
 #define STACKSIZE	8192
 
+#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
+
 s_wiiload wiiload;
 
 static char ip[16];
@@ -49,24 +51,6 @@ void printopt(const char *text, ...)
 	wiiload.opUpd ++;
 	}
 
-
-static void NetInit(void)
-	{
-	s32 result;
-	
-	net_init ();
-
-	result = if_config (ip, NULL, NULL, true);
-	
-	printopt ("if_config = %d, ip = %s", result, ip);
-
-	if (result < 0) 
-		{
-		return;
-		}
-	return;
-	}
-	
 static int NetRead(int connection, u8 *buf, u32 len, u32 tout) // timeout in msec
 	{
 	u32 read = 0;
@@ -317,8 +301,8 @@ static bool StartWiiLoadServer (void)
 	err = net_setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
 	if (err < 0)
 		{
-		printopt ("net_setsockopt SO_REUSEADDR error");
-		//return false;
+		printopt ("net_setsockopt %d");
+		return false;
 		}
 	
 	sin.sin_family = AF_INET;
@@ -387,6 +371,9 @@ static bool StartWiiLoadServer (void)
 	
 static void * WiiloadThread(void *arg)
 	{
+	int netInit = 0;
+	int netReady = 0;
+	
 	stopNetworkThread = 0;
 	errors = 0;
 	
@@ -394,14 +381,50 @@ static void * WiiloadThread(void *arg)
 	
 	LWP_SetThreadPriority(networkthread, 0);
 	
-	NetInit();
-	
 	while (!stopNetworkThread)
 		{
-		if (!StartWiiLoadServer ())
-			errors ++;
+		if (!netInit)
+			{
+			s32 res;
 			
-		usleep (1000*1000);
+			res = net_init_async(NULL, NULL);
+			Debug ("net_init_async %d", res);
+
+			if (res != 0)
+				{
+				errors ++;
+				continue;
+				}
+				
+			netInit = 1;
+			}
+			
+		if (netInit)
+			{
+			s32 res;
+			res = net_get_status();
+			Debug ("net_get_status %d", res);
+
+			if (res == 0)
+				{
+				struct in_addr hostip;
+				hostip.s_addr = net_gethostip();
+
+				if (hostip.s_addr)
+					{
+					strcpy(ip, inet_ntoa(hostip));
+					netReady = 1;
+					}
+				}
+			}
+			
+		if (netReady)
+			{
+			if (!StartWiiLoadServer ())
+				errors ++;
+			}
+			
+		sleep (1);
 			
 		if (errors > 10)
 			{
@@ -427,6 +450,7 @@ void WiiLoad_Start(char *tempPath)
 		{
 		memset (&wiiload, 0, sizeof(s_wiiload));
 		firstInit = 0;
+		net_wc24cleanup();
 		}
 		
 	wiiload.status = WIILOAD_INITIALIZING;
@@ -453,16 +477,16 @@ void WiiLoad_Stop(void)
 	if (stopNetworkThread != 1) 
 		return; // It is already stopped
 		
-	stopNetworkThread = 1;
+	SET (stopNetworkThread, 1);	
 	
 	int tout = 0;
-	while (stopNetworkThread == 1 && tout < 500)
+	while (stopNetworkThread == 1 && tout < 50)
 		{
 		usleep (100000);
 		tout++;
 		}
 		
-	if (tout >= 500)
+	if (tout >= 50)
 		LWP_SuspendThread (networkthread);
 	
 	free (threadStack);
@@ -474,16 +498,14 @@ void WiiLoad_Stop(void)
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
-	
-	net_wc24cleanup();
 	}
 
 void WiiLoad_Pause (void)
 	{
-	pauseWiiload = 1;
+	SET (pauseWiiload, 1);
 
 	int tout = 0;
-	while (pauseWiiload == 1 && tout < 500)
+	while (pauseWiiload == 1 && tout < 50)
 		{
 		Debug ("pauseWiiload = %d, tout = %d", pauseWiiload, tout);
 		usleep (100000);
@@ -493,5 +515,5 @@ void WiiLoad_Pause (void)
 	
 void WiiLoad_Resume (void)
 	{
-	pauseWiiload = 0;
+	SET (pauseWiiload, 0);
 	}
