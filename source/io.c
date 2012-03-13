@@ -110,6 +110,7 @@ bool MountDevices (bool silent)
 
 bool UnmountDevices (void)
 	{
+	Debug ("UnmountDevices()");
 	devices_Unmount ();
 	return true;
 	}

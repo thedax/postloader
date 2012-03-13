@@ -1,3 +1,17 @@
+postLoader 3.69.0
+
+* Added a lot of debug output informations
+* dml: changed game configuration structure to keep full path of the .iso
+* dml: now search both /ngc and /games folder for gc games
+* Changed cache file names (now wbfs.dat and dml.dat... this will require a cache rebuild)
+* Changed some initialization code
+* Wiiload thread will now wait 5 seconds before start
+* Updated some function names
+* Corrected a possible bug on covercache thread stop shared variables.
+* Some code clean
+
+* Recompiled with devkitPPC R25-1 and libogc 1.8.10. Network is working
+
 postLoader 3.68.5
 
 * Recompiled with R24

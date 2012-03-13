@@ -9,6 +9,7 @@
 #include "fsop/fsop.h"
 #include "globals.h"
 #include "devices.h"
+#include "isfs.h"
 
 #define DI_CONFIG_SIZE         0x10
 #define DI_GAMEINFO_SIZE       0x80
@@ -270,6 +271,8 @@ bool neek_IsNeek2o (void)
 
 char* neek_GetGames (void)
 	{
+	Debug ("neek_GetGames");
+	
 	if (neek_IsNeek2o()) // cDI
 		return neek_GetCDIGames();
 		
@@ -655,12 +658,74 @@ bool neek_RestoreNandForChannel (char *sneekpath)
 	char path[256];
 
 	sprintf (path, "%s/nandpath.bin", sneekpath);
-	unlink (path);
+	int ret = unlink (path);
+	
+	Debug ("neek_RestoreNandForChannel: unlink of '%s'->%d", path, ret);
 	
 	return true;
 	}
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+//
+// UID managment functions
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+
+static UIDSYS *uid = NULL;
+static size_t uidSize;
+
+bool neek_UID_Read (void)
+	{
+	ISFS_Initialize ();
+
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	strcpy(path,"/sys/uid.sys");
+	
+	if (uid != NULL) free(uid);
+	uid = (UIDSYS *)isfs_ReadFile (path, NULL, 0, &uidSize);
+
+	ISFS_Deinitialize ();
+	return (uid != NULL);
+	}
+	
+bool neek_UID_Write (void)
+	{
+	if (uid == NULL) return false;
+	
+	ISFS_Initialize ();
+
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	strcpy(path,"/sys/uid.sys");
+	isfs_WriteFile (path, (u8*) uid, uidSize);
+
+	ISFS_Deinitialize ();
+	return (uid != NULL);
+	}
+	
+void neek_UID_Free (void)
+	{
+	if (uid != NULL) free(uid);
+	}
+
+int neek_UID_Find (char *id)
+	{
+	return -1;
+	}
+	
+bool neek_UID_Add (char *id)
+	{
+	return false;
+	}
+	
+bool neek_UID_Remove (char *id)
+	{
+	return false;
+	}
+	
+	
 bool neek_UID_Dump (void)
 	{
 	ISFS_Initialize ();
@@ -682,15 +747,12 @@ bool neek_UID_Dump (void)
 	int c = 0;
 	do
 		{
-		//ISFS_Seek (fd, pos, SEEK_SET);
 		ret = ISFS_Read(fd, &uid, sizeof(uid));
 		if (ret > 0)
 			{
 			Debug ("UID: %08X: %08X - %08X - %u (%d - %d)", pos, TITLE_UPPER (uid.title_id), TITLE_LOWER (uid.title_id), uid.uid, ret, sizeof(UIDSYS));
 			}
-		//pos += sizeof(UIDSYS);
 		c++;
-		if (c > 100) break;
 		}
 	while (ret > 0);
 	

@@ -10,8 +10,11 @@
 #include "globals.h"
 #include "devices.h"
 
+#define WBFSVER "WBFSDAT0001"
 #define BUFFSIZE (1024*64)
 #define GISIZE 0xEC
+#define SEP 0xFF
+
 static int count = 0;
 static int part = 0;
 
@@ -26,6 +29,8 @@ bool ScanWBFS (char *ob, char *path)
     char gi[GISIZE];
 	int i;
 
+	Debug ("ScanWBFS '%s'", path);
+	
 	pdir=opendir(path);
 	while ((pent=readdir(pdir)) != NULL) 
 		{
@@ -64,7 +69,8 @@ bool ScanWBFS (char *ob, char *path)
 			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}			
 			if (strlen(buff) == 0) *p = 0;
 			strcat (ob, buff);
-			strcat (ob, "\1");
+			sprintf (buff, "%c", SEP);
+			strcat (ob, buff);
 			
 			// Add id
 			gi[0x00 + 6] = 0;		// Make sure to not oveflow
@@ -72,7 +78,8 @@ bool ScanWBFS (char *ob, char *path)
 			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}
 			if (strlen(buff) == 0) *p = 0;
 			strcat (ob, buff);
-			strcat (ob, "\1");
+			sprintf (buff, "%c", SEP);
+			strcat (ob, buff);
 			
 			// Add partition
 			sprintf (tmp, "%d", part);
@@ -80,7 +87,8 @@ bool ScanWBFS (char *ob, char *path)
 			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}
 			if (strlen(buff) == 0) *p = 0;
 			strcat (ob, buff);
-			strcat (ob, "\1");
+			sprintf (buff, "%c", SEP);
+			strcat (ob, buff);
 			
 			fclose (f);
 			}
@@ -92,21 +100,41 @@ bool ScanWBFS (char *ob, char *path)
 
 char * WBFSSCanner (bool reset)
 	{
+	Debug ("WBFSSCanner (begin)");
+	
 	char path[300];
+	char b[32];
+	
 	FILE *f;
 	count = 0;
 	char *ob = calloc (1, BUFFSIZE);
 	
-	sprintf (path, "%s://ploader/wbfs.cfg", vars.defMount);
+	sprintf (path, "%s://ploader/wbfs.dat", vars.defMount);
 	
 	if (reset == 0)
 		{
+		Debug ("WBFSSCanner: reading cache file '%'", path);
+		
 		f = fopen (path, "rb");
 		if (!f) 
+			{
+			Debug ("WBFSSCanner: cache file '%s' not found", path);
 			reset = 1;
+			}
 		else
 			{
-			fread (ob, 1, BUFFSIZE-1, f);
+			Debug ("WBFSSCanner: cache file '%s' found, checking version", path);
+			
+			fread (b, 1, strlen(WBFSVER), f);
+			b[strlen(WBFSVER)] = 0;
+			if (strcmp (b, WBFSVER) != 0)
+				{
+				Debug ("WBFSSCanner: version mismatch, forcing rebuild");
+				reset = 1;
+				}
+			else
+				fread (ob, 1, BUFFSIZE-1, f);
+				
 			fclose (f);
 			
 			ob[BUFFSIZE-1] = 0;
@@ -115,11 +143,7 @@ char * WBFSSCanner (bool reset)
 	
 	if (reset)
 		{
-		// Let's remount sd, required for debugging
-
-		// Mount every partitions on usb
-
-		Debug ("WBFSSCanner: scannning");
+		Debug ("WBFSSCanner: scannning (refreshing cache)");
 		int i;
 		for (i = DEV_USB; i < DEV_MAX; i++)
 			{
@@ -137,6 +161,7 @@ char * WBFSSCanner (bool reset)
 		f = fopen (path, "wb");
 		if (f) 
 			{
+			fwrite (WBFSVER, 1, strlen(WBFSVER), f);
 			fwrite (ob, 1, strlen(ob)+1, f);
 			fclose (f);
 			}
@@ -149,10 +174,10 @@ char * WBFSSCanner (bool reset)
 	int i, l;
 	l = strlen(ob);
 	for (i = 0; i < l; i++)
-		if (ob[i] == '\1')
+		if (ob[i] == SEP)
 			ob[i] = '\0';
 	
-	Debug ("WBFSSCanner: adjust ob");
+	Debug ("WBFSSCanner (end)");
 	
 	return ob;
 	}

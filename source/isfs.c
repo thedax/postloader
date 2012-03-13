@@ -1,6 +1,7 @@
 #include <gccore.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "isfs.h"
 
@@ -199,7 +200,7 @@ s32 read_file_from_nand(char *filepath, u8 *buffer, u32 filesize)
 	return 0;
 }
 
-u8 * readalloc_file_from_nand(char *filepath, s32 *error, size_t bytes2read, size_t *bytesReaded)
+u8 *isfs_ReadFile (char *filepath, s32 *error, size_t bytes2read, size_t *bytesReaded)
 {
 	s32 Fd;
 	int ret = 0;
@@ -261,3 +262,30 @@ u8 * readalloc_file_from_nand(char *filepath, s32 *error, size_t bytes2read, siz
 
 	return buffer;
 }
+
+bool isfs_WriteFile (char *nandpath, u8 * buff, s32 size) // Nandpath can be not aligned, but buffer should
+	{
+	if (buff == NULL || size == 0) return false;
+	
+	s32 fd;
+
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	sprintf (path, "%s", nandpath);
+
+	ISFS_CreateFile(path, 0, 3, 3, 3);
+	fd = ISFS_Open(path, 1|2 );
+	if (fd < 0)
+		{
+		return false;
+		}
+	if (ISFS_Write( fd, buff, size ) < 0)
+		{
+		ISFS_Close( fd );
+		return false;
+		}
+	ISFS_Close (fd);
+	
+	return true;
+	}
+	

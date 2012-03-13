@@ -31,6 +31,7 @@ static char *tpath;
 static int errors = 0;
 static int firstInit = 1;
 static int pauseWiiload = 0;
+static int threadStartSleep;
 
 s32 socket;
 
@@ -377,9 +378,19 @@ static void * WiiloadThread(void *arg)
 	stopNetworkThread = 0;
 	errors = 0;
 	
-	printopt("Net thread running");
+	printopt("Net thread running, waiting...");
 	
 	LWP_SetThreadPriority(networkthread, 0);
+	
+	int i;	
+	for (i = 0; i < threadStartSleep * 10; i++)
+		{
+		usleep (100*1000);
+		
+		if (stopNetworkThread) break;
+		}
+		
+	printopt("Net thread running, ready !");
 	
 	while (!stopNetworkThread)
 		{
@@ -444,13 +455,14 @@ static void * WiiloadThread(void *arg)
 /****************************************************************************
  * InitNetworkThread with priority 0 (idle)
  ***************************************************************************/
-void WiiLoad_Start(char *tempPath)
+void WiiLoad_Start(char *tempPath, int startSleep)
 	{
+	threadStartSleep = startSleep;
+	
 	if (firstInit)
 		{
 		memset (&wiiload, 0, sizeof(s_wiiload));
 		firstInit = 0;
-		net_wc24cleanup();
 		}
 		
 	wiiload.status = WIILOAD_INITIALIZING;
@@ -498,6 +510,8 @@ void WiiLoad_Stop(void)
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
+	
+	net_wc24cleanup();
 	}
 
 void WiiLoad_Pause (void)

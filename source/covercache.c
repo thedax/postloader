@@ -72,7 +72,7 @@ static void *thread (void *arg)
 	{
 	GRRLIB_texImg *tex;
 
-	running = 1;
+	SET (running,1);
 
 	Debug ("covercache thread started");
 	int i = 0;
@@ -94,8 +94,8 @@ static void *thread (void *arg)
 				
 				update++;
 				DCFlushRange(&update, sizeof(update));
-				LWP_MutexUnlock (mutex);	
 				
+				LWP_MutexUnlock (mutex);	
 				}
 			
 			usleep (10);
@@ -103,7 +103,7 @@ static void *thread (void *arg)
 			}
 		}
 	
-	running = -1;
+	SET (running, -1);
 	
 	return NULL;
 	}
@@ -163,7 +163,7 @@ void CoverCache_Stop (void)
 	Debug ("CoverCache_Stop");
 	if (running)
 		{
-		running = 0;
+		SET (running, 0);
 		while (running != -1)
 			{
 			usleep (100);

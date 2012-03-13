@@ -16,6 +16,8 @@ bool ConfigWrite (void)
 	char ver[32];
 	FILE *f;
 	
+	Debug ("ConfigWrite()");
+	
 	if (vars.defMount[0] == '\0') return FALSE;	
 	
 	if (vars.neek == NEEK_NONE)

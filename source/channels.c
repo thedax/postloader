@@ -403,7 +403,7 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 				
 				sprintf(path, "/title/%08x/%08x/content/%s", TITLE_UPPER(titleid), TITLE_LOWER(titleid), list[cnt].name);
 	  
-				buffer = readalloc_file_from_nand (path, &err, 368, &readed);
+				buffer = isfs_ReadFile (path, &err, 368, &readed);
 				
 				Debug ("read_name_from_banner_app: '%s'->0x%X [%d]", path, buffer, err);
 				
@@ -469,7 +469,7 @@ static char *read_name_from_banner_bin(u64 titleid, char *nandmountpoint)
 		char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
 		sprintf(path, "/title/%08x/%08x/data/banner.bin", TITLE_UPPER(titleid), TITLE_LOWER(titleid));
 
-		buffer = readalloc_file_from_nand (path, NULL, 160, &readed);
+		buffer = isfs_ReadFile (path, NULL, 160, &readed);
 		if (!buffer) return NULL;
 		}
 	else
@@ -783,6 +783,8 @@ bool RunChannelNeek2o (s_run *run)
 	
 bool RestoreChannelNeek2o (void)
 	{
+	Debug ("RestoreChannelNeek2o (begin)");
+	
 	neek_RestoreNandForChannel (NEEK2O_SNEEK);
 
 	char path[256];
@@ -811,6 +813,8 @@ bool RestoreChannelNeek2o (void)
 		rename (pathBak, path);
 		}
 		
+	Debug ("RestoreChannelNeek2o (end)");
+
 	return true;
 	}
 	

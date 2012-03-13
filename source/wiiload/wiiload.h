@@ -29,7 +29,7 @@ s_wiiload;
 
 extern s_wiiload wiiload;
 
-void WiiLoad_Start(char *tempPath);
+void WiiLoad_Start(char *tempPath, int startSleep);
 void WiiLoad_Stop (void);
 void WiiLoad_Pause (void);
 void WiiLoad_Resume (void);

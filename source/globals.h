@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "3.68.5"
+#define VER "3.69.0"
 #define CFGVER "PLCFGV0010"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -252,6 +252,8 @@ typedef struct
 	u16 playcount;			// how many time this title has bin executed
 	
 	bool dml;				// if true we are executing a dml game
+	char source[96];		// source folder
+	u8 disc;
 	}
 s_game;
 
@@ -465,7 +467,7 @@ int ThemeSelect (void);
 void DMLResetCache (void);
 int DMLSelect (void);
 char * DMLScanner  (bool reset);
-int DMLRun (char *id, u32 videomode);
+int DMLRun (char *folder, char *id, u32 videomode);
 int DMLInstall (char *gamename, size_t reqKb);
 
 // ScreenSaver

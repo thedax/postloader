@@ -33,7 +33,7 @@ void BootToSystemMenu(void)
 void WiiLoad (int start)
 	{
 	if (start)
-		WiiLoad_Start (vars.tempPath);
+		WiiLoad_Start (vars.tempPath, 5);
 	else
 		WiiLoad_Stop ();
 	}
@@ -50,17 +50,11 @@ void Subsystems (bool enable)
 		}
 	else
 		{
-		Debug ("ConfigWrite");
 		ConfigWrite ();
-		Debug ("CoverCache_Stop");
 		CoverCache_Stop ();
-		Debug ("WiiLoad");
 		WiiLoad (0);
-		Debug ("grlib_Controllers");
 		grlib_Controllers (false);
-		Debug ("DebugStop");
 		DebugStop ();
-		Debug ("UnmountDevices");
 		UnmountDevices ();
 		}
 	}
@@ -104,6 +98,17 @@ int Initialize (int silent)
 	grlibSettings.usesGestures = config.usesGestures;
 	
 	DebugStart (true, "sd://ploader.log");
+
+	Debug ("-[postLoader "VER"]----------------------------------------");
+	
+	int i;
+	for (i = 0; i < DEV_MAX; i++)
+		{
+		Debug ("Device %d->%s", i, devices_Get (i));
+		}
+		
+	Debug ("Default device is '%s'", vars.defMount);
+	
 	return ret;
 	}
 	
@@ -205,7 +210,6 @@ int main(int argc, char **argv)
 
 	int i;
 	int ret;
-	time_t t,tout;
 	
 	__exception_setreload(3);
 
@@ -247,49 +251,11 @@ int main(int argc, char **argv)
 
 	ret = Initialize((vars.usbtime == 1) ? 1:0);
 	
-	Debug ("-----[postLoader "VER"]-----");
-	Debug ("Initialization done !");
-	
-	if (vars.neek)
-		{
-		neek_GetNandConfig ();
-		
-		if (neek_IsNeek2o())
-			{
-			Debug ("neek2o detected");
-			vars.neek = NEEK_2o;
-			
-			// retriving neek nand name
-			neek_GetNandConfig ();
-			if (nandConfig)
-				{
-				Debug ("neek2o = 0x%X, %d, %d", nandConfig, nandConfig->NandSel, nandConfig->NandCnt);
-				if (nandConfig && nandConfig->NandSel < nandConfig->NandCnt)
-					sprintf (vars.neekName, "%s", nandConfig->NandInfo[nandConfig->NandSel]);
-				}
-			else
-				{
-				strcpy (vars.neekName,"root");
-				}
-			
-			Debug ("neek2o nand = %s", vars.neekName);
-			
-			neek_PLNandInfoKill ();
-			}
-		}
-	else
-		{
-		RestoreChannelNeek2o();
-		}
-
-
 	// This is just for testing... no really needed
 	// Identify_SU (0);
 	
 	/* Prepare random seed */
 	srand(time(0)); 
-	
-	t = time(NULL);
 	
 	if (!ret)
 		{
@@ -332,6 +298,33 @@ int main(int argc, char **argv)
 			}
 		}
 		
+	if (vars.neek && neek_IsNeek2o())
+		{
+		Debug ("neek2o detected");
+		vars.neek = NEEK_2o;
+		
+		// retriving neek nand name
+		neek_GetNandConfig ();
+		if (nandConfig)
+			{
+			Debug ("neek2o = 0x%X, %d, %d", nandConfig, nandConfig->NandSel, nandConfig->NandCnt);
+			if (nandConfig && nandConfig->NandSel < nandConfig->NandCnt)
+				sprintf (vars.neekName, "%s", nandConfig->NandInfo[nandConfig->NandSel]);
+			}
+		else
+			{
+			strcpy (vars.neekName,"root");
+			}
+		
+		Debug ("neek2o nand = %s", vars.neekName);
+		
+		neek_PLNandInfoKill ();
+		}
+	else
+		{
+		RestoreChannelNeek2o();
+		}
+
 	Debug ("neek = %d", vars.neek);
 	if (vars.neek != NEEK_NONE && vars.neek != NEEK_2o)
 		plneek_GetNandName ();
@@ -341,6 +334,12 @@ int main(int argc, char **argv)
 
 	if (!vars.interactive)
 		{
+		Debug ("Querying for interactive mode");
+		
+		time_t t,tout;
+		
+		t = time(NULL);
+
 		MasterInterface (1, 0, 1, " ");
 		
 		if (time(NULL) - t > 5)
@@ -358,18 +357,20 @@ int main(int argc, char **argv)
 		}
 		
 	
-	ret = INTERACTIVE_RET_NONE;
-	
 	sprintf (vars.tempPath, "%s://ploader/temp", vars.defMount);
-
+	Debug ("vars.tempPath = %s", vars.tempPath);
+	
 	grlibSettings.autoCloseMenu = 60;
 	
+	ret = INTERACTIVE_RET_NONE;
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && vars.interactive)
 		{
+		Debug ("Showing gui....");
+		
 		Video_LoadTheme (1);
-		WiiLoad (1);
 		CoverCache_Start ();
 		snd_Init ();
+		WiiLoad (1);
 		
 		do
 			{

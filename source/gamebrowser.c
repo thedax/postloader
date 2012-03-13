@@ -325,7 +325,7 @@ static int ReadGameConfig (int ia)
 	
 	if (valid)
 		{
-		if (HexAscii2Bin (buff, &gameConf) != sizeof (s_gameConfig))
+		if (HexAscii2Bin (buff, &gameConf) > sizeof (s_gameConfig))
 			{
 			valid = false;
 			}
@@ -587,21 +587,25 @@ static int GameBrowse (int forcescan)
 	p = titles;
 	i = 0;
 	
-	Debug ("GameBrowse [begin]");
+	Debug ("GameBrowse: parsing title cache buffer");
 			
 	do
 		{
 		if (*p != '\0' && strlen(p))
 			{
 			// Add name
+			//Debug ("name = %s (%d)", p, strlen(p));
 			games[i].name = malloc (strlen(p));
 			strcpy (games[i].name, p);
 			p += (strlen(p) + 1);
 			
 			// Add id
-			strcpy (games[i].asciiId, p);
+			//Debug ("id = %s (%d)", p, strlen(p));
+			strncpy (games[i].asciiId, p, 6);
+			if (config.gameMode == GM_DML)
+				games[i].disc = p[6];
 			p += (strlen(p) + 1);
-
+				
 			if (config.gameMode == GM_WII)
 				{
 				// Setup slot
@@ -622,9 +626,15 @@ static int GameBrowse (int forcescan)
 				p += (strlen(p) + 1);
 
 				games[i].slot = atoi (slot); // sd = 0 / usb = 1...3?
+
+				strcpy (games[i].source, p);
+				p += (strlen(p) + 1);
 				}
 			
+			Debug (" > %s (%s:%d:%d)", games[i].name, games[i].asciiId, games[i].disc, games[i].slot);
+
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
+			
 			ReadGameConfig (i);
 			
 			i ++;
@@ -700,11 +710,14 @@ static int FindSpot (void)
 			strcat (info, "(");
 			strcat (info, games[gamesSelected].asciiId);
 			strcat (info, ")");
-			if (config.gameMode == GM_DML && strlen (games[gamesSelected].asciiId) == 7)
+			if (config.gameMode == GM_DML)
 				{
 				char b[32];
-				sprintf (b, " DISC %s", &games[gamesSelected].asciiId[6]);
-				
+
+				sprintf (b, " DISC %d", games[gamesSelected].disc);
+				strcat (info, b);
+
+				sprintf (b, " [%s]", games[gamesSelected].source);
 				strcat (info, b);
 				}
 
@@ -1052,13 +1065,11 @@ static void ShowAppMenu (int ai)
 
 	if (item == 7)
 		{
-		char path[256];
-		
 		int ret = grlib_menu ("Are you sure you want to delete this game ? ", "   YES   ~NO");
 		if (ret == 0)
 			{
-			sprintf (path, "sd://games/%s", games[ai].asciiId);
-			fsop_KillFolderTree (path, NULL);
+			Debug ("Deleting folder '%s'", games[ai].source);
+			fsop_KillFolderTree (games[ai].source, NULL);
 			GameBrowse (1);
 			}
 		}
@@ -1672,10 +1683,12 @@ static void cb_filecopy (void)
 
 static size_t GetGCGameUsbKb (int ai)
 	{
-	char path[300];
+	//char path[300];
 	
-	sprintf (path, "%s://ngc/%s",  devices_Get (games[ai].slot), games[ai].asciiId);
-	return fsop_GetFolderKb (path, NULL);
+	//sprintf (path, "%s://ngc/%s",  devices_Get (games[ai].slot), games[ai].asciiId);
+	
+	Debug ("GetGCGameUsbKb %s", games[ai].source);
+	return fsop_GetFolderKb (games[ai].source, NULL);
 	}
 
 static bool MoveGCGame (int ai)
@@ -1686,10 +1699,19 @@ static bool MoveGCGame (int ai)
 	snd_Pause ();
 	DMLResetCache ();
 
-	Debug ("MoveGCGame (%s %s): Started", games[ai].name, games[ai].asciiId);
+	Debug ("MoveGCGame (%s %s '%s'): Started", games[ai].name, games[ai].asciiId, games[ai].source);
 
-	sprintf (source, "%s://ngc/%s", devices_Get (games[ai].slot), games[ai].asciiId);
-	sprintf (target, "sd://games/%s", games[ai].asciiId);
+	//sprintf (source, "%s://ngc/%s", devices_Get (games[ai].slot), games[ai].asciiId);
+	sprintf (source, "%s", games[ai].source);
+	
+	//sprintf (target, "sd://games/%s", games[ai].asciiId);
+	char *p;
+	p = games[ai].source + strlen(games[ai].source) - 1;
+	while (*p != '/') p--;
+	p++;
+	sprintf (target, "%s://games/%s", devices_Get (DEV_SD), p);
+	
+	Debug ("MoveGCGame: '%s' -> '%s'", source, target);
 
 	bool ret = fsop_CopyFolder (source, target, cb_filecopy);
 	
@@ -1910,7 +1932,15 @@ int GameBrowser (void)
 						WriteGameConfig (gamesSelected);
 						Conf (false);	// Store configuration on disc
 						config.gamePageGC = page;
-						DMLRun (games[gamesSelected].asciiId, gameConf.dmlvideomode);
+						
+						// Retrive the folder name
+						char *p;
+						p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
+						while (*p != '/') p--;
+						p++;
+						
+						// Execute !
+						DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlvideomode);
 						}
 					
 					redraw = 1;

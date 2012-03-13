@@ -11,8 +11,8 @@
 #include "devices.h"
 #include "mystring.h"
 
+#define DMLVER "DMLSDAT0001"
 #define SEP 0xFF
-#define SEP2 0x1
 
 #define BC 0x0000000100000100ULL
 #define MIOS 0x0000000100000101ULL
@@ -26,6 +26,8 @@
 #define VIDEO_MODE_PAL60 2
 #define VIDEO_MODE_NTSC480P 3
 #define VIDEO_MODE_PAL480P 4
+
+static char *dmlFolders[] = {"ngc", "games"};
 
 syssram* __SYS_LockSram();
 u32 __SYS_UnlockSram(u32 write);
@@ -172,15 +174,8 @@ s32 StartMIOS (void)
 #define MAXGAMES 30
 #define MAXROW 10
 
-static bool GetName (int dev, char *id, char *name)
+static bool GetName (char *path, char *id, char *name)
 	{
-	char path[128];
-	
-	if (dev == DEV_SD)
-		sprintf (path, "%s://games/%s/game.iso", devices_Get(dev), id);
-	else
-		sprintf (path, "%s://ngc/%s/game.iso", devices_Get(dev), id);
-		
 	FILE *f;
 	f = fopen(path, "rb");
 	if (!f)	
@@ -189,17 +184,26 @@ static bool GetName (int dev, char *id, char *name)
 		return false;
 		}
 	
+	fread(id, 1, 8, f);
+	//id[6] = 0;
+	
 	fseek( f, 0x20, SEEK_SET);
 	fread(name, 1, 32, f);
 	fclose(f);
-	
+
+	id[6]++;
+	id[7]++;
+	id[8] = 0;
+
 	name[31] = 0;
 	return true;
 	}
 
-int DMLRun (char *id, u32 videomode)
+int DMLRun (char *folder, char *id, u32 videomode)
 	{
 	char path[128];
+	
+	Debug ("DMLRun (%s, %s, %u)", folder, id, videomode);
 
 	if (!devices_Get(DEV_SD)) return 0;
 	
@@ -228,7 +232,7 @@ int DMLRun (char *id, u32 videomode)
 	FILE *f;
 	f = fopen(path, "wb");
 	if (!f)	return -1;
-	fwrite(id, 1, 6, f);
+	fwrite(folder, 1, strlen(folder), f);
 	fclose(f);
 	
  	memcpy ((char *)0x80000000, id, 6);
@@ -243,7 +247,7 @@ int DMLRun (char *id, u32 videomode)
 void DMLResetCache (void)
 	{
 	char cachepath[128];
-	sprintf (cachepath, "%s://ploader/dml.cfg", vars.defMount);
+	sprintf (cachepath, "%s://ploader/dml.dat", vars.defMount);
 	unlink (cachepath);
 	}
 
@@ -264,19 +268,36 @@ char *DMLScanner  (bool reset)
 	char name[32];
 	char src[32];
 	char b[128];
+	char id[10];
 	FILE *f;
 	char *buff = calloc (1, BUFFSIZE); // Yes, we are wasting space...
 	
-	sprintf (cachepath, "%s://ploader/dml.cfg", vars.defMount);
+	sprintf (cachepath, "%s://ploader/dml.dat", vars.defMount);
+
+	//reset = 1;
 
 	if (reset == 0)
 		{
 		f = fopen (cachepath, "rb");
 		if (!f) 
+			{
+			Debug ("DMLScanner: cache file '%s' not found", cachepath);
 			reset = 1;
+			}
 		else
 			{
-			fread (buff, 1, BUFFSIZE-1, f);
+			Debug ("DMLScanner: cache file '%s' found, checking version", cachepath);
+			
+			fread (b, 1, strlen(DMLVER), f);
+			b[strlen(DMLVER)] = 0;
+			if (strcmp (b, DMLVER) != 0)
+				{
+				Debug ("DMLScanner: version mismatch, forcing rebuild");
+				reset = 1;
+				}
+			else
+				fread (buff, 1, BUFFSIZE-1, f);
+				
 			fclose (f);
 			
 			buff[BUFFSIZE-1] = 0;
@@ -285,6 +306,7 @@ char *DMLScanner  (bool reset)
 	
 	if (reset == 1)
 		{
+		
 		if (!devices_Get(DEV_SD)) return 0;
 		
 		sprintf (path, "%s://games", devices_Get(DEV_SD));
@@ -297,8 +319,12 @@ char *DMLScanner  (bool reset)
 		
 		while ((pent=readdir(pdir)) != NULL) 
 			{
-			//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-			if (strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7)
+			if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0) continue;
+				
+			sprintf (b, "%s/%s/game.iso", path, pent->d_name);
+			Debug ("DML: checking %s", b);
+			
+			if (fsop_FileExist (b))
 				{
 				Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 				
@@ -309,34 +335,39 @@ char *DMLScanner  (bool reset)
 					char sdp[256], usbp[256];
 					
 					sprintf (sdp, "%s://games/%s", devices_Get(DEV_SD), pent->d_name);
-					sprintf (usbp, "%s://ngc/%s", devices_Get(DEV_USB), pent->d_name);
 					
-					if (fsop_DirExist (usbp))
+					int folder;
+					for (folder = 0; folder < 2; folder++)
 						{
-						int sdkb, usbkb;
+						sprintf (usbp, "%s://%s/%s", devices_Get(DEV_USB), dmlFolders[folder], pent->d_name);
 						
-						sdkb = fsop_GetFolderKb (sdp, cb_DML);
-						usbkb = fsop_GetFolderKb (usbp, cb_DML);
-						
-						if (abs (sdkb - usbkb) > 2) // Let 2kb difference for codes
+						if (fsop_DirExist (usbp))
 							{
-							char mex[256];
-							fsop_KillFolderTree (sdp, cb_DML);
+							int sdkb, usbkb;
 							
-							sprintf (mex, "Folder '%s' removed\n as it has the wrong size", sdp);
-							grlib_menu (mex, "   OK   ");
-							skip = true;
+							sdkb = fsop_GetFolderKb (sdp, cb_DML);
+							usbkb = fsop_GetFolderKb (usbp, cb_DML);
+							
+							if (abs (sdkb - usbkb) > 2) // Let 2kb difference for codes
+								{
+								char mex[256];
+								fsop_KillFolderTree (sdp, cb_DML);
+								
+								sprintf (mex, "Folder '%s' removed\n as it has the wrong size", sdp);
+								grlib_menu (mex, "   OK   ");
+								skip = true;
+								}
 							}
 						}
 					}
 		
 				if (!skip)
 					{
-					if (!GetName (DEV_SD, pent->d_name, name)) continue;
+					if (!GetName (b, id, name)) continue;
 					
-					ms_strtoupper (pent->d_name);
+					//ms_strtoupper (pent->d_name);
 
-					sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, DEV_SD, SEP);
+					sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, path, pent->d_name, SEP);
 					strcat (buff, b);
 					}
 				}
@@ -345,41 +376,53 @@ char *DMLScanner  (bool reset)
 		closedir(pdir);
 		
 		xcheck = false;
-		
+
 		int i;
 		for (i = DEV_USB; i < DEV_MAX; i++)
 			{
 			if (devices_Get(i))
 				{
-				sprintf (path, "%s://ngc", devices_Get(i));
-				
-				Debug ("DML: scanning %s", path);
-				
-				pdir=opendir(path);
-				
-				while ((pent=readdir(pdir)) != NULL) 
+				int folder;
+				for (folder = 0; folder < 2; folder++)
 					{
-					//if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
-					ms_strtoupper (pent->d_name);
-
-					sprintf (src, "%c%s%c", SEP, pent->d_name, SEP); // make sure to find the exact name
-					if ((strlen (pent->d_name) == 6 || strlen (pent->d_name) == 7) && strstr (buff, src) == NULL)	// Make sure to not add the game twice
-						{
-						Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
-						if (!GetName (i, pent->d_name, name)) continue;
-						sprintf (b, "%s%c%s%c%d%c", name, SEP, pent->d_name, SEP, i, SEP);
-						strcat (buff, b);
-						}
-					}
+					sprintf (path, "%s://%s", devices_Get(i), dmlFolders[folder]);
 					
-				closedir(pdir);
+					Debug ("DML: scanning %s", path);
+					
+					pdir=opendir(path);
+
+					while ((pent=readdir(pdir)) != NULL) 
+						{
+						if (strcmp (pent->d_name, ".") && strcmp (pent->d_name, ".."))
+							{
+							ms_strtoupper (pent->d_name);
+
+							Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+							
+							sprintf (b, "%s/%s/game.iso", path, pent->d_name);
+							Debug ("DML: checking %s", b);
+
+							if (!GetName (b, id, name)) continue;
+							
+							sprintf (src, "%c%s%c", SEP, id, SEP); // make sure to find the exact name
+							if (strstr (buff, src) == NULL)	// Make sure to not add the game twice
+								{
+								sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_USB, SEP, path, pent->d_name, SEP);
+								strcat (buff, b);
+								}
+							}
+						}
+						
+					closedir(pdir);
+					}
 				}
 			}
-		
+
 		Debug ("WBFSSCanner: writing cache file");
 		f = fopen (cachepath, "wb");
 		if (f) 
 			{
+			fwrite (DMLVER, 1, strlen(DMLVER), f);
 			fwrite (buff, 1, strlen(buff)+1, f);
 			fclose (f);
 			}
@@ -389,7 +432,7 @@ char *DMLScanner  (bool reset)
 	
 	l = strlen (buff);
 	for (i = 0; i < l; i++)
-		if (buff[i] == SEP || buff[i] == SEP2)
+		if (buff[i] == SEP)
 			buff[i] = 0;
 
 	return buff;
@@ -430,7 +473,7 @@ int DMLInstall (char *gamename, size_t reqKb)
 
 	devKb = fsop_GetFreeSpaceKb (path);
 	
-	Debug ("***** devKb = %u, reqKb = %u", devKb, reqKb);
+	Debug ("DMLInstall: devKb = %u, reqKb = %u", devKb, reqKb);
 	
 	if (devKb > reqKb) 
 		{
