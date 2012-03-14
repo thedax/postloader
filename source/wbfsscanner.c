@@ -32,9 +32,14 @@ bool ScanWBFS (char *ob, char *path)
 	Debug ("ScanWBFS '%s'", path);
 	
 	pdir=opendir(path);
+	
+	Debug ("ScanWBFS:  opendir ('%s') = 0x%X", path, pdir);
+	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
 		sprintf (fn, "%s/%s", path, pent->d_name);
+		
+		Debug ("ScanWBFS: checking '%s'", fn);
 		
 		if (strlen (ob) > BUFFSIZE - 64)
 			{
@@ -57,9 +62,16 @@ bool ScanWBFS (char *ob, char *path)
 			Debug ("ScanWBFS: [FN] %s", fn);
 			
 			f = fopen(fn, "rb");
-			if (!f) continue;
+
+			if (!f) 
+				{
+				Debug ("   ! failed to open the file");
+				continue;
+				}
+
 			fseek (f, 0x200, 0);
 			fread( gi, 1, GISIZE, f);
+			fclose (f);
 			
 			char *p = ob;
 			
@@ -89,8 +101,6 @@ bool ScanWBFS (char *ob, char *path)
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
 			strcat (ob, buff);
-			
-			fclose (f);
 			}
 		}
 	closedir(pdir);
@@ -113,7 +123,7 @@ char * WBFSSCanner (bool reset)
 	
 	if (reset == 0)
 		{
-		Debug ("WBFSSCanner: reading cache file '%'", path);
+		Debug ("WBFSSCanner: reading cache file '%s'", path);
 		
 		f = fopen (path, "rb");
 		if (!f) 
