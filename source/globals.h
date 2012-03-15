@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "3.69.1"
+#define VER "3.69.2"
 #define CFGVER "PLCFGV0010"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58

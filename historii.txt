@@ -1,3 +1,8 @@
+postLoader 3.69.2
+
+* Better wbfs scan function
+* Removed uid.sys scan and dump to gecko (neek2o)
+
 postLoader 3.69.1
 
 * More debug output informations

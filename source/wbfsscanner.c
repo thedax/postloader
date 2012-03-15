@@ -41,7 +41,7 @@ bool ScanWBFS (char *ob, char *path)
 		
 		Debug ("ScanWBFS: checking '%s'", fn);
 		
-		if (strlen (ob) > BUFFSIZE - 64)
+		if (strlen (ob) > BUFFSIZE - 128)
 			{
 			Debug ("ScanWBFS: too many entryes");
 			break;
@@ -73,13 +73,13 @@ bool ScanWBFS (char *ob, char *path)
 			fread( gi, 1, GISIZE, f);
 			fclose (f);
 			
-			char *p = ob;
+			int lp = strlen(ob);
 			
 			// Add title
 			gi[0x20 + 64] = 0;		// Make sure to not oveflow
 			strcpy (buff, &gi[0x20]);
 			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}			
-			if (strlen(buff) == 0) *p = 0;
+			if (strlen(buff) == 0) {Debug ("   ! inconsistent name"); ob[lp] = 0; continue; }
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
 			strcat (ob, buff);
@@ -87,17 +87,13 @@ bool ScanWBFS (char *ob, char *path)
 			// Add id
 			gi[0x00 + 6] = 0;		// Make sure to not oveflow
 			strcpy (buff, &gi[0x0]);
-			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}
-			if (strlen(buff) == 0) *p = 0;
+			if (strlen(buff) < 6) {Debug ("   ! inconsistent id"); ob[lp] = 0; continue; }
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
 			strcat (ob, buff);
 			
 			// Add partition
-			sprintf (tmp, "%d", part);
-			strcpy (buff, tmp);
-			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}
-			if (strlen(buff) == 0) *p = 0;
+			sprintf (buff, "%d", part);
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
 			strcat (ob, buff);
