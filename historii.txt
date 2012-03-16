@@ -1,3 +1,9 @@
+postLoader 3.69.3
+
+* Now postloader keep different configuration files for channels for neek, realnand and emunands
+* Default channel mode for neek and real nand is now "compatible mode" (WII_LaunchTitle will be used)
+* neekbooter 1.3: neek2o mode for emunand now use WII_LaunchTitle. Should be no real difference from previus version, just smaller executable.
+
 postLoader 3.69.2
 
 * Better wbfs scan function

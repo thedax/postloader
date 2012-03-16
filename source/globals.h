@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "3.69.2"
+#define VER "3.69.3"
 #define CFGVER "PLCFGV0010"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -147,6 +147,8 @@ typedef struct
 	int usbtime;
 	int themeReloaded;				// Signal that a new theme was reloaded
 	int interactive;				// used for selecting interactive mode upon boot
+	
+	int useChannelCompatibleMode;				// used for selecting interactive mode upon boot
 	}
 s_vars;
 

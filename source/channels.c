@@ -825,8 +825,9 @@ int BootChannel(s_run *run)
 
 	MasterInterface (1, 0, TEX_CHIP, "Executing title...");
 	
-	/*
-	if (run->nand == NAND_REAL || vars.neek != NEEK_NONE)
+	//if (/*run->nand == NAND_REAL || */vars.neek != NEEK_NONE)
+	
+	if (vars.useChannelCompatibleMode || ((vars.neek != NEEK_NONE || config.chnBrowser.nand == NAND_REAL) && run->channel.bootMode == 2))
 		{
 		Shutdown (0);
 		
@@ -834,7 +835,7 @@ int BootChannel(s_run *run)
 		WII_LaunchTitle((u64)(run->channel.titleId));
 		exit(0);  // Use exit() to exit a program, do not use 'return' from main()
 		}
-	*/
+
 	if (vars.neek == NEEK_NONE && run->channel.bootMode == 2) //neek2o
 		{
 		RunChannelNeek2o (run);

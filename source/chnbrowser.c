@@ -278,7 +278,12 @@ static void ReadTitleConfig (int ia)
 		chnConf.vpatch = 0;
 		chnConf.ocarina = 0;
 		chnConf.hook = 0;
-		chnConf.bootMode = 0;
+		
+		if (vars.neek != NEEK_NONE || config.chnBrowser.nand == NAND_REAL)
+			chnConf.bootMode = 2; // Compatible
+		else 
+			chnConf.bootMode = 0; // normal
+			
 		chnConf.playcount = 0;
 		}
 
@@ -786,7 +791,10 @@ static void ShowAppMenu (int ai)
 	char *languageoptions[CHOPT_LANG] = { "Default Language", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
 	char *hooktypeoptions[CHOPT_HOOK] = { "No Ocarina&debugger", "Hooktype: VBI", "Hooktype: KPAD", "Hooktype: Joypad", "Hooktype: GXDraw", "Hooktype: GXFlush", "Hooktype: OSSleepThread", "Hooktype: AXNextFrame" };
 	char *ocarinaoptions[CHOPT_OCA] = { "No Ocarina", "Ocarina from NAND", "Ocarina from SD", "Ocarina from USB" };
-	char *bootmethodoptions[CHOPT_BOOT] = { "Normal boot method", "Load apploader", "neek2o" };
+	char bootmethodoptions[CHOPT_BOOT][32] = { "Normal boot method", "Load apploader", "neek2o" };
+	
+	if (vars.neek != NEEK_NONE || config.chnBrowser.nand == NAND_REAL)
+		strcpy (bootmethodoptions[2], "Compatible mode");
 	
 	grlib_SetFontBMF(fonts[FNTNORM]);
 
@@ -794,7 +802,6 @@ static void ShowAppMenu (int ai)
 	chnConf.language ++; // umph... language in triiforce start at -1... not index friendly
 	do
 		{
-		
 		buff[0] = '\0';
 		strcat (buff, "Set as autoboot##1|");
 		
@@ -806,17 +813,32 @@ static void ShowAppMenu (int ai)
 		sprintf (b, "Vote this title (%d/10)##4", chans[chansSelected].priority);
 		strcat (buff, b);
 		
-		if (config.chnBrowser.nand != NAND_REAL)
+		//if (config.chnBrowser.nand != NAND_REAL)
+		
+		strcat (buff, "||");
+
+		if (vars.neek == NEEK_NONE && config.chnBrowser.nand != NAND_REAL)
 			{
-			strcat (buff, "||");
 			strcat (buff, "IOS: "); strcat (buff, ios[chnConf.ios]); strcat (buff, "##100|");
+			}
 			
+		strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
+
+		if (chnConf.bootMode < 2)
+			{
 			strcat (buff, "Video: "); strcat (buff, videooptions[chnConf.vmode]); strcat (buff, "##101|");
 			strcat (buff, "Video Patch: "); strcat (buff, videopatchoptions[chnConf.vpatch]); strcat (buff, "##102|");
 			strcat (buff, "Language: "); strcat (buff, languageoptions[chnConf.language]); strcat (buff, "##103|");
 			strcat (buff, "Hook type: "); strcat (buff, hooktypeoptions[chnConf.hook]); strcat (buff, "##104|");
 			strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[chnConf.ocarina]); strcat (buff, "##105|");
-			strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
+			}
+		else
+			{
+			strcat (buff, "Video: n/a##1000|");
+			strcat (buff, "Video Patch: n/a##1000|");
+			strcat (buff, "Language: n/a##1000|");
+			strcat (buff, "Hook type: n/a##1000|");
+			strcat (buff, "Ocarina: n/a##1000|");
 			}
 		
 		grlibSettings.fontNormBMF = fonts[FNTBIG];
@@ -1431,6 +1453,7 @@ static bool QuerySelection (int ai)
 		if (mag >= 2.7 && ico.x == 320 && ico.y == y) break;
 		}
 	
+	vars.useChannelCompatibleMode = 0;	
 	int fr = grlibSettings.fontBMF_reverse;
 	u32 btn;
 	while (true)
@@ -1441,8 +1464,9 @@ static bool QuerySelection (int ai)
 		Overlay ();
 		
 		grlibSettings.fontBMF_reverse = 0;
-		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, chans[ai].name);		
+		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, chans[ai].name);
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");		
+
 		grlibSettings.fontBMF_reverse = fr;
 		
 		grlib_GetUserInput();
@@ -1451,6 +1475,7 @@ static bool QuerySelection (int ai)
 
 		btn = grlib_GetUserInput();
 		if (btn & WPAD_BUTTON_A) return true;
+		if (btn & WPAD_BUTTON_PLUS) {vars.useChannelCompatibleMode = 1; return true;}
 		if (btn & WPAD_BUTTON_B) return false;
 		}
 	return true;
@@ -1459,7 +1484,13 @@ static bool QuerySelection (int ai)
 static void Conf (bool open)
 	{
 	char cfgpath[64];
-	sprintf (cfgpath, "%s://ploader/channels.conf", vars.defMount);
+	
+	if (vars.neek != NEEK_NONE)
+		sprintf (cfgpath, "%s://ploader/channels.neek", vars.defMount);
+	else if (config.chnBrowser.nand == NAND_REAL)
+		sprintf (cfgpath, "%s://ploader/channels.real", vars.defMount);
+	else
+		sprintf (cfgpath, "%s://ploader/channels.emul", vars.defMount);
 
 	if (open)
 		{

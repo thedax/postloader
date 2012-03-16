@@ -11,7 +11,7 @@
 #include "neek.h"
 #include "bin2o.h"
 
-#define VER "[1.2]"
+#define VER "[1.3]"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -397,6 +397,13 @@ int main(int argc, char **argv)
 			{
 			printd ("booting channel");
 			
+			WII_Initialize();
+			WII_LaunchTitle((u64)(TITLE_ID (hi, lo)));
+			
+			exit(0);  // Use exit() to exit a program, do not use 'return' from main()
+			
+			/*
+			
 			s_nandbooter nb ATTRIBUTE_ALIGN(32);
 
 			u8 *tfb = ((u8 *) 0x93200000);
@@ -430,6 +437,7 @@ int main(int argc, char **argv)
 			__exception_closeall();
 			hbboot_ep();
 			_CPU_ISR_Restore(level);
+			*/
 			}
 		}
 	else if (status == PLNANDSTATUS_BOOTING)
