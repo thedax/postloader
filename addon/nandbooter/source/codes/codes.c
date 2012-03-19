@@ -144,13 +144,13 @@ s32 load_codes(char *filename, u32 maxsize, u8 *buffer)
 		{
 		if (codebuff && codebuff_size)
 			{
-			debug("Codes found in memory %d !!!!!!!!!\n", ret);
+			debug("Codes found in memory !\n");
 			memcpy (buffer, codebuff, codebuff_size);
 			sleep (3);
 			}
 		else
 			{
-			debug("Codes not found in memory %d xxxxxxxxxx\n", ret);
+			debug("Codes not found in memory\n");
 			return -1;
 			sleep (3);
 			}

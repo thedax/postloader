@@ -8,7 +8,7 @@
 
 #define MAXITEMS 128
 #define MAXCOLS 12
-#define YSPACING 20
+#define YSPACING 25
 #define YSPACINGFAKE 10
 #define YTITLE 20
 #define XCOLSPACING 10
@@ -73,6 +73,39 @@ int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstr
 	else
 		strcat (menu, "^-");
 		
+	strcat (menu, buff);
+	sprintf (sid, "##%d|", id);
+	strcat (menu, sid);
+	
+	return 1;
+	}
+
+int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *yesno, const char *itemsstring, ...)
+	{
+	char buff[256];
+	char sid[16];
+	char yn[64];
+	
+	if (menu == NULL) return 0;
+
+	if (itemsstring != NULL)
+		{
+		va_list argp;
+		va_start(argp, itemsstring);
+		vsprintf(buff, itemsstring, argp);
+		va_end(argp);
+		}
+
+	strcpy (yn, yesno);
+	char *p = strstr (yn, "|");
+	if (!p) return 0;
+	*p = '\0';
+
+	if (check)
+		strcat (buff, yn);
+	else
+		strcat (buff, ++p);
+
 	strcat (menu, buff);
 	sprintf (sid, "##%d|", id);
 	strcat (menu, sid);
@@ -158,6 +191,8 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 			grlibSettings.fontBMF = grlibSettings.fontSmallBMF;
 			}
 		}
+	
+	titlew += 5;
 
 	grlibSettings.fontBMF = grlibSettings.fontNormBMF;
 
@@ -192,7 +227,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 				{
 				char buff[256];
 				
-				sprintf (buff, "[*] %s", &goItems[itemsCnt].text[2]);
+				sprintf (buff, "[X] %s", &goItems[itemsCnt].text[2]);
 				grlib_GetFontMetrics (buff, &l, &h);
 				}
 			else
@@ -242,6 +277,9 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	winw = ((itemw+XCOLSPACING) * (columns)) + 40;
 	if (linew > winw)
 		winw = linew + 40;
+		
+	if (winw < titlew)
+		winw = titlew;
 	
 	winh = 0;
 	for (i = 0; i < columns; i++)
@@ -390,10 +428,14 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	while (TRUE);
 
 	do {WPAD_ScanPads(); if (!WPAD_ButtonsDown(0)) break;} while (TRUE);
-	
-	//if (grlibSettings.RedrawCallback != NULL) grlibSettings.RedrawCallback();
-	//grlib_Render();
-	
+	/*
+	if (grlibSettings.RedrawCallback != NULL) 
+		{
+		grlibSettings.RedrawCallback();
+		grlib_PushScreen ();
+		grlib_Render ();
+		}
+	*/	
 	free (line);
 	
 	// Report cancel

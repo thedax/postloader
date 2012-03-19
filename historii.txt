@@ -1,3 +1,10 @@
+postLoader 3.69.4
+
+* codes are working again
+* changed a bit emunand channels configuration menu
+* corrected a bug when reading sectors on 4K devices
+* priibooter_gui 2.4: should now support disk with 4K secotors
+
 postLoader 3.69.3
 
 * Now postloader keep different configuration files for channels for neek, realnand and emunands

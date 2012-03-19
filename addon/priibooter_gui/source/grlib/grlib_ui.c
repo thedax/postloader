@@ -11,6 +11,10 @@ int grlib_dosm (const char *text, ...) // ab > 0 show and wait ab second, otherw
 	static char mex[1024];
 	char *p1,*p2;
 	
+	int reverse = grlibSettings.fontBMF_reverse;
+	
+	grlibSettings.fontBMF_reverse = 0;
+	
 	if (text != NULL)
 		{
 		va_list argp;
@@ -65,6 +69,7 @@ int grlib_dosm (const char *text, ...) // ab > 0 show and wait ab second, otherw
 	while (ret == 0);
 	do {WPAD_ScanPads();} while (WPAD_ButtonsDown(0));
 	
+	grlibSettings.fontBMF_reverse = reverse;
 	return ret;
 	}
 	
@@ -82,7 +87,7 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 		if (b->text[1] == '-') toggle = 0;
 		
 		if (toggle == 0) sprintf (text, "[\255*] %s", &b->text[2]);
-		if (toggle == 1) sprintf (text, "[*] %s", &b->text[2]);
+		if (toggle == 1) sprintf (text, "[X] %s", &b->text[2]);
 		}
 	
 	if (toggle == -1) strcpy(text, b->text);

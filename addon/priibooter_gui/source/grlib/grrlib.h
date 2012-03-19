@@ -236,6 +236,7 @@ void  GRRLIB_BMFX_Pixelate  (const GRRLIB_texImg *texsrc,
 // GRRLIB_core.c - GRRLIB core functions
 int  GRRLIB_Init (int skipVideo, int fixPal);
 void  GRRLIB_Exit (void);
+void  GRRLIB_ExitLight (void);
 
 //------------------------------------------------------------------------------
 // GRRLIB_fbAdvanced.c - Render to framebuffer: Advanced primitives
@@ -486,9 +487,11 @@ GRRLIB_texImg*  GRRLIB_CreateEmptyTexture (const uint w, const uint h)
  * @param tex The texture to flush.
  */
 INLINE
-void  GRRLIB_FlushTex (GRRLIB_texImg *tex) {
-    DCFlushRange(tex->data, tex->w * tex->h * 4);
-}
+void  GRRLIB_FlushTex (GRRLIB_texImg *tex) 
+	{
+	if(tex != NULL)
+		DCFlushRange(tex->data, tex->w * tex->h * 4);
+	}
 
 /**
  * Free memory allocated for texture.

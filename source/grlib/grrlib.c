@@ -810,7 +810,11 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
         n+=2;
     }
 
+#ifdef ENABLE_JPEG
     return GRRLIB_LoadTextureJPGEx(my_jpg, n);
+#else
+    return NULL;
+#endif
 }
 
 /**

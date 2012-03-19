@@ -11,7 +11,10 @@ void grlib_IconInit (s_grlib_icon *icon, s_grlib_icon *parentIcon)
 	if (parentIcon)
 		memcpy (icon, parentIcon, sizeof(s_grlib_icon));
 	else
+		{
 		memset (icon, 0, sizeof(s_grlib_icon));
+		icon->transparency = 255;
+		}
 	}
 	
 void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
@@ -33,27 +36,18 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		
 	// Calculate icon bounds
 
-	icon->rx1 = icon->x - w / 2.0;
-	icon->rx2 = icon->x + w / 2.0;
-
-	icon->ry1 = icon->y - h / 2.0;
-	icon->ry2 = icon->y + h / 2.0;
-	
-	gro.x1 = icon->rx1;
-	gro.x2 = icon->rx2;
-	gro.y1 = icon->ry1;
-	gro.y2 = icon->ry2;
+	gro.x1 = (icon->x - w / 2.0) - icon->xoff;
+	gro.x2 = (icon->x + w / 2.0) - icon->xoff;
+	gro.y1 = (icon->y - h / 2.0) - icon->yoff;
+	gro.y2 = (icon->y + h / 2.0) - icon->yoff;
 	
 	grlib_MagObject (&grob, &gro, is->border, is->border);
 	
 	// Draw background
 	
-	if (is->themed)
-		{
+	if (is->themed)		{
 		// Draw mask (if exist)
-		grlib_DrawSquareThemed (&grob, is->bkgMsk, NULL, 0, 0, DSTF_NONE);
-		// Draw background (if exist)
-		grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE);
+		if (!icon->noIcon)	grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE);
 		}
 	else
 		{
@@ -73,7 +67,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		else
 			tex = is->iconFake;
 		
-		grlib_DrawImg (gro.x1, gro.y1, w, h, tex, 0, RGBA(255, 255, 255, 255));
+		grlib_DrawImg (gro.x1, gro.y1, w, h, tex, 0, RGBA(255, 255, 255, icon->transparency));
 		}
 		
 	// Draw text
@@ -143,4 +137,11 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 			grlib_DrawEmptySquare (&grob);
 			}
 		}
+		
+	icon->rx1 = grob.x1;
+	icon->rx2 = grob.x2;
+
+	icon->ry1 = grob.y1;
+	icon->ry2 = grob.y2;
+		
 	}

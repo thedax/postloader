@@ -1,3 +1,6 @@
+#ifndef __GRLIB_H__
+#define __GRLIB_H__
+
 #include "grrlib.h"
 
 #define GRLIBVER "1.3"
@@ -65,9 +68,13 @@ typedef struct
 	
 	bool wiiswitch_reset;		// true if user press reset
 	bool wiiswitch_poweroff;	// true if user use wiimote or button on the console
-	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
+	bool usesGestures;
 	
+	bool doNotCall_GRRLIB_Exit;	// true if you doesn't want that 
 	u32 autoCloseMenu;			// 0 disabled, otherwise num of second after whitch it will be closed
+	
+	u32 buttonActivity;			// Every time a button is pressed this is incremented, usefull to track activity
+	u32 cursorActivity;			// Track if the user has moved by sticks
 	
 	// Theme managment
 	s_grlibTheme theme;
@@ -99,8 +106,9 @@ typedef struct
 	{
 	bool sel;	// If sel
 	bool noIcon;	// If true, no icon will be draw (also iconFake)
+	u8 transparency;
 	
-	f32 x, y, w, h;	// Icon position (centered)
+	f32 x, y, w, h, xoff, yoff;	// Icon position (centered)
 	
 	GRRLIB_texImg *icon;
 	GRRLIB_texImg *alticon;   // if icon is NULL draw this one
@@ -123,7 +131,6 @@ typedef struct
 	GRRLIB_texImg *iconFake; 		// if icon and alternateIcon are null, draw this !
 	
 	// Themed
-	GRRLIB_texImg *bkgMsk; 		// Background texture
 	GRRLIB_texImg *bkgTex; 		// Background texture
 	GRRLIB_texImg *fgrSelTex; 	// foreground texture when selected flag is on
 	GRRLIB_texImg *fgrTex; 		// foreground texture 
@@ -156,7 +163,7 @@ void grlib_Redraw (void);
 void grlib_Render (void);
 void grlib_SetFontBMF (GRRLIB_bytemapFont *bmf);
 int grlib_GetFontMetrics (const char *text, int *width, int *heigh);
-void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text);
+void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text);
 void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...);
 
 void grlib_DrawSquare ( s_grlibobj *b );
@@ -165,6 +172,7 @@ void grlib_DrawBoldEmptySquare ( s_grlibobj *b );
 
 void grlib_MagObject ( s_grlibobj *bt, s_grlibobj *bs, f32 magx, f32 magy);
 
+void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color);
 void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color);
 void grlib_DrawTile (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color, int frame);
 void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th, GRRLIB_texImg * tex, f32 angle, u32 color);
@@ -179,6 +187,7 @@ int grlib_menuAddItem (char *menu, int id, const char *itemsstring, ...);
 int grlib_menuAddSeparator (char *menu);
 int grlib_menuAddColumn (char *menu);
 int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...);
+int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *yesno, const char *itemsstring, ...);
 int grlib_menu (char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
 
 void grlib_Message (const char *text, ...);
@@ -207,3 +216,4 @@ HISTORY
 
 1.0 - First stable version
 *****************************************************************************************************************************/
+#endif

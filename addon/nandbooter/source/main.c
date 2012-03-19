@@ -302,6 +302,10 @@ u32 load_dol(const void *dolstart)
 
         for (i = 0; i < 7; i++)
         {
+			dolchunkoffset[dolchunkcount] = (void *)dolfile->text_start[i];
+			dolchunksize[dolchunkcount] = dolfile->text_size[i];
+			dolchunkcount++;
+		
 			if (dolfile->text_start[i] < 0x80000000)
 				{
 				dolfile->text_start[i] += 0x80000000;

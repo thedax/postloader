@@ -14,7 +14,6 @@
 #include "usbstorage.h"
 #include "devices.h"
 #include "debug.h"
-//#include "fsop/fsop.h"
 
 //these are the only stable and speed is good
 #define CACHE 8
@@ -78,25 +77,26 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 	gprintf ("USBDevice_Init: device initialization ok\n");
 
     int i;
-    MASTER_BOOT_RECORD mbr;
-    char BootSector[512];
+	u8 fullsector[4096];
+    MASTER_BOOT_RECORD *mbr = (MASTER_BOOT_RECORD *)fullsector;
+    char BootSector[4096];
 
 	int partnfs = 0, partfat = 0;
 
-    storage->readSectors(0, 1, &mbr);
+    storage->readSectors(0, 1, mbr);
 	
 	/*
 	if (mounted[DEV_SD])
-		fsop_WriteFile ("sd://mbr.dat", (u8*)&mbr, sizeof (mbr));
+		fsop_WriteFile ("sd://mbr->dat", (u8*)&mbr, sizeof (mbr));
 	*/
     for (i = 0; i < 4; ++i)
 		{
-		gprintf ("USBDevice_Init: partcount %d, parttyp = %d\n", i, mbr.partitions[i].type);
+		gprintf ("USBDevice_Init: partcount %d, parttyp = %d\n", i, mbr->partitions[i].type);
 		
-        if (mbr.partitions[i].type == 0)
+        if (mbr->partitions[i].type == 0)
             continue;
 
-        storage->readSectors(le32(mbr.partitions[i].lba_start), 1, BootSector);
+        storage->readSectors(le32(mbr->partitions[i].lba_start), 1, BootSector);
 		/*
 		if (mounted[DEV_SD])
 			{
@@ -110,7 +110,7 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
             //! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
             if(memcmp(BootSector + 0x36, "FAT", 3) == 0 || memcmp(BootSector + 0x52, "FAT", 3) == 0)
 				{
-                if (fatMount(DeviceName[DEV_USB+i], storage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS))
+                if (fatMount(DeviceName[DEV_USB+i], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS))
 					{
 					gprintf ("USBDevice_Init: fat->updating slot %d\n", DEV_USB+i);
 
@@ -121,7 +121,7 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 				}
             else if (memcmp(BootSector + 0x03, "NTFS", 4) == 0)
 				{
-				if (ntfsMount(DeviceName[DEV_USB+i], storage, le32(mbr.partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE))
+				if (ntfsMount(DeviceName[DEV_USB+i], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE))
 					{
 					gprintf ("USBDevice_Init: ntfs->updating slot %d\n", DEV_USB+i);
 

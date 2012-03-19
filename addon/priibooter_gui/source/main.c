@@ -19,7 +19,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "2.3"
+#define VER "2.4"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65

@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <wiiuse/wpad.h>
+#include <ogc/lwp_watchdog.h>
 #include "grlib.h"
 
 void Debug (const char *text, ...);
@@ -97,7 +98,10 @@ void grlib_Exit (void)
 	{
 	GRRLIB_FreeTexture (redrawTex);
 	GRRLIB_FreeTexture (popPushTex);
-	if (!grlibSettings.doNotCall_GRRLIB_Exit) GRRLIB_Exit ();
+	if (!grlibSettings.doNotCall_GRRLIB_Exit) 
+		GRRLIB_Exit ();
+	else
+		GRRLIB_ExitLight ();
 	}
 	
 void grlib_SetRedrawCallback (GRLIB_RedrawCallback cbRedraw, GRLIB_RedrawCallback cbOverlay)
@@ -176,7 +180,7 @@ void grlib_Render (void)
 	GRRLIB_Render ();
 	} 
 
-void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text)
+void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 	{
     uint  i;
     u8    *pdata;
@@ -186,6 +190,8 @@ void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color
 
     f32   xoff = xpos;
     const GRRLIB_bytemapChar *pchar;
+	
+	ypos --;
 
 	if (align == GRLIB_ALIGNCENTER)
 	    xoff -= grlib_GetFontMetrics (text, NULL, NULL) / 2;
@@ -210,9 +216,9 @@ void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color
 			}
 
         pdata = pchar->data;
-        for (y=0; y<pchar->height; y++) 
+        for (y = 0; y < pchar->height; y++) 
 			{
-            for (x=0; x<pchar->width; x++) 
+            for (x = 0; x < pchar->width; x++) 
 				{
                 if (*pdata && !ghostChar) 
 					{
@@ -235,7 +241,7 @@ void grlib_Text (const f32 xpos, const f32 ypos, const u8 align, const u32 color
 							
 						a = A(c);
 						c = RGBA (r,g,b,a);
-						if (R(grlibSettings.fontBMF->palette[*pdata]) > 32 && G(grlibSettings.fontBMF->palette[*pdata]) > 32 && B(grlibSettings.fontBMF->palette[*pdata]) > 32)
+						//if (R(grlibSettings.fontBMF->palette[*pdata]) > 32 && G(grlibSettings.fontBMF->palette[*pdata]) > 32 && B(grlibSettings.fontBMF->palette[*pdata]) > 32)
 							GRRLIB_Plot(xoff + x + pchar->relx, ypos + y + pchar->rely, c);
 						}
 					else
@@ -411,6 +417,24 @@ int grlib_DrawCenteredWindow (char * title, int w, int h, bool grayoutBackground
 
 	return 0;
 	}
+
+void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color)
+	{
+	f32 zx, zy;
+	
+	if (!tex) return;
+	
+	zx = (f32)w / tex->w;
+	zy = (f32)h / tex->h;
+	
+	GRRLIB_SetHandle (tex, tex->w / 2, tex->h / 2);
+	//GRRLIB_SetHandle (tex, 0,0);
+	
+	x -= tex->w/2;
+	y -= tex->w/2;
+	
+	GRRLIB_DrawImg (x, y, tex, angle, zx, zy, color ); 
+	}
 	
 void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color)
 	{
@@ -452,14 +476,38 @@ void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th,
 void grlib_DrawIRCursor (void)
 	{
 	ir_t ir;
+	static u8 alphadec = 255;
+	static s16 alpha = 0; // Start with cursor hidden
+	static u32 cursorActivity = 0;
+	
+	static u32 startms = 0;
+	u32 ms = ticks_to_millisecs(gettime());
 	
 	WPAD_IR (0, &ir);
+	
+	if (ms > startms)
+		{
+		if (cursorActivity == grlibSettings.cursorActivity)
+			{
+			alpha -= alphadec;
+			if (alpha < 0) alpha = 0;
+			}
+		else
+			{
+			alpha = 255;
+			alphadec = 5;
+			cursorActivity = grlibSettings.cursorActivity;
+			}
+		
+		startms = ms+100;
+		}
 	
 	if (ir.valid)
 		{
 		grlib_irPos.x = ir.x;
 		grlib_irPos.y = ir.y;
 		grlib_irPos.valid = 1;
+		alpha = 255;
 		}
 	else
 		{
@@ -468,15 +516,14 @@ void grlib_DrawIRCursor (void)
 
 	GRRLIB_DrawImg( grlib_irPos.x, 
 					grlib_irPos.y, 
-					grlibSettings.pointer[0], 0, 1, 1, RGBA(255, 255, 255, 255) ); 
-					
-	//grlib_DrawOnScreenMessageBMF (0, grlibSettings.fontBMF, "%d, %d", grlibSettings.pointer[0]->handlex, grlibSettings.pointer[0]->handley);
+					grlibSettings.pointer[0], 0, 1, 1, RGBA(255, 255, 255, alpha) ); 
 	}
 	
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This function scan for controllers and return the right common value
 // it also support analog sticks for move cursor on the screen
 
+#define MAXG 6
 int grlib_GetUserInput (void)
 	{
 	u32  wbtn, gcbtn, cbtn;
@@ -484,11 +531,75 @@ int grlib_GetUserInput (void)
 	int nX, nY;
 	int cX, cY;
 	
+	static float g[MAXG];
+	static int gidx = -1;
+	static u32 gestureDisable = 0;
+	
+	u32 ms = ticks_to_millisecs(gettime());
+	u32 mstout = ms+200;
+		
 	struct expansion_t e; //nunchuk
+	
+	if (gidx == -1)
+		{
+		memset (&g, 0, sizeof(g));
+		gidx = 0;
+		}
 	
 	WPAD_ScanPads();  // Scan the Wiimotes
 	wbtn = WPAD_ButtonsDown(0);
 
+	if (grlibSettings.usesGestures && ms > gestureDisable)
+		{
+		WPADData *wp = WPAD_Data (0);
+		g[gidx] = wp->gforce.x;
+		/*
+		int gidx2 = gidx - 10;
+		int gidx3 = gidx - 20;
+		if (gidx2 < 0) gidx2 = (MAXG-1) - gidx2;
+		if (gidx3 < 0) gidx3 = (MAXG-1) - gidx3;
+		
+		if (g[gidx2] < -2.0 && g[gidx] > -1.5 && g[gidx3] > -1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			return WPAD_BUTTON_MINUS;
+			//Debug ("left");
+			}
+		if (g[gidx2] > 2.0 && g[gidx] < 1.5 && g[gidx3] < 1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			return WPAD_BUTTON_PLUS;
+			//Debug ("right");
+			}
+		*/
+		int i;
+		float mean = 0;
+		for (i = 0; i < MAXG; i++)
+			mean+=g[i];
+		mean /= (float) MAXG;
+		
+		// gprintf ("%.2f\n", mean);
+
+		if (mean < -1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			gestureDisable = ms+1000;
+			return WPAD_BUTTON_MINUS;
+			}
+		if (mean > 1.5)
+			{
+			memset (&g, 0, sizeof(g));
+			gestureDisable = ms+1000;
+			return WPAD_BUTTON_PLUS;
+			}
+		
+		if (++gidx >= MAXG) gidx = 0;
+		}
+	
+	//Debug ("wm = %.1f,%.1f,%.1f", wp->gforce.x,wp->gforce.y,wp->gforce.z);
+	//Debug ("wm = %.1f,%.1f,%.1f", wp->orient.roll,wp->orient.pitch,wp->orient.yaw);
+	
+	
 	WPAD_Expansion( 0, &e );
 	
 	if (e.type != WPAD_EXP_NUNCHUK)
@@ -521,14 +632,14 @@ int grlib_GetUserInput (void)
 	gcbtn = PAD_ButtonsDown(0);
 	
 	// sticks
-	if (abs (nX) > 10) grlib_irPos.x += (nX / 16);
-	if (abs (nY) > 10) grlib_irPos.y -= (nY / 16);
+	if (abs (nX) > 10) {grlib_irPos.x += (nX / 16); grlibSettings.cursorActivity++;}
+	if (abs (nY) > 10) {grlib_irPos.y -= (nY / 16); grlibSettings.cursorActivity++;}
 	
-	if (abs (gcX) > 10) grlib_irPos.x += (gcX / 16);
-	if (abs (gcY) > 10) grlib_irPos.y -= (gcY / 16);
+	if (abs (gcX) > 10) {grlib_irPos.x += (gcX / 16); grlibSettings.cursorActivity++;}
+	if (abs (gcY) > 10) {grlib_irPos.y -= (gcY / 16); grlibSettings.cursorActivity++;}
 	
-	if (abs (cX) > 10) grlib_irPos.x += (cX / 4);
-	if (abs (cY) > 10) grlib_irPos.y -= (cY / 4);
+	if (abs (cX) > 10) {grlib_irPos.x += (cX / 4); grlibSettings.cursorActivity++;}
+	if (abs (cY) > 10) {grlib_irPos.y -= (cY / 4); grlibSettings.cursorActivity++;}
 	
 	// Check limits
 	if (grlib_irPos.x < 0) grlib_irPos.x = 0;
@@ -540,18 +651,21 @@ int grlib_GetUserInput (void)
 	// As usual wiimotes will have priority
 	if (wbtn)
 		{
+		grlibSettings.buttonActivity ++;
 		// Wait until button is released
 		
-		while (WPAD_ButtonsDown(0)) WPAD_ScanPads();
+		while (WPAD_ButtonsDown(0) && ticks_to_millisecs(gettime()) < mstout) WPAD_ScanPads();
 		return wbtn;
 		}
 
 	// Then gc
 	if (gcbtn)
 		{
+		grlibSettings.buttonActivity ++;
+		
 		// Wait until button is released
 		
-		while (PAD_ButtonsDown(0)) PAD_ScanPads();
+		while (PAD_ButtonsDown(0) && ticks_to_millisecs(gettime()) < mstout) PAD_ScanPads();
 		
 		// Convert to wiimote values
 		if (gcbtn & PAD_TRIGGER_R) return WPAD_BUTTON_PLUS;
@@ -562,12 +676,18 @@ int grlib_GetUserInput (void)
 		if (gcbtn & PAD_BUTTON_X) return WPAD_BUTTON_1;
 		if (gcbtn & PAD_BUTTON_Y) return WPAD_BUTTON_2;
 		if (gcbtn & PAD_BUTTON_MENU) return WPAD_BUTTON_HOME;
+		if (gcbtn & PAD_BUTTON_UP) return WPAD_BUTTON_UP;
+		if (gcbtn & PAD_BUTTON_LEFT) return WPAD_BUTTON_LEFT;
+		if (gcbtn & PAD_BUTTON_DOWN) return WPAD_BUTTON_DOWN;
+		if (gcbtn & PAD_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
 		}
 		
 	// Classic
 	if (cbtn)
 		{
-		while (e.classic.btns)
+		grlibSettings.buttonActivity ++;
+		
+		while (e.classic.btns && ticks_to_millisecs(gettime()) < mstout)
 			{
 			WPAD_ScanPads();  // Scan the Wiimotes
 			WPAD_Expansion( 0, &e );

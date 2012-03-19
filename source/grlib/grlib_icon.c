@@ -1,5 +1,4 @@
 #include <stdarg.h>
-#include "../globals.h"
 #include "grlib.h"
 
 void grlib_IconSettingInit (s_grlib_iconSetting *grlib_iconSetting)

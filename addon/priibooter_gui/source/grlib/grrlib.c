@@ -27,11 +27,10 @@ THE SOFTWARE.
 #include <fat.h>
 #include <wchar.h>
 #include <ft2build.h>
-#include <pngu.h>
 #include <stdio.h>
 #include <jpeglib.h>
 #include <string.h>
-
+#include "pngu.h"
 
 #define __GRRLIB_CORE__
 #include "grrlib.h"
@@ -39,6 +38,7 @@ THE SOFTWARE.
 #define DEFAULT_FIFO_SIZE (256 * 1024) /**< GX fifo buffer size. */
 
 //#define ENABLE_JPEG
+//#define ENABLE_TTF
 
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
@@ -198,7 +198,9 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
     if (!fatInitDefault())  error_code = -2;
 
     // Initialise TTF
-    // if (GRRLIB_InitTTF())  error_code = -3;
+#ifdef ENABLE_TTF
+	if (GRRLIB_InitTTF())  error_code = -3;
+#endif
 	enable_output = 1;
     //VIDEO_SetBlack(false);  // Enable video output (let do this to render subr)
     return error_code;
@@ -243,7 +245,37 @@ void  GRRLIB_Exit (void)
 		VIDEO_WaitVSync();
 
     // Done with TTF
-    // GRRLIB_ExitTTF();
+#ifdef ENABLE_TTF
+    GRRLIB_ExitTTF();
+#endif
+}
+
+void  GRRLIB_ExitLight (void) 
+	{
+	if (!is_setup)  
+		return;
+    else
+		is_setup = false;
+
+    // Allow write access to the full screen
+    GX_SetClipMode( GX_CLIP_DISABLE );
+    GX_SetScissor( 0, 0, rmode->fbWidth, rmode->efbHeight );
+
+    // Shut down the GX engine
+    GX_DrawDone();
+    GX_AbortFrame();
+	GX_Flush();
+
+    if (gp_fifo != NULL) {  free(gp_fifo);               gp_fifo = NULL;  }
+
+    // Free up memory allocated for frame buffers & FIFOs
+    if (xfb[0]  != NULL) {  free(MEM_K1_TO_K0(xfb[0]));  xfb[0]  = NULL;  }
+    if (xfb[1]  != NULL) {  free(MEM_K1_TO_K0(xfb[1]));  xfb[1]  = NULL;  }
+
+    // Done with TTF
+#ifdef ENABLE_TTF
+    GRRLIB_ExitTTF();
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -522,8 +554,7 @@ typedef  struct tagRGBQUAD {
  * @param width Width.
  * @param height Height.
 */
-static
-void  RawTo4x4RGBA (const u8 *src, void *dst,
+static void  RawTo4x4RGBA (const u8 *src, void *dst,
                     const uint width, const uint height) {
     uint  block;
     uint  i;
@@ -563,12 +594,9 @@ void  RawTo4x4RGBA (const u8 *src, void *dst,
  * @return A GRRLIB_texImg structure filled with image information.
  */
 GRRLIB_texImg*  GRRLIB_LoadTexture (const u8 *my_img) {
-#ifdef ENABLE_JPEG
     if (my_img[0]==0xFF && my_img[1]==0xD8 && my_img[2]==0xFF)
         return (GRRLIB_LoadTextureJPG(my_img));
-    else 
-#endif	
-	if (my_img[0]=='B' && my_img[1]=='M')
+    else if (my_img[0]=='B' && my_img[1]=='M')
         return (GRRLIB_LoadTextureBMP(my_img));
     else
         return (GRRLIB_LoadTexturePNG(my_img));
@@ -769,7 +797,6 @@ GRRLIB_texImg*  GRRLIB_LoadTextureBMP (const u8 *my_bmp) {
  * @param my_jpg The JPEG buffer to load.
  * @return A GRRLIB_texImg structure filled with image information.
  */
- #ifdef ENABLE_JPEG
 GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
     int n = 0;
 
@@ -782,9 +809,12 @@ GRRLIB_texImg*  GRRLIB_LoadTextureJPG (const u8 *my_jpg) {
         n+=2;
     }
 
+#ifdef ENABLE_JPEG
     return GRRLIB_LoadTextureJPGEx(my_jpg, n);
-}
+#else
+    return NULL;
 #endif
+}
 
 /**
  * Load a texture from a buffer.
@@ -1638,6 +1668,8 @@ void  GRRLIB_BMFX_Sepia (const GRRLIB_texImg *texsrc, GRRLIB_texImg *texdest) {
 void  GRRLIB_BMFX_Invert (const GRRLIB_texImg *texsrc, GRRLIB_texImg *texdest) {
     unsigned int x, y;
     u32 color;
+	
+	if (texsrc == NULL || texdest == NULL) return;
 
     for (y = 0; y < texsrc->h; y++) {
         for (x = 0; x < texsrc->w; x++) {
@@ -1645,6 +1677,8 @@ void  GRRLIB_BMFX_Invert (const GRRLIB_texImg *texsrc, GRRLIB_texImg *texdest) {
             GRRLIB_SetPixelTotexImg(x, y, texdest,
                 ((0xFFFFFF - (color >> 8 & 0xFFFFFF)) << 8)  | (color & 0xFF));
         }
+		
+	GRRLIB_FlushTex (texdest);
     }
 }
 

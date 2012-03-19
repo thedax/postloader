@@ -23,6 +23,8 @@
 #include "mystring.h"
 #include "neek.h"
 
+#include <zlib.h>
+
 bool CreatePriiloaderSettingsFS (char *nandpath, u8 * iniBuff, s32 iniSize);
 extern void __exception_closeall();
 
@@ -842,6 +844,11 @@ int BootChannel(s_run *run)
 		}
 
 	// Copy the triiforce image
+	/*
+	uLongf f = nandbooter_dol_size; // 16mb is ok ?
+	int ret = uncompress (EXECUTE_ADDR, &f, nandbooter_z, nandbooter_z_size);
+	Debug ("uncompress %d -> %u", ret, f);
+	*/
 	memcpy(EXECUTE_ADDR, nandbooter_dol, nandbooter_dol_size);
 	DCFlushRange((void *) EXECUTE_ADDR, nandbooter_dol_size);
 
