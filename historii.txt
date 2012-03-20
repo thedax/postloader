@@ -1,3 +1,8 @@
+postLoader 3.69.5
+
+* added a timeout on covercache_stop
+* added more debug output for wbfscanner
+
 postLoader 3.69.4
 
 * codes are working again

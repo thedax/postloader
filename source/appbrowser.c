@@ -1591,7 +1591,7 @@ int AppBrowser (void)
 
 		if (CoverCache_IsUpdated ()) 
 			{
-			Debug ("cache updated");
+			//Debug ("cache updated");
 			redraw = 1;
 			}
 		

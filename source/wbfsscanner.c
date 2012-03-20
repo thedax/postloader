@@ -59,7 +59,7 @@ bool ScanWBFS (char *ob, char *path)
 			tmp[24] = '\0';
 			Video_WaitPanel (TEX_HGL, "%d|%s", ++count, tmp);
 			
-			Debug ("ScanWBFS: [FN] %s", fn);
+			Debug ("ScanWBFS: [opening] %s", fn);
 			
 			f = fopen(fn, "rb");
 
@@ -69,15 +69,21 @@ bool ScanWBFS (char *ob, char *path)
 				continue;
 				}
 
+			Debug ("ScanWBFS: [opening:success]", fn);
+
 			fseek (f, 0x200, 0);
 			fread( gi, 1, GISIZE, f);
 			fclose (f);
 			
+			Debug ("ScanWBFS: [closed]", fn);
+			
 			int lp = strlen(ob);
+			Debug ("ScanWBFS: [buffer len = %d]", lp);
 			
 			// Add title
-			gi[0x20 + 64] = 0;		// Make sure to not oveflow
+			gi[0x20 + 63] = 0;		// Make sure to not oveflow
 			strcpy (buff, &gi[0x20]);
+			Debug ("ScanWBFS: [title '%s']", buff);
 			for (i = 0; i < strlen(buff);i++) if (buff[i] < 32 || i > 125) {buff[i] = 0;break;}			
 			if (strlen(buff) == 0) {Debug ("   ! inconsistent name"); ob[lp] = 0; continue; }
 			strcat (ob, buff);
@@ -87,6 +93,7 @@ bool ScanWBFS (char *ob, char *path)
 			// Add id
 			gi[0x00 + 6] = 0;		// Make sure to not oveflow
 			strcpy (buff, &gi[0x0]);
+			Debug ("ScanWBFS: [id '%s']", buff);
 			if (strlen(buff) < 6) {Debug ("   ! inconsistent id"); ob[lp] = 0; continue; }
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
@@ -94,6 +101,7 @@ bool ScanWBFS (char *ob, char *path)
 			
 			// Add partition
 			sprintf (buff, "%d", part);
+			Debug ("ScanWBFS: [part '%s']", buff);
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
 			strcat (ob, buff);

@@ -149,7 +149,7 @@ static void FeedCoverCache (void)
 
 	int i;
 	int ai;	// Application index (corrected by the offset)
-
+	
 	for (i = -gui.spotsXpage; i < gui.spotsXpage*2; i++)
 		{
 		ai = (page * gui.spotsXpage) + i;
@@ -160,7 +160,7 @@ static void FeedCoverCache (void)
 			CoverCache_Add (path, false);
 			}
 		}
-	
+
 	CoverCache_Pause (false);
 	}
 

@@ -72,7 +72,7 @@ static void *thread (void *arg)
 	{
 	GRRLIB_texImg *tex;
 
-	SET (running,1);
+	SET (running, 1);
 
 	Debug ("covercache thread started");
 	int i = 0;
@@ -88,12 +88,12 @@ static void *thread (void *arg)
 				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
 
 				LWP_MutexLock (mutex);
+				
 				cc[i].cover = MoveTex2Mem2 (tex);
 				
 				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
 				
-				update++;
-				DCFlushRange(&update, sizeof(update));
+				SET (update, update+1);
 				
 				LWP_MutexUnlock (mutex);	
 				}
@@ -137,6 +137,7 @@ void CoverCache_Start (void)
 void CoverCache_Flush (void)	// empty the cache
 	{
 	int i;
+	int count = 0;
 	Debug ("CoverCache_Flush");
 	
 	LWP_MutexLock (mutex);
@@ -145,9 +146,11 @@ void CoverCache_Flush (void)	// empty the cache
 		{
 		if (cc[i].cover) 
 			{
-			Debug ("CoverCache_Flush: %d '%s'", i, cc[i].id);
+			//Debug ("CoverCache_Flush: %d '%s'", i, cc[i].id);
 			FreeMem2Tex (cc[i].cover);
 			cc[i].cover = NULL;
+			
+			count ++;
 			}
 			
 		*cc[i].id = '\0';
@@ -156,6 +159,8 @@ void CoverCache_Flush (void)	// empty the cache
 	age = 0;
 	
 	LWP_MutexUnlock (mutex);
+
+	Debug ("CoverCache_Flush: %d covers flushed", count);
 	}
 	
 void CoverCache_Stop (void)
@@ -164,11 +169,19 @@ void CoverCache_Stop (void)
 	if (running)
 		{
 		SET (running, 0);
-		while (running != -1)
+		
+		int i;
+		for (i = 0; i < 1000; i++)
 			{
-			usleep (100);
+			if (running == -1) break;
+			usleep (1000);
 			}
-
+		
+		if (running != -1)
+			{
+			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
+			}
+		
 		Debug ("CoverCache_Stop #1");
 		LWP_JoinThread (hthread, NULL);
 		
@@ -186,6 +199,8 @@ void CoverCache_Stop (void)
 
 		Debug ("CoverCache_Stop #6");
 		}
+	else
+		Debug ("CoverCache_Stop: thread was already stopped");
 	}
 		
 void CoverCache_Add (char *id, bool pt) // gameid without .png extension, if pt is true, thread will be paused
