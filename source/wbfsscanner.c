@@ -23,9 +23,9 @@ bool ScanWBFS (char *ob, char *path)
 	DIR *pdir;
 	struct dirent *pent;
 	FILE* f = NULL;
-	char fn[128];
-	char tmp[128];
-	char buff[128];
+	char fn[256];
+	char tmp[256];
+	char buff[256];
     char gi[GISIZE];
 	int i;
 
@@ -37,9 +37,14 @@ bool ScanWBFS (char *ob, char *path)
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
+		Debug ("---------------------------(%d)", count);
+		Debug ("ScanWBFS: pent->d_name = '%s'", pent->d_name);
+		Debug ("ScanWBFS: path = '%s'", path);
+		Debug ("ScanWBFS: total len = '%d'", strlen(path)+strlen(pent->d_name));
+		
 		sprintf (fn, "%s/%s", path, pent->d_name);
 		
-		Debug ("ScanWBFS: checking '%s'", fn);
+		Debug ("ScanWBFS: [checking] '%s'", fn);
 		
 		if (strlen (ob) > BUFFSIZE - 128)
 			{

@@ -374,6 +374,7 @@ static void * WiiloadThread(void *arg)
 	{
 	int netInit = 0;
 	int netReady = 0;
+	int wc24cleared = 0;
 	
 	stopNetworkThread = 0;
 	errors = 0;
@@ -412,6 +413,18 @@ static void * WiiloadThread(void *arg)
 			
 		if (netInit)
 			{
+			if (errors > 5 && !wc24cleared)
+				{
+				Debug ("Cleareing  net_wc24cleanup");
+				
+				net_deinit ();
+				net_wc24cleanup();
+				
+				errors = 0;
+				netInit = 0;
+				wc24cleared = 1;
+				}
+			
 			s32 res;
 			res = net_get_status();
 			Debug ("net_get_status %d", res);
@@ -427,6 +440,8 @@ static void * WiiloadThread(void *arg)
 					netReady = 1;
 					}
 				}
+			else
+				errors ++;
 			}
 			
 		if (netReady)
@@ -439,6 +454,7 @@ static void * WiiloadThread(void *arg)
 			
 		if (errors > 10)
 			{
+			Debug ("too many errors");
 			stopNetworkThread = 1;
 			}
 		}
@@ -492,7 +508,7 @@ void WiiLoad_Stop(void)
 	SET (stopNetworkThread, 1);	
 	
 	int tout = 0;
-	while (stopNetworkThread == 1 && tout < 50)
+	while (stopNetworkThread == 1 && tout < 25)
 		{
 		usleep (100000);
 		tout++;
@@ -510,8 +526,6 @@ void WiiLoad_Stop(void)
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
-	
-	net_wc24cleanup();
 	}
 
 void WiiLoad_Pause (void)

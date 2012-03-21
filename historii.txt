@@ -1,3 +1,9 @@
+postLoader 3.69.6
+
+* changed a bit network init code
+* added more debug output for wbfscanner (reached the limit :P)
+* wbfscanner, increased buffers for pathnames
+
 postLoader 3.69.5
 
 * added a timeout on covercache_stop
