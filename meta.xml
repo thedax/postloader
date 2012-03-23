@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1.0">
 	<name>postLoader</name>
-	<version>3.69.6</version>
+	<version>3.69.7</version>
 	<release_date>20120301000000</release_date>
 	<coder>stfour</coder>
 	<short_description>Homebrew browser, channel launcher, neek2o disc loader</short_description>

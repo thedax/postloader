@@ -171,7 +171,7 @@ void CoverCache_Stop (void)
 		SET (running, 0);
 		
 		int i;
-		for (i = 0; i < 1000; i++)
+		for (i = 0; i < 2000; i++)
 			{
 			if (running == -1) break;
 			usleep (1000);
@@ -181,9 +181,11 @@ void CoverCache_Stop (void)
 			{
 			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
 			}
-		
-		Debug ("CoverCache_Stop #1");
-		LWP_JoinThread (hthread, NULL);
+		else
+			{
+			Debug ("CoverCache_Stop #1");
+			LWP_JoinThread (hthread, NULL);
+			}
 		
 		Debug ("CoverCache_Stop #2");
 		CoverCache_Flush ();

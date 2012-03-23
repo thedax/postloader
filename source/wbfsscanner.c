@@ -6,6 +6,7 @@
 #include <ntfs.h>
 #include <dirent.h>
 #include "usbstorage.h"
+#include "mystring.h"
 
 #include "globals.h"
 #include "devices.h"
@@ -18,7 +19,8 @@
 static int count = 0;
 static int part = 0;
 
-bool ScanWBFS (char *ob, char *path)
+/*
+static bool ScanWBFS (char *ob, char *path)
 	{
 	DIR *pdir;
 	struct dirent *pent;
@@ -107,6 +109,114 @@ bool ScanWBFS (char *ob, char *path)
 			// Add partition
 			sprintf (buff, "%d", part);
 			Debug ("ScanWBFS: [part '%s']", buff);
+			strcat (ob, buff);
+			sprintf (buff, "%c", SEP);
+			strcat (ob, buff);
+			}
+		}
+	closedir(pdir);
+	
+	return TRUE;
+	}
+*/
+
+static bool ScanWBFS (char *ob, char *path)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	char fn[256];
+	char wbfs[256];
+	char *pext;
+	char tmp[256];
+	char buff[256];
+
+	char title[256];
+	char gameid[8];
+		
+	Debug ("ScanWBFS '%s'", path);
+	
+	pdir=opendir(path);
+	
+	Debug ("ScanWBFS:  opendir ('%s') = 0x%X", path, pdir);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		Debug ("---------------------------(%d)", count);
+		Debug ("ScanWBFS: pent->d_name = '%s'", pent->d_name);
+		Debug ("ScanWBFS: path = '%s'", path);
+		Debug ("ScanWBFS: total len = '%d'", strlen(path)+strlen(pent->d_name));
+		
+		sprintf (fn, "%s/%s", path, pent->d_name);
+		
+		Debug ("ScanWBFS: [checking] '%s'", fn);
+		
+		if (strlen (ob) > BUFFSIZE - 128)
+			{
+			Debug ("ScanWBFS: too many entryes");
+			break;
+			}
+			
+		strcpy (wbfs, pent->d_name);
+		
+		// remove extension
+		pext = ms_strstr (wbfs, ".wbfs");
+		if (pext) *pext = '\0';
+
+		pext = ms_strstr (wbfs, ".iso");
+		if (pext) *pext = '\0';
+		
+		// check validity
+		if (strlen(wbfs) < 6) continue;
+		
+		strcpy (tmp, wbfs);
+		tmp[24] = '\0';
+		Video_WaitPanel (TEX_HGL, "%d|%s", ++count, tmp);
+
+		int len = strlen(wbfs);
+
+		*gameid = '\0';
+		
+		Debug (" > %s", wbfs);
+		Debug ("'%s' %d = wbfs[7] = %c, wbfs[len-1] = %c && wbfs[len-8] = %c", wbfs, len, wbfs[7], wbfs[len-1], wbfs[len-8]);
+
+		// just gameid
+		if (len == 6)
+			{
+			strcpy (gameid, wbfs);
+			strcpy (title, wbfs);
+			}
+			
+		// gameid_title
+		if (wbfs[6] == '_' && wbfs[7] != '\0')
+			{
+			title[6] = '\0';
+
+			strcpy (gameid, &wbfs[7]);
+			strcpy (title, wbfs);
+			}
+			
+		// title [gameid] & title_[gameid]
+		if (len > 10 && wbfs[len-1] == ']' && wbfs[len-8] == '[')
+			{
+			wbfs[len-1] = '\0';
+			wbfs[len-9] = '\0';
+
+			strcpy (gameid, &wbfs[len-7]);
+			strcpy (title, wbfs);
+			}
+
+		if (*gameid != '\0')
+			{
+			strcat (ob, title);
+			sprintf (buff, "%c", SEP);
+			strcat (ob, buff);
+
+			ms_strtoupper (gameid);
+			strcat (ob, gameid);
+			sprintf (buff, "%c", SEP);
+			strcat (ob, buff);
+			
+			sprintf (buff, "%d", part);
 			strcat (ob, buff);
 			sprintf (buff, "%c", SEP);
 			strcat (ob, buff);

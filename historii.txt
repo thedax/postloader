@@ -1,3 +1,8 @@
+postLoader 3.69.7
+
+* new wbfs scan function: wbfs file are no more opened and header readed, just name of file/dir is used.
+* case sensitivity on ntfs is now used
+
 postLoader 3.69.6
 
 * changed a bit network init code

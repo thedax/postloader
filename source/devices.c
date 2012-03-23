@@ -122,7 +122,8 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 				}
             else if (memcmp(BootSector + 0x03, "NTFS", 4) == 0)
 				{
-				if (ntfsMount(DeviceName[DEV_USB+i], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE))
+				//if (ntfsMount(DeviceName[DEV_USB+i], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER | NTFS_IGNORE_CASE))
+				if (ntfsMount(DeviceName[DEV_USB+i], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER))
 					{
 					gprintf ("USBDevice_Init: ntfs->updating slot %d\n", DEV_USB+i);
 
