@@ -6,6 +6,7 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 
 
 #include <gccore.h>
+#include <stdlib.h>
 #include <ogc/machine/processor.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -14,14 +15,19 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 #include <fat.h>
 #include <sdcard/wiisd_io.h>
 #include "../build/bin2o.h"
+#include "hbcstub.h"
+#include "ios.h"
+#include "debug.h"
 
-#define VER "1.2"
+#define VER "1.3"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
 #define ARGS_ADDR       ((u8 *) 0x93200000)
 #define CMDL_ADDR       ((u8 *) 0x93200000+sizeof(struct __argv))
 #define HBMAGIC_ADDR    ((u8 *) 0x93200000-8)
+
+#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
 
 #define NEEK 1
 
@@ -41,6 +47,7 @@ void InitVideo (void)
 	{
 	// Initialise the video system
 	VIDEO_Init();
+	VIDEO_SetBlack(TRUE);
 	
 	// Obtain the preferred video mode from the system
 	// This will correspond to the settings in the Wii menu
@@ -48,13 +55,10 @@ void InitVideo (void)
 
 	// Allocate memory for the display in the uncached region
 	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+	VIDEO_ClearFrameBuffer (rmode, xfb, 0);
 	
 	VIDEO_Configure(rmode);
 	VIDEO_SetNextFramebuffer(xfb);
-	VIDEO_SetBlack(FALSE);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
 
 	int x, y, w, h;
 	x = 20;
@@ -71,6 +75,12 @@ void InitVideo (void)
 	// Set console text color
 	printf("\x1b[%u;%um", 37, false);
 	printf("\x1b[%u;%um", 40, false);
+
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
+
+	VIDEO_SetBlack(FALSE);
 	}
 
 bool LoadFile (char *path)
@@ -153,6 +163,12 @@ bool GetFileToBoot (void)
 
 int main(int argc, char *argv[])
 	{
+	gprintf ("postLoader forwarder "VER"\n");
+	
+	InitVideo ();
+	
+	StubLoad ();
+
 	if (
 		HBMAGIC_ADDR[0] == 'P' &&
 		HBMAGIC_ADDR[1] == 'O' &&
@@ -160,18 +176,14 @@ int main(int argc, char *argv[])
 		HBMAGIC_ADDR[3] == 'T'
 	   )
 		{
-		HBMAGIC_ADDR[0] = 'X';
-		HBMAGIC_ADDR[1] = 'X';
-		HBMAGIC_ADDR[2] = 'X';
-		HBMAGIC_ADDR[3] = 'X';
-
+		gprintf ("Magic world found !\n");
 		goto directstart;
 		}
 	
+	gprintf ("Searching for postLoader\n");
 	if (!GetFileToBoot ())
 		{
-		InitVideo ();
-		
+		gprintf ("postLoader not found\n");
 		printf ("\n\n\n");
 		printf ("neekbooter: postloader not found... \n\n");
 		printf ("booting to system menu...");
@@ -189,24 +201,17 @@ int main(int argc, char *argv[])
 	struct __argv arg;
 	memset (&arg, 0, sizeof(struct __argv));
 	
-	// Passing neek to postloader is no more needed, anyway keep it, as can be usefull
-	if (NEEK)
-		{
-		char buff[32];
-
-		memset (buff, 0, sizeof(buff));
-		//strcpy (buff, "neek");
-
-		arg.argvMagic = ARGV_MAGIC;
-		arg.length  = strlen(buff)+1;
-		arg.commandLine = (char*)CMDL_ADDR;
-		strcpy(arg.commandLine, buff);
-		}
-
-	memmove(ARGS_ADDR, &arg, sizeof(arg));
+	memcpy(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
-
+	
 directstart:
+
+	HBMAGIC_ADDR[0] = 'X';
+	HBMAGIC_ADDR[1] = 'X';
+	HBMAGIC_ADDR[2] = 'X';
+	HBMAGIC_ADDR[3] = 'X';
+	
+	Set_Stub (TITLE_ID(0x00010001,0x504f5354));
 
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
@@ -214,11 +219,14 @@ directstart:
 	entrypoint exeEntryPoint;
 	exeEntryPoint = (entrypoint) BOOTER_ADDR;
 	
+	gprintf ("booting...\n");
+	
 	/* cleaning up and load dol */
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 	_CPU_ISR_Disable (cookie);
 	__exception_closeall ();
 	exeEntryPoint ();
 	_CPU_ISR_Restore (cookie);
-	return 0;
+	
+	exit (0);
 	}

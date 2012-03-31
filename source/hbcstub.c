@@ -2,6 +2,10 @@
 
 #include <gccore.h>
 #include <stdlib.h>
+#include <string.h>
+
+extern const u8 stub_bin[];
+extern const u32 stub_bin_size; 
 
 static char* determineStubTIDLocation()
 {
@@ -47,3 +51,23 @@ s32 Set_Stub(u64 reqID)
 
 }
 
+void StubLoad ( void )
+	{
+	// the offset is 3274 (0xCCA) for the first value
+	
+	memcpy((void*)0x80001800, stub_bin, stub_bin_size);
+	
+	*(vu16*)0x800024CA = 0x504F; //"PO"
+	*(vu16*)0x800024D2 = 0x5354; //"ST"
+	
+	DCFlushRange((void*)0x80001800,stub_bin_size);
+	return;	
+	}
+
+void StubUnload ( void )
+{
+	//some apps apparently dislike it if the stub stays in memory but for some reason isn't active :/
+	memset((void*)0x80001800, 0, stub_bin_size);
+	DCFlushRange((void*)0x80001800,stub_bin_size);	
+	return;
+}

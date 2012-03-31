@@ -31,9 +31,9 @@ CXXFLAGS	=	$(CFLAGS)
 #---------------------------------------------------------------------------------
 # move loader to another location - THANKS CREDIAR - 0x81330000 for HBC
 #---------------------------------------------------------------------------------
-#LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x93200000
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x81230000
+#LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x93200000
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
@@ -144,6 +144,11 @@ $(OUTPUT).elf: $(OFILES)
 	@echo $(notdir $<)
 	$(bin2o)
  
+%.bin.o	:	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	$(bin2o)
+
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------

@@ -73,7 +73,10 @@ static int patchStatus[6];
 
 u32 IOSPATCH_Apply(void) 
 	{
-    u32 count = 0;
+    static u32 count = 0;
+
+	if (isPatched) return count;
+
     if (HAVE_AHBPROT) 
 		{
 		isPatched = 1;

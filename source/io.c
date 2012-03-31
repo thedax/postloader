@@ -101,10 +101,8 @@ bool MountDevices (bool silent)
 		}
 
 	if (cfgSD || cfgUSB) // we have a valid device
-		{
-		CheckForPostLoaderFolders ();
 		return TRUE;
-		}
+
 	return false;
 	}
 

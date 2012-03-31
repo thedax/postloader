@@ -717,6 +717,9 @@ int neek_UID_Find (char *id)
 	
 bool neek_UID_Add (char *id)
 	{
+	if (neek_UID_Find (id) < 0) return false;
+	
+	
 	return false;
 	}
 	

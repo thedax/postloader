@@ -148,7 +148,7 @@ int DolBootPrepare (s_run *run)
 
 	memset (&arg, 0, sizeof(struct __argv));
 	
-	if (strlen(run->args) > 0 || NeedArgs(EXECUTE_ADDR))
+	if (strlen(run->args) > 0 && NeedArgs(EXECUTE_ADDR))
 		{
 		arg.argvMagic = ARGV_MAGIC;
 		arg.length  = strlen(bootpath)+strlen(run->args)+1;
@@ -180,19 +180,30 @@ void DolBoot (void)
 	memmove(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
 	
-	HBMAGIC_ADDR[0] = 'P';
-	HBMAGIC_ADDR[1] = 'O';
-	HBMAGIC_ADDR[2] = 'S';
-	HBMAGIC_ADDR[3] = 'T';
-	HBMAGIC_ADDR[4] = fixCrashOnExit;
-	DCFlushRange(HBMAGIC_ADDR, 8);
-
 	memcpy(EXECUTE_ADDR, execBuffer, filesize);
 	DCFlushRange((void *) EXECUTE_ADDR, filesize);
 	free (execBuffer);
 
 	if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
+		{
+		HBMAGIC_ADDR[0] = 'P';
+		HBMAGIC_ADDR[1] = 'O';
+		HBMAGIC_ADDR[2] = 'S';
+		HBMAGIC_ADDR[3] = 'T';
+		HBMAGIC_ADDR[4] = fixCrashOnExit;
+		DCFlushRange(HBMAGIC_ADDR, 8);
+		
 		ReloadPostloaderChannel ();
+		}
+	else
+		{
+		HBMAGIC_ADDR[0] = 'X';
+		HBMAGIC_ADDR[1] = 'X';
+		HBMAGIC_ADDR[2] = 'X';
+		HBMAGIC_ADDR[3] = 'X';
+		HBMAGIC_ADDR[4] = 0;
+		DCFlushRange(HBMAGIC_ADDR, 8);
+		}
 	
 	gprintf ("booter_dol\n");
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);

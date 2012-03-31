@@ -601,6 +601,8 @@ s32 get_game_list(u64 **TitleIds, u32 *num, u8 id) // id = 0:00010001, id = 1:00
 			sprintf (path, "%s/%s/content", folder, list[i].name);
 			ret = getdircount(path, &number);
 			
+			Debug ("get_game_listEmu: getdircount '%s', %d", path, ret);
+			
 			if (ret >= 0 && number > 1) // 1 == tmd only
 				{
 				temp[tempnum] = TITLE_ID(upper, strtol(list[i].name,NULL,16));
@@ -653,7 +655,7 @@ s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint) // i
 		sprintf (subpath, "%s/%s/content", path, pent->d_name);
 
 		int count = fsop_CountDirItems (subpath);
-		//Debug ("get_game_listEmu: subpath '%s', %d", subpath, items);
+		Debug ("get_game_listEmu: subpath '%s', %d", subpath, items);
 		
 		if (count > 1) // 1 == tmd only
 			{

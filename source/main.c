@@ -20,6 +20,20 @@ extern void __exception_setreload(int t); // In the event of a code dump, app wi
 int Disc (void);
 bool plneek_GetNandName (void);
 
+void DumpStub (void)
+	{
+	FILE *f;
+	
+	u8 *stub = ((u8 *) 0x80001800);
+	
+	f = fopen ("sd://stub.bin", "wb");
+	if (f)
+		{
+		fwrite (stub, 1, 0x1800 , f);
+		fclose (f);
+		}
+	}
+
 void BootToSystemMenu(void)
 	{
 	Shutdown (0);
@@ -69,16 +83,25 @@ void Shutdown(bool doNotKillHBC)
 	Video_Deinit ();
 	Subsystems (false);
 	
-	// Kill HBC stub
-	if (!doNotKillHBC)
+	Debug ("Loading stub");
+
+	if (config.usesStub)
 		{
-		*(u32*)0x80001804 = (u32) 0L;
-		*(u32*)0x80001808 = (u32) 0L;
-		DCFlushRange((void*)0x80001804,8);
+		StubLoad ();
 		}
-		
-	// Also modify it
-	Set_Stub (((u64)(1) << 32) | (2));
+	else
+		{
+		// Kill HBC stub
+		if (!doNotKillHBC)
+			{
+			*(u32*)0x80001804 = (u32) 0L;
+			*(u32*)0x80001808 = (u32) 0L;
+			DCFlushRange((void*)0x80001804,8);
+			}
+			
+		// Also modify it
+		Set_Stub (((u64)(1) << 32) | (2));
+		}
 	
 	if (vars.neek != NEEK_NONE) // We are not working under neek
 		{
@@ -205,7 +228,7 @@ int main(int argc, char **argv)
 	if (usb_isgeckoalive (EXI_CHANNEL_1))
 		{
 		gprintf ("\nPL"VER"\n");
-		gprintf ("MAGIC: %c-%c-%c-%c\n", HBMAGIC_ADDR[0],	HBMAGIC_ADDR[1], HBMAGIC_ADDR[2], HBMAGIC_ADDR[3]);
+		gprintf ("MAGIC: %c-%c-%c-%c\n", HBMAGIC_ADDR[0], HBMAGIC_ADDR[1], HBMAGIC_ADDR[2], HBMAGIC_ADDR[3]);
 		}
 
 	int i;
@@ -272,14 +295,22 @@ int main(int argc, char **argv)
 		sprintf (mex, "Welcome to postLoader"VER"\n\n"
 						"No configuration file was found.\n\n"
 						"postLoader need a device to keep it's configuration data,\n"
-						"so an SD or an USB (FAT32) device is needed and one must\n"
+						"so an SD or an USB (FAT/NTFS) device is needed and one must\n"
 						"be selected to store postLoader data\n"
 						"IOS = %d", vars.ios);
 		
 		int item = grlib_menu ( mex, buff);
-								
 		
-		if (item == 0)
+		if (item <= 0)
+			*vars.defMount = '\0';								
+		
+		if (grlibSettings.wiiswitch_poweroff)
+			{
+			Shutdown (0);
+			SYS_ResetSystem( SYS_POWEROFF, 0, 0 );
+			}
+		
+		if (item <= 0 || grlibSettings.wiiswitch_reset)
 			{
 			BootToSystemMenu ();
 			return (0);
@@ -290,11 +321,14 @@ int main(int argc, char **argv)
 		if (item == 2)
 			SetDefMount (DEV_USB);
 		
-		CheckForPostLoaderFolders ();
-		
-		if (ConfigWrite())
+		if (item > 0)
 			{
-			grlib_menu ("Configuration file created succesfully", "OK");
+			CheckForPostLoaderFolders ();
+		
+			if (ConfigWrite())
+				{
+				grlib_menu ("Configuration file created succesfully", "OK");
+				}
 			}
 		}
 		
@@ -361,6 +395,7 @@ int main(int argc, char **argv)
 	Debug ("vars.tempPath = %s", vars.tempPath);
 	
 	grlibSettings.autoCloseMenu = 60;
+	DumpStub ();
 	
 	ret = INTERACTIVE_RET_NONE;
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && vars.interactive)

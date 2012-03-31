@@ -514,6 +514,7 @@ static int RebuildCacheFile (void)
 			if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
 				{
 				grlib_menu ("postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+				Debug ("postLoader was unable to patch ISFS permission. Cannot continue");
 				return -1;
 				}
 			}
@@ -550,6 +551,8 @@ static int RebuildCacheFile (void)
 			ret = get_game_list(&TitleIds, &Titlecount, id);
 		else
 			ret = get_game_listEmu(&TitleIds, &Titlecount, id, path);
+			
+		Debug ("get_game_list: %d", ret);
 		
 		if (ret > 0)
 			{
@@ -581,7 +584,11 @@ static int RebuildCacheFile (void)
 	char buff[256];
 	
 	f = fopen(path, "wb");
-	if (!f) return 0;
+	if (!f) 
+		{
+		Debug ("RebuildCacheFile: failed to open '%s'", path);
+		return 0;
+		}
 	
 	for (i = 0; i < cnt; i++)
 		{

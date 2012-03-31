@@ -161,6 +161,8 @@ void ShowAdvancedOptions (void)
 			{
 			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, "(YES)|(NO)", "Use pl3 channel to run homebrews ");
 			}
+
+		grlib_menuAddCustomCheckItem (options, 6, config.usesGestures, "(YES)|(NO)", "Path stub and use return to HBC method");
 			
 		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, "(YES)|(NO)", "Use wiimotion gestures ");
 			
@@ -212,6 +214,11 @@ void ShowAdvancedOptions (void)
 		if (item == 5)
 			{
 			config.usesGestures = !config.usesGestures;
+			}
+
+		if (item == 6)
+			{
+			config.usesStub = !config.usesStub;
 			}
 
 		}

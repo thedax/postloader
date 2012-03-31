@@ -659,6 +659,7 @@ static int ScanApps (const char *mount)
 	int apptype;
 
 	sprintf (path, "%s://apps/%s", mount, subpath);
+	Debug ("ScanApps: searching '%s'", path);
 	
 	pdir=opendir(path);
 	
@@ -667,11 +668,12 @@ static int ScanApps (const char *mount)
 		if(strcmp(".", pent->d_name) == 0 || strcmp("..", pent->d_name) == 0)
 	        continue;
 			
-		Debug ("ScanApps: %s", pent->d_name);
+		Debug ("ScanApps: checking '%s%s'", path, pent->d_name);
 		
 		apptype = AppExist(mount, pent->d_name, filename);	    
 		if (apptype)
 			{
+			Debug ("    > added");
 			strcpy (apps[appsCnt].mount, mount); // Save the mount point
 			
 			apps[appsCnt].type = apptype;
@@ -694,6 +696,8 @@ static int ScanApps (const char *mount)
 			//Video_DrawIcon (TEX_HGL, 320, 430);
 			//grlib_Render ();
 			}
+		else
+			Debug ("    > fails");
 		}
 
 	closedir(pdir);
@@ -928,6 +932,8 @@ static void ShowFilterMenu (void)
 	{
 	char buff[512];
 	int item;
+	
+	*buff = '\0';
 	
 	grlib_menuAddItem (buff, 100, "SD Device");
 	grlib_menuAddItem (buff, 101, "USB Device");
