@@ -271,6 +271,8 @@ int main(int argc, char **argv)
 
 	if (vars.neek != NEEK_NONE) // We are working under neek
 		vars.ios = IOS_GetVersion();
+		
+	gprintf ("vars.usbtime = %d\n", vars.usbtime);
 
 	ret = Initialize((vars.usbtime == 1) ? 1:0);
 	

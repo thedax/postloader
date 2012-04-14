@@ -1,3 +1,17 @@
+postLoader 3.71.2
+
+* fixed some bugs in wiiload over usb gecko
+
+postLoader 3.71.0
+
+* Added experimental wiiload over usb gecko
+* now you can go from first to last page or vice versa in all modes
+* removed pause before starting wiiload
+
+postLoader 3.70.1
+
+* Corrected Advanced options menu
+
 postLoader 3.70.0
 
 * mp3 player: added shuffle function
@@ -5,7 +19,7 @@ postLoader 3.70.0
 * added stub for returning to postloader channel when executing homebrews. Postloader channel v5 must be installed. A full stub will be installed in memory, so it is ready to use in neek (take from priiloader). This mode must be selected in advanced option, and may fail with some apps (they will return to hbc). Priiloader method is still the suggested one
 * now dols are checked for _arg signature. If not found no arguments structure is passed to it. This leads to dollz to run now without problems (thx tueidj for the hint). Note that wiiflow can't be used to execute games (but wiiflow-mod should)
 * corrected a bug on creating default configuration on sd even if you shutdown/reset/return to menu when configuration menu' is showed.
-* postLoader will try to patch ios 58 more than one time when browsing real nand, failing after the first.
+* postLoader was trying to patch ios 58 more than one time when browsing real nand, failing after the first.
 
 postLoader 3.69.7
 

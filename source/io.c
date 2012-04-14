@@ -58,6 +58,8 @@ static int cb_Mount (void)
 	int ret = 0;
 	char buff[128];
 	
+	gprintf ("cb_Mount\n");
+	
 	if (vars.interactive)
 		sprintf (buff, "Waiting for USB device - (B) interrupt...");
 	else

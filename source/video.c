@@ -42,6 +42,8 @@ void Video_Init (void)
 	vars.tex[TEX_CHIP] = GRRLIB_LoadTexturePNG (chip_png);
 	vars.tex[TEX_EXCL] = GRRLIB_LoadTexturePNG (exclamation_png);
 	vars.tex[TEX_WIFI] = GRRLIB_LoadTexturePNG (wifi_png);
+	vars.tex[TEX_WIFIGK] = GRRLIB_LoadTexturePNG (wifigk_png);
+	vars.tex[TEX_GK] = GRRLIB_LoadTexturePNG (gecko_png);
 	vars.tex[TEX_DVD] = GRRLIB_LoadTexturePNG (dvd_png);
 	vars.tex[TEX_USB] = GRRLIB_LoadTexturePNG (miniusb_png);
 	vars.tex[TEX_SD] = GRRLIB_LoadTexturePNG (minisd_png);
@@ -163,7 +165,13 @@ void Video_DrawWIFI (void)
 		}
 
 	if (flag)
+		{
 		Video_DrawIconZ (TEX_WIFI, 600, 435, 0.4, 0.5);
+		}
+		
+	if (wiiload.gecko) 
+		Video_DrawIconZ (TEX_GK, 600 + 16, 435, 0.4, 0.5);
+		
 		
 	if (wiiload.op[0] == '!')
 		{
@@ -304,6 +312,8 @@ void Video_LoadTheme (int init)
 				GRRLIB_BMFX_Invert (vars.tex[TEX_CHIP],vars.tex[TEX_CHIP]);
 				GRRLIB_BMFX_Invert (vars.tex[TEX_EXCL],vars.tex[TEX_EXCL]);
 				GRRLIB_BMFX_Invert (vars.tex[TEX_WIFI],vars.tex[TEX_WIFI]);
+				GRRLIB_BMFX_Invert (vars.tex[TEX_WIFIGK],vars.tex[TEX_WIFIGK]);
+				GRRLIB_BMFX_Invert (vars.tex[TEX_GK],vars.tex[TEX_GK]);
 				}
 			}
 		
@@ -329,6 +339,8 @@ void Video_LoadTheme (int init)
 			GRRLIB_BMFX_Invert (vars.tex[TEX_CHIP],vars.tex[TEX_CHIP]);
 			GRRLIB_BMFX_Invert (vars.tex[TEX_EXCL],vars.tex[TEX_EXCL]);
 			GRRLIB_BMFX_Invert (vars.tex[TEX_WIFI],vars.tex[TEX_WIFI]);
+			GRRLIB_BMFX_Invert (vars.tex[TEX_WIFIGK],vars.tex[TEX_WIFIGK]);
+			GRRLIB_BMFX_Invert (vars.tex[TEX_GK],vars.tex[TEX_GK]);
 			}
 
 		grlibSettings.fontBMF_reverse = 0;

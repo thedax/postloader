@@ -16,6 +16,7 @@ typedef struct
 	char op[128];		// Calling process can set filename or any other info that fit
 	u32 opUpd;			// Every time op is updated, opUpd is incremented
 	int status;
+	int gecko;
 	
 	char filename[32];	// Filename of the dol/elf sended
 	

@@ -1270,15 +1270,14 @@ static void Overlay (void)
 static int ChangePage (int next)
 	{
 	if (next)
-		{
-		if (page == pageMax) return page;
 		page++;
-		}
 	else
-		{
-		if (page == 0) return page;
 		page--;
-		}
+		
+	if (page > pageMax)
+		page = 0;
+	if (page < 0)
+		page = pageMax;
 		
 	FeedCoverCache ();
 
@@ -1298,7 +1297,7 @@ static int ChangePage (int next)
 
 			lp = page;
 			RedrawIcons (x + 640,0);
-			page = lp+1;
+			if (page >= pageMax) page = 0; else page = lp+1;
 			RedrawIcons (x,0);
 			page = lp;
 			
@@ -1321,7 +1320,7 @@ static int ChangePage (int next)
 
 			lp = page;
 			RedrawIcons (x - 640,0);
-			page = lp-1;
+			if (page <= 0) page = pageMax; else page = lp-1;
 			RedrawIcons (x,0);
 			page = lp;
 			
@@ -1585,11 +1584,11 @@ int AppBrowser (void)
 				redraw = 1;
 				}
 			
-			if (btn & WPAD_BUTTON_MINUS && page > 0)
+			if (btn & WPAD_BUTTON_MINUS)
 				{
 				page = ChangePage (0);
 				}
-			if (btn & WPAD_BUTTON_PLUS  && page < pageMax) 
+			if (btn & WPAD_BUTTON_PLUS) 
 				{
 				page = ChangePage (1);
 				}

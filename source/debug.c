@@ -69,7 +69,7 @@ void Debug (const char *text, ...)
 	if (geckolog)
 		{
 		usb_sendbuffer( EXI_CHANNEL_1, mex, strlen(mex) );
-		usb_flush(EXI_CHANNEL_1);
+		//usb_flush(EXI_CHANNEL_1);
 		}
 	if (started == 2) return;
 	if (filelog == 0) return;

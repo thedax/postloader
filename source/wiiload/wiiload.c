@@ -23,9 +23,12 @@ static char ip[16];
 static char incommingIP[20];
 static u32 uncfilesize;
 static int stopNetworkThread;
+static int stopGeckoThread;
 
+static u8 * threadStackG = NULL;
 static u8 * threadStack = NULL;
 static lwp_t networkthread = LWP_THREAD_NULL;
+static lwp_t geckothread = LWP_THREAD_NULL;
 
 static char *tpath;
 static int errors = 0;
@@ -67,12 +70,42 @@ static int NetRead(int connection, u8 *buf, u32 len, u32 tout) // timeout in mse
 		if (ret <= 0)
 			usleep (10 * 1000);
 		else
+			{
 			read += ret;
+			}
 			
 		if (ticks_to_millisecs(gettime()) > t)
 			break;
 		}
 
+	return read;
+	}
+	
+static int GeckoRead(int connection, u8 *buf, u32 len, u32 tout) // timeout in msec
+	{
+	u32 read = 0;
+	s32 ret = 0;
+	u32 t;
+	
+	t = ticks_to_millisecs(gettime()) + tout;
+
+	while (read < len)
+		{
+		ret = usb_recvbuffer_safe_ex(connection,  buf + read, len - read, 500);
+		//ret = usb_recvbuffer_ex(connection,  buf + read, len - read, 1000);
+		
+		if (ret > 0)
+			{
+			t = ticks_to_millisecs(gettime()) + tout;
+			read += ret;
+			}
+		else
+			usleep (1000);
+			
+		if (ticks_to_millisecs(gettime()) > t)
+			break;
+		}
+	
 	return read;
 	}
 	
@@ -143,6 +176,114 @@ static u8 * UncompressData (char *wiiloadVersion)
 		}
 
     return wiiload.buff;
+	}
+
+int __usb_checkrecv(s32 chn);
+
+static bool GeckoLoad (void)
+	{
+	int compressed = 0;
+	int ret;
+	char wiiloadVersion[2];
+	unsigned char header[16];
+	
+	memset (header, 0, sizeof (header));
+	ret = GeckoRead(EXI_CHANNEL_1, header, 16, 1000);
+	if (ret < 16)
+		return false;
+
+	if (memcmp(header, "HAXX", 4) != 0) // unsupported protocol
+		{
+		usb_flush (EXI_CHANNEL_1);
+		return false;
+		}
+
+	wiiloadVersion[0] = header[4];
+	wiiloadVersion[1] = header[5];
+	
+	memcpy ((u8 *) &wiiload.buffsize, &header[8], 4);
+	if (header[4] > 0 || header[5] > 4)
+		{
+		//printopt ("compressed file !");
+		compressed = 1;
+		memcpy ((u8 *) &uncfilesize, &header[12], 4);
+		}
+	
+	wiiload.buff = NULL;
+
+	wiiload.buff = (u8 *) malloc(wiiload.buffsize);
+	if (!wiiload.buff)
+		{
+		usb_flush (EXI_CHANNEL_1);
+		printopt ("Not enough memory.");
+		return false;
+		}
+
+	LWP_SetThreadPriority(geckothread, 64);
+	//printopt ("Receiving file (%s)...", incommingIP);
+
+	u32 done = 0;
+	u32 blocksize = 1024*16;
+	int result;
+	
+	if (!compressed) // if the file isn't compressed, 4 bytes of file are in the header vect...
+		{
+		memcpy ((u8 *) wiiload.buff, &header[12], 4);
+		done += 4;
+		}
+
+	do
+		{
+		if (blocksize > wiiload.buffsize - done)
+			blocksize = wiiload.buffsize - done;
+
+		result = GeckoRead(EXI_CHANNEL_1, wiiload.buff+done, blocksize, 1000);
+		if (result > 0)
+			done += result;
+		else
+			break;
+
+		printopt ("!%d%c", (done * 100) / wiiload.buffsize, 37);
+		} 
+	while (done < wiiload.buffsize);
+	
+	LWP_SetThreadPriority(geckothread, 8);
+	
+	if (done != wiiload.buffsize)
+		{
+		wiiload.status = WIILOAD_IDLE;
+		free (wiiload.buff);
+		wiiload.buffsize = 0;
+		wiiload.buff = 0;
+		printopt("Filesize doesn't match.");
+		return false;
+		}
+
+	// These are the arguments....
+	char temp[1024];
+	ret = GeckoRead(EXI_CHANNEL_1, (u8 *) temp, 1023, 1000);
+	
+	temp[ret] = 0;
+	
+	if (ret > 2 && temp[ret - 1] == '\0' && temp[ret - 2] == '\0') // Check if it is really an arg
+		{
+		wiiload.args = malloc (ret);
+		if (wiiload.args)
+			{
+			memcpy (wiiload.args, temp, ret);
+			wiiload.argl = ret;
+			}
+		}
+
+	temp[ret] = 0;
+
+	printopt("Filename %s (%d)", temp, ret);
+	strcpy (wiiload.filename, temp);
+	
+	if (UncompressData (wiiloadVersion))
+		wiiload.status = WIILOAD_HBREADY;
+		
+	return true;
 	}
 	
 static bool WiiLoad (s32 connection)
@@ -217,7 +358,7 @@ static bool WiiLoad (s32 connection)
 
 		//printopt ("%d of %d bytes (r %d)", done, wiiload.buffsize, retries);
 		printopt ("!%d%c", (done * 100) / wiiload.buffsize, 37);
-		fflush(stdout);
+		//fflush(stdout);
 		} 
 	while (done < wiiload.buffsize);
 	
@@ -246,14 +387,7 @@ static bool WiiLoad (s32 connection)
 			wiiload.argl = ret;
 			}
 		}
-	/*
-	int i = 0;
-	for (i = 0; i < ret; i++)
-		{
-		if (temp[i] <= 32)
-			temp[i] = '_';
-		}
-	*/
+
 	temp[ret] = 0;
 
 	printopt("Filename %s (%d)", temp, ret);
@@ -337,7 +471,12 @@ static bool StartWiiLoadServer (void)
 
 	do
 		{
-		usleep (250*1000);
+		int i;
+		
+		for (i = 0; i < 10; i++)
+			{
+			usleep (10*1000);
+			}
 		
 		if (pauseWiiload)
 			{
@@ -370,6 +509,37 @@ static bool StartWiiLoadServer (void)
 	return true;
 	}
 	
+static void * GeckoThread(void *arg)
+	{
+	stopNetworkThread = 0;
+	errors = 0;
+	
+	LWP_SetThreadPriority(geckothread, 8);
+	
+	printopt("gecko thread running, ready !");
+
+	if (usb_isgeckoalive (EXI_CHANNEL_1))
+		{
+		wiiload.gecko = 1;
+		while (!stopGeckoThread)
+			{
+			if (!GeckoLoad ())
+				usb_flush (EXI_CHANNEL_1);
+			}
+		}
+	else
+		while (!stopGeckoThread)
+			{
+			usleep (250000);
+			}
+		
+	printopt("exiting gecko thread...");
+
+	stopGeckoThread = 2;
+
+	return 0;
+	}
+
 static void * WiiloadThread(void *arg)
 	{
 	int netInit = 0;
@@ -379,18 +549,6 @@ static void * WiiloadThread(void *arg)
 	stopNetworkThread = 0;
 	errors = 0;
 	
-	printopt("Net thread running, waiting...");
-	
-	LWP_SetThreadPriority(networkthread, 0);
-	
-	int i;	
-	for (i = 0; i < threadStartSleep * 10; i++)
-		{
-		usleep (100*1000);
-		
-		if (stopNetworkThread) break;
-		}
-		
 	printopt("Net thread running, ready !");
 	
 	while (!stopNetworkThread)
@@ -496,18 +654,27 @@ void WiiLoad_Start(char *tempPath, int startSleep)
 		wiiload.status = WIILOAD_STOPPED;
 		return;
 		}
+	else
+		LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 30);
 
-	LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 30);
+	threadStackG = (u8 *) memalign(32, STACKSIZE);
+	if (threadStackG)
+		{
+		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 30);
+		}
+
 	}
 
 void WiiLoad_Stop(void)
 	{
+	int tout;
+	
 	if (stopNetworkThread != 1) 
 		return; // It is already stopped
 		
 	SET (stopNetworkThread, 1);	
 	
-	int tout = 0;
+	tout = 0;
 	while (stopNetworkThread == 1 && tout < 25)
 		{
 		usleep (100000);
@@ -518,6 +685,20 @@ void WiiLoad_Stop(void)
 		LWP_SuspendThread (networkthread);
 	
 	free (threadStack);
+	
+	SET (stopGeckoThread, 1);	
+	
+	tout = 0;
+	while (stopGeckoThread == 1 && tout < 25)
+		{
+		usleep (100000);
+		tout++;
+		}
+		
+	if (tout >= 50)
+		LWP_SuspendThread (geckothread);
+	
+	free (threadStackG);
 
 	// Clean old data, if any
 	if (wiiload.buff) free (wiiload.buff);
