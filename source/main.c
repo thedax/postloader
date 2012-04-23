@@ -83,10 +83,9 @@ void Shutdown(bool doNotKillHBC)
 	Video_Deinit ();
 	Subsystems (false);
 	
-	Debug ("Loading stub");
-
 	if (config.usesStub)
 		{
+		Debug ("Loading stub");
 		StubLoad ();
 		}
 	else
@@ -397,7 +396,7 @@ int main(int argc, char **argv)
 	Debug ("vars.tempPath = %s", vars.tempPath);
 	
 	grlibSettings.autoCloseMenu = 60;
-	DumpStub ();
+	//DumpStub ();
 	
 	ret = INTERACTIVE_RET_NONE;
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && vars.interactive)

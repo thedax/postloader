@@ -1,3 +1,7 @@
+postLoader 3.71.3
+
+* fixed execution of some homebrews that requires almost one arg.
+
 postLoader 3.71.2
 
 * fixed some bugs in wiiload over usb gecko

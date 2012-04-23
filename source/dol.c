@@ -148,7 +148,7 @@ int DolBootPrepare (s_run *run)
 
 	memset (&arg, 0, sizeof(struct __argv));
 	
-	if (strlen(run->args) > 0 && NeedArgs(EXECUTE_ADDR))
+	if (/*strlen(run->args) > 0 && */NeedArgs(EXECUTE_ADDR))
 		{
 		arg.argvMagic = ARGV_MAGIC;
 		arg.length  = strlen(bootpath)+strlen(run->args)+1;
@@ -183,7 +183,7 @@ void DolBoot (void)
 	memcpy(EXECUTE_ADDR, execBuffer, filesize);
 	DCFlushRange((void *) EXECUTE_ADDR, filesize);
 	free (execBuffer);
-
+	
 	if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
 		{
 		HBMAGIC_ADDR[0] = 'P';
