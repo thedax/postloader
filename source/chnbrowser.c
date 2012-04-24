@@ -15,6 +15,7 @@
 #include "cfg.h"
 #include "devices.h"
 #include "neek.h"
+#include "isfs.h"
 
 #define CHNMAX 1024
 
@@ -1082,6 +1083,48 @@ static void ShowNandMenu (void)
 	int i; for (i = 0; i < nandFodersCnt; i++) free (nandFolders[i]);
 	}
 
+static void SyncNandFile (char *sourcepath, char *sourcefn)
+	{
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	char target[256];
+	u8 *buffer;
+	s32 err;
+	size_t readed;
+	
+	Video_WaitPanel (TEX_HGL, "Please wait...|Copying SYSCONF");
+
+	//ISFS init
+	err = ISFS_Initialize();
+	sprintf (path, "%s/%s", sourcepath, sourcefn);
+	buffer = isfs_ReadFile (path, &err, 0, &readed);
+	ISFS_Deinitialize();
+
+	Debug ("SyncNandFile: '%s'->0x%X, %u bytes, [err = %d]", path, buffer, readed, err);
+
+	if (!buffer)
+		{
+		// Add message here
+		grlib_menu ("Cannot open source file!", " OK ");
+		return;
+		}
+		
+	if (config.chnBrowser.nand == NAND_EMUSD)
+		sprintf (target, "sd:/%s%s", config.chnBrowser.nandPath,sourcepath);
+	else
+		sprintf (target, "usb:/%s%s", config.chnBrowser.nandPath,sourcepath);
+		
+	fsop_CreateFolderTree (target);
+	strcat (target, "/");
+	strcat (target, sourcefn);
+
+	Debug ("SyncNandFile: target is '%s'", target);
+	if (fsop_WriteFile (target, buffer, readed))
+		{
+		grlib_menu ("Operation completed succesfully!", " OK ");
+		}
+		
+	free (buffer);
+	}
 	
 static void ShowNandOptions (void)
 	{
@@ -1093,6 +1136,11 @@ static void ShowNandOptions (void)
 	
 	strcat (buff, "Update title cache...##9|");
 	strcat (buff, "Download covers...##10||");
+	if (config.chnBrowser.nand != NAND_REAL)
+		{
+		strcat (buff, "Copy SYSCONF from real nand...##1|");
+		strcat (buff, "Copy MII from real nand...##2||");
+		}
 	strcat (buff, "Cancel##-1");
 		
 	Redraw();
@@ -1101,6 +1149,16 @@ static void ShowNandOptions (void)
 	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("NAND Options", buff);
 	grlibSettings.fontNormBMF = fonts[FNTNORM];
+	
+	if (item == 1)
+		{
+		SyncNandFile ("/shared2/sys", "SYSCONF");
+		}
+		
+	if (item == 2)
+		{
+		SyncNandFile ("/shared2/menu/FaceLib", "RFL_DB.dat");
+		}
 		
 	if (item == 9)
 		{

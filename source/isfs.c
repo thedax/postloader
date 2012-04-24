@@ -228,11 +228,16 @@ u8 *isfs_ReadFile (char *filepath, s32 *error, size_t bytes2read, size_t *bytesR
 		if (error) *error = -3;
 		return NULL;
 		}
+		
+	if (bytes2read == 0)
+		bytes2read = status->file_length;
 	
 	if (bytes2read > status->file_length)
 		{
 		bytes2read = status->file_length;
 		}
+		
+	Debug ("byte2read = %u", bytes2read);
 	
 	u8 *buffer = allocate_memory(bytes2read);
 
