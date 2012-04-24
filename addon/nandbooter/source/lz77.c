@@ -134,11 +134,13 @@ s32 __decompressLZ77_11(u8 *in, u32 inputLen, u8 **output, u32 *outputLen, u32 m
 		}
 	}
 
+	/*
 	if (compressedPos > inputLen || decompressedPos > decompressedSize)
 	{
 		return -1;
 	}
-	 
+	*/
+ 
 	*output = out;
 	*outputLen = decompressedSize;
 	return 0;
@@ -221,12 +223,14 @@ s32 __decompressLZ77_10(u8 *in, u32 inputLen, u8 **output, u32 *outputLen, u32 m
 				break;
 		}
 	}
-
+	
+	/*
 	if (compressedPos > inputLen || decompressedPos > decompressedSize)
 	{
 		return -1;
 	}
- 
+	*/
+	
 	*output = out;
 	*outputLen = decompressedSize;
 	return 0;

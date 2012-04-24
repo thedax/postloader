@@ -1,3 +1,7 @@
+postLoader 3.71.5
+
+* nandbooter 2.2: removed an lz77 decompression check that may fail
+
 postLoader 3.71.4
 
 * Added the capability to transfer SYSCONF and/or MII from real nand to current emunand ([HOME]->Nand options)
