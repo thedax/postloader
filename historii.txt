@@ -1,3 +1,10 @@
+postLoader 3.71.6
+
+* Is no more required that the FAT32 partition dedicated to wii homebrew is the first one.
+* Removed "Set default loader..." when running under neek
+* DML: added support for fst format (GCReEx) [untested]. Can be very slow on rebuilding cache, with fst games.
+* Corrected a bug on detecting "ID6_Gamename" format
+
 postLoader 3.71.5
 
 * nandbooter 2.2: removed an lz77 decompression check that may fail

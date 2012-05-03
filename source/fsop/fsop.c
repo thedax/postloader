@@ -164,6 +164,7 @@ u64 fsop_GetFolderBytes (char *source, fsopCallback vc)
 		else	// It is a file !
 			{
 			size_t s;
+			Debug ("fsop_GetFolderBytes->checking %s", newSource);
 			fsop_GetFileSizeBytes (newSource, &s);
 			bytes += s;
 

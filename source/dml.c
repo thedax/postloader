@@ -322,6 +322,10 @@ char *DMLScanner  (bool reset)
 			if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0) continue;
 				
 			sprintf (b, "%s/%s/game.iso", path, pent->d_name);
+			
+			if (!fsop_FileExist (b))
+				sprintf (b, "%s/%s/sys/boot.bin", path, pent->d_name);
+			
 			Debug ("DML: checking %s", b);
 			
 			if (fsop_FileExist (b))
@@ -348,7 +352,7 @@ char *DMLScanner  (bool reset)
 							sdkb = fsop_GetFolderKb (sdp, cb_DML);
 							usbkb = fsop_GetFolderKb (usbp, cb_DML);
 							
-							if (abs (sdkb - usbkb) > 2) // Let 2kb difference for codes
+							if (abs (sdkb - usbkb) > 5) // Let 5kb difference for codes
 								{
 								char mex[256];
 								fsop_KillFolderTree (sdp, cb_DML);
@@ -400,6 +404,10 @@ char *DMLScanner  (bool reset)
 							Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 							
 							sprintf (b, "%s/%s/game.iso", path, pent->d_name);
+
+							if (!fsop_FileExist (b))
+								sprintf (b, "%s/%s/sys/boot.bin", path, pent->d_name);
+
 							Debug ("DML: checking %s", b);
 
 							if (!GetName (b, id, name)) continue;

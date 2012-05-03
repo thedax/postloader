@@ -1292,7 +1292,7 @@ static void ShowGamesOptions (void)
 	strcat (buff, "Download covers...##10|");
 	if (config.gameMode == GM_WII)
 		{
-		strcat (buff, "Set default loader...##15|");
+		if (vars.neek == NEEK_NONE) strcat (buff, "Set default loader...##15|");
 		}
 	else
 		{

@@ -189,10 +189,10 @@ static bool ScanWBFS (char *ob, char *path)
 		// gameid_title
 		if (wbfs[6] == '_' && wbfs[7] != '\0')
 			{
-			title[6] = '\0';
+			wbfs[6] = '\0';
 
-			strcpy (gameid, &wbfs[7]);
-			strcpy (title, wbfs);
+			strcpy (gameid, wbfs);
+			strcpy (title, &wbfs[7]);
 			}
 			
 		// title [gameid] & title_[gameid]
