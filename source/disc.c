@@ -151,7 +151,7 @@ void Disc(void)
 		u32 status = PLNANDSTATUS_NONE;
 		char nand[64];
 		
-		neek_PLNandInfo (1, &idx, &status, NULL, NULL);
+		neek_PLNandInfo (1, &idx, &status, NULL, NULL, NULL);
 		
 		if (config.run.game.nand == 1)
 			strcpy (nand, "pl_us");

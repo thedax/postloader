@@ -8,8 +8,8 @@
 
 #define MAXITEMS 128
 #define MAXCOLS 12
-#define YSPACING 25
-#define YSPACINGFAKE 10
+#define YSPACING 23
+#define YSPACINGFAKE 7
 #define YTITLE 20
 #define XCOLSPACING 10
 
@@ -170,7 +170,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	lineh = 0;
 	
 	grlibSettings.fontBMF = grlibSettings.fontNormBMF;
-
+	
 	j = 0; // used to count item chars
 	for (i = 0; i <= strlen(title); i++)
 		{
@@ -264,8 +264,6 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 		
 	columns++;
 	
-	//grlib_dosm ("c = %d", columns);
-	
 	for (i = 0; i < columns; i++)
 		itemsCntFake[i]--;
 		
@@ -356,7 +354,6 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 			goItems[i].y2 = y + lineh + 10;
 			goItems[i].bcolor = RGBA (64, 64, 64, 128);
 			goItems[i].color = RGBA (192, 192, 192, 255);
-
 			grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
 						
 			y += lineh + YSPACING;

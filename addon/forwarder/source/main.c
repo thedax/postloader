@@ -45,42 +45,32 @@ static GXRModeObj *rmode = NULL;
 
 void InitVideo (void)
 	{
-	// Initialise the video system
 	VIDEO_Init();
-	VIDEO_SetBlack(TRUE);
+	VIDEO_SetBlack(TRUE); 
 	
-	// Obtain the preferred video mode from the system
-	// This will correspond to the settings in the Wii menu
 	rmode = VIDEO_GetPreferredMode(NULL);
 
-	// Allocate memory for the display in the uncached region
+	//apparently the video likes to be bigger then it actually is on NTSC/PAL60/480p. lets fix that!
+	if( rmode->viTVMode == VI_NTSC || CONF_GetEuRGB60() || CONF_GetProgressiveScan() )
+	{
+		//the correct one would be * 0.035 to be sure to get on the Action safe of the screen.
+		GX_AdjustForOverscan(rmode, rmode, 0, rmode->viWidth * 0.026 ); 
+	}
 	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-	VIDEO_ClearFrameBuffer (rmode, xfb, 0);
+	VIDEO_ClearFrameBuffer (rmode, xfb, 0); 
 	
+	console_init( xfb, 20, 20, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth*VI_DISPLAY_PIX_SZ );
+
 	VIDEO_Configure(rmode);
 	VIDEO_SetNextFramebuffer(xfb);
-
-	int x, y, w, h;
-	x = 20;
-	y = 32;
-	w = rmode->fbWidth - (32);
-	h = rmode->xfbHeight - (48);
-	
-	CON_InitEx(rmode, x, y, w, h);
-	
-	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
-
-	CON_InitEx(rmode, x, y, w, h);
-	
-	// Set console text color
-	printf("\x1b[%u;%um", 37, false);
-	printf("\x1b[%u;%um", 40, false);
-
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
-
 	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+
+	VIDEO_WaitVSync();
+	if(rmode->viTVMode&VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	
+	//gprintf("resolution is %dx%d\n",rmode->viWidth,rmode->viHeight);
 	}
 
 bool LoadFile (char *path)

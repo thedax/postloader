@@ -12,7 +12,7 @@ static int ShowInfo (char *buff, char *ver)
 	{
 	char *title;
 	
-	grlib_SetFontBMF(fonts[FNTNORM]);
+	Video_SetFont(TTFNORM);
 	
 	int j = 0, i = strlen("postLoader ");
 	while (buff[i] != '\r' && buff[i] != '\n')

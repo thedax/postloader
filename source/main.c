@@ -137,8 +137,7 @@ int Initialize (int silent)
 static void Redraw (void)
 	{
 	Video_DrawBackgroud (0);
-	
-	grlib_SetFontBMF(fonts[FNTNORM]);
+	Video_SetFont(TTFNORM);
 	grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (c) 2011 by stfour");
 	}
 	
@@ -174,8 +173,7 @@ int MasterInterface (int full, int showCursor, int icon, const char *text, ...)
 		*p = 0;
 		p++;
 		}
-
-	grlib_SetFontBMF(fonts[FNTSMALL]);
+	Video_SetFont(TTFSMALL);
 	grlib_Text (320, 400, GRLIB_ALIGNCENTER, 0, mex);
 	if (p) grlib_Text (320, 420, GRLIB_ALIGNCENTER, 0, p);
 
@@ -396,7 +394,6 @@ int main(int argc, char **argv)
 	Debug ("vars.tempPath = %s", vars.tempPath);
 	
 	grlibSettings.autoCloseMenu = 60;
-	//DumpStub ();
 	
 	ret = INTERACTIVE_RET_NONE;
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && vars.interactive)
@@ -407,12 +404,14 @@ int main(int argc, char **argv)
 		CoverCache_Start ();
 		snd_Init ();
 		WiiLoad (1);
+		neek_UID_Read ();
 		
 		do
 			{
 			if (config.browseMode == BROWSE_HB) ret = AppBrowser ();
 			if (config.browseMode == BROWSE_CH) ret = ChnBrowser ();
 			if (config.browseMode == BROWSE_GM) ret = GameBrowser ();
+			if (config.browseMode == BROWSE_EM) ret = EmuBrowser ();
 			
 			if (ret == INTERACTIVE_RET_TOCHANNELS) 
 				config.browseMode = BROWSE_CH;
@@ -420,12 +419,26 @@ int main(int argc, char **argv)
 				config.browseMode = BROWSE_HB;
 			else if (ret == INTERACTIVE_RET_TOGAMES)
 				config.browseMode = BROWSE_GM;
+			else if (ret == INTERACTIVE_RET_TOEMU)
+				config.browseMode = BROWSE_EM;
 			else break;
 			}
 		while (TRUE);
 		Video_LoadTheme (0);
 		}
 	
+	if (ret == INTERACTIVE_RET_SE)
+		{
+		DirectDolBoot (vars.sePath, "pl", 1);
+		return(0);
+		}
+
+	if (ret == INTERACTIVE_RET_WM)
+		{
+		DirectDolBoot (vars.wmPath, "pl", 1);
+		return(0);
+		}
+
 	if (ret == INTERACTIVE_RET_BOOTMII)
 		{
 		Shutdown (0);

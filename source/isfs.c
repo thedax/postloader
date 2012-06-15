@@ -237,7 +237,7 @@ u8 *isfs_ReadFile (char *filepath, s32 *error, size_t bytes2read, size_t *bytesR
 		bytes2read = status->file_length;
 		}
 		
-	Debug ("byte2read = %u", bytes2read);
+	//Debug ("byte2read = %u", bytes2read);
 	
 	u8 *buffer = allocate_memory(bytes2read);
 
@@ -278,6 +278,7 @@ bool isfs_WriteFile (char *nandpath, u8 * buff, s32 size) // Nandpath can be not
 	
 	sprintf (path, "%s", nandpath);
 
+	ISFS_Delete (path);
 	ISFS_CreateFile(path, 0, 3, 3, 3);
 	fd = ISFS_Open(path, 1|2 );
 	if (fd < 0)

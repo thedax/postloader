@@ -468,12 +468,15 @@ GRRLIB_texImg*  GRRLIB_CreateEmptyTexture (const uint w, const uint h)
     GRRLIB_texImg *my_texture = (struct GRRLIB_texImg *)calloc(1, sizeof(GRRLIB_texImg));
 
     if(my_texture != NULL) {
-        my_texture->data = memalign(32, h * w * 4);
+		size_t size = h * w * 4;
+		
+        my_texture->data = memalign(32, size);
         my_texture->w = w;
         my_texture->h = h;
 
         // Initialize the texture
-        memset(my_texture->data, '\0', (h * w) << 2);
+        //memset(my_texture->data, '\0', (h * w) << 2);
+		memset(my_texture->data, 0, size);
 
         GRRLIB_SetHandle(my_texture, 0, 0);
         GRRLIB_FlushTex(my_texture);

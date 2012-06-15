@@ -94,7 +94,7 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
             //rmode = &TVPal574IntDfScale;
             // rmode = &TVPal528IntDf; // BC ...this is still wrong, but "less bad" for now
 			//rmode = &TVPal528Int;
-			rmode = &TVPal574IntDfScale;
+			rmode = &TVPal576IntDfScale;
             break;
     }
 	

@@ -41,7 +41,10 @@ static void shuffle (void)
 
 static s32 reader(void *fp,void *dat, s32 size)
 	{
-	return fread(dat, 1, size, (FILE *) fp);
+	
+	s32 ret = fread(dat, 1, size, (FILE *) fp);
+	
+	return ret;
 	}
 
 void snd_Mp3Go (void)

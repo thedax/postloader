@@ -11,9 +11,9 @@ int grlib_dosm (const char *text, ...) // ab > 0 show and wait ab second, otherw
 	static char mex[1024];
 	char *p1,*p2;
 	
-	int reverse = grlibSettings.fontBMF_reverse;
+	int reverse = grlibSettings.fontReverse;
 	
-	grlibSettings.fontBMF_reverse = 0;
+	grlibSettings.fontReverse = 0;
 	
 	if (text != NULL)
 		{
@@ -69,7 +69,7 @@ int grlib_dosm (const char *text, ...) // ab > 0 show and wait ab second, otherw
 	while (ret == 0);
 	do {WPAD_ScanPads();} while (WPAD_ButtonsDown(0));
 	
-	grlibSettings.fontBMF_reverse = reverse;
+	grlibSettings.fontReverse = reverse;
 	return ret;
 	}
 	
@@ -86,7 +86,7 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 		if (b->text[1] == '+') toggle = 1;
 		if (b->text[1] == '-') toggle = 0;
 		
-		if (toggle == 0) sprintf (text, "[\255*] %s", &b->text[2]);
+		if (toggle == 0) sprintf (text, "[%cX] %s", 255, &b->text[2]);
 		if (toggle == 1) sprintf (text, "[X] %s", &b->text[2]);
 		}
 	
@@ -104,18 +104,26 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 	
 	grlib_GetFontMetrics (text, &w, &h);
 	if (toggle == -1)
-		grlib_printf (
-					b->x1 + (b->x2 - b->x1) / 2, 
-					b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, 
-					GRLIB_ALIGNCENTER, 0, text
-					);
+		{
+		if (b->vAlign == GRLIB_ALIGNBOTTOM)
+			{
+			grlib_printf (b->x1 + (b->x2 - b->x1) / 2, b->y2 - h - 7 + grlibSettings.theme.buttonsTextOffsetY, GRLIB_ALIGNCENTER, 0, text);
+			}
+		else
+			{
+			grlib_printf (b->x1 + (b->x2 - b->x1) / 2, b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, GRLIB_ALIGNCENTER, 0, text						);
+			}
+		}
 	else
 		{
-		grlib_printf (
-					b->x1 + 5, 
-					b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, 
-					GRLIB_ALIGNLEFT, 0, text
-					);
+		if (b->vAlign == GRLIB_ALIGNBOTTOM)
+			{
+			grlib_printf (b->x1 + 5, b->y2 - h - 7 + grlibSettings.theme.buttonsTextOffsetY, GRLIB_ALIGNLEFT, 0, text);
+			}
+		else
+			{
+			grlib_printf (b->x1 + 5, b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, GRLIB_ALIGNLEFT, 0, text);
+			}
 		}
 	}
 	
@@ -139,4 +147,17 @@ void grlib_Message (const char *text, ...) // ab > 0 show and wait ab second, ot
 	grlib_menu	(mex, "OK");
 	
 	free (mex);
+	}
+
+void grlib_DrawWindow (s_grlibobj go)
+	{
+	if (grlibSettings.theme.enabled)
+		{
+		grlib_DrawSquareThemed (&go, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER);
+		}
+	else
+		{
+		grlib_DrawSquare (&go);
+		grlib_DrawBoldEmptySquare (&go);
+		}
 	}

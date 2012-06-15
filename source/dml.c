@@ -21,11 +21,68 @@
 #define MEM_VIDEO_BASE (0xCC002000)
 #define IOCTL_DI_DVDLowAudioBufferConfig 0xE4
 
+#define PLGC_Auto 0
+#define PLGC_Game 1
+#define PLGC_WII 2
+#define PLGC_NTSC 3
+#define PLGC_PAL50 4
+#define PLGC_PAL60 5
+
 #define VIDEO_MODE_NTSC 0
 #define VIDEO_MODE_PAL 1
 #define VIDEO_MODE_PAL60 2
 #define VIDEO_MODE_NTSC480P 3
 #define VIDEO_MODE_PAL480P 4
+
+#define SRAM_ENGLISH 0
+#define SRAM_GERMAN 1
+#define SRAM_FRENCH 2
+#define SRAM_SPANISH 3
+#define SRAM_ITALIAN 4
+#define SRAM_DUTCH 5
+
+typedef struct DML_CFG
+{
+        u32 Magicbytes;                 //0xD1050CF6
+        u32 CfgVersion;                 //0x00000001
+        u32 VideoMode;
+        u32 Config;
+        char GamePath[255];
+        char CheatPath[255];
+} DML_CFG;
+
+enum dmlconfig
+{
+        DML_CFG_CHEATS          = (1<<0),
+        DML_CFG_DEBUGGER        = (1<<1),
+        DML_CFG_DEBUGWAIT       = (1<<2),
+        DML_CFG_NMM             = (1<<3),
+        DML_CFG_NMM_DEBUG       = (1<<4),
+        DML_CFG_GAME_PATH       = (1<<5),
+        DML_CFG_CHEAT_PATH      = (1<<6),
+        DML_CFG_ACTIVITY_LED	= (1<<7),
+        DML_CFG_PADHOOK         = (1<<8),
+        DML_CFG_NODISC          = (1<<9),
+        DML_CFG_BOOT_DISC       = (1<<10),
+        DML_CFG_BOOT_DOL        = (1<<11),
+};
+
+enum dmlvideomode
+{
+        DML_VID_DML_AUTO        = (0<<16),
+        DML_VID_FORCE           = (1<<16),
+        DML_VID_NONE            = (2<<16),
+
+        DML_VID_FORCE_PAL50     = (1<<0),
+        DML_VID_FORCE_PAL60     = (1<<1),
+        DML_VID_FORCE_NTSC      = (1<<2),
+        DML_VID_FORCE_PROG      = (1<<3),
+        DML_VID_PROG_PATCH      = (1<<4),
+};
+
+
+
+
 
 static char *dmlFolders[] = {"ngc", "games"};
 
@@ -96,17 +153,6 @@ static void SetGCVideoMode (void)
 			sram->ntd |= 0x40; //set pal60 flag
 	}
 
-	/*
-	if (config.dmlvideomode == DMLVIDEOMODE_NTSC)
-		{
-		sram->flags = sram->flags & ~(1 << 0);	// Clear bit 0 to set the video mode to NTSC
-		} 
-	else
-		{
-		sram->flags = sram->flags |  (1 << 0);	// Set bit 0 to set the video mode to PAL
-		}
-	*/
-	
 	__SYS_UnlockSram(1); // 1 -> write changes
 	
 	while(!__SYS_SyncSram());
@@ -207,24 +253,31 @@ int DMLRun (char *folder, char *id, u32 videomode)
 
 	if (!devices_Get(DEV_SD)) return 0;
 	
-	if (videomode == 0) // GAME
+	if (videomode == PLGC_Auto)
+		videomode = PLGC_Game;
+
+	if (videomode == PLGC_PAL60)
+		videomode = PLGC_PAL50;
+	
+	if (videomode == PLGC_Game) // GAME
 		{
 		if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
 			config.dmlvideomode = DMLVIDEOMODE_NTSC;
 		else
 			config.dmlvideomode = DMLVIDEOMODE_PAL;
 		}
-	if (videomode == 1) // WII
+	if (videomode == PLGC_WII) // WII
 		{
 		if (CONF_GetRegion() == CONF_REGION_EU)
 			config.dmlvideomode = DMLVIDEOMODE_PAL;
 		else
 			config.dmlvideomode = DMLVIDEOMODE_NTSC;
 		}
-	if (videomode == 2)
+	
+	if (videomode == PLGC_NTSC)
 		config.dmlvideomode = DMLVIDEOMODE_NTSC;
 
-	if (videomode == 3)
+	if (videomode == PLGC_PAL50)
 		config.dmlvideomode = DMLVIDEOMODE_PAL;
 
 	sprintf (path, "%s://games/boot.bin", devices_Get(DEV_SD));
@@ -242,7 +295,65 @@ int DMLRun (char *folder, char *id, u32 videomode)
 	StartMIOS ();
 	return 1;
 	}
+
+int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook)
+	{
+	DML_CFG cfg;
 	
+	Debug ("DMLRun (%s, %s, %u)", folder, id, videomode);
+
+	if (!devices_Get(DEV_SD)) return 0;
+	
+	memset (&cfg, 0, sizeof (DML_CFG));
+	
+	cfg.Magicbytes = 0xD1050CF6;
+	cfg.CfgVersion = 0x00000001;
+		
+	if (videomode == PLGC_Auto) // AUTO
+		{
+		cfg.VideoMode |= DML_VID_DML_AUTO;
+		}
+	if (videomode == PLGC_Game) // GAME
+		{
+		if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
+			cfg.VideoMode |= DML_VID_FORCE_NTSC;
+		else
+			cfg.VideoMode |= DML_VID_FORCE_PAL50;
+		}
+	if (videomode == PLGC_WII) // WII
+		{
+		if (CONF_GetRegion() == CONF_REGION_EU)
+			cfg.VideoMode |= DML_VID_FORCE_PAL50;
+		else
+			cfg.VideoMode |= DML_VID_FORCE_NTSC;
+		}
+	
+	if (videomode == PLGC_NTSC)
+		cfg.VideoMode |= DML_VID_FORCE_NTSC;
+
+	if (videomode == PLGC_PAL50)
+		cfg.VideoMode |= DML_VID_FORCE_PAL50;
+
+	if (videomode == PLGC_PAL60)
+		cfg.VideoMode |= DML_VID_FORCE_PAL60;
+		
+	if (dmlNoDisc)
+		cfg.Config |= DML_CFG_NODISC;
+
+	if (dmlPadHook)
+		cfg.Config |= DML_CFG_PADHOOK;
+
+	strcpy (cfg.GamePath, folder);
+ 	memcpy ((char *)0x80000000, id, 6);
+	
+	Shutdown (0);
+
+	/* Boot BC */
+	WII_Initialize();
+	return WII_LaunchTitle(0x100000100LL);
+	}
+	
+///////////////////////////////////////////////////////////////////////////////////////////////////////	
 
 void DMLResetCache (void)
 	{

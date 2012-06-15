@@ -84,6 +84,9 @@ bool ExtConfigWrite (void)
 	u8 *bootdol;
 	u8 *cfg;
 	
+	if (!vars.saveExtendedConf) return true;
+	vars.saveExtendedConf = 0;
+	
 	memcpy (idStart, EXTCONFIG, EXTCONFIGOFFS);
 	idStart[EXTCONFIGOFFS] = '\0';
 	

@@ -68,7 +68,7 @@ void ShowAboutPLMenu (void)
 	{
 	char buff[1024];
 	
-	grlib_SetFontBMF(fonts[FNTNORM]);
+	Video_SetFont(TTFNORM);
 	
 	strcpy (buff, 	
 	"postLoader"VER" by stfour (2011)\n\n"
@@ -138,7 +138,7 @@ void ShowAdvancedOptions (void)
 	char buff[1024];
 	char options[300];
 	
-	grlib_SetFontBMF(fonts[FNTNORM]);
+	Video_SetFont(TTFNORM);
 	
 	do
 		{
@@ -226,6 +226,7 @@ void ShowAdvancedOptions (void)
 	
 	// Update grlib setting...
 	grlibSettings.usesGestures = config.usesGestures;
+	vars.saveExtendedConf = 1;
 	ExtConfigWrite ();
 	}
 
@@ -236,7 +237,7 @@ void ShowAboutMenu (void)
 	char buff[1024];
 	char options[300];
 	
-	grlib_SetFontBMF(fonts[FNTNORM]);
+	Video_SetFont(TTFNORM);
 	
 	do
 		{

@@ -19,6 +19,9 @@ static int started = 0;
 static int filelog = 0;
 static int geckolog = 0;
 
+#define MAXDBGBUFF 4096
+char gprintfbuff[MAXDBGBUFF];
+
 s32 DebugStart (bool gecko, char *fn)
 	{
 	filelog = 0;
@@ -116,19 +119,44 @@ static char ascii(char s)
 
 void gprintf (const char *format, ...)
 {
+	static int init = 0;
+	
+	if (!init)
+		{
+		init = 1;
+		*gprintfbuff = '\0';
+		}
+	
 	char * tmp = NULL;
 	va_list va;
 	va_start(va, format);
 	
-	if((vasprintf(&tmp, format, va) >= 0) && tmp)
-	{
+	if ((vasprintf(&tmp, format, va) >= 0) && tmp)
+		{
+		if ((strlen (gprintfbuff) + strlen(tmp)) < MAXDBGBUFF)
+			strcat (gprintfbuff, tmp);
+			
         usb_sendbuffer(EXI_CHANNEL_1, tmp, strlen(tmp));
-	}
+		}
 	va_end(va);
 
 	if(tmp)
         free(tmp);
 }
+
+void gprintf_StoreBuff(char *fn)
+	{
+	FILE *f;
+	
+	f = fopen (fn, "ab");
+	if (f)
+		{
+		fwrite (gprintfbuff, strlen(gprintfbuff), 1, f);
+		fclose (f);
+		
+		*gprintfbuff = '\0';
+		}
+	}
 
 void Debug_hexdump (void *d, int len)
 {

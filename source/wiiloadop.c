@@ -265,7 +265,7 @@ void SelectDol(char *dol, char *target)
 	sprintf (path, "%s/%s", target, fn[ret]);
 	
 	size_t s;
-	wiiload.buff = ReadFile2Buffer (path, &s, NULL, 0);
+	wiiload.buff = fsop_ReadFile (path, 0, &s);
 	
 	Debug ("SelectDol '%s' 0x%X", path, wiiload.buff);
 	if (wiiload.buff)
@@ -418,6 +418,8 @@ bool WiiloadPostloaderDolMenu (void)
 		if (ret == 1)
 			{
 			char path[64];
+			
+			vars.saveExtendedConf = 1;
 			
 			if (devices_Get(DEV_SD)) 
 				{

@@ -56,7 +56,7 @@ void Debug (const char *text, ...)
 	if (!started || text == NULL) return;
 		
 	int i;
-	char mex[1024];
+	char mex[2048];
 	FILE * f = NULL;
 
 	va_list argp;
@@ -69,7 +69,8 @@ void Debug (const char *text, ...)
 	if (geckolog)
 		{
 		usb_sendbuffer( EXI_CHANNEL_1, mex, strlen(mex) );
-		//usb_flush(EXI_CHANNEL_1);
+		usb_flush(EXI_CHANNEL_1);
+		usleep (500);
 		}
 	if (started == 2) return;
 	if (filelog == 0) return;

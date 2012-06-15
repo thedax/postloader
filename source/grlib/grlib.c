@@ -199,6 +199,15 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 	if (align == GRLIB_ALIGNRIGHT)
 	    xoff -= grlib_GetFontMetrics (text, NULL, NULL);
 		
+	if (grlibSettings.fontMode == GRLIB_FONTMODE_TTF) 
+		{
+		if (grlibSettings.fontReverse)
+			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontOffsetY, grlibSettings.font, text, grlibSettings.fontSize, 0x0 | 0xFF);
+		else
+			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontOffsetY, grlibSettings.font, text, grlibSettings.fontSize, 0xFFFFFFFF | 0xFF);
+		return;
+		}
+
 	for (i=0; i < strlen (text); i++) 
 		{
 		if (text[i] < 32) continue;
@@ -226,7 +235,7 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 						{
 						u32 c = grlibSettings.fontBMF->palette[*pdata];
 						
-						if (!grlibSettings.fontBMF_reverse)
+						if (!grlibSettings.fontReverse)
 							{
 							r = R(c);	
 							g = G(c);
@@ -276,6 +285,19 @@ void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 col
 	grlib_Text (xpos, ypos, align, color, tmp);
 	}
 
+// grlib_IsObjectVisible: just check if an object is visible on the screen. Using this may greatly speedup rendering 
+// if there are a lot of offscreen obects 
+bool grlib_IsObjectVisible ( s_grlibobj *b )
+	{
+	if ( (b->x1 < 0 && b->x2 < 0) ||
+		 (b->x1 > 640 && b->x2 > 640) ||
+		 (b->y1 < 0 && b->y2 < 0) ||
+		 (b->y1 > 480 && b->x2 > 480))
+		 return false;
+
+	return true;
+	}
+
 void grlib_DrawSquare ( s_grlibobj *b )
 	{
 	GRRLIB_Rectangle ( b->x1, b->y1, b->x2-b->x1, b->y2-b->y1, b->bcolor, 1 );
@@ -295,20 +317,46 @@ void grlib_DrawBoldEmptySquare ( s_grlibobj *b )
 	}
 
 // Set the font to be used for the next txt operation
-void grlib_SetFontBMF (GRRLIB_bytemapFont *bmf) 
+void grlib_SetFontBMF2 (GRRLIB_bytemapFont *bmf) 
 	{
 	grlibSettings.fontBMF = bmf;
-	grlibSettings.fontMode = GRLIB_FONTMODE_BMF;
+	//grlibSettings.fontMode = GRLIB_FONTMODE_BMF;
+	}
+
+// Set the font to be used for the next txt operation
+void grlib_SetFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY) 
+	{
+	if (ttf) grlibSettings.font = ttf;
+	
+	if (fontSize < 10) fontSize = 10;
+	
+	grlibSettings.fontSize = fontSize;
+	grlibSettings.fontMode = GRLIB_FONTMODE_TTF;
+	grlibSettings.fontOffsetY = fontOffsetY;
+	grlibSettings.fontSizeOffsetY = fontSizeOffsetY;
 	}
 
 // return width and height of the font. height/with can be NULL... return is the widht
-int grlib_GetFontMetrics (const char *text, int *width, int *heigh) 
+int grlib_GetFontMetrics (const char *text, int *width, int *height) 
 	{
     uint  i;
 	int   h;
 	int   ch;
-    f32   xoff = 0;
+    int   xoff = 0;
     const GRRLIB_bytemapChar *pchar;
+	
+	if (grlibSettings.fontMode == GRLIB_FONTMODE_TTF)
+		{
+		xoff = GRRLIB_WidthTTF(grlibSettings.font, text, grlibSettings.fontSize);
+		// gprintf ("GRRLIB_WidthTTF '%s' = %d\r\n", text, xoff);
+		/*
+		for (i = 0; i < strlen (text); i++) 
+			xoff += wtable[grlibSettings.fontSize-10][(unsigned char)text[i]];
+		*/
+		if (height) *height = grlibSettings.fontSize + grlibSettings.fontSizeOffsetY; // Should be measured
+		if (width) *width = xoff;
+		return xoff;
+		}
 	
 	if (grlibSettings.fontMode == GRLIB_FONTMODE_BMF)
 		{
@@ -321,7 +369,7 @@ int grlib_GetFontMetrics (const char *text, int *width, int *heigh)
 			if (ch > h) h = ch;
 			}
 
-		if (heigh) *heigh = h;
+		if (height) *height = h;
 		if (width) *width = xoff;
 		return xoff;
 		}
@@ -418,7 +466,7 @@ int grlib_DrawCenteredWindow (char * title, int w, int h, bool grayoutBackground
 	return 0;
 	}
 
-void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color)
+void grlib_DrawImgCenter (f32 x, f32 y, f32 w, f32 h, GRRLIB_texImg * tex, f32 angle, u32 color)
 	{
 	f32 zx, zy;
 	
@@ -436,7 +484,7 @@ void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 a
 	GRRLIB_DrawImg (x, y, tex, angle, zx, zy, color ); 
 	}
 	
-void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color)
+void grlib_DrawImg (f32 x, f32 y, f32 w, f32 h, GRRLIB_texImg * tex, f32 angle, u32 color)
 	{
 	f32 zx, zy;
 	
@@ -448,7 +496,7 @@ void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, 
 	GRRLIB_DrawImg (x, y, tex, angle, zx, zy, color ); 
 	}
 
-void grlib_DrawTile (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color, int frame)
+void grlib_DrawTile (f32 x, f32 y, f32 w, f32 h, GRRLIB_texImg * tex, f32 angle, u32 color, int frame)
 	{
 	f32 zx, zy;
 	
@@ -460,7 +508,7 @@ void grlib_DrawTile (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle,
 	GRRLIB_DrawTile (x, y, tex, angle, zx, zy, color, frame); 
 	}
 	
-void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th, GRRLIB_texImg * tex, f32 angle, u32 color)
+void grlib_DrawPart (f32 x, f32 y, f32 w, f32 h, f32 tx, f32 ty, f32 tw, f32 th, GRRLIB_texImg * tex, f32 angle, u32 color)
 	{
 	f32 zx, zy;
 	

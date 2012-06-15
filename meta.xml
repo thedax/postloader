@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1.0">
 	<name>postLoader</name>
-	<version>3.71.6</version>
-	<release_date>20120503000000</release_date>
+	<version>4.b11</version>
+	<release_date>20120615000000</release_date>
 	<coder>stfour</coder>
 	<short_description>Homebrew browser, channel launcher, neek2o disc loader</short_description>
 	<long_description>-------------------
 What postLoader is:
 -------------------
 * HomeBrew Browser with subfolder and xml support
-* Channel\Title Browser with filters and cover
+* Channel\Title\Emus\Games Browser with filters and cover
 * neek2o and Uneek+DI game browser with cover support
 * game loaders forwarder (for CFG, GX and WiiFlow) with cover and filters support
 * DML gamecube browser with USB to SD copy feature

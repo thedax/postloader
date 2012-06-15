@@ -29,6 +29,8 @@ const DISC_INTERFACE* storage = NULL;
 static int partinfo[DEV_MAX] = {0}; // Part num, or part num + 10 for ntfs
 static int mounted[DEV_MAX] = {0}; // Part num, or part num + 10 for ntfs
 
+static int partnfs = 0, partfat = 0;
+
 static char DeviceName[DEV_MAX][6] =
 {
     "sd",
@@ -98,8 +100,6 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
     MASTER_BOOT_RECORD *mbr = (MASTER_BOOT_RECORD *)fullsector;
     char BootSector[4096];
 
-	int partnfs = 0, partfat = 0;
-
     storage->readSectors(0, 1, mbr);
 	
 	/*
@@ -163,7 +163,7 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 				}
             else if (isNTFS (BootSector))
 				{
-				ntfsRemoveDevice(DeviceName[DEV_USB+idx]);
+				//ntfsRemoveDevice(DeviceName[DEV_USB+idx]);
 				
 				if (ntfsMount(DeviceName[DEV_USB+idx], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER))
 					{
@@ -242,4 +242,23 @@ char *devices_Get (int dev)
 int devices_PartitionInfo (int dev) // 0, 1,... FAT, 10,11.... NTFS
 	{
 	return partinfo[dev];
+	}
+	
+// This function can be used to tick the usb device
+// to prevent it to go in sleep
+int devices_TickUSB (void)
+	{
+	int ret = 0;
+	u8 sector[4096];
+	static time_t t = 0;
+	
+	if (storage && (partnfs || partfat) && time(NULL) > t)
+		{
+		ret = storage->readSectors(0, 1, sector);
+		t = time(NULL) + 30;
+		
+		gprintf ("USB ticked \n");
+		}
+		
+	return ret;
 	}

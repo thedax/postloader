@@ -1,3 +1,16 @@
+postLoader4 (readmii.txt 1.8)
+
+========================================
+Differences from postLoader3:
+========================================
+* Added upper and bottom toolbars with icons for accessing common command
+* Added emulator frontend page
+* Added uid.sys managment for neek (neek2o)
+* Added TTF support
+* Added direct shortcut for SettingEditor GUI and WiiMod
+* Redesigned menu interface
+* Greatly improved the stability and reliability
+
 postLoader3 (readmii.txt 1.7)
 
 ========================================

@@ -12,6 +12,7 @@
 #include "fsop.h"
 #include "cfg.h"
 #include "devices.h"
+#include "ios.h"
 #include "../build/bin2o.h"
 
 #define USBTOUT 15
@@ -19,7 +20,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "2.4"
+#define VER "2.7"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -65,7 +66,8 @@ static int alphaback = 0;
 static int themeLoaded = 0;
 static int errors = 0;
 static int doNotRender = 0;
-static int fadeInMsec = 0;
+static int showHddIcon = 0;
+static GRRLIB_texImg *texHDD;
 
 static int pl_sd = 0;
 static int pl_usb = 0;
@@ -88,6 +90,8 @@ bool Neek2oBoot (void);
 
 static void Redraw (void) // Refresh screen
 	{
+	static int hdd_angle = 0;
+
 	int fr;
 	
 	fr = grlibSettings.fontBMF_reverse;
@@ -127,7 +131,16 @@ static void Redraw (void) // Refresh screen
 		}
 	else
 		grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, "(Key pressed: Boot menu will be displayed)");
-		
+
+	if (showHddIcon)
+		{
+		static int fade = 0;
+		if (fade < 255) fade += 5;
+		hdd_angle++; 
+		if (hdd_angle >= 360) hdd_angle = 0;
+		GRRLIB_DrawImg( 320 - 18, 360 - 18, texHDD, hdd_angle, 1.0, 1.0, RGBA(255, 255, 255, fade) ); 
+		}
+	
 	if (!doNotRender) 
 		{
 		grlib_Render();
@@ -163,25 +176,18 @@ void printd(const char *text, ...)
 		sleep (0);
 	}
 	
-int fadeIn (int init) 
+void fadeIn (void) 
 	{
-	if (init) alphaback = 0;
-	if (alphaback > 255) 
+	//The following loop will take little less than 3 second to complete
+	
+	for (alphaback = 0; alphaback < 255; alphaback += 1) // Fade background image out to black screen
 		{
-		alphaback = 255;
-		return 1; // done
+		Redraw ();
+		usleep (10000); // 10msec
 		}
+	} // fadeOut
 
-	Redraw ();
-	
-	usleep (fadeInMsec * 1000);
-	
-	alphaback += 1;
-	
-	return 0;
-	}
-
-void fadeOut(void) 
+void fadeOut (void) 
 	{
 	for (alphaback = 255; alphaback > 0; alphaback -= 5) // Fade background image out to black screen
 		{
@@ -195,6 +201,9 @@ int Initialize(void)
 
 	bkg = GRRLIB_LoadTexturePNG (background_png); // Background image
 	cursor = GRRLIB_LoadTexturePNG (wiicursor_png); // Cursor/pointer
+	
+	texHDD = GRRLIB_LoadTexturePNG (hdd_png);
+	GRRLIB_SetHandle (texHDD, 18, 18);
 	
 	fonts[FNTNORM] = GRRLIB_LoadBMF (fnorm_bmf);
 	fonts[FNTSMALL] = GRRLIB_LoadBMF (fsmall_bmf);
@@ -586,11 +595,13 @@ int cb_Mount (void)
 	if (t == 0) 
 		t = time(0);
 	
-	if (time(0) - t > 5)
-		sprintf (mex2,"Mounting USB devices: %d seconds remaining...", USBTOUT - (int)(time(0) - t));
+	int elapsed = time(0) - t;
+	int remaining = USBTOUT - elapsed;
 	
-	fadeIn (0);
+	if (elapsed > 5 && remaining > 0)
+		sprintf (mex2,"Mounting USB devices: %d seconds remaining...", remaining);
 
+	Redraw ();
 	return 1;
 	}
 
@@ -598,14 +609,14 @@ int main(int argc, char **argv)
 	{
 	char path[128];
 	
+	ios_ReloadIOS (58, NULL);
+	
 	DebugStart (true, NULL);
 
 	Debug ("\nPRIIBOOTERGUI"VER"\n");
 
 	Initialize ();
 	
-	fadeInMsec = 15;
-
 	strcpy (mex1,"postLoader (priibooterGUI "VER")");
 	strcpy (mex2,"by stfour");
 	
@@ -613,10 +624,16 @@ int main(int argc, char **argv)
 	
 	grlibSettings.autoCloseMenu = 20;
 	grlib_SetRedrawCallback (Redraw, NULL);
-	Redraw ();
+
 	
+	//devices_UsbPreinit (1);
+	fadeIn ();
+	//devices_UsbPreinit (0);
+
 	// Let's mount devices
+	showHddIcon = 1;
 	devices_Mount (DEVMODE_IOS, USBTOUT, cb_Mount);
+	showHddIcon = 0;
 
 	*dev = '\0';
 	*cfg = '\0';
@@ -653,9 +670,6 @@ int main(int argc, char **argv)
 
 		if (fsop_FileExist (POSTLOADER_USBAPP))	pl_usb = 1;
 		}
-	
-	fadeInMsec = 5;
-	while (!fadeIn (0));
 	
 	if (pl_sd == 0 && pl_usb == 0)
 		{

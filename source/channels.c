@@ -670,9 +670,6 @@ s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint) // i
 	return 1;
 	}
 	
-#define NEEK2O_NAND "usb://Nands/pln2o"
-#define NEEK2O_SNEEK "usb://sneek"
-
 bool SetupNeek2o (void)
 	{
 	char path[256];
@@ -761,7 +758,7 @@ bool RunChannelNeek2o (s_run *run)
 	SetupNeek2o ();
 	
 	// Create configuration file for n2oswitch ...
-	u32 data[4];
+	u32 data[8];
 	data[0] = 0;
 	data[1] = PLNANDSTATUS_NONE;
 	data[2] = TITLE_LOWER(run->channel.titleId);

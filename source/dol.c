@@ -13,6 +13,7 @@
 #include "ios.h"
 #include "bin2o.h"
 #include "hbcstub.h"
+#include "devices.h"
 
 extern s32 __IOS_ShutdownSubsystems();
 extern void __exception_closeall();
@@ -121,10 +122,45 @@ int DolBootPrepareWiiload (void)
 	return 1;
 	}
 
-static u8 *execBuffer = NULL;
-static size_t filesize;
+//static u8 *execBuffer = NULL;
+//static size_t filesize;
 static struct __argv arg;
 static bool fixCrashOnExit;
+
+int LoadHB (char *path, u8 *addr)
+	{
+	FILE *f;
+	int size;
+	int chunks;
+	int bytes;
+	u8 *buff = addr;
+	
+	f = fopen (path, "rb");
+	if (!f) return -1;
+	
+	fseek( f, 0, SEEK_END);
+	size = ftell(f);
+	fseek( f, 0, SEEK_SET);
+	
+	chunks = size / 10;
+	if (chunks < 64)
+		chunks = 64;
+		
+	bytes = 0;
+	do
+		{
+		bytes += fread(buff, 1, chunks, f );
+		buff = addr + bytes;
+		
+		MasterInterface (1, 0, TEX_HDD, "Loading '%s'...\n%d %% done", path, (bytes * 100) / size);
+		}
+	while (bytes < size);
+	
+	fclose (f);
+	DCFlushRange((void *) addr, size);
+	
+	return size;
+	}
 
 int DolBootPrepare (s_run *run)
 	{
@@ -134,13 +170,9 @@ int DolBootPrepare (s_run *run)
 	
 	Video_LoadTheme (0); // Make sure that theme isn't loaded
 		
-	MasterInterface (1, 0, 2, "Loading DOL...");
-
 	sprintf (path, "%s%s", run->path, run->filename);
+	LoadHB (path, EXECUTE_ADDR);
 
-	execBuffer = ReadFile2Buffer (path, &filesize, NULL, FALSE);
-	if (!execBuffer) return 0;
-	
 	MasterInterface (1, 0, 3, "Booting...");
 
 	strcpy (bootpath, path);
@@ -148,13 +180,15 @@ int DolBootPrepare (s_run *run)
 
 	memset (&arg, 0, sizeof(struct __argv));
 	
-	if (/*strlen(run->args) > 0 && */NeedArgs(EXECUTE_ADDR))
+	if (NeedArgs(EXECUTE_ADDR))
 		{
 		arg.argvMagic = ARGV_MAGIC;
 		arg.length  = strlen(bootpath)+strlen(run->args)+1;
 		arg.commandLine = (char*)CMDL_ADDR;
 		
 		sprintf(arg.commandLine, "%s%s",bootpath, run->args);
+		
+		Debug ("DolBootPrepare %s (%s)", path, arg.commandLine);
 		
 		l = strlen(arg.commandLine);
 		for (i = 0; i < l; i++)
@@ -179,10 +213,6 @@ void DolBoot (void)
 
 	memmove(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
-	
-	memcpy(EXECUTE_ADDR, execBuffer, filesize);
-	DCFlushRange((void *) EXECUTE_ADDR, filesize);
-	free (execBuffer);
 	
 	if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
 		{
@@ -225,7 +255,7 @@ void DolBoot (void)
 	_CPU_ISR_Restore(level);
 	}
 	
-bool DirectDolBoot (char *fn, char *arguments)
+bool DirectDolBoot (char *fn, char *arguments, int addpl)
 	{
 	s_run run;
 	char path[PATHMAX]; 		// Full app path with also the device
@@ -247,36 +277,24 @@ bool DirectDolBoot (char *fn, char *arguments)
 	
 	if (arguments) sprintf (run.args, arguments);
 	
+	if (addpl)
+		{
+		int loaded = 0;
+		Video_LoadTheme (0); // Make sure that theme isn't loaded
+		if (!loaded && devices_Get(DEV_SD))
+			{
+			sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_SD));
+			if (LoadHB (path, LOADER_ADDR) > 0) loaded = 1;
+			}
+		if (!loaded && devices_Get(DEV_USB))
+			{
+			sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_USB));
+			if (LoadHB (path, LOADER_ADDR) > 0) loaded = 1;
+			}
+		}
+
 	if (!DolBootPrepare (&run)) return false;
-	DolBoot ();
+	DolBoot();
 	
 	return true;
 	}
-	
-void FastDolBoot (void)
-	{
-	u32 level;
-	
-	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
-	DCFlushRange(BOOTER_ADDR, booter_dol_size);
-
-	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
-	
-	if (!HBMAGIC_ADDR[4])
-		{
-		*(u32*)0x80001804 = (u32) 0L;
-		*(u32*)0x80001808 = (u32) 0L;
-		DCFlushRange((void*)0x80001804,8);
-		}
-		
-	// Also modify it
-	Set_Stub (((u64)(1) << 32) | (2));
-
-	// Execute dol
-	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
-	_CPU_ISR_Disable(level);
-	__exception_closeall();
-	hbboot_ep();
-	_CPU_ISR_Restore(level);
-	}
-	

@@ -38,7 +38,7 @@ THE SOFTWARE.
 #define DEFAULT_FIFO_SIZE (256 * 1024) /**< GX fifo buffer size. */
 
 #define ENABLE_JPEG
-//#define ENABLE_TTF
+#define ENABLE_TTF
 
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
@@ -47,6 +47,35 @@ static void  *gp_fifo = NULL;
 
 static bool  is_setup = false;  // To control entry and exit
 static bool  enable_output = 1;
+
+#define TTFCACHE_ITEMS 256
+ 
+typedef struct 
+	{
+	GRRLIB_ttfFont *font;	// this is font pointer, is used to keep track of font (if null this item is unused)
+
+	wchar_t utf32;
+	u32 fontSize;			// Size in pixel
+	GRRLIB_texImg *tex;		// texture
+	int stepX;
+	int offsX, offsY;
+	u32 color;
+	}
+s_ttfcache;
+ 
+static s_ttfcache ttfcache[TTFCACHE_ITEMS];
+
+typedef struct 
+	{
+	GRRLIB_ttfFont *font;	// this is font pointer, is used to keep track of font (if null this item is unused)
+	
+	wchar_t utf32;
+	u32 fontSize;			// Size in pixel
+	u32 stepX;
+	}
+s_ttfsizecache;
+ 
+static s_ttfsizecache ttfsizecache[TTFCACHE_ITEMS];
 
 /**
  * Initialize GRRLIB. Call this once at the beginning your code.
@@ -65,6 +94,10 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
 
     // Ensure this function is only ever called once
     if (is_setup)  return 0;
+	
+	// Let's clear ttf cache
+	memset (ttfcache, 0, sizeof (ttfcache));
+	memset (ttfsizecache, 0, sizeof (ttfsizecache));
 
     // Initialise the video subsystem
 	if (!skipVideo)
@@ -94,7 +127,7 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
             //rmode = &TVPal574IntDfScale;
             // rmode = &TVPal528IntDf; // BC ...this is still wrong, but "less bad" for now
 			//rmode = &TVPal528Int;
-			rmode = &TVPal574IntDfScale;
+			rmode = &TVPal576IntDfScale;
             break;
     }
 	
@@ -287,7 +320,7 @@ void  GRRLIB_ExitLight (void)
 static FT_Library ftLibrary;        /**< A handle to a FreeType library instance. */
 
 // Static function prototypes
-static void DrawBitmap(FT_Bitmap *bitmap, int offset, int top, const u8 cR, const u8 cG, const u8 cB);
+static int DrawBitmap(FT_Bitmap *bitmap, int offset, int top, const u8 cR, const u8 cG, const u8 cB, GRRLIB_ttfFont *myFont, unsigned int fontSize);
 
 
 /**
@@ -305,6 +338,14 @@ int GRRLIB_InitTTF () {
  * Call this when your done with FreeType.
  */
 void GRRLIB_ExitTTF (void) {
+	int i;
+	
+	for (i = 0; i < TTFCACHE_ITEMS; i++)
+		{
+		GRRLIB_FreeTexture (ttfcache[i].tex);
+		memset (&ttfcache[i], 0, sizeof (s_ttfcache));
+		memset (&ttfsizecache[i], 0, sizeof (s_ttfsizecache));
+		}
     FT_Done_FreeType(ftLibrary);
 }
 
@@ -354,17 +395,29 @@ void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, 
     if(myFont == NULL || string == NULL)
         return;
 
-    size_t length = strlen(string) + 1;
-    wchar_t *utf32 = (wchar_t*)malloc(length * sizeof(wchar_t));
-    if(utf32) {
-        length = mbstowcs(utf32, string, length);
-        if(length > 0) {
+	size_t l = strlen(string);
+	char *s = calloc (1, l + 1);
+	
+	strcpy (s, string);
+
+	int i;
+	for (i = 0; i < l; i++)
+		if (s[i] == 255)
+			s[i] = 27;
+	
+    wchar_t *utf32 = (wchar_t*)malloc((l + 1) * sizeof(wchar_t));
+    if (utf32) 
+		{
+		size_t length = mbstowcs(utf32, s, l);
+        
+		if (length > 0) 
+			{
             utf32[length] = L'\0';
             GRRLIB_PrintfTTFW(x, y, myFont, utf32, fontSize, color);
-        }
+			}
         free(utf32);
-    }
-}
+		}
+	}
 
 /**
  * Print function for TTF font.
@@ -376,6 +429,7 @@ void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, 
  * @param fontSize Size of the font.
  * @param color Text color in RGBA format.
  */
+ 
 void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf32, unsigned int fontSize, const u32 color) {
     if(myFont == NULL || utf32 == NULL)
         return;
@@ -387,6 +441,7 @@ void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf3
     FT_UInt glyphIndex = 0;
     FT_UInt previousGlyph = 0;
     u8 cR = R(color), cG = G(color), cB = B(color);
+	int ghostchar = 0;
 
     if (FT_Set_Pixel_Sizes(Face, 0, fontSize)) {
         FT_Set_Pixel_Sizes(Face, 0, 12);
@@ -394,24 +449,75 @@ void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf3
 
     /* Loop over each character, until the
      * end of the string is reached, or until the pixel width is too wide */
-    while(*utf32) {
-        glyphIndex = FT_Get_Char_Index(myFont->face, *utf32++);
+    while(*utf32) 
+		{
+		if (*utf32 == 27) //ESCAPE
+			{
+			ghostchar = 1;
+			utf32++;
+			}
+			
+		int i, found = -1;
+		
+		for (i = 0; i < TTFCACHE_ITEMS; i++)
+			{
+			if (ttfcache[i].font == myFont && 
+				ttfcache[i].fontSize == fontSize &&
+				ttfcache[i].utf32 == *utf32 &&
+				ttfcache[i].color == color)
+				{
+				found = i;
+				break;
+				}
+			}
 
-        if (myFont->kerning && previousGlyph && glyphIndex) {
-            FT_Vector delta;
-            FT_Get_Kerning(myFont->face, previousGlyph, glyphIndex, FT_KERNING_DEFAULT, &delta);
-            penX += delta.x >> 6;
-        }
-        if (FT_Load_Glyph(myFont->face, glyphIndex, FT_LOAD_RENDER)) {
-            continue;
-        }
+		if (found >= 0)
+			{
+			if (ghostchar)
+				ghostchar = 0;
+			else
+				GRRLIB_DrawImg (x + penX + ttfcache[found].offsX, y + penY - ttfcache[found].offsY, ttfcache[found].tex, 0.0, 1.0, 1.0, RGBA(255, 255, 255, 255) ); 
+				
+			penX += ttfcache[found].stepX;
+			}
+		else
+			{
+			glyphIndex = FT_Get_Char_Index(myFont->face, *utf32);
 
-        DrawBitmap(&slot->bitmap,
-                   penX + slot->bitmap_left + x,
-                   penY - slot->bitmap_top + y,
-                   cR, cG, cB);
-        penX += slot->advance.x >> 6;
-        previousGlyph = glyphIndex;
+			if (myFont->kerning && previousGlyph && glyphIndex) {
+				FT_Vector delta;
+				FT_Get_Kerning(myFont->face, previousGlyph, glyphIndex, FT_KERNING_DEFAULT, &delta);
+				// penX += delta.x >> 6;
+			}
+			if (FT_Load_Glyph(myFont->face, glyphIndex, FT_LOAD_RENDER)) {
+				continue;
+			}
+			if (ghostchar)
+				ghostchar = 0;
+			else
+				{
+				int ci;
+				
+				ci = DrawBitmap(&slot->bitmap,
+						   penX + slot->bitmap_left + x,
+						   penY - slot->bitmap_top + y,
+						   cR, cG, cB, myFont, fontSize);
+						   
+				if (ci >= 0)
+					{
+					ttfcache[ci].utf32 = *utf32;
+					ttfcache[ci].stepX = slot->advance.x >> 6;
+					ttfcache[ci].offsX = slot->bitmap_left;
+					ttfcache[ci].offsY = slot->bitmap_top;
+					ttfcache[ci].color = color;
+					}
+				}
+
+			penX += slot->advance.x >> 6;
+			previousGlyph = glyphIndex;
+			}
+		
+		utf32++;
     }
 }
 
@@ -424,11 +530,53 @@ void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf3
  * @param cG Green component of the colour.
  * @param cB Blue component of the colour.
  */
-static void DrawBitmap(FT_Bitmap *bitmap, int offset, int top, const u8 cR, const u8 cG, const u8 cB) {
+static int DrawBitmap(FT_Bitmap *bitmap, int offset, int top, const u8 cR, const u8 cG, const u8 cB, GRRLIB_ttfFont *myFont, unsigned int fontSize)
+	{
+    FT_Int i, j, p, q;
+	int ci;	// cache item
+	
+	// search free cache
+	ci = -1;
+	for (i = 0; i < TTFCACHE_ITEMS; i++)
+		if (ttfcache[i].font == NULL)
+			{
+			ci = i;
+			break;
+			}
+			
+	if (ci == -1) // damn, the cache is full... shift items
+		{
+		ci = TTFCACHE_ITEMS-1;
+		GRRLIB_FreeTexture (ttfcache[0].tex);
+		
+		memmove (&ttfcache[0], &ttfcache[1], ci * sizeof(s_ttfcache));
+		memset (&ttfcache[ci], 0, sizeof(s_ttfcache));
+		}
+	
+	ttfcache[ci].tex = GRRLIB_CreateEmptyTexture(32, 32);
+	if (!ttfcache[ci].tex) return -1;
+
+	ttfcache[ci].fontSize = fontSize;
+	ttfcache[ci].font = myFont;
+
+    for ( i = 0, p = 0; i < bitmap->width; i++, p++ ) 
+		{
+        for ( j = 0, q = 0; j < bitmap->rows; j++, q++ ) 
+			{
+			GRRLIB_SetPixelTotexImg (i, j, ttfcache[ci].tex, RGBA (cR, cG, cB, bitmap->buffer[ q * bitmap->width + p ]));
+			}
+		}
+	GRRLIB_FlushTex (ttfcache[ci].tex);
+	GRRLIB_DrawImg (offset, top, ttfcache[ci].tex, 0.0, 1.0, 1.0, RGBA(255, 255, 255, 255) ); 
+	
+	return ci;
+    }
+/*
+static void DrawBitmap_old(FT_Bitmap *bitmap, int offset, int top, const u8 cR, const u8 cG, const u8 cB) {
     FT_Int i, j, p, q;
     FT_Int x_max = offset + bitmap->width;
     FT_Int y_max = top + bitmap->rows;
-
+	
     for ( i = offset, p = 0; i < x_max; i++, p++ ) {
         for ( j = top, q = 0; j < y_max; j++, q++ ) {
             GX_Begin(GX_POINTS, GX_VTXFMT0, 1);
@@ -439,6 +587,7 @@ static void DrawBitmap(FT_Bitmap *bitmap, int offset, int top, const u8 cR, cons
         }
     }
 }
+*/
 
 /**
  * Get the width of a text in pixel.
@@ -447,22 +596,31 @@ static void DrawBitmap(FT_Bitmap *bitmap, int offset, int top, const u8 cR, cons
  * @param fontSize The size of the font.
  * @return The width of a text in pixel.
  */
-unsigned int GRRLIB_WidthTTF(GRRLIB_ttfFont *myFont, const char *string, unsigned int fontSize) {
-    if(myFont == NULL || string == NULL) {
+unsigned int GRRLIB_WidthTTF(GRRLIB_ttfFont *myFont, const char *string, unsigned int fontSize) 
+	{
+    if(myFont == NULL || string == NULL) 
+		{
         return 0;
-    }
-    unsigned int penX;
-    size_t length = strlen(string) + 1;
-    wchar_t *utf32 = (wchar_t*)malloc(length * sizeof(wchar_t));
+		}
+    
+	unsigned int penX = 0;
+	
+    int length = strlen(string);
+
+    wchar_t *utf32 = (wchar_t*)malloc((length+1) * sizeof(wchar_t));
+	if (!utf32) return 0;
+	
     length = mbstowcs(utf32, string, length);
-    utf32[length] = L'\0';
-
-    penX = GRRLIB_WidthTTFW(myFont, utf32, fontSize);
-
-    free(utf32);
+	if (length > 0)
+		{
+		utf32[length] = L'\0';
+		penX = GRRLIB_WidthTTFW(myFont, utf32, fontSize);
+		}
+	
+	free(utf32);
 
     return penX;
-}
+	}
 
 /**
  * Get the width of a text in pixel.
@@ -485,21 +643,69 @@ unsigned int GRRLIB_WidthTTFW(GRRLIB_ttfFont *myFont, const wchar_t *utf32, unsi
          FT_Set_Pixel_Sizes(myFont->face, 0, 12);
     }
 
-    while(*utf32) {
-        glyphIndex = FT_Get_Char_Index(myFont->face, *utf32++);
+    while(*utf32) 
+		{
+		int i, found = -1;
+		for (i = 0; i < TTFCACHE_ITEMS; i++)
+			{
+			if (ttfsizecache[i].font == myFont &&
+				ttfsizecache[i].fontSize == fontSize &&
+				ttfsizecache[i].utf32 == *utf32)
+				{
+				found = i;
+				break;
+				}
+			}
 
-        if(myFont->kerning && previousGlyph && glyphIndex) {
-            FT_Vector delta;
-            FT_Get_Kerning(Face, previousGlyph, glyphIndex, FT_KERNING_DEFAULT, &delta);
-            penX += delta.x >> 6;
-        }
-        if(FT_Load_Glyph(Face, glyphIndex, FT_LOAD_RENDER)) {
-            continue;
-        }
+		if (found >= 0)
+			{
+			penX += ttfsizecache[found].stepX;
+			}
+		else
+			{
+			glyphIndex = FT_Get_Char_Index(myFont->face, *utf32);
 
-        penX += Face->glyph->advance.x >> 6;
-        previousGlyph = glyphIndex;
-    }
+			if (myFont->kerning && previousGlyph && glyphIndex) 
+				{
+				FT_Vector delta;
+				FT_Get_Kerning(Face, previousGlyph, glyphIndex, FT_KERNING_DEFAULT, &delta);
+				// penX += delta.x >> 6;
+				}
+				
+			if (FT_Load_Glyph(Face, glyphIndex, FT_LOAD_RENDER)) 
+				{
+				continue;
+				}
+			
+			// search free cache
+			int ci = -1;
+
+			for (i = 0; i < TTFCACHE_ITEMS; i++)
+				if (ttfsizecache[i].font == NULL)
+					{
+					ci = i;
+					break;
+					}
+					
+			if (ci == -1) // damn, the cache is full... shift items
+				{
+				ci = TTFCACHE_ITEMS-1;
+
+				memmove (&ttfsizecache[0], &ttfsizecache[1], ci * sizeof(s_ttfsizecache));
+				memset (&ttfsizecache[ci], 0, sizeof(s_ttfsizecache));
+				}
+			
+			ttfsizecache[ci].utf32 = *utf32;
+			ttfsizecache[ci].font = myFont;
+			ttfsizecache[ci].fontSize = fontSize;
+			ttfsizecache[ci].stepX = Face->glyph->advance.x >> 6;
+			
+			penX += ttfsizecache[ci].stepX;
+			previousGlyph = glyphIndex;
+			}
+			
+		utf32++;
+		}
 
     return penX;
 }
@@ -1809,19 +2015,19 @@ void  GRRLIB_BMFX_Pixelate (const GRRLIB_texImg *texsrc,
 GRRLIB_bytemapFont*  GRRLIB_LoadBMF (const u8 my_bmf[] ) {
     GRRLIB_bytemapFont *fontArray = (struct GRRLIB_bytemapFont *)malloc(sizeof(GRRLIB_bytemapFont));
     u32 i, j = 1;
-    u8 lineheight, usedcolors, highestcolor, nbPalette, c;
-    short int sizeover, sizeunder, sizeinner, numcolpal;
+    u8 nbPalette, c;
+    short int numcolpal;
     u16 nbPixels;
 
     if (fontArray != NULL && my_bmf[0]==0xE1 && my_bmf[1]==0xE6 && my_bmf[2]==0xD5 && my_bmf[3]==0x1A) {
         fontArray->version = my_bmf[4];
-        lineheight = my_bmf[5];
-        sizeover = my_bmf[6];
-        sizeunder = my_bmf[7];
+        //lineheight = my_bmf[5];
+        //sizeover = my_bmf[6];
+        //sizeunder = my_bmf[7];
         fontArray->tracking = my_bmf[8];
-        sizeinner = my_bmf[9];
-        usedcolors = my_bmf[10];
-        highestcolor = my_bmf[11];
+        //sizeinner = my_bmf[9];
+        //usedcolors = my_bmf[10];
+        //highestcolor = my_bmf[11];
         nbPalette = my_bmf[16];
         numcolpal = 3 * nbPalette;
         fontArray->palette = (u32 *)calloc(nbPalette + 1, sizeof(u32));

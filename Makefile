@@ -48,6 +48,7 @@ LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80
 LIBS	:=
 LIBS	+= -lpng
 LIBS	+= -ljpeg 
+LIBS	+= -lfreetype
 LIBS	+= -lz -lfat -lntfs
 LIBS	+= -lwiiuse
 LIBS	+= -lmad -lasnd

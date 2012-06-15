@@ -43,6 +43,12 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 	
 	grlib_MagObject (&grob, &gro, is->border, is->border);
 	
+	// Check if icon is visible !
+	if (!grlib_IsObjectVisible(&gro)) 
+		{
+		return;
+		}
+	
 	// Draw background
 	
 	if (is->themed)		{
@@ -73,22 +79,24 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 	// Draw text
 	if (icon->title && strlen(icon->title))
 		{
-		char desc[64];
+		char desc[128];
 		
 		strncpy (desc, icon->title, 63);
 			
 		bool cutted = FALSE;
-		while (grlib_GetFontMetrics(desc, NULL, NULL) > w - 10 && strlen(desc) > 0)
+		int pt3 = grlib_GetFontMetrics("...", NULL, NULL);
+		
+		while (grlib_GetFontMetrics(desc, NULL, NULL) > (w - pt3) && strlen(desc) > 0)
 			{
 			desc[strlen(desc)-1] = 0;
 			cutted = TRUE;
 			}
 		if (cutted) strcat (desc, "...");
 		
-		int ofr = grlibSettings.fontBMF_reverse;
-		grlibSettings.fontBMF_reverse = is->fontReverse;
+		int ofr = grlibSettings.fontReverse;
+		grlibSettings.fontReverse = is->fontReverse;
 		grlib_printf (gro.x1 + w / 2, gro.y1 + h / 2 - 5, GRLIB_ALIGNCENTER, 0, desc); 
-		grlibSettings.fontBMF_reverse = ofr;
+		grlibSettings.fontReverse = ofr;
 		}
 	
 	// Draw overlay icons

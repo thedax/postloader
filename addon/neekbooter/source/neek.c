@@ -401,11 +401,11 @@ bool neek_NandConfigSelect (char *nand)	// Search and select the passed nand
 	}
 	
 
-bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode 0 = read, mode 1 = write
+bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi, u32 *back2real) // mode 0 = read, mode 1 = write
 	{
 	s32 ret;
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	u32 data[4] ATTRIBUTE_ALIGN(32);
+	u32 data[8] ATTRIBUTE_ALIGN(32);
 	
 	Debug ("neek_PLNandInfo [begin]");
 	
@@ -421,6 +421,11 @@ bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode
 		data[3] = *hi;
 	else
 		data[3] = 0;
+		
+	if (back2real)
+		data[4] = *back2real;
+	else
+		data[4] = 0;
 		
 	ISFS_Initialize ();
 	
@@ -459,6 +464,7 @@ bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode
 
 	if (lo)	*lo = data[2];
 	if (hi)	*hi = data[3];
+	if (back2real) *back2real = data[4];
 
 	return true;
 	}

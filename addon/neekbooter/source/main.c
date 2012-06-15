@@ -11,7 +11,7 @@
 #include "neek.h"
 #include "bin2o.h"
 
-#define VER "[1.3]"
+#define VER "[1.4]"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -351,8 +351,9 @@ int main(int argc, char **argv)
 	u32 idx = -1;
 	u32 status = 0;
 	u32 hi, lo;
+	u32 back2real;
 	
-	if (neek_PLNandInfo	(0, &idx, &status, &lo, &hi) == false)
+	if (neek_PLNandInfo	(0, &idx, &status, &lo, &hi, &back2real) == false)
 		{
 		printd ("no boot information...");
 		Reload ();
@@ -364,7 +365,7 @@ int main(int argc, char **argv)
 	if (status == PLNANDSTATUS_NONE)
 		{
 		status = PLNANDSTATUS_BOOTING;
-		neek_PLNandInfo	(1, &idx, &status, &lo, &hi);
+		neek_PLNandInfo	(1, &idx, &status, &lo, &hi, &back2real);
 	
 		if (!hi && !lo)
 			{
@@ -443,21 +444,30 @@ int main(int argc, char **argv)
 	else if (status == PLNANDSTATUS_BOOTING)
 		{
 		status = PLNANDSTATUS_BOOTED;
-		neek_PLNandInfo	(1, &idx, &status, &lo, &hi);
+		neek_PLNandInfo	(1, &idx, &status, &lo, &hi, &back2real);
 		
 		if (!hi && !lo)
 			{
-			printd ("restoring old nanndindex");
-			
-			neek_GetNandConfig ();
-			//RestorePriiloader (nandConfig->NandSel);
+			if (back2real)
+				{
+				printd ("returning to realnand");
 
-			// Go back to previous nand
-			nandConfig->NandSel = idx;
-			neek_WriteNandConfig ();
-			
-			neek_PLNandInfoRemove ();
-			SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+				RestoreSneekFolder ();
+				SYS_ResetSystem(SYS_RESTART,0,0);
+				}
+			else
+				{
+				printd ("restoring old nanndindex");
+				
+				neek_GetNandConfig ();
+
+				// Go back to previous nand
+				nandConfig->NandSel = idx;
+				neek_WriteNandConfig ();
+				
+				neek_PLNandInfoRemove ();
+				SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+				}
 			}
 		else
 			{

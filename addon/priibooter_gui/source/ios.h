@@ -1,0 +1,1 @@
+int ios_ReloadIOS(int ios, int *ahbprot);

@@ -5,14 +5,44 @@
 #include <ogc/machine/processor.h>
 #include "globals.h"
 #include "bin2o.h"
+#include "neek.h"
 
 extern void __exception_closeall();
+bool SetupNeek2o (void);
+
+static void PrepareNeek2o(void)
+	{
+	char target[256];
+	
+	SetupNeek2o ();
+	
+	// Create configuration file for n2oswitch ...
+	u32 data[8];
+	data[0] = 0;
+	data[1] = PLNANDSTATUS_NONE;
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = 1; // Force return to real
+	sprintf (target, "%s/nandcfg.pl", NEEK2O_SNEEK);
+	fsop_WriteFile (target, (u8*) data, sizeof(data));
+
+	// Boot neek2o
+	Neek2oLoadKernel ();
+	Shutdown (0);
+	Neek2oBoot ();
+	}
 
 void RunLoader(void)
 	{
 	char argb[300];
 	char part[32];
 	
+	if (config.run.game.loader == 3) // NEEK2O
+		{
+		neek_CreateCDIConfig (config.run.asciiId);
+		PrepareNeek2o ();
+		}
+		
 	if (config.run.neekSlot < 10)
 		sprintf (part, "FAT%d", config.run.neekSlot + 1);
 	else
@@ -31,24 +61,24 @@ void RunLoader(void)
 		{
 		sprintf (argb, "%s;partition=%s;intro=0;theme=pl;ios=%d", config.run.asciiId, part, ios);
 
-		DirectDolBoot ("sd://apps/USBLoader_cfg/boot.dol", argb);
-		DirectDolBoot ("sd://apps/USBLoader/boot.dol", argb);
-		DirectDolBoot ("usb://apps/USBLoader_cfg/boot.dol", argb);
-		DirectDolBoot ("usb://apps/USBLoader/boot.dol", argb);
+		DirectDolBoot ("sd://apps/USBLoader_cfg/boot.dol", argb, 0);
+		DirectDolBoot ("sd://apps/USBLoader/boot.dol", argb, 0);
+		DirectDolBoot ("usb://apps/USBLoader_cfg/boot.dol", argb, 0);
+		DirectDolBoot ("usb://apps/USBLoader/boot.dol", argb, 0);
 		}
 	if (config.run.game.loader == 1) // GX
 		{
 		sprintf (argb, "%s;ios=%d", config.run.asciiId, ios);
 
-		DirectDolBoot ("sd://apps/usbloader_gx/boot.dol", argb);
-		DirectDolBoot ("usb://apps/usbloader_gx/boot.dol", argb);
+		DirectDolBoot ("sd://apps/usbloader_gx/boot.dol", argb, 0);
+		DirectDolBoot ("usb://apps/usbloader_gx/boot.dol", argb, 0);
 		}
 	if (config.run.game.loader == 2) // WF
 		{
 		sprintf (argb, "%s;ios=%d", config.run.asciiId, ios);
 
-		DirectDolBoot ("sd://apps/wiiflow/boot.dol", argb);
-		DirectDolBoot ("usb://apps/wiiflow/boot.dol", argb);
+		DirectDolBoot ("sd://apps/wiiflow/boot.dol", argb, 0);
+		DirectDolBoot ("usb://apps/wiiflow/boot.dol", argb, 0);
 		}
 		
 	grlib_menu ("The selected loader wasn't found.\npostLoader will now reset your WII", "OK");

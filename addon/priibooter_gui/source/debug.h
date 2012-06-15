@@ -6,4 +6,5 @@
 	void Debug (const char *text, ...);
 	void Debug_hexdump(void *d, int len);
 	void gprintf (const char *format, ...);
+	void gprintf_StoreBuff(char *fn);
 #endif

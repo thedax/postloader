@@ -432,11 +432,11 @@ int neek_NandConfigSelect (char *nand)	// Search and select the passed nand
 	}
 	
 
-bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode 0 = read, mode 1 = write
+bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi, u32 *back2real) // mode 0 = read, mode 1 = write
 	{
 	s32 ret;
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	u32 data[4] ATTRIBUTE_ALIGN(32);
+	u32 data[8] ATTRIBUTE_ALIGN(32);
 	
 	Debug ("neek_PLNandInfo [begin]");
 	
@@ -453,6 +453,11 @@ bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode
 	else
 		data[3] = 0;
 		
+	if (back2real)
+		data[4] = *back2real;
+	else
+		data[4] = 0;
+
 	ISFS_Initialize ();
 	
 	sprintf (path, "/sneek/nandcfg.pl");
@@ -493,6 +498,7 @@ bool neek_PLNandInfo (int mode, u32 *idx, u32 *status, u32 *lo, u32 *hi) // mode
 
 	if (lo)	*lo = data[2];
 	if (hi)	*hi = data[3];
+	if (back2real) *back2real = data[4];
 
 	return true;
 	}
@@ -574,7 +580,7 @@ bool neek_CreateCDIConfigBrowse (CDIConfig *DICfg, u32 *count, char *path)
 	return TRUE;
 	}
 	
-bool neek_CreateCDIConfig (void)
+bool neek_CreateCDIConfig (char *gameid) // gameid must contain ID6 value
 	{
 	char path[128];
 	u32 count = 0;
@@ -603,7 +609,25 @@ bool neek_CreateCDIConfig (void)
 	
 	// Let's write diconfig.bin
     DICfg->Gamecount = count;
-	cfgSize = (count * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;	
+	cfgSize = (count * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;
+	
+	if (gameid) // Preselect requested game
+		{
+		char *p;
+		int i;
+		
+		for (i = 0; i < DICfg->Gamecount; i++)
+			{
+			p = (char*)&DICfg->GameInfo[i];
+			
+			if (strncmp (p, gameid, 6) == 0)
+				{
+				Debug ("Requested gameid was found (slot %d:%s)", i, gameid);
+				DICfg->SlotID = i;
+				break;
+				}
+			}
+		}
 
 	sprintf (path, "%s://sneek/diconfig.bin", devices_Get(DEV_USB));	
 	FILE *f = fopen(path, "wb");
@@ -674,6 +698,7 @@ bool neek_RestoreNandForChannel (char *sneekpath)
 
 static UIDSYS *uid = NULL;
 static size_t uidSize;
+static int uidCount;
 
 bool neek_UID_Read (void)
 	{
@@ -685,21 +710,63 @@ bool neek_UID_Read (void)
 	
 	if (uid != NULL) free(uid);
 	uid = (UIDSYS *)isfs_ReadFile (path, NULL, 0, &uidSize);
+	uidCount = uidSize / sizeof (UIDSYS);
 
 	ISFS_Deinitialize ();
 	return (uid != NULL);
+	}
+	
+
+int neek_UID_Compact (void) // return the number of erased items
+	{
+	int i, j, count = 0;
+	
+	if (uid == NULL)
+		return -1;
+		
+	// let's count uid items
+	for (i = 0; i < uidCount; i++)
+		{
+		if (uid[i].title_id)
+			{
+			count ++;
+			}
+		}
+	
+	UIDSYS *uidnew = allocate_memory(count * sizeof (UIDSYS));
+
+	// let's count uid items
+	j = 0;
+	for (i = 0; i < uidCount; i++)
+		{
+		if (uid[i].title_id)
+			{
+			memcpy (&uidnew[j], &uid[i], sizeof (UIDSYS));
+			//if (uidnew[j].uid < 4096)
+			uidnew[j].uid = j+1;
+				
+			j++;
+			}
+		}
+		
+	free (uid);
+	uid = uidnew;
+	
+	uidCount = count;
+	uidSize = count * sizeof (UIDSYS);
+	
+	return count;
 	}
 	
 bool neek_UID_Write (void)
 	{
 	if (uid == NULL) return false;
 	
+	neek_UID_Compact ();
+	
 	ISFS_Initialize ();
 
-	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	
-	strcpy(path,"/sys/uid.sys");
-	isfs_WriteFile (path, (u8*) uid, uidSize);
+	isfs_WriteFile ("/sys/uid.sys", (u8*) uid, uidSize);
 
 	ISFS_Deinitialize ();
 	return (uid != NULL);
@@ -710,56 +777,215 @@ void neek_UID_Free (void)
 	if (uid != NULL) free(uid);
 	}
 
-int neek_UID_Find (char *id)
+int neek_UID_Find (u64 title_id)
 	{
+	int i;
+	u64 tid;
+	
+	if (uid == NULL)
+		return -1;
+	
+	for (i = 0; i < uidCount; i++)
+		{
+		if (uid[i].padding == 0)
+			{
+			tid = uid[i].title_id;
+			}
+		else
+			{
+			//Debug ("Hidden item");
+			u16 * u1 = (u16*)&tid;
+			u16 * u2 = (u16*)&uid[i].title_id;
+			
+			u1[0] = uid[i].padding;
+			u1[1] = u2[1];
+			u1[2] = u2[2];
+			u1[3] = u2[3];
+			}
+		
+		if (tid == title_id)
+			{
+			/*
+			gprintf ("title %08x/%08x = %08x/%08x\r\n", 
+				TITLE_UPPER(uid[i].title_id), TITLE_LOWER(uid[i].title_id), 
+				TITLE_UPPER(title_id), TITLE_LOWER(title_id)
+				);
+			*/
+			/*
+			if (uid[i].uid >= 4096)
+				return -2; // found but it is a protected item
+			*/	
+			return i;
+			}
+		}
+	
 	return -1;
 	}
-	
-bool neek_UID_Add (char *id)
+
+int neek_UID_Count (void)
 	{
-	if (neek_UID_Find (id) < 0) return false;
+	int i, count = 0;
 	
+	if (uid == NULL)
+		return -1;
+	
+	for (i = 0; i < uidCount; i++)
+		{
+		if (uid[i].title_id > 0 /* && uid[i].uid < 4096*/)
+			count ++;
+		}
+	
+	return count;
+	}
+	
+int neek_UID_CountHidden (void)
+	{
+	int i, count = 0;
+	
+	if (uid == NULL)
+		return -1;
+	
+	for (i = 0; i < uidCount; i++)
+		{
+		if (uid[i].title_id > 0 && uid[i].padding > 0 /* && uid[i].uid < 4096 */)
+			count ++;
+		}
+	
+	return count;
+	}
+	
+int neek_UID_Clean (void) // return the number of erased items
+	{
+	int i, count = 0;
+	
+	if (uid == NULL)
+		return -1;
+	
+	for (i = 0; i < uidCount; i++)
+		{
+		if (true) //uid[i].uid < 4096)
+			{
+			memset (&uid[i], 0, sizeof (UIDSYS));
+			count ++;
+			}
+		}
+	
+	return count;
+	}
+
+bool neek_UID_Add (u64 title_id)
+	{
+	gprintf ("neek_UID_Add\r\n");
+	
+	if (neek_UID_Find (title_id) >= 0) return false; // It is already in uid
+	
+	// Let's scan for an empty slot
+	
+	int i, found = -1;
+	
+	for (i = 0; i < uidCount; i++)
+		if (uid[i].title_id == 0)
+			{
+			found = i;
+			gprintf ("neek_UID_Add found = %d\r\n", found);
+			break;
+			}
+	
+	if (found == -1) // we have not found a free block, resize the uid buffer
+		{
+		gprintf ("neek_UID_Add notfound, growing array\r\n");
+		found = uidCount;
+	
+		uidCount ++;
+		uidSize = uidCount * sizeof (UIDSYS);
+		
+		uid = realloc (uid, uidSize);
+		if (uid == NULL)
+			{
+			// uid is corrupted :(
+			return false;
+			}
+		}
+	
+	memset (&uid[found], 0, sizeof (UIDSYS));
+	uid[found].title_id = title_id;
+	uid[found].uid = 0; // need to be updated when saving ;)
+	gprintf ("neek_UID_Add slot %d:%08X/%08X:%u \r\n", found, TITLE_UPPER (uid[found].title_id), TITLE_LOWER (uid[found].title_id), uid[found].uid);
+	return true;
+	}
+	
+bool neek_UID_Remove (u64 title_id)
+	{
+	int pos = neek_UID_Find (title_id);
+	if (pos < 0) return false;
+	
+	// Simply set the item to 0....
+	memset (&uid[pos], 0, sizeof (UIDSYS));
+	
+	return true;
+	}
+	
+bool neek_UID_IsHidden (u64 title_id)
+	{
+	int pos = neek_UID_Find (title_id);
+	if (pos < 0) return false;
+	
+	u16 *u = (u16*)&uid[pos].title_id;
+
+	if (u[0] == 0 && uid[pos].padding != 0) return true; // It isn't hidden
 	
 	return false;
 	}
-	
-bool neek_UID_Remove (char *id)
+
+bool neek_UID_Show (u64 title_id)
 	{
-	return false;
+	int pos = neek_UID_Find (title_id);
+	if (pos < 0) return false;
+	if (uid[pos].padding == 0) return false; // It isn't hidden
+	
+	u16 *u = (u16*)&uid[pos].title_id;
+	
+	// restore titleid first word from padding
+	u[0] = uid[pos].padding;
+	
+	// clear the padding
+	uid[pos].padding = 0;
+	
+	// now Channel should be visible
+	
+	return true;
 	}
+
+bool neek_UID_Hide (u64 title_id)
+	{
+	Debug ("neek_UID_Hide");
+	int pos = neek_UID_Find (title_id);
+	Debug ("neek_UID_Hide: %d, %u", pos, uid[pos].padding);
+	if (pos < 0) return false;
+	if (uid[pos].padding != 0) return false; // It is already hidden
 	
+	u16 *u = (u16*)&uid[pos].title_id;
 	
+	// we use the padding to store the first word of titleid
+	uid[pos].padding = u[0];
+	
+	// now clear the first word of titleid
+	u[0] = 0;
+	
+	// now Channel should be hidden
+	
+	return true;
+	}
+
 bool neek_UID_Dump (void)
 	{
-	ISFS_Initialize ();
-
-	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	UIDSYS uid ATTRIBUTE_ALIGN(32);
-
-	strcpy(path,"/sys/uid.sys");
-
-	s32 fd = ISFS_Open(path, ISFS_OPEN_READ);
-	if (fd < 0)
-		{
-		Debug("ISFS_Open for %s failed %d\n", path, fd);
-		return -1;
-		}
+	int i;
 	
-	s32 ret;
-	s32 pos = 0;
-	int c = 0;
-	do
+	for (i = 0; i < uidCount; i++)
 		{
-		ret = ISFS_Read(fd, &uid, sizeof(uid));
-		if (ret > 0)
-			{
-			Debug ("UID: %08X: %08X - %08X - %u (%d - %d)", pos, TITLE_UPPER (uid.title_id), TITLE_LOWER (uid.title_id), uid.uid, ret, sizeof(UIDSYS));
-			}
-		c++;
+		if (uid[i].uid)
+			Debug ("UID: %d -> %08X/%08X:%u:%u", i, TITLE_UPPER (uid[i].title_id), TITLE_LOWER (uid[i].title_id), uid[i].uid, uid[i].padding);
 		}
-	while (ret > 0);
-	
-	ISFS_Deinitialize ();
 	
 	return true;
 	}

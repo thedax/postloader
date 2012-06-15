@@ -25,3 +25,6 @@ void gui_Clean (void);
 int ChooseDPadReturnMode (u32 btn);
 int Menu_SelectBrowsingMode (void);
 int GoToPage (int page, int pageMax);
+
+int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn);
+int DrawBottomBar (int *visibleflag, u32 *btn);

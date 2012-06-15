@@ -5,9 +5,11 @@
 
 #define GRLIBVER "1.3"
 
-#define GRLIB_ALIGNLEFT 0
-#define GRLIB_ALIGNCENTER 1
+#define GRLIB_ALIGNCENTER 0
+#define GRLIB_ALIGNLEFT 1
 #define GRLIB_ALIGNRIGHT 2
+#define GRLIB_ALIGNTOP 3
+#define GRLIB_ALIGNBOTTOM 4
 
 #define GRLIB_FONTMODE_BMF 0
 #define GRLIB_FONTMODE_TTF 1
@@ -58,11 +60,20 @@ typedef struct
 	GRLIB_RedrawCallback OverlayCallback;	// overlay, for function that support dimming (like menu) is NOT drawn dimmed
 	
 	GRRLIB_texImg *pointer[4];
+
+	GRRLIB_ttfFont *font;
+	int fontSize;
+	int fontReverse;						// If true font color is reversed
+	int fontOffsetY;
+	int fontSizeOffsetY;
+	int fontSizeMenuNorm;
+
+	u8 fontMode;
+	
 	GRRLIB_bytemapFont *fontBMF;				// Current bmf font to use
 	GRRLIB_bytemapFont *fontNormBMF;			// Used by menu
 	GRRLIB_bytemapFont *fontSmallBMF;			// Used by menu
-	int fontBMF_reverse;						// If true font color is reversed
-	u8 fontMode;
+
 	u32 color_window;
 	u32 color_windowBg;
 	
@@ -86,7 +97,8 @@ typedef struct
 	f32 x1, y1, x2, y2;
 	f32 xm, ym;
 	u32 color,bcolor;
-	char text[64];
+	int vAlign;
+	char text[128];
 	} 
 s_grlibobj;
 
@@ -161,21 +173,24 @@ GRRLIB_texImg * grlib_CreateTexFromTex (GRRLIB_texImg *source);
 void grlib_DrawScreenTex (GRRLIB_texImg * tex);
 void grlib_Redraw (void);
 void grlib_Render (void);
-void grlib_SetFontBMF (GRRLIB_bytemapFont *bmf);
-int grlib_GetFontMetrics (const char *text, int *width, int *heigh);
+void grlib_SetFontBMF2 (GRRLIB_bytemapFont *bmf);
+void grlib_SetFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY);
+int grlib_GetFontMetrics (const char *text, int *width, int *height);
 void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text);
 void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...);
 
+bool grlib_IsObjectVisible ( s_grlibobj *b );
 void grlib_DrawSquare ( s_grlibobj *b );
 void grlib_DrawEmptySquare ( s_grlibobj *b );
 void grlib_DrawBoldEmptySquare ( s_grlibobj *b );
+void grlib_DrawWindow (s_grlibobj go);
 
 void grlib_MagObject ( s_grlibobj *bt, s_grlibobj *bs, f32 magx, f32 magy);
 
-void grlib_DrawImgCenter (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color);
-void grlib_DrawImg (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color);
-void grlib_DrawTile (int x, int y, int w, int h, GRRLIB_texImg * tex, f32 angle, u32 color, int frame);
-void grlib_DrawPart (int x, int y, int w, int h, int tx, int ty, int tw, int th, GRRLIB_texImg * tex, f32 angle, u32 color);
+void grlib_DrawImgCenter (f32 x, f32 y, f32 w, f32 h, GRRLIB_texImg * tex, f32 angle, u32 color);
+void grlib_DrawImg (f32 x, f32 y, f32 w, f32 h, GRRLIB_texImg * tex, f32 angle, u32 color);
+void grlib_DrawTile (f32 x, f32 y, f32 w, f32 h, GRRLIB_texImg * tex, f32 angle, u32 color, int frame);
+void grlib_DrawPart (f32 x, f32 y, f32 w, f32 h, f32 tx, f32 ty, f32 tw, f32 th, GRRLIB_texImg * tex, f32 angle, u32 color);
 
 int grlib_DrawCenteredWindow (char * title, int w, int h, bool grayoutBackground, s_grlibobj *go);
 void grlib_DrawButton ( s_grlibobj *b, int state);
@@ -194,7 +209,7 @@ void grlib_Message (const char *text, ...);
 
 int grlib_GetUserInput (void);
 
-void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg * texbk, int magx, int magy, u32 flag);
+void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg * texbk, f32 magx, f32 magy, u32 flag);
 
 void grlib_IconSettingInit (s_grlib_iconSetting *grlib_iconSetting);
 void grlib_IconInit (s_grlib_icon *icon, s_grlib_icon *parentIcon);

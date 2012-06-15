@@ -24,76 +24,6 @@ u32 get_msec(bool reset)
 	return ticks_to_millisecs(gettime()) - startms;
 }
 
-/////////////////////////////////////////////////
-// Will read a fat file, and return allocated buffer with it's contents.
-// err can be (if no information needed, set it to NULL):
-//  0: no error
-// -1: unable to open the file
-// -2: zero file lenght
-// -3: cannot allocate buffer
-// ret NULL if an error or a pointer to U8 buffer
-
-u8 *ReadFile2Buffer (char *path, size_t *filesize, int *err, bool silent)
-	{
-	u8 *buff = NULL;
-	int size;
-	int bytes;
-	//int block = 65536;
-	int block = 131072;
-	FILE* f = NULL;
-	
-	Debug ("begin ReadFile2Buffer %s", path);
-	
-	if (filesize) *filesize = 0;
-	if (err) *err = 0;
-	
-	f = fopen(path, "rb");
-	if (!f)
-		{
-		if (err != NULL) *err = -1;
-		return NULL;
-		}
-
-	//Get file size
-	fseek( f, 0, SEEK_END);
-	size = ftell(f);
-	if (filesize) *filesize = size;
-	
-	if (size <= 0)
-		{
-		if (err != NULL) *err = -2;
-		fclose (f);
-		return NULL;
-		}
-		
-	// Return to beginning....
-	fseek( f, 0, SEEK_SET);
-	
-	buff = malloc (size+1);
-	if (buff == NULL) 
-		{
-		if (err != NULL) *err = -3;
-		fclose (f);
-		return NULL;
-		}
-	
-	bytes = 0;
-	do
-		{
-		bytes += fread(&buff[bytes], 1, block, f );
-		if (!silent) MasterInterface (0, 0, 2, "Loading DOL...\n%d %% done", (bytes * 100) / size);
-		}
-	while (bytes < size);
-
-	fclose (f);
-	
-	buff[size] = 0;
-	
-	Debug ("end ReadFile2Buffer, readed %d of %d bytes", bytes, size);
-
-	return buff;
-	}
-	
 // NandExits check if on the selected device there is a nand folder (on the root by now)
 bool NandExits (int dev)
 	{
@@ -334,13 +264,13 @@ bool ReloadPostloader (void)
 	if (devices_Get(DEV_SD))
 		{
 		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_SD));
-		if (fsop_FileExist (path)) DirectDolBoot (path, NULL);
+		if (fsop_FileExist (path)) DirectDolBoot (path, NULL, 0);
 		}
 
 	if (devices_Get(DEV_USB))
 		{
 		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_USB));
-		if (fsop_FileExist (path)) DirectDolBoot (path, NULL);
+		if (fsop_FileExist (path)) DirectDolBoot (path, NULL, 0);
 		}
 	
 	return false;
@@ -351,4 +281,54 @@ bool ReloadPostloaderChannel (void)
 	WII_Initialize();
 	WII_LaunchTitle(TITLE_ID(0x00010001,0x504f5354)); // postLoader3 Channel POST
 	return false;
+	}
+	
+/*
+This function will just check if there is a readable disc in drive
+*/
+#define IOCTL_DI_READID	0x70
+#define IOCTL_DI_STOPMOTOR 0xE3
+#define IOCTL_DI_RESET 0x8A
+s32 CheckDisk(void *id)
+	{
+	const char di_fs[] ATTRIBUTE_ALIGN(32) = "/dev/di";
+	s32 di_fd = -1;
+	u32 inbuf[8]  ATTRIBUTE_ALIGN(32);
+	u32 outbuf[8] ATTRIBUTE_ALIGN(32);	
+	
+	/* Open "/dev/di" */
+	di_fd = IOS_Open(di_fs, 0);
+	if (di_fd < 0) return di_fd; // error
+
+	/* Reset drive */
+	memset(inbuf, 0, sizeof(inbuf));
+	inbuf[0] = IOCTL_DI_RESET << 24;
+	inbuf[1] = 1;
+
+	s32 ret = IOS_Ioctl(di_fd, IOCTL_DI_RESET, inbuf, sizeof(inbuf), outbuf, sizeof(outbuf));
+	if (ret < 0) 
+		{
+		IOS_Close(di_fd);
+		return ret;
+		}
+
+	/* Read disc ID */
+	memset(inbuf, 0, sizeof(inbuf));
+	inbuf[0] = IOCTL_DI_READID << 24;
+	ret = IOS_Ioctl(di_fd, IOCTL_DI_READID, inbuf, sizeof(inbuf), outbuf, sizeof(outbuf));
+	if (ret < 0) return ret;
+	if (ret == 1 && id)
+		memcpy(id, outbuf, sizeof(dvddiskid));
+
+	/* Stop motor */
+	memset(inbuf, 0, sizeof(inbuf));
+	inbuf[0] = IOCTL_DI_STOPMOTOR << 24;
+	IOS_Ioctl(di_fd, IOCTL_DI_STOPMOTOR, inbuf, sizeof(inbuf), outbuf, sizeof(outbuf));
+	IOS_Close(di_fd);
+
+	if (ret != 1)
+		{
+		grlib_menu ("Sorry, no disc is detected in your WII", " OK ");
+		}
+	return ret;
 	}

@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define VER "3.71.6"
-#define CFGVER "PLCFGV0010"
+#define VER "4.b11"
+#define CFGVER "PLCFGV0013"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
 #define IOS_SNEEK 56
@@ -27,6 +27,14 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 #define FNTBIG 2
+
+#define TTFSMALL 16
+#define TTFSMALL_fontOffsetY -2
+#define TTFSMALL_fontSizeOffsetY -2
+
+#define TTFNORM 18
+#define TTFNORM_fontOffsetY -5
+#define TTFNORM_fontSizeOffsetY -5
 
 #define CFG_HOME_PRIILOAER 0x4461636F
 #define PRIILOADER_TOMENU  0x50756E65
@@ -51,9 +59,12 @@ enum {
 	INTERACTIVE_RET_TOCHANNELS,
 	INTERACTIVE_RET_TOHOMEBREW,
 	INTERACTIVE_RET_TOGAMES,
+	INTERACTIVE_RET_TOEMU,
 	INTERACTIVE_RET_BOOTMII,
 	INTERACTIVE_RET_WIILOAD,
-	INTERACTIVE_RET_DISC
+	INTERACTIVE_RET_DISC,
+	INTERACTIVE_RET_SE,
+	INTERACTIVE_RET_WM,
 	};
 
 #define WAITPANWIDTH 300
@@ -75,6 +86,7 @@ typedef void (*entrypoint) (void);
 #define BROWSE_HB 0
 #define BROWSE_CH 1
 #define BROWSE_GM 2
+#define BROWSE_EM 3
 
 // Global menuitem
 #define MENU_SHAREDITEMS 9999
@@ -121,6 +133,20 @@ enum {
 	TEX_EXCL,
 	TEX_USB,
 	TEX_SD,
+	
+	TEX_CAT_HB,
+	TEX_CAT_WIIWARE,
+	TEX_CAT_WII,
+	TEX_CAT_GAMECUBE,
+	TEX_CAT_EMUL,
+
+	TEX_ICO_ABOUT,
+	TEX_ICO_CONFIG,
+	TEX_ICO_DVD,
+	TEX_ICO_SYSMENU,
+	TEX_ICO_NEEK,
+	TEX_ICO_SE,
+	TEX_ICO_WM,
 
 	MAXTEX
 	};
@@ -150,7 +176,11 @@ typedef struct
 	int themeReloaded;				// Signal that a new theme was reloaded
 	int interactive;				// used for selecting interactive mode upon boot
 	
-	int useChannelCompatibleMode;				// used for selecting interactive mode upon boot
+	int useChannelCompatibleMode;	// used for selecting interactive mode upon boot
+	int saveExtendedConf;
+	
+	char sePath[256];	// setting editor
+	char wmPath[256];	// wiimod
 	}
 s_vars;
 
@@ -207,7 +237,9 @@ typedef struct
 	u32 category;	// bitmask category
 	u8 minPlayerAge;
 	
-	u32 dmlvideomode;		// Current video mode for dml
+	u8 dmlVideoMode;	// Current video mode for dml
+	u8 dmlNoDisc;		// Current video mode for dml
+	u8 dmlPadHook;		// Current video mode for dml
 	}
 s_gameConfig;
 
@@ -227,7 +259,7 @@ typedef struct
 	u8 *png;				// Address of png in cache area
 	size_t pngSize;
 
-	bool filterd;			// if 1, this app match the filter
+	bool filtered;			// if 1, this app match the filter
 	bool needUpdate;
 	bool checked;
 
@@ -245,7 +277,7 @@ typedef struct
 	u8 *png;				// Address of png in cache area
 	size_t pngSize;
 
-	bool filterd;			// if 1, this app match the filter
+	bool filtered;			// if 1, this app match the filter
 	bool needUpdate;
 	bool checked;
 
@@ -260,6 +292,39 @@ typedef struct
 	u8 disc;
 	}
 s_game;
+
+typedef struct
+	{
+	char name[128];
+	int priority;	// Vote !
+	bool hidden;	// if 1, this app will be not listed
+	u16 playcount;	// how many time this title has bin executed
+	//u32 category;	// bitmask category
+	}
+s_emuConfig;
+
+#define EMU_SNES 0
+#define EMU_NES 1
+#define EMU_VBA 2 //Game Boy/Game Boy Advance Emulator
+#define EMU_GEN 3 //Sega genesis
+
+typedef struct
+	{
+	char *name;				// name
+	u8 *png;				// Address of png in cache area
+	size_t pngSize;
+
+	bool filtered;			// if 1, this app match the filter
+	bool needUpdate;
+	bool checked;
+
+	// These are updated from s_channelConfig when browsing
+	int priority;			// Vote !
+	int type;			// Vote !
+	bool hidden;			// if 1, this app will be not listed
+	u16 playcount;			// how many time this title has bin executed
+	}
+s_emu;
 
 typedef struct 
 	{
@@ -323,7 +388,8 @@ typedef struct
 	int appPage;			// 
 	int appDev;				// 0 both, 1 sd, 2 usb
 	int gamePageWii;		// 
-	int gamePageGC;		// 
+	int gamePageGC;			// 
+	int gamePageEmu;
 	u32 gameFilter;			// 
 	u32 gameSort;			// 0 vote, 1 name, 2 playcount
 	u32 gameMode;			// GM_WII, GM_DML
@@ -335,11 +401,14 @@ typedef struct
 	bool showHidden; 		// if TRUE, apps marcked hidden will be showed
 	char pwd[PWDMAXLEN+1];	// Classic wii pwd RLUD12AB, up to 8 chars
 	
-	u32 dmlvideomode;		// Current video mode for dml
+	u8 dmlvideomode;		// Current video mode for dml
+	u8 dmlVersion;
 	u8 usesGestures;
 
 	bool runHBwithForwarder;
 	bool usesStub;
+	
+	u32 emuFilter;			// 
 	}
 s_config;
 
@@ -385,12 +454,11 @@ int Initialize(int silent);
 void Shutdown(bool doNotKillHBC);
 int MasterInterface (int full, int showCursor, int icon, const char *text, ...);	// icon 0 = none, 1 hdd, 2 hg
 void ShowAboutMenu (void);
+void ShowAboutPLMenu (void);
 
 // utils.c
 u32 get_msec(bool reset);
 void CleanTitleConfiguration(void);
-
-u8 *ReadFile2Buffer (char *path, size_t *filesize, int *err, bool silent);
 bool FileExist (char *fn);
 bool DirExist (char *path);
 bool NandExits (int dev);
@@ -407,19 +475,22 @@ bool Neek2oBoot (void);
 bool ReloadPostloader (void);
 bool ReloadPostloaderChannel (void);
 
+s32 CheckDisk(void *id);
+
 // dol.c
-#define EXECUTE_ADDR    ((u8 *) 0x92000000)
-#define BOOTER_ADDR     ((u8 *) 0x93000000)
-#define ARGS_ADDR       ((u8 *) 0x93200000)
-#define HBMAGIC_ADDR    ((u8 *) 0x93200000-8)
-#define CMDL_ADDR       ((u8 *) 0x93200000+sizeof(struct __argv))
+#define EXECUTE_ADDR   ((u8 *) 0x92000000)
+#define BOOTER_ADDR    ((u8 *) 0x93000000)
+#define ARGS_ADDR      ((u8 *) 0x93200000)
+#define HBMAGIC_ADDR   ((u8 *) 0x93200000-8)
+#define CMDL_ADDR      ((u8 *) 0x93200000+sizeof(struct __argv))
+#define LOADER_SIZE    0x400000
+#define LOADER_ADDR    ((u8 *) ARGS_ADDR - LOADER_SIZE)
 
 u32 load_dol(const void *dolstart, struct __argv *argv);
 void DolBoot (void);
 int DolBootPrepare (s_run *run);
 int DolBootPrepareWiiload (void);
-bool DirectDolBoot (char *fn, char *arguments);
-void FastDolBoot (void);
+bool DirectDolBoot (char *fn, char *arguments, int addpl);
 
 // io.c
 bool SetDefMount (int dev);
@@ -437,10 +508,13 @@ bool ExtConfigRead (void);
 void Video_Init (void);
 void Video_Deinit (void);
 void Video_DrawBackgroud (int type);
+void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy);
 void Video_DrawIcon (int icon, int x, int y);
 void Video_WaitPanel (int icon, const char *text, ...); // Draw a panel with a wait screen
 void Video_LoadTheme (int init);
 void Video_DrawWIFI (void);
+void Video_SetFont (int size);
+void Video_DrawVersionInfo (void);
 
 // appbrowser.c
 int AppBrowser (void);
@@ -450,6 +524,9 @@ int ChnBrowser (void);
 
 // gamebrowser.c
 int GameBrowser (void);
+
+// emubrowser.c
+int EmuBrowser (void);
 
 // wiiloadzip
 int ZipUnpack (char *path, char *target, char *dols, int *errcnt);
@@ -473,6 +550,7 @@ void DMLResetCache (void);
 int DMLSelect (void);
 char * DMLScanner  (bool reset);
 int DMLRun (char *folder, char *id, u32 videomode);
+int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook);
 int DMLInstall (char *gamename, size_t reqKb);
 
 // ScreenSaver

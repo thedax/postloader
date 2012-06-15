@@ -15,3 +15,4 @@ void devices_Mount (int devmode, int usbTimeout, devicesCallback cb);
 void devices_Unmount (void);
 char *devices_Get (int dev);
 int devices_PartitionInfo (int dev);
+int devices_TickUSB (void);

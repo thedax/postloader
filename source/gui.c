@@ -7,6 +7,7 @@ Inside all function to configure  aspect of pl
 #include "globals.h"
 #include "grlib/grlib.h"
 #include "gui.h"
+#include "devices.h"
 
 s_gui gui;
 
@@ -34,13 +35,18 @@ int ChooseDPadReturnMode (u32 btn)
 	{
 	if (btn & WPAD_BUTTON_UP) // WII Games
 		{
-		config.gameMode = 0;
+		if (config.browseMode == BROWSE_GM)
+			{
+			if (config.gameMode == 0)
+				config.gameMode = 1;
+			else
+				config.gameMode = 0;
+			}
 		return INTERACTIVE_RET_TOGAMES;
 		}
 	if (btn & WPAD_BUTTON_DOWN) // GC Games
 		{
-		config.gameMode = 1;
-		return INTERACTIVE_RET_TOGAMES;
+		return INTERACTIVE_RET_TOEMU;
 		}
 	if (btn & WPAD_BUTTON_LEFT) // Homebrew
 		{
@@ -53,7 +59,63 @@ int ChooseDPadReturnMode (u32 btn)
 	
 	return -1;
 	}
+/*
+int ChooseDPadReturnMode (u32 btn)
+	{
+	if (btn & WPAD_BUTTON_DOWN) // Homebrew
+		{
+		if (config.browseMode == BROWSE_HB)
+			{
+			return INTERACTIVE_RET_TOEMU;
+			}
+		if (config.browseMode == BROWSE_EM)
+			{
+			config.gameMode = 1;
+			return INTERACTIVE_RET_TOGAMES;
+			}
+		if (config.browseMode == BROWSE_GM && config.gameMode == 1)
+			{
+			config.gameMode = 0;
+			return INTERACTIVE_RET_TOGAMES;
+			}
+		if (config.browseMode == BROWSE_GM && config.gameMode == 0)
+			{
+			return INTERACTIVE_RET_TOCHANNELS;
+			}
+		if (config.browseMode == BROWSE_CH)
+			{
+			return INTERACTIVE_RET_TOHOMEBREW;
+			}
+		}
+	if (btn & WPAD_BUTTON_UP) // Channels
+		{
+		if (config.browseMode == BROWSE_HB)
+			{
+			return INTERACTIVE_RET_TOCHANNELS;
+			}
+		if (config.browseMode == BROWSE_CH)
+			{
+			config.gameMode = 0;
+			return INTERACTIVE_RET_TOGAMES;
+			}
+		if (config.browseMode == BROWSE_GM && config.gameMode == 0)
+			{
+			config.gameMode = 1;
+			return INTERACTIVE_RET_TOGAMES;
+			}
+		if (config.browseMode == BROWSE_GM && config.gameMode == 1)
+			{
+			return INTERACTIVE_RET_TOEMU;
+			}
+		if (config.browseMode == BROWSE_EM)
+			{
+			return INTERACTIVE_RET_TOHOMEBREW;
+			}
+		}
 	
+	return -1;
+	}
+*/	
 int Menu_SelectBrowsingMode (void)
 	{
 	char buff[512];
@@ -100,5 +162,341 @@ int GoToPage (int page, int pageMax)
 	if (item >= 0) page = item;
 	
 	return page;
+	}
+
+#define TOPBARITEMS 5	
+#define BTNOFFSET 15
+#define TOPBARH 160
+
+int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn)
+	{
+	s_grlibobj go;
+	static int visible = 0;
+	static int y = -TOPBARH;
+	int ret = -1;
+	int br = -1;
+	
+	if (browserRet && *browserRet > 0) return 0;
+	
+	if (visible == 0 && grlib_irPos.y < 40 && grlib_irPos.y > 0) visible = 1;
+	if (visible == 2 && grlib_irPos.y > (TOPBARH - 20))	visible = 3;
+	if (visible == 1 && y < -30) y+=10;
+	if (visible == 1 && y >= -30) visible = 2;
+	if (visible == 3) y-=5;
+
+	if (y <= -TOPBARH)
+		{
+		visible = 0;
+		y = -TOPBARH;
+		}
+	
+	go.y1 = y;
+	go.y2 = y + TOPBARH;
+	
+	go.bcolor = RGBA (32, 32, 32, 192);
+	go.color = RGBA (192, 192, 192, 255);
+	
+	if (visible)
+		{
+		Video_SetFont (TTFSMALL);
+		
+		static int init = 0;
+		static s_grlibobj goItems[TOPBARITEMS];
+		
+		if (!init)
+			{
+			strcpy (goItems[0].text, "Homebrews");
+			strcpy (goItems[1].text, "Channels");
+			strcpy (goItems[2].text, "WII Games");
+			strcpy (goItems[3].text, "GC Games");
+			strcpy (goItems[4].text, "Emulators");
+			init = 1;
+			}
+		
+		int i;
+		int x;
+		int barWidth;
+		int btnHeight = 90;
+		int btnWidth = 0;
+		
+		// Let's measure max button width
+		for (i = 0; i < TOPBARITEMS; i++)
+			{
+			int w;
+			
+			w = grlib_GetFontMetrics (goItems[i].text, NULL, NULL);
+			if (w > btnWidth) btnWidth = w;
+			}
+		
+		//btnWidth = 60;
+		
+		go.x1 = 320 - (((btnWidth + BTNOFFSET) * TOPBARITEMS) / 2) - 10;
+		go.x2 = 320 + (((btnWidth + BTNOFFSET) * TOPBARITEMS) / 2) + 10;
+		barWidth = go.x2 - go.x1;
+		
+		grlib_DrawWindow (go);
+		
+		x = go.x1 + (barWidth / 2) - ((((btnWidth + BTNOFFSET) * TOPBARITEMS) / 2) - (BTNOFFSET / 2));
+		for (i = 0; i < TOPBARITEMS; i++)
+			{
+			goItems[i].vAlign = GRLIB_ALIGNBOTTOM;
+			goItems[i].x1 = x;
+			goItems[i].x2 = x+btnWidth;
+			goItems[i].y1 = go.y2 - 10 - btnHeight;
+			goItems[i].y2 = go.y2 - 10;
+			goItems[i].bcolor = RGBA (64, 64, 64, 128);
+			goItems[i].color = RGBA (192, 192, 192, 255);
+			
+			if (grlib_irPos.x > goItems[i].x1 && grlib_irPos.x < goItems[i].x2 && grlib_irPos.y > goItems[i].y1 && grlib_irPos.y < goItems[i].y2)
+				{
+				s_grlibobj btnsel;
+				grlib_MagObject (&btnsel, &goItems[i], 3, 3);
+				grlib_DrawButton (&btnsel, BTNSTATE_SEL);
+				
+				if (btn && *btn == WPAD_BUTTON_A) ret = i;
+				}
+			else
+				grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
+				
+			Video_DrawIconZ (TEX_CAT_HB + i, x + btnWidth/2, go.y2 - 65, 1.0, 1.3);
+			
+			x += (btnWidth + BTNOFFSET);
+			}
+			
+		if (ret == 0) // Homebrew
+			{
+			br = INTERACTIVE_RET_TOHOMEBREW;
+			}
+		if (ret == 1) // Channels
+			{
+			br = INTERACTIVE_RET_TOCHANNELS;
+			}
+		if (ret == 2) // WII Games
+			{
+			br = INTERACTIVE_RET_TOGAMES;
+			config.gameMode = 0;
+			}
+		if (ret == 3) // GC Games
+			{
+			br = INTERACTIVE_RET_TOGAMES;
+			config.gameMode = 1;
+			}
+		if (ret == 4) // GC Games
+			{
+			br = INTERACTIVE_RET_TOEMU;
+			config.gameMode = 1;
+			}
+		}
+
+	if (br != -1) // something selected
+		visible = 3; // Start close
+
+	if (browserRet) *browserRet = br;
+	if (visibleflag) *visibleflag = visible;
+	
+	return ret;
+	}
+	
+static int BOTBARITEMS = 5;
+int DrawBottomBar (int *visibleflag, u32 *btn)
+	{
+	s_grlibobj go;
+	static int visible = 0;
+	static int y = 480;
+	int ret = -1;
+	int i;
+
+	static int seAvailable = -1;
+	static int wmAvailable = -1;
+	int seItem = -1, wmItem = -1;
+	
+	if (seAvailable == -1) // we need to check se
+		{
+		int dev;
+		int found = 0;
+		char path[256];
+		
+		for (dev = 0; dev < DEV_MAX; dev++)
+			{
+			if (devices_Get (dev))
+				{
+				sprintf (path, "%s://apps/SettingsEditorGUI/boot.dol", devices_Get (dev));
+				if (fsop_FileExist (path))
+					{
+					strcpy (vars.sePath, path);
+					found = 1;
+					break;
+					}
+				sprintf (path, "%s://apps/Settings Editor GUI/boot.dol", devices_Get (dev));
+				if (fsop_FileExist (path))
+					{
+					strcpy (vars.sePath, path);
+					found = 1;
+					break;
+					}
+				}
+			}
+		
+		if (found)
+			{
+			seAvailable = 1;
+			BOTBARITEMS ++;
+			}
+		else
+			{
+			seAvailable = 0;
+			}
+		}
+
+	if (wmAvailable == -1) // we need to check se
+		{
+		int dev;
+		int found = 0;
+		char path[256];
+		
+		for (dev = 0; dev < DEV_MAX; dev++)
+			{
+			if (devices_Get (dev))
+				{
+				sprintf (path, "%s://apps/wiimod/boot.dol", devices_Get (dev));
+				if (fsop_FileExist (path))
+					{
+					strcpy (vars.wmPath, path);
+					found = 1;
+					break;
+					}
+				}
+			}
+		
+		if (found)
+			{
+			wmAvailable = 1;
+			BOTBARITEMS ++;
+			}
+		else
+			{
+			wmAvailable = 0;
+			}
+		}
+	
+	if (visible == 0 && grlib_irPos.y > 420) visible = 1;
+	if (visible == 1 && y > 360) y-=10;
+	if (visible == 1 && y <= 360) visible = 2;
+	if (visible == 2 && grlib_irPos.y < 355) visible = 3;
+	if (visible == 3) y+=5;
+
+	if (y >= 480)
+		{
+		visible = 0;
+		y = 480;
+		}
+	
+	go.y1 = y;
+	go.y2 = y + TOPBARH;
+	
+	go.bcolor = RGBA (32, 32, 32, 192);
+	go.color = RGBA (192, 192, 192, 255);
+	
+	if (visible)
+		{
+		Video_SetFont (TTFSMALL);
+
+		static int init = 0;
+		static s_grlibobj goItems[7];
+		
+		if (!init)
+			{
+			i = 0;
+			
+			strcpy (goItems[i++].text, "About..");
+			strcpy (goItems[i++].text, "Config");
+			strcpy (goItems[i++].text, "Run Disc");
+			strcpy (goItems[i++].text, "Sys. Menu");
+			strcpy (goItems[i++].text, "Neek");
+			if (seAvailable) 
+				{
+				seItem = i;
+				strcpy (goItems[i++].text, "Setting Ed.");
+				}
+			if (wmAvailable) 
+				{
+				wmItem = i;
+				strcpy (goItems[i++].text, "WiiMod");
+				}
+			init = 1;
+			}
+		
+		int x;
+		int barWidth;
+		int btnHeight = 90;
+		int btnWidth = 0;
+		
+		// Let's measure max button width
+		for (i = 0; i < BOTBARITEMS; i++)
+			{
+			int w;
+			
+			w = grlib_GetFontMetrics (goItems[i].text, NULL, NULL);
+			if (w > btnWidth) btnWidth = w;
+			}
+		
+		//btnWidth = 60;
+		
+		go.x1 = 320 - (((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) - 10;
+		go.x2 = 320 + (((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) + 10;
+		barWidth = go.x2 - go.x1;
+		
+		grlib_DrawWindow (go);
+		
+		x = go.x1 + (barWidth / 2) - ((((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) - (BTNOFFSET / 2));
+		for (i = 0; i < BOTBARITEMS; i++)
+			{
+			goItems[i].vAlign = GRLIB_ALIGNBOTTOM;
+			goItems[i].x1 = x;
+			goItems[i].x2 = x+btnWidth;
+			goItems[i].y1 = go.y1 + 10;
+			goItems[i].y2 = go.y1 + 10 + btnHeight;
+			goItems[i].bcolor = RGBA (64, 64, 64, 128);
+			goItems[i].color = RGBA (192, 192, 192, 255);
+			
+			if (grlib_irPos.x > goItems[i].x1 && grlib_irPos.x < goItems[i].x2 && grlib_irPos.y > goItems[i].y1 && grlib_irPos.y < goItems[i].y2)
+				{
+				s_grlibobj btnsel;
+				grlib_MagObject (&btnsel, &goItems[i], 3, 3);
+				grlib_DrawButton (&btnsel, BTNSTATE_SEL);
+				
+				if (btn && *btn == WPAD_BUTTON_A) 
+					{
+					if (i == seItem)
+						ret = 5;
+					else if (i == wmItem)
+						ret = 6;
+					else
+						ret = i;
+					}
+				}
+			else
+				grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
+
+			if (i == seItem)
+				Video_DrawIconZ (TEX_ICO_SE, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else if (i == wmItem)
+				Video_DrawIconZ (TEX_ICO_WM, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else
+				Video_DrawIconZ (TEX_ICO_ABOUT + i, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			
+			x += (btnWidth + BTNOFFSET);
+			}
+		}
+
+	if (ret != -1) // something selected
+		{
+		visible = 0;
+		y = 480;
+		}
+
+	if (visibleflag) *visibleflag = visible;
+	
+	return ret;
 	}
 	

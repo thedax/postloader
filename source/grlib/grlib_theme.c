@@ -29,7 +29,7 @@ static void CheckForTile (GRRLIB_texImg * tex)
 // tex is the tiled texture
 // texbk is the background texture... can be NULL, otherwise it will be used to fill the square...
 
-void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg * texbk, int magx, int magy, u32 flag)
+void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg * texbk, f32 magx, f32 magy, u32 flag)
 	{
 	if (tex == NULL) return;
 	

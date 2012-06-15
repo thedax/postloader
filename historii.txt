@@ -1,3 +1,78 @@
+postLoader 4.b11
+
+* d-cross up select wii games/dml. down for emu.
+* added selection for dml mode (0.x for < 58, 1.x for new dml)
+* added more video modes for dml (only 1.x mode)
+* added nodisc and padhook flags in per game settings (only 1.x mode)
+* wbfs games on first FAT32 partition can be booted via neek2o from real nand (neekbooter 1.4 is required as priiloader autoboot installed file in /nand/pl2o nand image)
+* note: genplus doesn't work for me
+
+postLoader 4.b10
+
+* corrected a bug in grlib drawimage functions, that may not scale correctly the texture
+* covercache: fixed threading and now start caching current page items instead of previous one.
+* icons: fixed possible fault with long text
+
+postLoader 4.b9
+
+* huge speed improvment in importing emu snapshots
+* Added support for genplusgx emulator
+
+postLoader 4.b8
+
+* postLoader is capable of import saved snapshots as covers (fceugx, vbagx, snes9xgx)
+* rendering speedup checking and disabling offscreen objects
+
+postLoader 4.b7
+
+* in dol embedded configuration is stored only when needed (great speedup on hb start)
+* corrected long filenames exception for emulators
+
+postLoader 4.b6
+
+* Integrated uid.sys manager for neek is partially working. Press [home] in channel mode (under neek2o/neek)
+* Now hb apps are loaded directly to mem2... launching is even faster
+* Added emulator support for fceugx, vbagx
+
+postLoader 4.b5
+
+* Changed the HDD keep live function
+* Updated all sorting functions to qsort
+* Changed escape code for TTF flags, as char 255 caused wrong behaveur in mbstowcs
+* new TTF width caching system, with full support for wide chars
+* fixed icon font size during scrolling
+
+postLoader 4.b4
+
+* Changed a lot of on-screen informations
+* Corrected a bug on apps name from xml in homebrew mode
+* Corrected a bug on channels name
+
+postLoader 4.b3
+
+* Adjusted position of some user inteface items...
+* Semplified HOME menu for all modes
+* Added a direct shortcut for Setting Editor GUI in the bottom bar (S.E. Gui must be installed in /apps/SettingsEditorGUI/ or /apps/Settings Editor GUI/)
+
+postLoader 4.b3
+
+* Added texture based cache system for GRRLIB ttf implementation
+* Added a cache for ttf character size in GRRLIB
+* emuBrowser: now using qsort for sorting
+* Added topbar for selecting browser mode
+* Added bottombar for selecting about/setup/disc/neek(bootmii)/setting editor (if installed)
+* Now disc is checked before starting it.
+* priibooterGUI 2.7: little change in fade timing to give a little more time to press a key on wiimote
+
+postLoader 4.b1
+
+* Now postLoader uses TTF fonts
+* Fixed a bug on GRRLIB when measuring character width (TTF)
+* Fixed a bug on homebrew parameters detection
+* Corrected some memory allocation bugs
+* Added emulator page (actually only snes9xgx, and roms must be in /snes9xgx/roms). A great THANK to fix94 for his hard works on emulators
+* Corrected a random bug that was causing the hang of cover cache thread.
+
 postLoader 3.71.6
 
 * Is no more required that the FAT32 partition dedicated to wii homebrew is the first one.

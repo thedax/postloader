@@ -176,8 +176,8 @@ static bool ScanWBFS (char *ob, char *path)
 
 		*gameid = '\0';
 		
-		Debug (" > %s", wbfs);
-		Debug ("'%s' %d = wbfs[7] = %c, wbfs[len-1] = %c && wbfs[len-8] = %c", wbfs, len, wbfs[7], wbfs[len-1], wbfs[len-8]);
+		//Debug (" > %s", wbfs);
+		//Debug ("'%s' %d = wbfs[7] = %c, wbfs[len-1] = %c && wbfs[len-8] = %c", wbfs, len, wbfs[7], wbfs[len-1], wbfs[len-8]);
 
 		// just gameid
 		if (len == 6)

@@ -9,23 +9,6 @@
 #include "bin2o.h"
 #include "devices.h"
 
-static void UpdateLiveUSB (void)
-	{
-	if (!devices_Get (DEV_USB)) return;
-	
-	FILE *f;
-	char path[PATHMAX];
-	
-	sprintf (path, "%s://pllive.dat", devices_Get (DEV_USB));
-	
-	if (!fsop_FileExist (path))
-		{
-		f = fopen (path, "wb");
-		fwrite (f, 1, sizeof(FILE), f);
-		fclose (f);
-		}
-	}
-
 static bool Play (char * fn) // return true interrupt the screensaver
 	{
 	static int xs = 0;
@@ -51,7 +34,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 	
 	float ratio = ((float)img->w / (float)img->h)/1.3;
 	
-	grlib_SetFontBMF (fonts[FNTNORM]);
+	Video_SetFont(TTFNORM);
 
 	for (i = 360; i >= 0; i-=4)
 		{
@@ -102,7 +85,10 @@ static bool Play (char * fn) // return true interrupt the screensaver
 
 	GRRLIB_FreeTexture (img);
 	
-	UpdateLiveUSB ();
+	CoverCache_Pause (true);
+	devices_TickUSB ();
+	CoverCache_Pause (false);
+
 	snd_Mp3Go ();
 	
 	return false;
@@ -120,8 +106,8 @@ static bool ScreenSaver (void)
 	
 	Debug ("ScreenSaver: start"); 
 	
-	fr = grlibSettings.fontBMF_reverse;
-	grlibSettings.fontBMF_reverse = 0;
+	fr = grlibSettings.fontReverse;
+	grlibSettings.fontReverse = 0;
 	
 	sprintf (path, "%s://ploader/covers", vars.defMount);
 		
@@ -147,7 +133,7 @@ static bool ScreenSaver (void)
 		
 	closedir(pdir);
 	
-	grlibSettings.fontBMF_reverse = fr;
+	grlibSettings.fontReverse = fr;
 	
 	if (ret) return true;
 	return false;
@@ -189,13 +175,16 @@ bool LiveCheck (int reset)
 		bAct = grlibSettings.buttonActivity;
 		ss = 0;
 		}
-		
-	if ((ct - t) > 30 && devices_Get(DEV_USB))
+	
+	if ((ct - t) > 30)
 		{
 		t = ct;
-		UpdateLiveUSB ();
+		
+		CoverCache_Pause (true);
+		devices_TickUSB ();
+		CoverCache_Pause (false);
 		}
-	
+
 	if ((ct - tp) > 1)
 		{
 		tp = ct;
