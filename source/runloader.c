@@ -61,10 +61,10 @@ void RunLoader(void)
 		{
 		sprintf (argb, "%s;partition=%s;intro=0;theme=pl;ios=%d", config.run.asciiId, part, ios);
 
-		DirectDolBoot ("sd://apps/USBLoader_cfg/boot.dol", argb, 0);
 		DirectDolBoot ("sd://apps/USBLoader/boot.dol", argb, 0);
-		DirectDolBoot ("usb://apps/USBLoader_cfg/boot.dol", argb, 0);
+		DirectDolBoot ("sd://apps/USBLoader_cfg/boot.dol", argb, 0);
 		DirectDolBoot ("usb://apps/USBLoader/boot.dol", argb, 0);
+		DirectDolBoot ("usb://apps/USBLoader_cfg/boot.dol", argb, 0);
 		}
 	if (config.run.game.loader == 1) // GX
 		{

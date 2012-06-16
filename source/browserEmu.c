@@ -761,7 +761,7 @@ static void ShowMainMenu (void)
 	grlib_PushScreen();
 	
 	grlibSettings.fontNormBMF = fonts[FNTBIG];
-	int item = grlib_menu ("Games menu", buff);
+	int item = grlib_menu ("Emulators menu", buff);
 	grlibSettings.fontNormBMF = fonts[FNTNORM];
 	
 	if (item == 1)

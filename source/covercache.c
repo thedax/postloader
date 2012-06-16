@@ -33,7 +33,7 @@ typedef struct
 s_fifo; // covercache
 
 static s_cc *cc;
-static s_fifo *fifo;
+//static s_fifo *fifo;
 
 static int idx = 0;	// used to add elements
 static int running = 0;
@@ -74,9 +74,11 @@ static void FreeMem2Tex (GRRLIB_texImg *tex)
 	{
 	if (!tex) return;
 	
+	DCFlushRange(tex, sizeof(GRRLIB_texImg));
+	
 	if (tex->data)
 		mem2_free(tex->data);
-		
+
 	mem2_free(tex);
 	}
 
@@ -250,8 +252,8 @@ void CoverCache_Start (void)
 	cc = mem2_malloc (MAXITEMS * sizeof(s_cc));
 	memset (cc, 0, MAXITEMS * sizeof(s_cc));
 	
-	fifo = mem2_malloc (MAXITEMS * sizeof(s_fifo));
-	memset (fifo, 0, MAXITEMS * sizeof(s_cc));
+	//fifo = mem2_malloc (MAXITEMS * sizeof(s_fifo));
+	//memset (fifo, 0, MAXITEMS * sizeof(s_cc));
 	
 	threadStack = (u8 *) memalign(32, STACKSIZE);
 	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 64);
@@ -265,11 +267,15 @@ void CoverCache_Flush (void)	// empty the cache
 	
 	CoverCache_Pause (true);
 	
+	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
+	
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (cc[i].cover) 
 			{
+			//Debug ("CoverCache_Flush: 0x%08X %s", cc[i].cover, cc[i].id);
 			FreeMem2Tex (cc[i].cover);
+			//Debug ("CoverCache_Flush: (done)");
 			cc[i].cover = NULL;
 			
 			count ++;
@@ -299,26 +305,26 @@ void CoverCache_Stop (void)
 			usleep (1000);
 			}
 		
-		if (running != 0)
+		if (running)
 			{
 			SET (stopThread, 1);
 			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
 			}
 		
-		Debug ("CoverCache_Stop #1");
+		//Debug ("CoverCache_Stop #1");
 		LWP_JoinThread (hthread, NULL);
 
-		Debug ("CoverCache_Stop #2");
+		//Debug ("CoverCache_Stop #2");
 		CoverCache_Flush ();
 
-		Debug ("CoverCache_Stop #3");
+		//Debug ("CoverCache_Stop #3");
 		free (threadStack);
 
-		Debug ("CoverCache_Stop #5");
+		//Debug ("CoverCache_Stop #5");
 		mem2_free (cc);
-		mem2_free (fifo);
+		//mem2_free (fifo);
 
-		Debug ("CoverCache_Stop #6");
+		Debug ("CoverCache_Stop completed");
 		}
 	else
 		Debug ("CoverCache_Stop: thread was already stopped");

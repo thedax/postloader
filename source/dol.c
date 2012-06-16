@@ -97,6 +97,8 @@ bool NeedArgs (u8 *buffer)
 
 int DolBootPrepareWiiload (void)
 	{
+	CoverCache_Flush ();
+	
 	MasterInterface (1, 0, 3, "Booting...");
 
 	memcpy(EXECUTE_ADDR, wiiload.buff, wiiload.buffsize);
@@ -169,9 +171,15 @@ int DolBootPrepare (s_run *run)
 	char path[PATHMAX];
 	
 	Video_LoadTheme (0); // Make sure that theme isn't loaded
-		
+	
+	CoverCache_Flush ();
+	
 	sprintf (path, "%s%s", run->path, run->filename);
-	LoadHB (path, EXECUTE_ADDR);
+	if (LoadHB (path, EXECUTE_ADDR) <= 0)
+		{
+		sprintf (bootpath, "postLoader was unable to load:\n\n'%s'", path);
+		grlib_menu (bootpath, "  OK  ");
+		}
 
 	MasterInterface (1, 0, 3, "Booting...");
 
@@ -279,6 +287,8 @@ bool DirectDolBoot (char *fn, char *arguments, int addpl)
 	
 	if (addpl)
 		{
+		CoverCache_Flush ();
+		
 		int loaded = 0;
 		Video_LoadTheme (0); // Make sure that theme isn't loaded
 		if (!loaded && devices_Get(DEV_SD))

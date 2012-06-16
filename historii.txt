@@ -1,3 +1,10 @@
+postLoader 4.b12
+
+* solved an issue from covercache on dol/elf loading to mem2
+* added a check on dol loading
+* postloader will now create the folder for emulator screenshots (covers.emu)
+* changed some wrong text
+
 postLoader 4.b11
 
 * d-cross up select wii games/dml. down for emu.

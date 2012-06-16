@@ -23,6 +23,8 @@ u32 InitMem2Manager ()
 	u32 level;
 	_CPU_ISR_Disable(level);
 	size &= ~0x1f; // round down, because otherwise we may exceed the area
+	
+	//gprintf ("InitMem2Manager = 0x%0X %u 0x%0X\r\n", SYS_GetArena2Hi(), size, SYS_GetArena2Hi()-size);
 	void *mem2_heap_ptr = (void *)((u32)SYS_GetArena2Hi()-size);
 	SYS_SetArena2Hi(mem2_heap_ptr);
 	_CPU_ISR_Restore(level);

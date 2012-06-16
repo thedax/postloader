@@ -24,6 +24,12 @@ bool CheckForPostLoaderFolders (void)
 		if (!fsop_MakeFolder (path)) return FALSE;
 		}
 	
+	sprintf (path, "%s://ploader/covers.emu",vars.defMount);
+	if (!fsop_DirExist (path))
+		{
+		if (!fsop_MakeFolder (path)) return FALSE;
+		}
+	
 	sprintf (path, "%s://ploader/config",vars.defMount);
 	if (!fsop_DirExist (path))
 		{
