@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b12"
+#define VER "4.b15"
 #define CFGVER "PLCFGV0013"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -307,6 +307,7 @@ s_emuConfig;
 #define EMU_NES 1
 #define EMU_VBA 2 //Game Boy/Game Boy Advance Emulator
 #define EMU_GEN 3 //Sega genesis
+#define EMU_WII64 4 //Wii64
 
 typedef struct
 	{
@@ -476,6 +477,8 @@ bool ReloadPostloader (void);
 bool ReloadPostloaderChannel (void);
 
 s32 CheckDisk(void *id);
+
+void bsort(_PTR __base, size_t __nmemb, size_t __size, int(*_compar)(const _PTR, const _PTR));
 
 // dol.c
 #define EXECUTE_ADDR   ((u8 *) 0x92000000)

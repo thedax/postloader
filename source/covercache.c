@@ -25,12 +25,14 @@ typedef struct
 	}
 s_cc; // covercache
 
+/*
 typedef struct 
 	{
 	char id[256];
 	u8 prio;
 	}
 s_fifo; // covercache
+*/
 
 static s_cc *cc;
 //static s_fifo *fifo;
@@ -184,7 +186,7 @@ static void *thread (void *arg)
 				return NULL;
 				}
 
-			usleep (100);
+			usleep (500);
 			}
 		
 		doPrio = 0;
@@ -249,14 +251,14 @@ void CoverCache_Start (void)
 	{
 	Debug ("CoverCache_Start");
 
-	cc = mem2_malloc (MAXITEMS * sizeof(s_cc));
-	memset (cc, 0, MAXITEMS * sizeof(s_cc));
+	cc = calloc (1, MAXITEMS * sizeof(s_cc));
+	//memset (cc, 0, MAXITEMS * sizeof(s_cc));
 	
 	//fifo = mem2_malloc (MAXITEMS * sizeof(s_fifo));
 	//memset (fifo, 0, MAXITEMS * sizeof(s_cc));
 	
 	threadStack = (u8 *) memalign(32, STACKSIZE);
-	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 64);
+	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 32);
 	}
 
 void CoverCache_Flush (void)	// empty the cache
@@ -321,7 +323,7 @@ void CoverCache_Stop (void)
 		free (threadStack);
 
 		//Debug ("CoverCache_Stop #5");
-		mem2_free (cc);
+		free (cc);
 		//mem2_free (fifo);
 
 		Debug ("CoverCache_Stop completed");

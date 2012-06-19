@@ -572,14 +572,12 @@ static int qsort_name (const void * a, const void * b)
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
 	
-	//gprintf ("'%s' '%s'\n", aa->name, bb->name);
-
 	if (!aa->name || !bb->name) return 0;
 
 	return (ms_strcmp (aa->name, bb->name));
 	}
 
-static int qsort_hidden (const void * a, const void * b)
+static int bsort_hidden (const void * a, const void * b)
 	{
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
@@ -587,19 +585,17 @@ static int qsort_hidden (const void * a, const void * b)
 	if (aa->type == AT_FOLDERUP) return 0;
 
 	if (aa->hidden > bb->hidden) return 1;
-	if (aa->hidden < bb->hidden) return -1;
-	
+
 	return 0;
 	}
 
-static int qsort_priority (const void * a, const void * b)
+static int bsort_priority (const void * a, const void * b)
 	{
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
 	
 	if (aa->type == AT_FOLDERUP) return 0;
 	
-	if (aa->priority > bb->priority) return -1;
 	if (aa->priority < bb->priority) return 1;
 	
 	return 0;
@@ -618,18 +614,9 @@ static void AppsSort (void)
 		if ((!apps[i].hidden || showHidden)) apps2Disp++;
 		}
 	
-	if (apps[0].type != AT_FOLDERUP)
-		{
-		qsort (apps, appsCnt, sizeof(s_app), qsort_hidden);
-		qsort (apps, apps2Disp, sizeof(s_app), qsort_name);
-		qsort (apps, apps2Disp, sizeof(s_app), qsort_priority);
-		}
-	else
-		{
-		qsort (&apps[1], appsCnt-1, sizeof(s_app), qsort_hidden);
-		qsort (&apps[1], apps2Disp-1, sizeof(s_app), qsort_name);
-		qsort (&apps[1], apps2Disp-1, sizeof(s_app), qsort_priority);
-		}
+	bsort (apps, appsCnt, sizeof(s_app), bsort_hidden);
+	qsort (apps, apps2Disp, sizeof(s_app), qsort_name);
+	bsort (apps, apps2Disp, sizeof(s_app), bsort_priority);
 
 	pageMax = (apps2Disp - 1) / gui.spotsXpage;
 	
@@ -1132,7 +1119,12 @@ static void RedrawIcons (int xoff, int yoff)
 			if (!gui.spots[gui.spotsIdx].ico.icon)
 				{
 				if (apps[ai].name)
-					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].name);
+					{
+					char title[256];
+					strcpy (title, apps[ai].name);
+					title[48] = 0;
+					strcpy (gui.spots[gui.spotsIdx].ico.title, title);
+					}
 				else
 					strcpy (gui.spots[gui.spotsIdx].ico.title, apps[ai].path);
 				}

@@ -383,28 +383,6 @@ static void StructFree (void)
 	gamesCnt = 0;
 	}
 	
-static int qsort_filtered (const void * a, const void * b)
-	{
-	s_game *aa = (s_game*) a;
-	s_game *bb = (s_game*) b;
-	
-	if (aa->filtered > bb->filtered) return -1;
-	if (aa->filtered < bb->filtered) return 1;
-	
-	return 0;
-	}
-
-static int qsort_hidden (const void * a, const void * b)
-	{
-	s_game *aa = (s_game*) a;
-	s_game *bb = (s_game*) b;
-	
-	if (aa->hidden > bb->hidden) return 1;
-	if (aa->hidden < bb->hidden) return -1;
-	
-	return 0;
-	}
-
 static int qsort_name (const void * a, const void * b)
 	{
 	s_game *aa = (s_game*) a;
@@ -415,35 +393,52 @@ static int qsort_name (const void * a, const void * b)
 	return (ms_strcmp (aa->name, bb->name));
 	}
 
-static int qsort_priority (const void * a, const void * b)
+static int bsort_filtered (const void * a, const void * b)
+	{
+	s_game *aa = (s_game*) a;
+	s_game *bb = (s_game*) b;
+	
+	if (aa->filtered < bb->filtered) return 1;
+	
+	return 0;
+	}
+
+static int bsort_hidden (const void * a, const void * b)
+	{
+	s_game *aa = (s_game*) a;
+	s_game *bb = (s_game*) b;
+	
+	if (aa->hidden < bb->hidden) return 1;
+
+	return 0;
+	}
+
+static int bsort_priority (const void * a, const void * b)
 	{
 	s_game *aa = (s_game*) a;
 	s_game *bb = (s_game*) b;
 
-	if (aa->priority > bb->priority) return -1;
 	if (aa->priority < bb->priority) return 1;
 	
 	return 0;
 	}
 
-static int qsort_playcount (const void * a, const void * b)
+static int bsort_playcount (const void * a, const void * b)
 	{
 	s_game *aa = (s_game*) a;
 	s_game *bb = (s_game*) b;
 
-	if (aa->playcount > bb->playcount) return -1;
 	if (aa->playcount < bb->playcount) return 1;
 	
 	return 0;
 	}
 
-static int qsort_slot (const void * a, const void * b)
+static int bsort_slot (const void * a, const void * b)
 	{
 	s_game *aa = (s_game*) a;
 	s_game *bb = (s_game*) b;
 	
-	if (bb->slot > aa->slot) return -1;
-	if (aa->slot > bb->slot) return 1;
+	if (aa->slot < bb->slot) return 1;
 	
 	return 0;
 	}
@@ -462,21 +457,21 @@ static void AppsSort (void)
 		if (games[i].filtered && (!games[i].hidden || showHidden)) games2Disp++;
 		}
 	
-	qsort (games, gamesCnt, sizeof(s_game), qsort_filtered);
-	qsort (games, gamesCnt, sizeof(s_game), qsort_hidden);
+	bsort (games, gamesCnt, sizeof(s_game), bsort_hidden);
+	bsort (games, gamesCnt, sizeof(s_game), bsort_filtered);
 	qsort (games, games2Disp, sizeof(s_game), qsort_name);
 
 	// Sort by priority
 	if (config.gameSort == 0)
-		qsort (games, games2Disp, sizeof(s_game), qsort_priority);
+		bsort (games, games2Disp, sizeof(s_game), bsort_priority);
 
 	// Sort by priority
 	if (config.gameSort == 2)
-		qsort (games, games2Disp, sizeof(s_game), qsort_playcount);
+		bsort (games, games2Disp, sizeof(s_game), bsort_playcount);
 
 	// Sort by priority
 	if (config.gameMode == GM_DML)
-		qsort (games, games2Disp, sizeof(s_game), qsort_slot);
+		bsort (games, games2Disp, sizeof(s_game), bsort_slot);
 
 	pageMax = (games2Disp-1) / gui.spotsXpage;
 	refreshPng = 1;
@@ -527,6 +522,8 @@ static int GameBrowse (int forcescan)
 			titles = neek_GetGames ();
 		else
 			titles = WBFSSCanner (forcescan);
+
+		//titles = WBFSSCanner (forcescan);
 		}
 	else
 		{
@@ -553,13 +550,13 @@ static int GameBrowse (int forcescan)
 		if (*p != '\0' && strlen(p))
 			{
 			// Add name
-			//Debug ("name = %s (%d)", p, strlen(p));
+//			Debug ("name = %s (%d)", p, strlen(p));
 			games[i].name = malloc (strlen(p)+1);
 			strcpy (games[i].name, p);
 			p += (strlen(p) + 1);
 			
 			// Add id
-			//Debug ("id = %s (%d)", p, strlen(p));
+//			Debug ("id = %s (%d)", p, strlen(p));
 			strncpy (games[i].asciiId, p, 6);
 			if (config.gameMode == GM_DML)
 				games[i].disc = p[6];
@@ -1308,7 +1305,12 @@ static void RedrawIcons (int xoff, int yoff)
 			gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 				
 			if (!gui.spots[gui.spotsIdx].ico.icon)
-				strcpy (gui.spots[gui.spotsIdx].ico.title, games[ai].name);
+				{
+				char title[256];
+				strcpy (title, games[ai].name);
+				title[48] = 0;
+				strcpy (gui.spots[gui.spotsIdx].ico.title, title);
+				}
 			else
 				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
 

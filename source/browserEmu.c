@@ -32,14 +32,15 @@ static s_emuConfig emuConf;
 static int browse = 0;
 static int scanned = 0;
 
-#define CATN 4
-#define CATMAX 4
+#define CATN 5
+#define CATMAX 5
 
 static char *flt[CATN] = { 
 "SNES: Super Nintendo Entertainment System",
 "NES: Nintendo Entertainment System",
 "VBA: Visual Boy Advance",
-"GENESIS: Sega Mega Drive/Genesis"
+"GENESIS: Sega Mega Drive/Genesis",
+"WII64: Nintendo64"
 };
 
 static s_emu *emus;
@@ -357,6 +358,9 @@ static void GetCovers (void)
 			GetCovers_Scan (pngpath);
 			sprintf (pngpath, "%s://genplus/snaps/sg", devices_Get (dev));
 			GetCovers_Scan (pngpath);
+
+			sprintf (pngpath, "%s://wii64/saves", devices_Get (dev));
+			GetCovers_Scan (pngpath);
 			}
 		}
 	}
@@ -370,12 +374,11 @@ static int qsort_name (const void * a, const void * b)
 	return (ms_strcmp (aa->name, bb->name));
 	}
 	
-static int qsort_filter (const void * a, const void * b)
+static int bsort_filter (const void * a, const void * b)
 	{
 	s_emu *aa = (s_emu*) a;
 	s_emu *bb = (s_emu*) b;
 
-	if (aa->filtered > bb->filtered) return -1;
 	if (aa->filtered < bb->filtered) return 1;
 	
 	return 0;
@@ -396,7 +399,7 @@ static void AppsSort (void)
 		}
 	
 	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
-	qsort (emus, emusCnt, sizeof(s_emu), qsort_filter);
+	bsort (emus, emusCnt, sizeof(s_emu), bsort_filter);
 
 	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
@@ -498,6 +501,13 @@ static int EmuBrowse (void)
 			emusCnt += i;
 			
 			Debug ("found %d roms in %s", i, path);
+
+			// Wii64
+			sprintf (path, "%s://wii64/roms", devices_Get (dev));
+			i = BrowseRomFolder (EMU_WII64, emusCnt, path);
+			emusCnt += i;
+			
+			Debug ("found %d roms in %s", i, path);
 			}
 		}
 			
@@ -540,7 +550,8 @@ static int FindSpot (void)
 			if (emus[emuSelected].type == EMU_NES) sprintf (buff, "NES: %s", GetFilename (emus[emuSelected].name));
 			if (emus[emuSelected].type == EMU_VBA) sprintf (buff, "VBA: %s", GetFilename (emus[emuSelected].name));
 			if (emus[emuSelected].type == EMU_GEN) sprintf (buff, "GEN: %s", GetFilename (emus[emuSelected].name));
-			
+			if (emus[emuSelected].type == EMU_WII64) sprintf (buff, "WII64: %s", GetFilename (emus[emuSelected].name));
+						
 			Video_SetFont(TTFNORM);
 			char title[256];
 			strcpy (title, buff);
@@ -1103,6 +1114,8 @@ static void StartEmu (int type, char *fullpath)
 		sprintf (dol, "%s://ploader/plugins/vbagx.dol", vars.defMount);
 	if (type == EMU_GEN)
 		sprintf (dol, "%s://ploader/plugins/genplusgx.dol", vars.defMount);
+	if (type == EMU_WII64)
+		sprintf (dol, "%s://ploader/plugins/wii64.dol", vars.defMount);
 
 	if (fsop_FileExist (dol))
 		{

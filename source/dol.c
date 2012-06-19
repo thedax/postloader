@@ -177,8 +177,7 @@ int DolBootPrepare (s_run *run)
 	sprintf (path, "%s%s", run->path, run->filename);
 	if (LoadHB (path, EXECUTE_ADDR) <= 0)
 		{
-		sprintf (bootpath, "postLoader was unable to load:\n\n'%s'", path);
-		grlib_menu (bootpath, "  OK  ");
+		return 0;
 		}
 
 	MasterInterface (1, 0, 3, "Booting...");

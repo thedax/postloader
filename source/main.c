@@ -114,7 +114,11 @@ int Initialize (int silent)
 	Video_Init ();
 	
 	// Prepare the background
-	if (!silent) MasterInterface (1, 0, 1, " ");
+	if (!silent) 
+		{
+		MasterInterface (1, 0, TEX_HGL, "Please wait...");
+		MasterInterface (1, 0, TEX_HGL, "Please wait...");
+		}
 
 	int ret = MountDevices (silent);
 	grlibSettings.usesGestures = config.usesGestures;
@@ -173,6 +177,7 @@ int MasterInterface (int full, int showCursor, int icon, const char *text, ...)
 		*p = 0;
 		p++;
 		}
+		
 	Video_SetFont(TTFSMALL);
 	grlib_Text (320, 400, GRLIB_ALIGNCENTER, 0, mex);
 	if (p) grlib_Text (320, 420, GRLIB_ALIGNCENTER, 0, p);

@@ -81,8 +81,10 @@ void RunLoader(void)
 		DirectDolBoot ("usb://apps/wiiflow/boot.dol", argb, 0);
 		}
 		
-	grlib_menu ("The selected loader wasn't found.\npostLoader will now reset your WII", "OK");
-
+	grlib_menu ("The selected loader wasn't found.\npostLoader will now try to reload or reset your WII", "OK");
+	
+	ReloadPostloader ();
+	
 	Shutdown (0);
 	SYS_ResetSystem(SYS_RESTART,0,0);
 	}

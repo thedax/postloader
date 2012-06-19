@@ -209,12 +209,7 @@ static void DownloadCovers (void)
 				{
 				if (!ret)
 					{
-					sprintf (buff, "http://art.gametdb.com/wii/wwtitle/%s/%s.png", regions[ireg], chans[ia].asciiId);
-					ret = DownloadCovers_Get (path, buff);
-					}
-				if (!ret)
-					{
-					sprintf (buff, "http://art.gametdb.com/wii/wwtitlealt/%s/%s.png", regions[ireg], chans[ia].asciiId);
+					sprintf (buff, "http://art.gametdb.com/wii/cover/%s/%s.png", regions[ireg], chans[ia].asciiId);
 					ret = DownloadCovers_Get (path, buff);
 					}
 				}
@@ -356,20 +351,6 @@ static bool CheckFilter (int ai)
 	return FALSE;
 	}
 
-static int qsort_filtered (const void * a, const void * b)
-	{
-	s_channel *aa = (s_channel*) a;
-	s_channel *bb = (s_channel*) b;
-	return (aa->filtered < bb->filtered);
-	}
-
-static int qsort_hidden (const void * a, const void * b)
-	{
-	s_channel *aa = (s_channel*) a;
-	s_channel *bb = (s_channel*) b;
-	return (aa->hidden > bb->hidden);
-	}
-
 static int qsort_name (const void * a, const void * b)
 	{
 	s_channel *aa = (s_channel*) a;
@@ -380,12 +361,31 @@ static int qsort_name (const void * a, const void * b)
 	return (ms_strcmp (aa->name, bb->name));
 	}
 
-static int qsort_priority (const void * a, const void * b)
+static int bsort_filtered (const void * a, const void * b)
 	{
 	s_channel *aa = (s_channel*) a;
 	s_channel *bb = (s_channel*) b;
 
-	if (aa->priority > bb->priority) return -1;
+	if (aa->filtered < bb->filtered) return 1;
+	
+	return 0;
+	}
+
+static int bsort_hidden (const void * a, const void * b)
+	{
+	s_channel *aa = (s_channel*) a;
+	s_channel *bb = (s_channel*) b;
+
+	if (aa->hidden > bb->hidden) return 1;
+	
+	return 0;
+	}
+
+static int bsort_priority (const void * a, const void * b)
+	{
+	s_channel *aa = (s_channel*) a;
+	s_channel *bb = (s_channel*) b;
+
 	if (aa->priority < bb->priority) return 1;
 	
 	return 0;
@@ -410,10 +410,10 @@ static void AppsSort (void)
 			}
 		}
 	
-	qsort (chans, chansCnt, sizeof(s_channel), qsort_filtered);
-	qsort (chans, chansCnt, sizeof(s_channel), qsort_hidden);
+	bsort (chans, chansCnt, sizeof(s_channel), bsort_filtered);
+	bsort (chans, chansCnt, sizeof(s_channel), bsort_hidden);
 	qsort (chans, chans2Disp, sizeof(s_channel), qsort_name);
-	qsort (chans, chans2Disp, sizeof(s_channel), qsort_priority);
+	bsort (chans, chans2Disp, sizeof(s_channel), bsort_priority);
 
 	pageMax = (chans2Disp-1) / gui.spotsXpage;
 	}
@@ -1254,7 +1254,12 @@ static void RedrawIcons (int xoff, int yoff)
 			
 			// Need a name ?	
 			if (!gui.spots[gui.spotsIdx].ico.icon)
-				strcpy (gui.spots[gui.spotsIdx].ico.title, chans[ai].name);
+				{
+				char title[256];
+				strcpy (title, chans[ai].name);
+				title[48] = 0;
+				strcpy (gui.spots[gui.spotsIdx].ico.title, title);
+				}
 			else
 				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
 

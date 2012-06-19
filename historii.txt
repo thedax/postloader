@@ -1,3 +1,20 @@
+postLoader 4.b15
+
+* corrected a bug that was causing postloader fails execution of a .dol ("postLoader was unable to load: .....")
+* retouched again covercache thread priority
+* moved to mem1 covercache structure (but textures are still in mem2)
+* sorting issues should be fixed
+* updated covers download links to gametdb
+
+postLoader 4.b14
+
+* lowered covercache thread priority
+* added wii64 to emulators. Roms in /wii64/rom
+
+postLoader 4.b13
+
+* fixed a possible memory corruption caused by game name >= 64
+
 postLoader 4.b12
 
 * solved an issue from covercache on dol/elf loading to mem2

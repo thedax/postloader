@@ -332,3 +332,37 @@ s32 CheckDisk(void *id)
 		}
 	return ret;
 	}
+	
+void bsort(_PTR __base, size_t __nmemb, size_t __size, int(*_compar)(const _PTR, const _PTR))
+	{
+	int i;
+    int mooved;
+	void *buff = malloc (__size);
+	
+// Sort by filter, use stupid algorithm...
+	do
+		{
+		mooved = 0;
+		
+		for (i = 0; i < __nmemb - 1; i++)
+			{
+			_PTR el1 = __base+(i * __size);
+			_PTR el2 = el1 + __size;
+			
+			if (_compar (el1, el2))
+				{
+				// swap
+				memcpy (buff, el2, __size);
+				memcpy (el2, el1, __size);
+				memcpy (el1, buff, __size);
+
+				mooved = 1;
+				}
+			}
+		}
+	while (mooved);
+	
+	free (buff);
+
+	return;
+	}

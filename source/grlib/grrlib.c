@@ -433,6 +433,9 @@ void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, 
 void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf32, unsigned int fontSize, const u32 color) {
     if(myFont == NULL || utf32 == NULL)
         return;
+		
+	bool al = GRRLIB_GetAntiAliasing ();
+	GRRLIB_SetAntiAliasing (FALSE);
 
     FT_Face Face = (FT_Face)myFont->face;
     int penX = 0;
@@ -519,6 +522,8 @@ void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf3
 		
 		utf32++;
     }
+	
+	GRRLIB_SetAntiAliasing (al);
 }
 
 /**
