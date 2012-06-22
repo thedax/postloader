@@ -37,7 +37,7 @@
 #include "codes/patchcode.h"
 #include "nand.h"
 
-#define VER "2.3"
+#define VER "2.4"
 
 // This must reflect postloader ---------------------------------------------------------------
 typedef struct

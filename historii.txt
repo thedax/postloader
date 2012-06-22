@@ -1,3 +1,10 @@
+postLoader 4.b22
+
+* Fixed execution of settingEditor GUI and wiimod when one of them is missing
+* Corrected sort order for DML
+* Now DLM works with v. 1.5 (thx to FIX94:dios-mios-booter)
+* Added a debug message to nandBooter
+
 postLoader 4.b21
 
 * nandBooter 2.3: applyed the previous patch in the right way
@@ -25,7 +32,7 @@ postLoader 4.b17
 
 postLoader 4.b16
 
-* corrected a memory corruption that can occurs when booting channels
+* corrected a memory corruption that could occurs when booting channels
 
 postLoader 4.b15
 

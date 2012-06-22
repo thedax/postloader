@@ -299,13 +299,39 @@ int DMLRun (char *folder, char *id, u32 videomode)
 int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook)
 	{
 	DML_CFG cfg;
-	
-	Debug ("DMLRunNew (%s, %s, %u, %u, %u)", folder, id, videomode, dmlNoDisc, dmlPadHook);
-
-	if (!devices_Get(DEV_SD)) return 0;
+	char path[256];
 	
 	memset (&cfg, 0, sizeof (DML_CFG));
 	
+	Debug ("DMLRunNew (%s, %s, %u, %u, %u)", folder, id, videomode, dmlNoDisc, dmlPadHook);
+	
+	sprintf (path, "sd:/%s/boot.bin", folder);
+	if (fsop_FileExist (path))
+		{
+		sprintf (path, "%s/boot.bin", folder);
+		cfg.Config |= DML_CFG_GAME_PATH;
+		}
+	else
+		{
+		sprintf (path, "sd:/%s/game.iso", folder);
+		Debug ("Cheking %s", path);
+		if (fsop_FileExist (path))
+			{
+			sprintf (path, "%s/game.iso", folder);
+			cfg.Config |= DML_CFG_GAME_PATH;
+			}
+		else
+			{
+			return 0;
+			}
+		}
+
+	Debug ("DMLRunNew -> using %s", path);
+
+	if (!devices_Get(DEV_SD)) return 0;
+	
+	Shutdown (0);
+
 	cfg.Magicbytes = 0xD1050CF6;
 	cfg.CfgVersion = 0x00000001;
 		
@@ -343,10 +369,16 @@ int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook
 	if (dmlPadHook)
 		cfg.Config |= DML_CFG_PADHOOK;
 
-	strcpy (cfg.GamePath, folder);
+	strcpy (cfg.GamePath, path);
  	memcpy ((char *)0x80000000, id, 6);
 	
-	Shutdown (0);
+	//Write options into memory
+	memcpy((void *)0x80001700, &cfg, sizeof(DML_CFG));
+	DCFlushRange((void *)(0x80001700), sizeof(DML_CFG));
+
+	//DML v1.2+
+	memcpy((void *)0x81200000, &cfg, sizeof(DML_CFG));
+	DCFlushRange((void *)(0x81200000), sizeof(DML_CFG));
 
 	/* Boot BC */
 	WII_Initialize();

@@ -438,7 +438,7 @@ static int bsort_slot (const void * a, const void * b)
 	s_game *aa = (s_game*) a;
 	s_game *bb = (s_game*) b;
 	
-	if (aa->slot < bb->slot) return 1;
+	if (aa->slot > bb->slot) return 1;
 	
 	return 0;
 	}
@@ -1723,17 +1723,25 @@ int GameBrowser (void)
 						Conf (false);	// Store configuration on disc
 						config.gamePageGC = page;
 						
-						// Retrive the folder name
-						char *p;
-						p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
-						while (*p != '/') p--;
-						p++;
+						//Debug ("%s -> %s", games[gamesSelected].source, p);
 						
 						// Execute !
 						if (config.dmlVersion)
+							{
+							char *p = strstr (games[gamesSelected].source, "//")+1;
+							
 							DMLRunNew (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode, gameConf.dmlNoDisc, gameConf.dmlPadHook);
+							}
 						else
+							{
+							// Retrive the folder name
+							char *p;
+							p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
+							while (*p != '/') p--;
+							p++;
+
 							DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode);
+							}
 						}
 					
 					redraw = 1;

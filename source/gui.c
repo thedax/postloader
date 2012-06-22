@@ -308,7 +308,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 
 	static int seAvailable = -1;
 	static int wmAvailable = -1;
-	int seItem = -1, wmItem = -1;
+	static int seItem = -1, wmItem = -1;
 	
 	if (seAvailable == -1) // we need to check se
 		{
@@ -321,17 +321,21 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 			if (devices_Get (dev))
 				{
 				sprintf (path, "%s://apps/SettingsEditorGUI/boot.dol", devices_Get (dev));
+				Debug ("DrawBottomBar: searching %s", path);
 				if (fsop_FileExist (path))
 					{
 					strcpy (vars.sePath, path);
 					found = 1;
+					Debug ("DrawBottomBar: found!");
 					break;
 					}
 				sprintf (path, "%s://apps/Settings Editor GUI/boot.dol", devices_Get (dev));
+				Debug ("DrawBottomBar: searching %s", path);
 				if (fsop_FileExist (path))
 					{
 					strcpy (vars.sePath, path);
 					found = 1;
+					Debug ("DrawBottomBar: found!");
 					break;
 					}
 				}
@@ -359,10 +363,12 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 			if (devices_Get (dev))
 				{
 				sprintf (path, "%s://apps/wiimod/boot.dol", devices_Get (dev));
+				Debug ("DrawBottomBar: searching %s", path);
 				if (fsop_FileExist (path))
 					{
 					strcpy (vars.wmPath, path);
 					found = 1;
+					Debug ("DrawBottomBar: found!");
 					break;
 					}
 				}
@@ -413,12 +419,12 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 			strcpy (goItems[i++].text, "Run Disc");
 			strcpy (goItems[i++].text, "Sys. Menu");
 			strcpy (goItems[i++].text, "Neek");
-			if (seAvailable) 
+			if (seAvailable > 0) 
 				{
 				seItem = i;
 				strcpy (goItems[i++].text, "Setting Ed.");
 				}
-			if (wmAvailable) 
+			if (wmAvailable > 0) 
 				{
 				wmItem = i;
 				strcpy (goItems[i++].text, "WiiMod");
@@ -477,7 +483,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 				}
 			else
 				grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
-
+				
 			if (i == seItem)
 				Video_DrawIconZ (TEX_ICO_SE, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
 			else if (i == wmItem)

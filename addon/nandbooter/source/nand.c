@@ -26,13 +26,16 @@ s32 Nand_Mount(nandDevice *dev)
     u32 *buffer = NULL;
     int rev = IOS_GetRevision();
 
+	debug ("Nand_Mount: ios_rev = %d\n", rev);
+
     /* Open FAT module */
     fd = IOS_Open(fat, 0);
     if (fd < 0)
+		{
+		debug ("Nand_Mount: IOS_Open failed = %d\n", fd);
         return fd;
+		}
 		
-	debug ("Nand_Mount: ios_rev = %d\n", rev);
-
     /* Prepare vector */
     if(rev >= 21 && rev < 30000)
     {
