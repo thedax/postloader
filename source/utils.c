@@ -164,11 +164,11 @@ void LoadTitlesTxt (void)
 
 	Video_WaitPanel (TEX_HGL, "Please wait...|Loading titles.txt");
 	
-	titlestxt = cfg_Alloc (txtpath, 0);
-	if (titlestxt->tag == NULL)
+	vars.titlestxt = cfg_Alloc (txtpath, 0);
+	if (vars.titlestxt->tag == NULL)
 		{
-		cfg_Free (titlestxt);
-		titlestxt = NULL;
+		cfg_Free (vars.titlestxt);
+		vars.titlestxt = NULL;
 		}
 	}
 	
@@ -335,6 +335,8 @@ s32 CheckDisk(void *id)
 	
 void bsort(_PTR __base, size_t __nmemb, size_t __size, int(*_compar)(const _PTR, const _PTR))
 	{
+	if (__nmemb == 0) return;
+	
 	int i;
     int mooved;
 	void *buff = malloc (__size);

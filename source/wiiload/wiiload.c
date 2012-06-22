@@ -669,9 +669,11 @@ void WiiLoad_Stop(void)
 	{
 	int tout;
 	
-	if (stopNetworkThread != 1) 
+	Debug ("WiiLoad_Stop");
+	if (stopNetworkThread == 1) 
 		return; // It is already stopped
 		
+	Debug ("WiiLoad_Stop: network");
 	SET (stopNetworkThread, 1);	
 	
 	tout = 0;
@@ -681,11 +683,14 @@ void WiiLoad_Stop(void)
 		tout++;
 		}
 		
-	if (tout >= 50)
+	Debug ("WiiLoad_Stop: network (%d)", tout);
+		
+	if (tout >= 25)
 		LWP_SuspendThread (networkthread);
 	
 	free (threadStack);
 	
+	Debug ("WiiLoad_Stop: gecko");
 	SET (stopGeckoThread, 1);	
 	
 	tout = 0;
@@ -694,11 +699,15 @@ void WiiLoad_Stop(void)
 		usleep (100000);
 		tout++;
 		}
-		
-	if (tout >= 50)
+	
+	Debug ("WiiLoad_Stop: gecko (%d)", tout);	
+	
+	if (tout >= 25)
 		LWP_SuspendThread (geckothread);
 	
 	free (threadStackG);
+	
+	Debug ("WiiLoad_Stop: buffers...");
 
 	// Clean old data, if any
 	if (wiiload.buff) free (wiiload.buff);
@@ -707,6 +716,8 @@ void WiiLoad_Stop(void)
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
+
+	Debug ("WiiLoad_Stop: done...");
 	}
 
 void WiiLoad_Pause (void)

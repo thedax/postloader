@@ -18,6 +18,7 @@
 	bool cfg_GetInt (s_cfg *cfg, char *tag, int *ival);
 	bool cfg_GetString (s_cfg *cfg, char *tag, char *string);
 	bool cfg_SetString (s_cfg *cfg, char *tag, char *string);
+	s_cfg *cfg_GetItemFromIndex (s_cfg *c, int idx); // return the pointer to item #
 	
 	void cfg_Debug (s_cfg *c); // Debug an item tree
 #endif

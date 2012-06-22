@@ -836,18 +836,15 @@ int BootChannel(s_run *run)
 		WII_LaunchTitle((u64)(run->channel.titleId));
 		exit(0);  // Use exit() to exit a program, do not use 'return' from main()
 		}
+		
+	CoverCache_Flush ();
 
 	if (vars.neek == NEEK_NONE && run->channel.bootMode == 2) //neek2o
 		{
 		RunChannelNeek2o (run);
 		}
 
-	// Copy the triiforce image
-	/*
-	uLongf f = nandbooter_dol_size; // 16mb is ok ?
-	int ret = uncompress (EXECUTE_ADDR, &f, nandbooter_z, nandbooter_z_size);
-	Debug ("uncompress %d -> %u", ret, f);
-	*/
+	// Copy the nandbooter image
 	memcpy(EXECUTE_ADDR, nandbooter_dol, nandbooter_dol_size);
 	DCFlushRange((void *) EXECUTE_ADDR, nandbooter_dol_size);
 
@@ -857,7 +854,7 @@ int BootChannel(s_run *run)
 
 	entrypoint hbboot_ep = (entrypoint) BOOTER_ADDR;
 
-	// Ok, copy execution data to 0x90000000, nandbooter will read it
+	// Ok, copy execution data to 0x93200000, nandbooter will read it
 	nb.nand = run->nand;
 	strcpy (nb.nandPath, run->nandPath);
 	memcpy (&nb.channel, &run->channel, sizeof (s_channelConfig));

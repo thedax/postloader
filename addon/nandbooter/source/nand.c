@@ -168,6 +168,7 @@ s32 Nand_Disable(void)
 } 
 
 static int mounted = 0;
+static int slot = 0;
 
 s32 get_nand_device()
 	{
@@ -206,7 +207,9 @@ s32 Enable_Emu(int selection, char *path)
 	
 	debug ("Nand Mounted= %d\n", ret);
 
-	mounted = selection;
+	mounted = 1;
+	slot = selection;
+	
 	return 0;
 	}	 
 
@@ -215,7 +218,7 @@ s32 Disable_Emu()
 	if (mounted == 0) return 0;
 	
 	nandDevice *ndev = NULL;
-	ndev = &ndevList[mounted];
+	ndev = &ndevList[slot];
 	
 	Nand_Disable();
 	Nand_Unmount(ndev);

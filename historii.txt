@@ -1,3 +1,32 @@
+postLoader 4.b21
+
+* nandBooter 2.3: applyed the previous patch in the right way
+* Corrected a crash if no plugins.conf file is found in emulators
+
+postLoader 4.b20
+
+* enabling console in nandBooter debug mode has solved the issue on channel execution (thx AbdallahTerro for testing)
+
+postLoader 4.b19
+
+* nandbooter: If fails something it will try to write log to sd
+* nandbooter: corrected a possible bug on nand mount
+
+postLoader 4.b18
+
+* recompiled nandbooter
+* corrected wiiload thread stop
+
+postLoader 4.b17
+
+* added some debug message
+* corrected a bug on device unmount
+* added initial support for plugin configuration file (now required for emulators)
+
+postLoader 4.b16
+
+* corrected a memory corruption that can occurs when booting channels
+
 postLoader 4.b15
 
 * corrected a bug that was causing postloader fails execution of a .dol ("postLoader was unable to load: .....")

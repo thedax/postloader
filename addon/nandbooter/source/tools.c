@@ -33,7 +33,65 @@ extern const u32 cert_sys_size;
 char * logbuff = NULL;
 static int lbsize;
 
+void ClearScreen()
+    {
+    /* Clear console */
+    printf("\x1b[2J");
+    fflush(stdout);
+    }
+
+void ClearLine() 
+    {
+    printf("\r\x1b[2K\r");
+    fflush(stdout);
+    }
+
+void PrintCenter(char *text, int width) 
+    {
+    int textLen = strlen(text);
+    int leftPad = (width - textLen) / 2;
+    int rightPad = (width - textLen) - leftPad;
+    printf("%*s%s%*s", leftPad, " ", text, rightPad, " ");
+    fflush(stdout);
+    }
+
+void Console_SetFgColor(u8 color, u8 bold) 
+    {
+    printf("\x1b[%u;%dm", color + 30, bold);
+    }
+
+void Console_SetBgColor(u8 color, u8 bold) 
+    {
+    printf("\x1b[%u;%dm", color + 40, bold);
+    }
+
+void Console_SetColors(u8 bgColor, u8 bgBold, u8 fgColor, u8 fgBold) 
+    {
+    Console_SetBgColor(bgColor, bgBold);
+    Console_SetFgColor(fgColor, fgBold);
+    }
+
+void Console_SetPosition(u8 row, u8 column) 
+    {
+    // The console understands VT terminal escape codes
+    // This positions the cursor on row 2, column 0
+    // we can use variables for this with format codes too
+    // e.g. printf ("\x1b[%d;%dH", row, column );
+    printf("\x1b[%u;%uH", row, column);
+    }
+
+
+
+
+
+static bool debug2ConsoleEnabled = false;
+void debug2Console(bool enable)
+	{
+	debug2ConsoleEnabled = enable;
+	}
+
 static char debugbuff[1024];
+static char points[80] = {0};
 void debug(const char *text, ...)
 	{
 	static int gecko = 0;
@@ -58,6 +116,19 @@ void debug(const char *text, ...)
 		usb_sendbuffer( EXI_CHANNEL_1, debugbuff, strlen(debugbuff) );
 		usb_flush(EXI_CHANNEL_1);
 		}
+	
+	if (debug2ConsoleEnabled)
+		{
+		printf(debugbuff);
+		sleep (1);
+		}
+    else
+        {
+        if (strlen(points) < 80)
+            strcat (points, ".");
+        Console_SetPosition (14,0);
+        PrintCenter (points, 80);
+        }
 	/*
 	printf(debugbuff);
 	

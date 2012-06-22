@@ -67,7 +67,9 @@ void Subsystems (bool enable)
 		ConfigWrite ();
 		CoverCache_Stop ();
 		WiiLoad (0);
+		Debug ("stopping controllers");
 		grlib_Controllers (false);
+		Debug ("stopping debug");
 		DebugStop ();
 		UnmountDevices ();
 		}
@@ -78,14 +80,14 @@ void Shutdown(bool doNotKillHBC)
 	Debug ("Shutdown !");
 	
 	snd_Stop ();
-	cfg_Free (titlestxt);
+	cfg_Free (vars.titlestxt);
 
 	Video_Deinit ();
 	Subsystems (false);
 	
 	if (config.usesStub)
 		{
-		Debug ("Loading stub");
+		//Debug ("Loading stub");
 		StubLoad ();
 		}
 	else

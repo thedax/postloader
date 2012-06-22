@@ -20,8 +20,13 @@
 bool Power_Flag;
 bool Reset_Flag;
 
+void Console_SetPosition(u8 row, u8 column);
+void ClearScreen ();
+void PrintCenter(char *text, int width);
+
 void *allocate_memory(u32 size);
 s32 identify(u64 titleid, u32 *ios);
+void debug2Console(bool enable);
 void debug(const char *text, ...);
 void tell_cIOS_to_return_to_channel(void);
 u64 old_title_id;

@@ -300,7 +300,7 @@ int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook
 	{
 	DML_CFG cfg;
 	
-	Debug ("DMLRun (%s, %s, %u)", folder, id, videomode);
+	Debug ("DMLRunNew (%s, %s, %u, %u, %u)", folder, id, videomode, dmlNoDisc, dmlPadHook);
 
 	if (!devices_Get(DEV_SD)) return 0;
 	

@@ -68,6 +68,9 @@ static int disableSpots;
 
 static s_cfg *cfg;
 
+static s_cfg *plugins;
+static int pluginsCnt = 0;
+
 #define ICONW 100
 #define ICONH 93
 
@@ -178,6 +181,187 @@ static char * GetPath (char *path)
 	
 	return fn;
 	}
+	
+
+static void Conf (bool open)
+	{
+	char cfgpath[64];
+	sprintf (cfgpath, "%s://ploader/emus.conf", vars.defMount);
+
+	if (open)
+		{
+		cfg = cfg_Alloc (cfgpath, 0);
+		}
+	else
+		{
+		cfg_Store (cfg, cfgpath);
+		cfg_Free (cfg);
+		}
+	}
+	
+static void Plugins (bool open)
+	{
+	char cfgpath[64];
+	sprintf (cfgpath, "%s://ploader/plugins.conf", vars.defMount);
+
+	if (open)
+		{
+		plugins = cfg_Alloc (cfgpath, 0);
+		
+		pluginsCnt = 0;
+		s_cfg *item;
+		while ((item = cfg_GetItemFromIndex (plugins, pluginsCnt)))
+			{
+			Debug ("Plugins: %d -> %s", pluginsCnt, item->value);
+			pluginsCnt++;
+			}
+		}
+	else
+		{
+		cfg_Free (plugins);
+		}
+	}
+	
+static char *Plugins_GetName (int idx)
+	{
+	static char name[128];
+	char buff[256];
+	char *p;
+	s_cfg *item;
+	
+	item = cfg_GetItemFromIndex (plugins, idx);
+	
+	if (!item || !item->value)
+		{
+		return NULL;
+		}
+	
+	strncpy (buff, item->value, 255);
+	
+	p = strstr (buff, ";");
+	if (!p) return NULL;
+	
+	*p = '\0';
+	strcpy (name, buff);	
+	
+	return name;
+	}
+	
+static char *Plugins_GetDol (int idx)
+	{
+	static char name[128];
+	char buff[256];
+	char *p;
+	s_cfg *item;
+	
+	item = cfg_GetItemFromIndex (plugins, idx);
+	
+	if (!item || !item->value)
+		{
+		return NULL;
+		}
+	
+	p = strstr (item->value, ";");
+	if (!p) return NULL;
+	p++;
+	
+	strncpy (buff, p, 255);
+	
+	p = strstr (buff, ";");
+	if (!p) return NULL;
+	
+	*p = '\0';
+	strcpy (name, buff);	
+	
+	return name;
+	}
+	
+static char *Plugins_GetPath (int idx)
+	{
+	static char name[128];
+	char buff[256];
+	char *p;
+	s_cfg *item;
+	
+	item = cfg_GetItemFromIndex (plugins, idx);
+	
+	if (!item || !item->value)
+		{
+		return NULL;
+		}
+	
+	p = strstr (item->value, ";");
+	if (!p) return NULL;
+	p++;
+	
+	p = strstr (p, ";");
+	if (!p) return NULL;
+	p++;
+	
+	strncpy (buff, p, 255);
+	
+	p = strstr (buff, ";");
+	if (!p) return NULL;
+	
+	*p = '\0';
+	strcpy (name, buff);	
+	
+	return name;
+	}
+	
+static int Plugins_GetId (int idx)
+	{
+	s_cfg *item;
+	
+	item = cfg_GetItemFromIndex (plugins, idx);
+	
+	if (!item || !item->value)
+		{
+		return 0;
+		}
+	
+	return atoi(item->tag);
+	}
+	
+static char *Plugins_GetExt (int idx)
+	{
+	static char name[128];
+	char buff[256];
+	char *p;
+
+	int i = 0;
+	s_cfg *item;
+	
+	item = cfg_GetItemFromIndex (plugins, i);
+	
+	if (!item || !item->value)
+		{
+		return NULL;
+		}
+	
+	p = strstr (item->value, ";");
+	if (!p) return NULL;
+	p++;
+	
+	p = strstr (p, ";");
+	if (!p) return NULL;
+	p++;
+	
+	p = strstr (p, ";");
+	if (!p) return NULL;
+	p++;
+	
+	strncpy (buff, p, 255);
+	
+	p = strstr (buff, ";");
+	if (!p) return NULL;
+	
+	*p = '\0';
+	strcpy (name, buff);	
+	
+	return name;
+	}
+
 	
 static void MakeCoverPath (int ai, char *path)
 	{
@@ -410,7 +594,7 @@ static void AppsSort (void)
 	Debug ("AppsSort: end");
 	}
 	
-static int BrowseRomFolder (int type, int startidx, char *path)
+static int BrowsePluginFolder (int type, int startidx, char *path)
 	{
 	int i = startidx;
 	DIR *pdir;
@@ -452,7 +636,7 @@ static int BrowseRomFolder (int type, int startidx, char *path)
 	
 static int EmuBrowse (void)
 	{
-	int i;
+	int i, cnt;
 	Debug ("begin EmuBrowse");
 	
 	gui.spotsIdx = 0;
@@ -461,11 +645,10 @@ static int EmuBrowse (void)
 
 	Video_WaitPanel (TEX_HGL, "Please wait...");
 
-	
 	char path[300];
 	int dev;
 	
-	Debug ("Emu Browse: searching for snes9xgx roms");
+	Debug ("Emu Browse: searching for plugins data roms");
 	
 	emusCnt = 0;
 	for (dev = 0; dev < DEV_MAX; dev++)
@@ -474,38 +657,48 @@ static int EmuBrowse (void)
 			{
 			Debug ("Checking: %s", devices_Get (dev));
 			
+			for (i = 0; i < pluginsCnt; i++)
+				{
+				sprintf (path, "%s:/%s", devices_Get (dev), Plugins_GetPath (i));
+				cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path);
+				emusCnt += cnt;
+				Debug ("found %d roms in %s", i, path);
+				}
+			
+			/*
 			// SNES/Superfamicon
 			sprintf (path, "%s://snes9xgx/roms", devices_Get (dev));
-			i = BrowseRomFolder (EMU_SNES, emusCnt, path);
-			emusCnt += i;
+			cnt = BrowsePluginFolder (EMU_SNES, emusCnt, path);
+			emusCnt += cnt;
 			
-			Debug ("found %d roms in %s", i, path);
+			Debug ("found %d roms in %s", cnt, path);
 
 			// NES/Famicom
 			sprintf (path, "%s://fceugx/roms", devices_Get (dev));
-			i = BrowseRomFolder (EMU_NES, emusCnt, path);
-			emusCnt += i;
+			cnt = BrowsePluginFolder (EMU_NES, emusCnt, path);
+			emusCnt += cnt;
 			
-			Debug ("found %d roms in %s", i, path);
+			Debug ("found %d roms in %s", cnt, path);
 
 			// Game Boy/Game Boy Advance Emulator
 			sprintf (path, "%s://vbagx/roms", devices_Get (dev));
-			i = BrowseRomFolder (EMU_VBA, emusCnt, path);
-			emusCnt += i;
+			cnt = BrowsePluginFolder (EMU_VBA, emusCnt, path);
+			emusCnt += cnt;
 			
-			Debug ("found %d roms in %s", i, path);
+			Debug ("found %d roms in %s", cnt, path);
 
 			// Genesis Emulator
 			sprintf (path, "%s://genplus/roms", devices_Get (dev));
-			i = BrowseRomFolder (EMU_GEN, emusCnt, path);
+			i = BrowsePluginFolder (EMU_GEN, emusCnt, path);
 			emusCnt += i;
 			
 			Debug ("found %d roms in %s", i, path);
 
 			// Wii64
 			sprintf (path, "%s://wii64/roms", devices_Get (dev));
-			i = BrowseRomFolder (EMU_WII64, emusCnt, path);
+			i = BrowsePluginFolder (EMU_WII64, emusCnt, path);
 			emusCnt += i;
+			*/
 			
 			Debug ("found %d roms in %s", i, path);
 			}
@@ -868,12 +1061,13 @@ static void RedrawIcons (int xoff, int yoff)
 			grlib_IconDraw (&is, &ico);
 			}
 		}
-
+	/*
 	if (emusCnt == 0)
 		{
-		grlib_DrawCenteredWindow ("No emus found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
+		grlib_DrawCenteredWindow ("No emus found: Check /ploader/plugins.conf", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
+	*/
 	}
 
 static void Redraw (void)
@@ -892,7 +1086,7 @@ static void Redraw (void)
 	if (emusCnt == 0 && scanned)
 		{
 		Video_SetFont(TTFNORM);
-		grlib_DrawCenteredWindow ("No roms found !", WAITPANWIDTH, 133, 0, NULL);
+		grlib_DrawCenteredWindow ("No emus found, check /ploader/plugins.conf", WAITPANWIDTH+50, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
 		
@@ -1067,22 +1261,6 @@ static bool QuerySelection (int ai)
 	return true;
 	}
 
-static void Conf (bool open)
-	{
-	char cfgpath[64];
-	sprintf (cfgpath, "%s://ploader/emus.conf", vars.defMount);
-
-	if (open)
-		{
-		cfg = cfg_Alloc (cfgpath, 0);
-		}
-	else
-		{
-		cfg_Store (cfg, cfgpath);
-		cfg_Free (cfg);
-		}
-	}
-	
 static void StartEmu (int type, char *fullpath)
 	{
 	char fn[128];
@@ -1133,6 +1311,7 @@ int EmuBrowser (void)
 
 	Debug ("GameBrowser (begin)");
 	
+	Plugins (true);
 	Conf (true);
 
 	scanned = 0;
@@ -1190,6 +1369,7 @@ int EmuBrowser (void)
 				emus[emuSelected].playcount++;
 				WriteGameConfig (emuSelected);
 				Conf (false);	// Store configuration on disc
+				Plugins (false);
 				config.gamePageEmu = page;
 				
 				StartEmu (emus[emuSelected].type, emus[emuSelected].name);
@@ -1293,6 +1473,7 @@ int EmuBrowser (void)
 	config.gamePageEmu = page;
 	
 	Conf (false);
+	Plugins (false);
 
 	// Clean up all data
 	StructFree ();

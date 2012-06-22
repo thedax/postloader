@@ -483,13 +483,13 @@ static void UpdateTitlesFromTxt (void)
 	{
 	Debug ("UpdateTitlesFromTxt: begin");
 	LoadTitlesTxt ();
-	if (titlestxt == NULL) return;
+	if (vars.titlestxt == NULL) return;
 
 	int i;
 	char buff[1024];
 	for (i = 0; i < gamesCnt; i++)
 		{
-		if (cfg_GetString (titlestxt, games[i].asciiId, buff))
+		if (cfg_GetString (vars.titlestxt, games[i].asciiId, buff))
 			{
 			//Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, buff);
 			free (games[i].name);
@@ -522,8 +522,6 @@ static int GameBrowse (int forcescan)
 			titles = neek_GetGames ();
 		else
 			titles = WBFSSCanner (forcescan);
-
-		//titles = WBFSSCanner (forcescan);
 		}
 	else
 		{

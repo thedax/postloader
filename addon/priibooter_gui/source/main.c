@@ -624,11 +624,8 @@ int main(int argc, char **argv)
 	
 	grlibSettings.autoCloseMenu = 20;
 	grlib_SetRedrawCallback (Redraw, NULL);
-
 	
-	//devices_UsbPreinit (1);
 	fadeIn ();
-	//devices_UsbPreinit (0);
 
 	// Let's mount devices
 	showHddIcon = 1;

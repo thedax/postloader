@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b15"
+#define VER "4.b21"
 #define CFGVER "PLCFGV0013"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -179,8 +179,10 @@ typedef struct
 	int useChannelCompatibleMode;	// used for selecting interactive mode upon boot
 	int saveExtendedConf;
 	
-	char sePath[256];	// setting editor
-	char wmPath[256];	// wiimod
+	char sePath[256];				// setting editor
+	char wmPath[256];				// wiimod
+	
+	s_cfg *titlestxt;		// this will keep titles.txt file
 	}
 s_vars;
 
@@ -433,7 +435,6 @@ extern s_grlibSettings grlibSettings;
 	GRRLIB_bytemapFont *fonts[3];
 	s_vars vars;
 	s_theme theme;
-	s_cfg *titlestxt = NULL;
 	const char CHANNEL_FILTERS[] = "HWFECJLMNPQ ";
 	const char *CHANNELS_NAMES[] = {"HStandard Channels","WWiiWare","FNintendo NES","ENeoGeo/Arcade","CCommodore64","JSuper Nintendo","LSega Master System",
 									"MSega Megadrive","NNintendo64","PTurboGraFX","QTurboGraFXCD", " Other"};
@@ -444,7 +445,6 @@ extern s_grlibSettings grlibSettings;
 	extern GRRLIB_bytemapFont *fonts[3];
 	extern s_vars vars;
 	extern s_theme theme;
-	extern s_cfg *titlestxt;
 	extern const char CHANNEL_FILTERS[];
 	extern const char *CHANNELS_NAMES[];
 #endif

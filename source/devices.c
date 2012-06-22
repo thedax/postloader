@@ -226,8 +226,11 @@ void devices_Unmount (void)
 		if (mounted[dev])
 			{
 			sprintf(mntName, "%s:/", DeviceName[dev]);
-			fatUnmount(mntName);
-			ntfsUnmount(mntName, true);
+			
+			if (partinfo[dev] < 10)
+				fatUnmount(mntName);
+			else
+				ntfsUnmount(mntName, true);
 			}
 
 	storage->shutdown();

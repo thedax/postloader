@@ -579,13 +579,13 @@ static int RebuildCacheFile (void)
 static void UpdateTitlesFromTxt (void)
 	{
 	LoadTitlesTxt ();
-	if (titlestxt == NULL) return;
+	if (vars.titlestxt == NULL) return;
 	
 	int i;
 	char buff[1024];
 	for (i = 0; i < chansCnt; i++)
 		{
-		if (cfg_GetString (titlestxt, chans[i].asciiId, buff))
+		if (cfg_GetString (vars.titlestxt, chans[i].asciiId, buff))
 			{
 			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", chans[i].name, buff);
 			free (chans[i].name);

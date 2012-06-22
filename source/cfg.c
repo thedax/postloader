@@ -249,3 +249,23 @@ bool cfg_GetInt (s_cfg *cfg, char *tag, int *ival)
 	
 	return false;
 	}
+
+s_cfg *cfg_GetItemFromIndex (s_cfg *c, int idx) // return the pointer to item #
+	{
+	int i = 0;
+	
+	do
+		{
+		//Debug ("cfg_GetItemFromIndex (%d:%s:%s)", i, c->tag, c->value);
+		if (c->tag)
+			{
+			if (idx == i) return c;
+			i ++;
+			}
+		c = c->next;
+		}
+	while (c);
+	
+	return NULL;
+	}
+

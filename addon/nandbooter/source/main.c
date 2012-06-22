@@ -13,6 +13,8 @@
  * -----------
  *
  ******************************************************************************/
+ 
+//#define DEBUGMODE
 
 #include <stdio.h>
 #include <string.h>
@@ -35,7 +37,7 @@
 #include "codes/patchcode.h"
 #include "nand.h"
 
-#define VER "2.2"
+#define VER "2.3"
 
 // This must reflect postloader ---------------------------------------------------------------
 typedef struct
@@ -88,6 +90,10 @@ u32 ocarinaoption;
 
 u32 bootmethodoption;
 
+void StoreLogFile (void);
+
+void green_fix(void); //GREENSCREEN FIX
+
 // Prevent IOS36 loading at startup
 s32 __IOS_LoadStartupIOS()
 {
@@ -97,12 +103,18 @@ s32 __IOS_LoadStartupIOS()
 void reboot()
 {
 	Disable_Emu();
+
+	debug ("Trying to write error log to sd...\n");
+	StoreLogFile ();
+	
+	/*
 	if (strncmp("STUBHAXX", (char *)0x80001804, 8) == 0)
 	{
 		debug("Exiting to HBC...\n");
 		sleep(3);
 		exit(0);
 	}
+	*/
 	debug("Rebooting...\n");
 	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 }
@@ -609,7 +621,8 @@ void bootTitle(u64 titleid)
 	bootcontentloaded = (ret == 1);
 
 	determineVideoMode(titleid);
-	setVideoMode();
+	
+	//setVideoMode();
 	
 	entryPoint = load_dol(dolbuffer);
 
@@ -698,6 +711,8 @@ void bootTitle(u64 titleid)
 	patch_dol(bootcontentloaded);
 	
 	debug("Loading complete, booting...\n");
+	
+	green_fix ();
 
 	appJump = (entrypoint)entryPoint;
 
@@ -817,6 +832,44 @@ bool SenseSneek (bool isfsinit)
 	return (ret == 0);
 	}
 
+void InitVideo (void)
+	{
+	VIDEO_Init();
+	VIDEO_SetBlack(TRUE); 
+	
+	rmode = VIDEO_GetPreferredMode(NULL);
+
+	//apparently the video likes to be bigger then it actually is on NTSC/PAL60/480p. lets fix that!
+	if( rmode->viTVMode == VI_NTSC || CONF_GetEuRGB60() || CONF_GetProgressiveScan() )
+	{
+		//the correct one would be * 0.035 to be sure to get on the Action safe of the screen.
+		GX_AdjustForOverscan(rmode, rmode, 0, rmode->viWidth * 0.026 ); 
+	}
+	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+	VIDEO_ClearFrameBuffer (rmode, xfb, 0); 
+	
+	console_init( xfb, 20, 20, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth*VI_DISPLAY_PIX_SZ );
+
+	VIDEO_Configure(rmode);
+	VIDEO_SetNextFramebuffer(xfb);
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+
+	VIDEO_WaitVSync();
+	if(rmode->viTVMode&VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	
+	// debug("resolution is %dx%d\n",rmode->viWidth,rmode->viHeight);
+	}
+
+void green_fix(void) //GREENSCREEN FIX
+	{
+    VIDEO_Configure(rmode);
+    VIDEO_SetNextFramebuffer(xfb);
+    VIDEO_SetBlack(TRUE);
+    VIDEO_Flush();
+    VIDEO_WaitVSync();
+	}
 
 int main(int argc, char* argv[])
 	{
@@ -826,6 +879,15 @@ int main(int argc, char* argv[])
 	u8 *tfb = ((u8 *) 0x93200000);
 
 	memcpy (&nb, tfb, sizeof(s_nandbooter));
+	
+	InitVideo ();
+
+#ifdef DEBUGMODE
+	debug2Console (true);
+#endif	
+
+	Console_SetPosition (12,0);
+	PrintCenter ("nandBooter "VER" is loading...", 80);
 	
 	debug ("NandBooter "VER"\n");
 	debug ("\n");
@@ -896,9 +958,6 @@ int main(int argc, char* argv[])
 	Disable_Emu ();
 	
 	// Try to write log to sd
-	debug ("Trying to write error log to sd...\n");
-	StoreLogFile ();
-	
 	reboot();
 	return 0;
 	}

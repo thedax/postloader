@@ -120,7 +120,7 @@ GXRModeObj TVPal528ProgUnknown =
 	}
 
 };
-
+/*
 GXRModeObj TVMpal480Prog =
 {
     10,     		 // viDisplayMode
@@ -154,7 +154,7 @@ GXRModeObj TVMpal480Prog =
           0          // line n+1
     }
 };
-
+*/
 
 bool compare_videomodes(GXRModeObj* mode1, GXRModeObj* mode2)
 {
