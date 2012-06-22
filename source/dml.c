@@ -305,25 +305,16 @@ int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook
 	
 	Debug ("DMLRunNew (%s, %s, %u, %u, %u)", folder, id, videomode, dmlNoDisc, dmlPadHook);
 	
-	sprintf (path, "sd:/%s/boot.bin", folder);
+	cfg.Config |= DML_CFG_GAME_PATH;
+
+	sprintf (path, "sd:/%s/game.iso", folder);
 	if (fsop_FileExist (path))
 		{
-		sprintf (path, "%s/boot.bin", folder);
-		cfg.Config |= DML_CFG_GAME_PATH;
+		sprintf (path, "%s/game.iso", folder);
 		}
 	else
 		{
-		sprintf (path, "sd:/%s/game.iso", folder);
-		Debug ("Cheking %s", path);
-		if (fsop_FileExist (path))
-			{
-			sprintf (path, "%s/game.iso", folder);
-			cfg.Config |= DML_CFG_GAME_PATH;
-			}
-		else
-			{
-			return 0;
-			}
+		sprintf (path, "%s/", folder);
 		}
 
 	Debug ("DMLRunNew -> using %s", path);

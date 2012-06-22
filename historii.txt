@@ -1,3 +1,7 @@
+postLoader 4.b23
+
+* DML: both fst and iso are supported correctly
+
 postLoader 4.b22
 
 * Fixed execution of settingEditor GUI and wiimod when one of them is missing
