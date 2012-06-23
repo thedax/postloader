@@ -603,6 +603,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	int updater = 0;
 
 	pdir=opendir(path);
+	
+	Debug ("   BrowsePluginFolder: %s -> 0x%08X", path, pdir);
 
 	while ((pent=readdir(pdir)) != NULL) 
 		{
@@ -611,6 +613,9 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 			continue;
 		
 		sprintf (fn, "%s/%s", path, pent->d_name);
+		
+		Debug ("   > %s", fn);
+		
 		emus[i].name = calloc (1, strlen (fn) + 1);
 		
 		if (!emus[i].name)
@@ -630,6 +635,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 		
 		i++;
 		}
+		
+	closedir (pdir);
 		
 	return i-startidx;
 	}
@@ -655,14 +662,14 @@ static int EmuBrowse (void)
 		{
 		if (devices_Get (dev))
 			{
-			Debug ("Checking: %s", devices_Get (dev));
+			Debug ("Checking: %s (%d)", devices_Get (dev), pluginsCnt);
 			
 			for (i = 0; i < pluginsCnt; i++)
 				{
 				sprintf (path, "%s:/%s", devices_Get (dev), Plugins_GetPath (i));
 				cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path);
 				emusCnt += cnt;
-				Debug ("found %d roms in %s", i, path);
+				Debug ("found %d roms in %s", cnt, path);
 				}
 			
 			/*
@@ -699,8 +706,6 @@ static int EmuBrowse (void)
 			i = BrowsePluginFolder (EMU_WII64, emusCnt, path);
 			emusCnt += i;
 			*/
-			
-			Debug ("found %d roms in %s", i, path);
 			}
 		}
 			

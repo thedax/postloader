@@ -1,3 +1,9 @@
+postLoader 4.b24
+
+* fixed a memory leak when browsing emulators
+* added some debug messages during emu scanning
+* corrected snes section of plugins.conf
+
 postLoader 4.b23
 
 * DML: both fst and iso are supported correctly

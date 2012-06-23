@@ -231,18 +231,16 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	
 	if (yes)
 		{
-		SET (pauseThread, true);
-		
 		// wait for thread to finish
 		while (!LWP_ThreadIsSuspended(hthread))
 			{
+			SET (pauseThread, true);
 			usleep(100);
 			}
 		}
 	else
 		{
 		SET (pauseThread, false);
-		
 		LWP_ResumeThread(hthread); 
 		}
 	}
