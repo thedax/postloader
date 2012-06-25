@@ -19,7 +19,7 @@
 #include "browser.h"
 #include "fsop/fsop.h"
 
-#define CHNMAX 4096
+#define CHNMAX 8192
 
 /*
 
@@ -32,16 +32,7 @@ static s_emuConfig emuConf;
 static int browse = 0;
 static int scanned = 0;
 
-#define CATN 5
-#define CATMAX 5
-
-static char *flt[CATN] = { 
-"SNES: Super Nintendo Entertainment System",
-"NES: Nintendo Entertainment System",
-"VBA: Visual Boy Advance",
-"GENESIS: Sega Mega Drive/Genesis",
-"WII64: Nintendo64"
-};
+#define CATMAX 32
 
 static s_emu *emus;
 static int emusCnt;
@@ -326,13 +317,10 @@ static int Plugins_GetId (int idx)
 static char *Plugins_GetExt (int idx)
 	{
 	static char name[128];
-	char buff[256];
 	char *p;
-
-	int i = 0;
 	s_cfg *item;
 	
-	item = cfg_GetItemFromIndex (plugins, i);
+	item = cfg_GetItemFromIndex (plugins, idx);
 	
 	if (!item || !item->value)
 		{
@@ -351,14 +339,8 @@ static char *Plugins_GetExt (int idx)
 	if (!p) return NULL;
 	p++;
 	
-	strncpy (buff, p, 255);
-	
-	p = strstr (buff, ";");
-	if (!p) return NULL;
-	
-	*p = '\0';
-	strcpy (name, buff);	
-	
+	strncpy (name, p, 127);
+
 	return name;
 	}
 
@@ -496,7 +478,7 @@ static void GetCovers_Scan (char *path)
 				size_t size;
 				fsop_GetFileSizeBytes (fn, &size);
 				
-				if (size > 4096)
+				if (size > 128)
 					{
 					MakeCoverPath (i, cover);
 					fsop_CopyFile (fn, cover, 0);
@@ -601,20 +583,39 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	struct dirent *pent;
 	char fn[300];
 	int updater = 0;
+	char ext[256];
+	char *p;
+	
+	strcpy (ext, Plugins_GetExt(type));
 
 	pdir=opendir(path);
 	
-	Debug ("   BrowsePluginFolder: %s -> 0x%08X", path, pdir);
-
 	while ((pent=readdir(pdir)) != NULL) 
 		{
+		if (i >= CHNMAX)
+			continue;
+		
 		// Skip it
 		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
 			continue;
+			
+		p = pent->d_name + strlen(pent->d_name) - 1;
+
+		while (p > pent->d_name && *p != '.') p--;
 		
+		if (*p != '.')
+			continue;
+			
+		p++;
+		
+		//Debug ("  %s > %s", p, ext);
+		
+		if (!ms_strstr (ext, p))
+			continue;
+
 		sprintf (fn, "%s/%s", path, pent->d_name);
 		
-		Debug ("   > %s", fn);
+		//Debug ("   > %s", fn);
 		
 		emus[i].name = calloc (1, strlen (fn) + 1);
 		
@@ -671,41 +672,6 @@ static int EmuBrowse (void)
 				emusCnt += cnt;
 				Debug ("found %d roms in %s", cnt, path);
 				}
-			
-			/*
-			// SNES/Superfamicon
-			sprintf (path, "%s://snes9xgx/roms", devices_Get (dev));
-			cnt = BrowsePluginFolder (EMU_SNES, emusCnt, path);
-			emusCnt += cnt;
-			
-			Debug ("found %d roms in %s", cnt, path);
-
-			// NES/Famicom
-			sprintf (path, "%s://fceugx/roms", devices_Get (dev));
-			cnt = BrowsePluginFolder (EMU_NES, emusCnt, path);
-			emusCnt += cnt;
-			
-			Debug ("found %d roms in %s", cnt, path);
-
-			// Game Boy/Game Boy Advance Emulator
-			sprintf (path, "%s://vbagx/roms", devices_Get (dev));
-			cnt = BrowsePluginFolder (EMU_VBA, emusCnt, path);
-			emusCnt += cnt;
-			
-			Debug ("found %d roms in %s", cnt, path);
-
-			// Genesis Emulator
-			sprintf (path, "%s://genplus/roms", devices_Get (dev));
-			i = BrowsePluginFolder (EMU_GEN, emusCnt, path);
-			emusCnt += i;
-			
-			Debug ("found %d roms in %s", i, path);
-
-			// Wii64
-			sprintf (path, "%s://wii64/roms", devices_Get (dev));
-			i = BrowsePluginFolder (EMU_WII64, emusCnt, path);
-			emusCnt += i;
-			*/
 			}
 		}
 			
@@ -714,10 +680,7 @@ static int EmuBrowse (void)
 	Debug ("end EmuBrowse");
 
 	AppsSort ();
-	
-	Debug ("FeedCoverCache");
 	FeedCoverCache ();
-	Debug ("FeedCoverCache (end)");
 
 	return emusCnt;
 	}
@@ -744,11 +707,7 @@ static int FindSpot (void)
 			gui.spots[i].ico.sel = true;
 			grlib_IconDraw (&is, &gui.spots[i].ico);
 
-			if (emus[emuSelected].type == EMU_SNES) sprintf (buff, "SNES: %s", GetFilename (emus[emuSelected].name));
-			if (emus[emuSelected].type == EMU_NES) sprintf (buff, "NES: %s", GetFilename (emus[emuSelected].name));
-			if (emus[emuSelected].type == EMU_VBA) sprintf (buff, "VBA: %s", GetFilename (emus[emuSelected].name));
-			if (emus[emuSelected].type == EMU_GEN) sprintf (buff, "GEN: %s", GetFilename (emus[emuSelected].name));
-			if (emus[emuSelected].type == EMU_WII64) sprintf (buff, "WII64: %s", GetFilename (emus[emuSelected].name));
+			sprintf (buff, "%s: %s", Plugins_GetName (emus[emuSelected].type), GetFilename (emus[emuSelected].name));
 						
 			Video_SetFont(TTFNORM);
 			char title[256];
@@ -798,8 +757,6 @@ static bool IsFiltered (int ai)
 	for (i = 0; i < CATMAX; i++)
 		{
 		f[j++] = (config.emuFilter & (1 << i)) ? '1':'0';
-		//f[j++] = (emus[ai].type & (1 << i)) ? '1':'0';
-		//f[j++] = ' ';
 		
 		if ((config.emuFilter & (1 << i)) && (emus[ai].type == i))
 			{
@@ -807,10 +764,6 @@ static bool IsFiltered (int ai)
 			}
 		}
 	f[j++] = 0x0;
-	
-	//sprintf (name, emus[ai].name);
-	//name[32] = 0;
-	//Debug ("%s %s %d %d = %d", name, f, emus[ai].type, ai, ret);
 		
 	return ret;
 	}
@@ -818,34 +771,34 @@ static bool IsFiltered (int ai)
 static void ShowFilterMenu (void)
 	{
 	char buff[512];
-	u8 f[CATN];
+	u8 f[CATMAX];
 	int i, item;
 
-	for (i = 0; i <CATN; i++)
+	for (i = 0; i < pluginsCnt; i++)
 		f[i] = 0;
 	
-	for (i = 0; i < CATN; i++)
+	for (i = 0; i < pluginsCnt; i++)
 		f[i] = (config.emuFilter & (1 << i)) ? 1:0;
 
 	do
 		{
 		buff[0] = '\0';
-		for (i = 0; i < CATMAX; i++)
+		for (i = 0; i < pluginsCnt; i++)
 			{
 			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
-			grlib_menuAddCheckItem (buff, 100 + i, f[i], flt[i]);
+			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
 			}
 		
 		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
 
 		if (item == MNUBTN_PLUS)
 			{
-			int i; 	for (i = 0; i < CATN; i++) f[i] = 1;
+			int i; 	for (i = 0; i < pluginsCnt; i++) f[i] = 1;
 			}
 
 		if (item == MNUBTN_MINUS)
 			{
-			int i; 	for (i = 0; i < CATN; i++) f[i] = 0;
+			int i; 	for (i = 0; i < pluginsCnt; i++) f[i] = 0;
 			}
 		
 		if (item >= 100)
@@ -857,7 +810,7 @@ static void ShowFilterMenu (void)
 	while (item != -1);
 	
 	config.emuFilter = 0;
-	for (i = 0; i < CATN; i++)
+	for (i = 0; i < pluginsCnt; i++)
 		if (f[i]) config.emuFilter |= (1 << i);
 	
 	EmuBrowse ();
@@ -1116,6 +1069,8 @@ static int ChangePage (int next)
 	if (page < 0)
 		page = pageMax;
 		
+	gprintf ("(CP)");
+		
 	FeedCoverCache ();
 
 	redrawIcons = false;
@@ -1173,6 +1128,8 @@ static int ChangePage (int next)
 	
 	redrawIcons = true;
 	redraw = 1;
+	
+	gprintf ("(cp)");
 	
 	return page;
 	}
@@ -1289,19 +1246,13 @@ static void StartEmu (int type, char *fullpath)
 	strcpy (path, buff);
 	
 	sprintf (cmd, "%s;%s;%s://ploader/plugins/forwarder.dol;00010001;504F5354;postLoader", path, fn, vars.defMount);
-	if (type == EMU_SNES)
-		sprintf (dol, "%s://ploader/plugins/snes9xgx.dol", vars.defMount);
-	if (type == EMU_NES)
-		sprintf (dol, "%s://ploader/plugins/fceugx.dol", vars.defMount);
-	if (type == EMU_VBA)
-		sprintf (dol, "%s://ploader/plugins/vbagx.dol", vars.defMount);
-	if (type == EMU_GEN)
-		sprintf (dol, "%s://ploader/plugins/genplusgx.dol", vars.defMount);
-	if (type == EMU_WII64)
-		sprintf (dol, "%s://ploader/plugins/wii64.dol", vars.defMount);
+	sprintf (dol, "%s://ploader/plugins/%s", vars.defMount, Plugins_GetDol(type));
 
 	if (fsop_FileExist (dol))
 		{
+		Conf (false);	// Store configuration on disc
+		Plugins (false);
+
 		DirectDolBoot (dol, cmd, 0);
 		}
 	else
@@ -1327,7 +1278,7 @@ int EmuBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	emus = calloc (CHNMAX, sizeof(s_game));
+	emus = calloc (CHNMAX, sizeof(s_emu));
 	
 	// Immediately draw the screen...
 	StructFree ();
@@ -1340,7 +1291,15 @@ int EmuBrowser (void)
 	
 	page = config.gamePageWii;
 	EmuBrowse ();
-
+	
+	/*
+	int i;
+	for (i = 0; i < emusCnt; i++)
+		{
+		Debug ("%s", emus[i].name);
+		}
+	*/
+	
 	LiveCheck (1);
 
 	page = config.gamePageEmu;
@@ -1373,8 +1332,6 @@ int EmuBrowser (void)
 				ReadGameConfig (emuSelected);
 				emus[emuSelected].playcount++;
 				WriteGameConfig (emuSelected);
-				Conf (false);	// Store configuration on disc
-				Plugins (false);
 				config.gamePageEmu = page;
 				
 				StartEmu (emus[emuSelected].type, emus[emuSelected].name);

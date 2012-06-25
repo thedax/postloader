@@ -6,8 +6,8 @@
 // This contain extension to draw a menu on screen
 // (A) select item, (B) cancel
 
-#define MAXITEMS 128
-#define MAXCOLS 12
+#define MAXITEMS 256
+#define MAXCOLS 32
 #define YSPACING 23
 #define YSPACINGFAKE 7
 #define YTITLE 20
@@ -125,10 +125,12 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	int x, y, yTop;
 	int columns = 0;
 	int titleLines;
-	char buff[1024];
+	char buff[4096];
 	char *line;
 	u32 btn;
 	time_t t;
+	
+	Debug ("grlib_menu: size = %d", strlen (itemsstring));
 	
 	int cols[MAXCOLS];
 	s_grlibobj goWindow, goItems[MAXITEMS];

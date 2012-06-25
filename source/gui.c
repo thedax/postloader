@@ -143,20 +143,36 @@ int Menu_SelectBrowsingMode (void)
 	
 int GoToPage (int page, int pageMax)
 	{
-	int col, i, newpage;
-	char buff[1024];
+	int cols;
+	int col, i, newpage, inc;
+	char buff[4096];
 	
 	*buff = '\0';
 	
-	for (col = 0; col < 10; col++)
+	if (pageMax < 100)
 		{
-		for (i = 0; i < pageMax; i++)
+		cols = 10;
+		inc = 1;
+		}
+	else
+		{
+		cols = 10;
+		inc = 5;
+		}
+	
+	for (col = 0; col < cols; col++)
+		{
+		for (i = 0; i < pageMax / inc; i ++)
 			{
-			newpage = col + (i * 10);
+			newpage = (col + (i * cols)) * inc;
+			if (inc > 1 && newpage > 1) newpage --;
 			if (newpage <= pageMax)
+				{
 				grlib_menuAddItem (buff, newpage, "%d", newpage+1);
+				}
 			}
-		if (col < 9) grlib_menuAddColumn (buff);
+		
+		if (col < cols -1) grlib_menuAddColumn (buff);
 		}
 	int item = grlib_menu ("Go to page", buff);
 	if (item >= 0) page = item;
@@ -386,9 +402,9 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 		}
 	
 	if (visible == 0 && grlib_irPos.y > 420) visible = 1;
-	if (visible == 1 && y > 360) y-=10;
-	if (visible == 1 && y <= 360) visible = 2;
-	if (visible == 2 && grlib_irPos.y < 355) visible = 3;
+	if (visible == 1 && y > 355) y-=10;
+	if (visible == 1 && y <= 355) visible = 2;
+	if (visible == 2 && grlib_irPos.y < 350) visible = 3;
 	if (visible == 3) y+=5;
 
 	if (y >= 480)
@@ -417,7 +433,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 			strcpy (goItems[i++].text, "About..");
 			strcpy (goItems[i++].text, "Config");
 			strcpy (goItems[i++].text, "Run Disc");
-			strcpy (goItems[i++].text, "Sys. Menu");
+			strcpy (goItems[i++].text, "Exit");
 			strcpy (goItems[i++].text, "Neek");
 			if (seAvailable > 0) 
 				{
@@ -446,7 +462,8 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 			if (w > btnWidth) btnWidth = w;
 			}
 		
-		//btnWidth = 60;
+		if (btnWidth < 60)
+			btnWidth = 60;
 		
 		go.x1 = 320 - (((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) - 10;
 		go.x2 = 320 + (((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) + 10;

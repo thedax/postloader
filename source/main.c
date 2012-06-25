@@ -43,6 +43,19 @@ void BootToSystemMenu(void)
 	DCFlushRange((void*)0x8132FFFB,4);
 	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 	}
+
+void BootToHBC(void)
+	{
+	Shutdown (0);
+
+	WII_Initialize();
+
+	WII_LaunchTitle(TITLE_ID(0x00010001,0xAF1BF516)); // HBC v1.0.7+
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x4a4f4449)); // HBC JODI
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x48415858)); // HBC HAXX
+	
+	exit (0);
+	}
 	
 void WiiLoad (int start)
 	{
@@ -403,7 +416,7 @@ int main(int argc, char **argv)
 	grlibSettings.autoCloseMenu = 60;
 	
 	ret = INTERACTIVE_RET_NONE;
-	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_HOME && vars.interactive)
+	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_WIIMENU && vars.interactive)
 		{
 		Debug ("Showing gui....");
 		
@@ -453,15 +466,28 @@ int main(int argc, char **argv)
 		return(0);
 		}
 
-	if (grlibSettings.wiiswitch_poweroff)
+	if (ret == INTERACTIVE_RET_NEEK2O)
+		{
+		Neek2oLoadKernel ();
+		Shutdown (0);
+		Neek2oBoot ();
+		return(0);
+		}
+
+	if (ret == INTERACTIVE_RET_SHUTDOWN || grlibSettings.wiiswitch_poweroff)
 		{
 		Shutdown (0);
 		SYS_ResetSystem( SYS_POWEROFF, 0, 0 );
 		}
 	
-	if (ret == INTERACTIVE_RET_HOME || grlibSettings.wiiswitch_reset) // System menu
+	if (ret == INTERACTIVE_RET_WIIMENU || grlibSettings.wiiswitch_reset) // System menu
 		{
 		BootToSystemMenu ();
+		}
+
+	if (ret == INTERACTIVE_RET_HBC) // Return to homebrew channel
+		{
+		BootToHBC ();
 		}
 
 	if (ret == INTERACTIVE_RET_DISC)

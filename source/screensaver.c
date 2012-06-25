@@ -85,9 +85,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 
 	GRRLIB_FreeTexture (img);
 	
-	CoverCache_Pause (true);
 	devices_TickUSB ();
-	CoverCache_Pause (false);
 
 	snd_Mp3Go ();
 	

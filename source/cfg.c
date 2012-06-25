@@ -132,8 +132,11 @@ s_cfg *cfg_Alloc (char *fn, int linebuffsize) // If fn is null, it return an emp
 		//Debug ("cfg_Alloc: (rd) %s", line);
 		
 		p = line + strlen(line) - 1;
-		while (p > line && (*(p-1) == '\32' || *(p-1) == 13 || *(p-1) == 10)) p--; // remove spaces/cr/lf
-		*p = '\0';
+		while (p > line && (*(p-1) == '\32' || *(p-1) == 13 || *(p-1) == 10)) 
+			{
+			*p = '\0';
+			p--; // remove spaces/cr/lf
+			}
 
 		if (addnew)
 			c = cfg_AddNode (c);

@@ -22,8 +22,8 @@ s_wiiload wiiload;
 static char ip[16];
 static char incommingIP[20];
 static u32 uncfilesize;
-static int stopNetworkThread;
-static int stopGeckoThread;
+static volatile int stopNetworkThread;
+static volatile int stopGeckoThread;
 
 static u8 * threadStackG = NULL;
 static u8 * threadStack = NULL;
@@ -33,7 +33,7 @@ static lwp_t geckothread = LWP_THREAD_NULL;
 static char *tpath;
 static int errors = 0;
 static int firstInit = 1;
-static int pauseWiiload = 0;
+static volatile int pauseWiiload = 0;
 static int threadStartSleep;
 
 s32 socket;
@@ -475,7 +475,8 @@ static bool StartWiiLoadServer (void)
 		
 		for (i = 0; i < 10; i++)
 			{
-			usleep (10*1000);
+			usleep (50000);
+			if (pauseWiiload) break;
 			}
 		
 		if (pauseWiiload)
@@ -673,45 +674,30 @@ void WiiLoad_Stop(void)
 	if (stopNetworkThread == 1) 
 		return; // It is already stopped
 		
-	Debug ("WiiLoad_Stop: network");
-	SET (stopNetworkThread, 1);	
+	stopNetworkThread = 1;	
+	stopGeckoThread = 1;
 	
 	tout = 0;
-	while (stopNetworkThread == 1 && tout < 25)
+	while ((stopNetworkThread == 1 || stopGeckoThread == 1) && tout < 50)
 		{
 		usleep (100000);
 		tout++;
 		}
 		
-	Debug ("WiiLoad_Stop: network (%d)", tout);
-		
-	if (tout >= 25)
-		LWP_SuspendThread (networkthread);
-	
-	free (threadStack);
-	
-	Debug ("WiiLoad_Stop: gecko");
-	SET (stopGeckoThread, 1);	
-	
-	tout = 0;
-	while (stopGeckoThread == 1 && tout < 25)
+	if (tout < 50)
 		{
-		usleep (100000);
-		tout++;
-		}
-	
-	Debug ("WiiLoad_Stop: gecko (%d)", tout);	
-	
-	if (tout >= 25)
-		LWP_SuspendThread (geckothread);
-	
-	free (threadStackG);
-	
-	Debug ("WiiLoad_Stop: buffers...");
+		LWP_JoinThread (networkthread, NULL);
+		LWP_JoinThread (geckothread, NULL);
+		free (threadStack);
+		free (threadStackG);
 
-	// Clean old data, if any
-	if (wiiload.buff) free (wiiload.buff);
-	if (wiiload.args) free (wiiload.args);
+		// Clean old data, if any
+		if (wiiload.buff) free (wiiload.buff);
+		if (wiiload.args) free (wiiload.args);
+		}
+	else	
+		Debug ("WiiLoad_Stop: Something gone wrong !");
+
 	
 	wiiload.buff = NULL;
 	wiiload.args = NULL;
@@ -722,7 +708,7 @@ void WiiLoad_Stop(void)
 
 void WiiLoad_Pause (void)
 	{
-	SET (pauseWiiload, 1);
+	pauseWiiload = 1;
 
 	int tout = 0;
 	while (pauseWiiload == 1 && tout < 50)
@@ -735,5 +721,5 @@ void WiiLoad_Pause (void)
 	
 void WiiLoad_Resume (void)
 	{
-	SET (pauseWiiload, 0);
+	pauseWiiload = 0;
 	}

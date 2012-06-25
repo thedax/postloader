@@ -307,7 +307,11 @@ int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook
 	
 	cfg.Config |= DML_CFG_GAME_PATH;
 
-	sprintf (path, "sd:/%s/game.iso", folder);
+	if (config.dmlVersion == 2)
+		sprintf (path, "usb:/%s/game.iso", folder);
+	else
+		sprintf (path, "sd:/%s/game.iso", folder);
+		
 	if (fsop_FileExist (path))
 		{
 		sprintf (path, "%s/game.iso", folder);
@@ -440,8 +444,8 @@ char *DMLScanner  (bool reset)
 	
 	if (reset == 1)
 		{
-		
-		if (!devices_Get(DEV_SD)) return 0;
+		// Allow usb only for DM
+		if (config.dmlVersion < 2 && !devices_Get(DEV_SD)) return 0;
 		
 		sprintf (path, "%s://games", devices_Get(DEV_SD));
 		

@@ -589,9 +589,14 @@ static int GameBrowse (int forcescan)
 
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 			
-			ReadGameConfig (i);
-			
-			i ++;
+			if (config.gameMode == GM_DML && config.dmlVersion == 2 && games[i].slot == 0)
+				;
+			else
+				{
+				ReadGameConfig (i);
+				
+				i ++;
+				}
 			}
 		else
 			break;
@@ -1145,6 +1150,7 @@ static void ChangeDefaultDMLMode (void)
 static void ShowMainMenu (void)
 	{
 	char buff[512];
+	int rebrowse = 0;
 	
 	start:
 	
@@ -1183,7 +1189,12 @@ static void ShowMainMenu (void)
 	else
 		{
 		grlib_menuAddItem (buff, 3, "Set default DML videomode...");
-		grlib_menuAddItem (buff, 12, "DML Version (%s)", config.dmlVersion ? "1.x" : "0.x");
+		if (config.dmlVersion == 0)
+			grlib_menuAddItem (buff, 12, "GameCube mode: DML v0.x");
+		if (config.dmlVersion == 1)
+			grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
+		if (config.dmlVersion == 2)
+			grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.x USB");
 		}
 	
 	// note: maybe it is not the right place for this option
@@ -1269,9 +1280,19 @@ static void ShowMainMenu (void)
 		
 	if (item == 12)
 		{
-		config.dmlVersion = !config.dmlVersion;
+		config.dmlVersion++;
+		if (config.dmlVersion > 2)
+			config.dmlVersion = 0;
+			
+		rebrowse = 1;
 		goto start;
 		}
+			
+	if (rebrowse)
+		{
+		GameBrowse (0);
+		}
+	
 	}
 
 static void RedrawIcons (int xoff, int yoff)
@@ -1314,7 +1335,7 @@ static void RedrawIcons (int xoff, int yoff)
 
 			if (config.gameMode == GM_DML)
 				{
-				if (games[ai].slot)
+				if (config.dmlVersion < 2 && games[ai].slot)
 					gui.spots[gui.spotsIdx].ico.transparency = 128;
 				else
 					gui.spots[gui.spotsIdx].ico.transparency = 255;
@@ -1699,7 +1720,7 @@ int GameBrowser (void)
 					
 					Debug ("gamebrowser: requested dml");
 
-					if (games[gamesSelected].slot)
+					if (config.dmlVersion < 2 && games[gamesSelected].slot)
 						{
 						int ret = DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected));
 
@@ -1729,8 +1750,8 @@ int GameBrowser (void)
 						if (config.dmlVersion)
 							{
 							char *p = strstr (games[gamesSelected].source, "//")+1;
-							
 							DMLRunNew (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode, gameConf.dmlNoDisc, gameConf.dmlPadHook);
+							//DMLRunNew (games[gamesSelected].source, games[gamesSelected].asciiId, gameConf.dmlVideoMode, gameConf.dmlNoDisc, gameConf.dmlPadHook);
 							}
 						else
 							{

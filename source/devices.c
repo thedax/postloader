@@ -83,7 +83,10 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
         if(storage->startup() && storage->isInserted())
             break;
 
-		if (cb) cb();
+		if (cb) 
+			{
+			if (cb() == 0) break;
+			}
         usleep(100000); // 1/5 sec
 		}
 	

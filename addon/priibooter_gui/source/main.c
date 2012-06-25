@@ -20,7 +20,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "2.7"
+#define VER "2.8"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -535,10 +535,12 @@ int ChooseNewMode (void)
 
 void Boot (void)
 	{
+	SavePLN (cfg); // Force this to store NANDS folders...
+	
 	if (keypressed)
 		{
 		grlibSettings.wiiswitch_reset = 0;
-		if (ChooseNewMode () == 2) SavePLN (cfg);
+		if (ChooseNewMode () == 2) SavePLN (cfg); //Save again...
 		}
 		
 	if (grlibSettings.wiiswitch_reset)

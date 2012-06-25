@@ -71,7 +71,7 @@ void ShowAboutPLMenu (void)
 	Video_SetFont(TTFNORM);
 	
 	strcpy (buff, 	
-	"postLoader"VER" by stfour (2011)\n\n"
+	"postLoader"VER" by stfour (2011-12)\n\n"
 	"postLoader is intended to be an extension to priiloader autoboot feature.\n"
 	"It aims to replace Forwarders and HB Channel (maybe... one day).\n\n"
 	"Wii coding learned and inspired by:\n"
@@ -460,4 +460,50 @@ bool InstallNeekbooter (void)	// if nandpath is null, neekbooter is installed in
 	ISFS_Deinitialize ();
 	
 	return true;
+	}
+
+int ShowExitMenu (void)
+	{
+	int item;
+	char options[300];
+	
+	Video_SetFont(FNTBIG);
+	
+	*options = '\0';
+	
+	grlib_menuAddItem (options, 1,  "to WII Menu");
+	grlib_menuAddItem (options, 2,  "to Homebrew Channel");
+	grlib_menuAddItem (options, 3,  "Shutdown my WII");
+	grlib_menuAddSeparator (options);
+	grlib_menuAddItem (options, -1,  "Close");
+	
+	item = grlib_menu ("Select exit options", options);
+	
+	if (item == 1) return INTERACTIVE_RET_WIIMENU;
+	if (item == 2) return INTERACTIVE_RET_HBC;
+	if (item == 3) return INTERACTIVE_RET_SHUTDOWN;
+	
+	return -1;
+	}
+
+int ShowBootmiiMenu (void)
+	{
+	int item;
+	char options[300];
+	
+	Video_SetFont(FNTBIG);
+	
+	*options = '\0';
+	
+	grlib_menuAddItem (options, 1,  "Start NEEK2O (Direct mode)");
+	grlib_menuAddItem (options, 2,  "Start NEEK/BOOTMII (IOS254 Method)");
+	grlib_menuAddSeparator (options);
+	grlib_menuAddItem (options, -1,  "Close");
+	
+	item = grlib_menu ("Select NEEK/BOOTMII options", options);
+	
+	if (item == 1) return INTERACTIVE_RET_NEEK2O;
+	if (item == 2) return INTERACTIVE_RET_BOOTMII;
+	
+	return -1;
 	}

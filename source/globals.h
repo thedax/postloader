@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b24"
+#define VER "4.b25"
 #define CFGVER "PLCFGV0013"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -51,20 +51,24 @@
 
 enum {
 	INTERACTIVE_RET_NONE=0,
-	INTERACTIVE_RET_HBSEL,
-	INTERACTIVE_RET_CHANSEL,
-	INTERACTIVE_RET_GAMESEL,
-	INTERACTIVE_RET_SHUTDOWN,
-	INTERACTIVE_RET_HOME,
+
 	INTERACTIVE_RET_TOCHANNELS,
 	INTERACTIVE_RET_TOHOMEBREW,
 	INTERACTIVE_RET_TOGAMES,
 	INTERACTIVE_RET_TOEMU,
+
+	INTERACTIVE_RET_HBSEL,
+	INTERACTIVE_RET_CHANSEL,
+	INTERACTIVE_RET_GAMESEL,
+	INTERACTIVE_RET_SHUTDOWN,
+	INTERACTIVE_RET_WIIMENU,
 	INTERACTIVE_RET_BOOTMII,
+	INTERACTIVE_RET_NEEK2O,
 	INTERACTIVE_RET_WIILOAD,
 	INTERACTIVE_RET_DISC,
 	INTERACTIVE_RET_SE,
 	INTERACTIVE_RET_WM,
+	INTERACTIVE_RET_HBC
 	};
 
 #define WAITPANWIDTH 300
@@ -75,7 +79,7 @@ enum {
 typedef void (*entrypoint) (void); 
 
 #define APPMODE_NONE 0  	// Homebrew application
-#define APPMODE_HBA 1 	 	// Homebrew application
+#define APPMODE_HBA 1  	 	// Homebrew application
 #define APPMODE_CHAN 2  	// Channel on real nand
 
 #define RETURNTO_AUTOBOOT 0
@@ -143,7 +147,7 @@ enum {
 	TEX_ICO_ABOUT,
 	TEX_ICO_CONFIG,
 	TEX_ICO_DVD,
-	TEX_ICO_SYSMENU,
+	TEX_ICO_EXIT,
 	TEX_ICO_NEEK,
 	TEX_ICO_SE,
 	TEX_ICO_WM,
@@ -456,6 +460,8 @@ void Shutdown(bool doNotKillHBC);
 int MasterInterface (int full, int showCursor, int icon, const char *text, ...);	// icon 0 = none, 1 hdd, 2 hg
 void ShowAboutMenu (void);
 void ShowAboutPLMenu (void);
+int ShowExitMenu (void);
+int ShowBootmiiMenu (void);
 
 // utils.c
 u32 get_msec(bool reset);

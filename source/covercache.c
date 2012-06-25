@@ -1,3 +1,4 @@
+#include <gccore.h>
 #include <ogc/machine/processor.h>
 #include <ogc/lwp_watchdog.h>
 #include <unistd.h>
@@ -7,7 +8,7 @@
 #include "mem2.h"
 #include "globals.h"
 
-//static mutex_t mutex;
+static mutex_t mutex;
 
 #define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
 #define MAXITEMS 64
@@ -25,25 +26,20 @@ typedef struct
 	}
 s_cc; // covercache
 
-/*
-typedef struct 
-	{
-	char id[256];
-	u8 prio;
-	}
-s_fifo; // covercache
-*/
-
 static s_cc *cc;
-//static s_fifo *fifo;
 
-static int idx = 0;	// used to add elements
-static int running = 0;
-static int update = 0;
 static int age = 0;
 
-static bool pauseThread = 0;
-static bool stopThread = 0;
+#define PAUSE_NO 0
+#define PAUSE_REQUEST 1
+#define PAUSE_YES 2
+
+static volatile int threadPause = PAUSE_NO;
+static volatile int threadStop = 0;
+static volatile int threadRunning = 0;
+static volatile int cId = 0;
+static volatile int update = 0;
+
 
 static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex)
 	{
@@ -84,11 +80,231 @@ static void FreeMem2Tex (GRRLIB_texImg *tex)
 	mem2_free(tex);
 	}
 
+static void *thread (void *arg)
+	{
+	GRRLIB_texImg *tex;
+
+	threadRunning = 1;
+
+	Debug ("covercache thread started");
+	
+	int doPrio = 0;
+	int i;
+
+	while (true)
+		{
+		for (i = 0; i < MAXITEMS; i++)
+			{
+			if (*cc[i].id != '\0' && !cc[i].cover && ((doPrio == 1 && cc[i].prio == 1) || doPrio == 0))
+				{
+				//gprintf ("*");
+				cId = i;
+				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
+				
+				cc[i].prio = 0;
+ 				cc[i].cover = MoveTex2Mem2 (tex);
+				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
+				DCFlushRange(&cc[i], sizeof(s_cc));
+				update ++;
+
+				cId = -1;
+				//gprintf ("#");
+				}
+				
+			if (threadPause == PAUSE_REQUEST)
+				{
+				threadPause = PAUSE_YES;
+				
+				while (threadPause == PAUSE_YES)
+					{
+					usleep (100);
+					}
+
+				doPrio = 1;
+				i = 0;
+				}
+			
+			if (threadStop)
+				{
+				threadRunning = 0;
+				return NULL;
+				}
+
+			usleep (500);
+			}
+		
+		doPrio = 0;
+
+		//gprintf (".");
+		}
+	
+	return NULL;
+	}
+
+void CoverCache_Pause (bool yes) // return after putting thread in 
+	{
+	if (!threadRunning) return;
+	
+	//Debug ("CoverCache_Pause %d", yes);
+	
+	if (yes)
+		{
+		threadPause = PAUSE_REQUEST;
+		while (threadPause != PAUSE_YES)
+			{
+			usleep(100);
+			}
+		}
+	else
+		{
+		threadPause = PAUSE_NO;
+		}
+	//gprintf ("[OUT]");
+	}
+	
+void CoverCache_Start (void)
+	{
+	Debug ("CoverCache_Start");
+
+	cc = calloc (1, MAXITEMS * sizeof(s_cc));
+
+	mutex = LWP_MUTEX_NULL;
+    LWP_MutexInit (&mutex, false);
+
+	threadStack = (u8 *) memalign(32, STACKSIZE);
+	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 32);
+	LWP_ResumeThread(hthread);
+	}
+
+void CoverCache_Flush (void)	// empty the cache
+	{
+	int i;
+	int count = 0;
+	Debug ("CoverCache_Flush");
+	
+	CoverCache_Pause (true);
+	
+	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
+	
+	for (i = 0; i < MAXITEMS; i++)
+		{
+		if (cc[i].cover) 
+			{
+			//Debug ("CoverCache_Flush: 0x%08X %s", cc[i].cover, cc[i].id);
+			FreeMem2Tex (cc[i].cover);
+			//Debug ("CoverCache_Flush: (done)");
+			cc[i].cover = NULL;
+			
+			count ++;
+			}
+			
+		*cc[i].id = '\0';
+		cc[i].age = 0;
+		}
+	age = 0;
+	
+	CoverCache_Pause (false);
+
+	Debug ("CoverCache_Flush: %d covers flushed", count);
+	}
+	
+void CoverCache_Stop (void)
+	{
+	Debug ("CoverCache_Stop");
+	if (threadRunning)
+		{
+		threadStop = 1;
+		
+		int i;
+		for (i = 0; i < 2000; i++)
+			{
+			if (threadRunning == 0) break;
+			usleep (1000);
+			}
+		
+		if (threadRunning)
+			{
+			threadStop = 1;
+			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
+			}
+		
+		//Debug ("CoverCache_Stop #1");
+		LWP_JoinThread (hthread, NULL);
+
+		//Debug ("CoverCache_Stop #2");
+		CoverCache_Flush ();
+
+		//Debug ("CoverCache_Stop #3");
+		free (threadStack);
+
+		//Debug ("CoverCache_Stop #5");
+		free (cc);
+
+		//Debug ("CoverCache_Stop #4");
+        LWP_MutexDestroy (mutex);
+
+		Debug ("CoverCache_Stop completed");
+		}
+	else
+		Debug ("CoverCache_Stop: thread was already stopped");
+	}
+	
+GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
+	{
+	if (threadRunning == 0) return NULL;
+
+	int i;
+	GRRLIB_texImg *tex = NULL;
+
+	for (i = 0; i < MAXITEMS; i++)
+		{
+		if (i != cId && *cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
+			{
+			tex = cc[i].cover;
+			break;
+			}
+		}
+
+	return tex;
+	}
+	
+GRRLIB_texImg *CoverCache_GetCopy (char *id) // this will return a COPY of the required texture
+	{
+	return grlib_CreateTexFromTex (CoverCache_Get (id));
+	}
+	
+bool CoverCache_IsUpdated (void) // this will return the same text
+	{
+	static int lastCheck = 0;
+	static u32 mstout = 0;
+	
+	u32 ms = ticks_to_millisecs(gettime());
+	
+	if (mstout < ms)
+		{
+		mstout = ms + 100;
+		
+		if (lastCheck != update)
+			{
+			lastCheck = update;
+			return true;
+			}
+		}
+	return false;
+	}
+
 void CoverCache_Add (char *id, bool priority) // gameid without .png extension, if pt is true, thread will be paused
 	{
 	int i;
 	bool found = false;
 	
+	if (threadPause != PAUSE_YES)
+		{
+		CoverCache_Pause (true);
+		//gprintf ("[CoverCache_Add:NOTPAUSED]");
+		return;
+		}
+
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
 	// Let's check if the item already exists...
@@ -128,7 +344,7 @@ void CoverCache_Add (char *id, bool priority) // gameid without .png extension, 
 				}
 			}
 		
-		idx = minageidx;
+		int idx = minageidx;
 		
 		if (cc[idx].cover) 
 			{
@@ -143,237 +359,4 @@ void CoverCache_Add (char *id, bool priority) // gameid without .png extension, 
 
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	age ++;
-	}
-
-static void *thread (void *arg)
-	{
-	GRRLIB_texImg *tex;
-
-	SET (running, 1);
-
-	Debug ("covercache thread started");
-	
-	int i = 0;
-	int doPrio = 0;
-
-	while (true)
-		{
-		for (i = 0; i < MAXITEMS; i++)
-			{
-			if (*cc[i].id != '\0' && !cc[i].cover && ((doPrio == 1 && cc[i].prio == 1) || doPrio == 0))
-				{
-				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
-				
-				cc[i].cover = MoveTex2Mem2 (tex);
-				cc[i].prio = 0;
-				
-				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
-				
-				DCFlushRange(&cc[i], sizeof(s_cc));
-				SET (update, update+1);
-				}
-				
-			if (pauseThread)
-				{
-				LWP_SuspendThread(hthread);
-				doPrio = 1;
-				i = 0;
-				}
-			
-			if (stopThread)
-				{
-				SET (running, 0);
-				return NULL;
-				}
-
-			usleep (500);
-			}
-		
-		doPrio = 0;
-		/*
-		for (i = 0; i < MAXITEMS; i++)
-			{
-			if (*fifo[i].id != '\0')
-				{
-				CoverCache_Feed (fifo[i].id, fifo[i].prio);
-				*fifo[i].id = '\0';
-				fifo[i].prio = 0;
-				}
-			}
-		*/	
-		// gprintf (".");
-		}
-	
-	return NULL;
-	}
-
-/*
-void CoverCache_Add (char *id, bool priority) // gameid without .png extension, if pt is true, thread will be paused
-	{
-	int i;
-	DCFlushRange(fifo, MAXITEMS * sizeof(s_fifo));
-	
-	for (i = 0; i < MAXITEMS; i++)
-		{
-		if (*fifo[i].id == '\0')
-			{
-			strcpy (fifo[i].id, id);
-			fifo[i].prio = priority;
-			}
-		}
-	
-	DCFlushRange(fifo, MAXITEMS * sizeof(s_fifo));
-	}
-*/
-void CoverCache_Pause (bool yes) // return after putting thread in 
-	{
-	if (!running) return;
-	
-	if (yes)
-		{
-		// wait for thread to finish
-		while (!LWP_ThreadIsSuspended(hthread))
-			{
-			SET (pauseThread, true);
-			usleep(100);
-			}
-		}
-	else
-		{
-		SET (pauseThread, false);
-		LWP_ResumeThread(hthread); 
-		}
-	}
-	
-void CoverCache_Start (void)
-	{
-	Debug ("CoverCache_Start");
-
-	cc = calloc (1, MAXITEMS * sizeof(s_cc));
-	//memset (cc, 0, MAXITEMS * sizeof(s_cc));
-	
-	//fifo = mem2_malloc (MAXITEMS * sizeof(s_fifo));
-	//memset (fifo, 0, MAXITEMS * sizeof(s_cc));
-	
-	threadStack = (u8 *) memalign(32, STACKSIZE);
-	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 32);
-	}
-
-void CoverCache_Flush (void)	// empty the cache
-	{
-	int i;
-	int count = 0;
-	Debug ("CoverCache_Flush");
-	
-	CoverCache_Pause (true);
-	
-	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
-	
-	for (i = 0; i < MAXITEMS; i++)
-		{
-		if (cc[i].cover) 
-			{
-			//Debug ("CoverCache_Flush: 0x%08X %s", cc[i].cover, cc[i].id);
-			FreeMem2Tex (cc[i].cover);
-			//Debug ("CoverCache_Flush: (done)");
-			cc[i].cover = NULL;
-			
-			count ++;
-			}
-			
-		*cc[i].id = '\0';
-		cc[i].age = 0;
-		}
-	age = 0;
-	
-	CoverCache_Pause (false);
-
-	Debug ("CoverCache_Flush: %d covers flushed", count);
-	}
-	
-void CoverCache_Stop (void)
-	{
-	Debug ("CoverCache_Stop");
-	if (running)
-		{
-		SET (stopThread, 1);
-		
-		int i;
-		for (i = 0; i < 2000; i++)
-			{
-			if (running == 0) break;
-			usleep (1000);
-			}
-		
-		if (running)
-			{
-			SET (stopThread, 1);
-			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
-			}
-		
-		//Debug ("CoverCache_Stop #1");
-		LWP_JoinThread (hthread, NULL);
-
-		//Debug ("CoverCache_Stop #2");
-		CoverCache_Flush ();
-
-		//Debug ("CoverCache_Stop #3");
-		free (threadStack);
-
-		//Debug ("CoverCache_Stop #5");
-		free (cc);
-		//mem2_free (fifo);
-
-		Debug ("CoverCache_Stop completed");
-		}
-	else
-		Debug ("CoverCache_Stop: thread was already stopped");
-	}
-	
-GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
-	{
-	if (running == 0) return NULL;
-
-	int i;
-	GRRLIB_texImg *tex = NULL;
-
-	//CoverCache_Pause (true);
-	
-	for (i = 0; i < MAXITEMS; i++)
-		{
-		if (*cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
-			{
-			tex = cc[i].cover;
-			break;
-			}
-		}
-		
-	//CoverCache_Pause (false);
-
-	return tex;
-	}
-	
-GRRLIB_texImg *CoverCache_GetCopy (char *id) // this will return a COPY of the required texture
-	{
-	return grlib_CreateTexFromTex (CoverCache_Get (id));
-	}
-	
-bool CoverCache_IsUpdated (void) // this will return the same text
-	{
-	static int lastCheck = 0;
-	static u32 mstout = 0;
-	
-	u32 ms = ticks_to_millisecs(gettime());
-	
-	if (mstout < ms)
-		{
-		mstout = ms + 100;
-		
-		if (lastCheck != update)
-			{
-			lastCheck = update;
-			return true;
-			}
-		}
-	return false;
 	}

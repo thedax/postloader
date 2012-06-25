@@ -58,7 +58,7 @@ void Video_Init (void)
 	vars.tex[TEX_ICO_ABOUT] = GRRLIB_LoadTexturePNG (ico_about_png);
 	vars.tex[TEX_ICO_CONFIG] = GRRLIB_LoadTexturePNG (ico_config_png);
 	vars.tex[TEX_ICO_DVD] = GRRLIB_LoadTexturePNG (ico_dvd_png);
-	vars.tex[TEX_ICO_SYSMENU] = GRRLIB_LoadTexturePNG (ico_sysmenu_png);
+	vars.tex[TEX_ICO_EXIT] = GRRLIB_LoadTexturePNG (ico_exit_png);
 	vars.tex[TEX_ICO_NEEK] = GRRLIB_LoadTexturePNG (ico_neek_png);
 	vars.tex[TEX_ICO_SE] = GRRLIB_LoadTexturePNG (ico_se_png);
 	vars.tex[TEX_ICO_WM] = GRRLIB_LoadTexturePNG (ico_wm_png);

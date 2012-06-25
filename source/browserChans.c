@@ -396,7 +396,7 @@ static void AppsSort (void)
 	int i;
 	
 	// Apply filters
-	if (!manageUID)
+	if (manageUID)
 		{
 		chans2Disp = chansCnt;
 		}
@@ -587,7 +587,7 @@ static void UpdateTitlesFromTxt (void)
 		{
 		if (cfg_GetString (vars.titlestxt, chans[i].asciiId, buff))
 			{
-			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", chans[i].name, buff);
+			//Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", chans[i].name, buff);
 			free (chans[i].name);
 			chans[i].name = ms_utf8_to_ascii (buff);
 			}
@@ -1113,6 +1113,43 @@ static void SyncNandFile (char *sourcepath, char *sourcefn)
 	free (buffer);
 	}
 	
+static void ChangeDefaultIOS (void)
+	{
+	char buff[1024];
+	
+	buff[0] = '\0';
+	
+	// "CFG", "GX", "WiiFlow"
+	
+	grlib_menuAddItem (buff, 4, "247");
+	grlib_menuAddItem (buff, 5, "248");
+	grlib_menuAddItem (buff, 0, "249");
+	grlib_menuAddItem (buff, 1, "250");
+	grlib_menuAddItem (buff, 2, "251");
+	grlib_menuAddItem (buff, 3, "252");
+	
+	int item = grlib_menu ("Select your default CIOS slot", buff);
+	if (item < 0) return;
+		
+	Redraw();
+	grlib_PushScreen();
+
+	int i;
+	int j = 0;
+	for (i = 0; i < chansCnt; i++)
+		{
+		ReadTitleConfig (i);
+		chnConf.ios = item;
+		WriteTitleConfig (i);
+			
+		if (j++ > 10)
+			{
+			Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/chansCnt);
+			j = 0;
+			}
+		}
+	}
+	
 static void ShowMainMenu (void)
 	{
 	char buff[512];
@@ -1145,6 +1182,10 @@ static void ShowMainMenu (void)
 	if (vars.neek != NEEK_NONE)
 		{
 		grlib_menuAddItem (buff,  9, "UID.sys manage mode");
+		}
+	else
+		{
+		grlib_menuAddItem (buff,  10, "Change Default CIOSX");
 		}
 		
 	Redraw();
@@ -1207,6 +1248,10 @@ static void ShowMainMenu (void)
 		AppsSort ();
 		
 		//neek_UID_Dump ();
+		}
+	if (item == 10)
+		{
+		ChangeDefaultIOS ();
 		}
 	}
 
@@ -1274,13 +1319,16 @@ static void RedrawIcons (int xoff, int yoff)
 			else
 				gui.spots[gui.spotsIdx].ico.iconOverlay[2] = NULL;
 
-			if (manageUID && neek_UID_IsHidden (chans[ai].titleId))
+			if (manageUID)
 				{
-				Debug ("Hidden item");
-				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+				if (neek_UID_IsHidden (chans[ai].titleId))
+					{
+					Debug ("Hidden item");
+					gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+					}
+				else
+					gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
 				}
-			else
-				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
 
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 

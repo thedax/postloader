@@ -1,3 +1,18 @@
+postLoader 4.b25
+
+* fixed channels sorting/hiding
+* fixed crash with more than 1500 emu
+* fixed jump to page (now if there are more then 100 pages, page selection is every 5)
+* covercache semaphores are now volatile. Hoping in no more casual hangs
+* (B) should now interrupt USB mounting
+* Changed "WII menu" button to "Exit..". Now you can exit to 1) system menu, 2) homebrew channel, 3 shutdown. Button need to be moved to right... next rel...
+* Neek button will now ask the method: 1) direct (for neek2o, no sd required), 2) IOS254 (bootmii/neek sd required)
+* Added "change default ciosx" to channel mode
+* Added support for DM. Press [HOME]->Gamecube Mode: DM 2.x
+* plugins.conf parsing is complete. You should be able to add any plugin from wiiflow (thx FIX94) and configure it for postloader. Plugin must be copied in /pload/plugins
+* speedup on wiiload deinit
+* priibooterGUI 2.8: should now save correctly nands folders information (required by postloader for old mode nand changer)
+
 postLoader 4.b24
 
 * fixed a memory leak when browsing emulators

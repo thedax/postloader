@@ -11,9 +11,9 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <gccore.h>
+#include <ogc/lwp_watchdog.h>
 #include <ogc/machine/processor.h>
 #include <dirent.h>
-#include <ogc/lwp_watchdog.h>
 
 #include "fsop/fsop.h"
 #include "isfs.h"
