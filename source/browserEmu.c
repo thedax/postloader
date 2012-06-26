@@ -190,6 +190,52 @@ static void Conf (bool open)
 		}
 	}
 	
+static void WriteGameConfig (int ia)
+	{
+	if (ia < 0) return;
+	
+	strcpy (emuConf.name, emus[ia].name);
+	emuConf.hidden = emus[ia].hidden;
+	emuConf.priority = emus[ia].priority;
+	//emuConf.category = emus[ia].category;
+	emuConf.playcount = emus[ia].playcount;
+	
+	char *buff = Bin2HexAscii (&emuConf, sizeof (s_emuConfig), 0);
+	cfg_SetString (cfg, GetFilename(emus[ia].name), buff);
+	free (buff);
+	}
+
+static int ReadGameConfig (int ia)
+	{
+	char buff[1024];
+	bool valid;
+	
+	valid = cfg_GetString (cfg, GetFilename(emus[ia].name), buff);
+	
+	if (valid)
+		{
+		if (HexAscii2Bin (buff, &emuConf) > sizeof (s_emuConfig))
+			{
+			valid = false;
+			}
+		}
+	
+	if (!valid)
+		{
+		emuConf.priority = 5;
+		emuConf.hidden = 0;
+		emuConf.playcount = 0;
+		//emuConf.category = 0;
+		}
+
+	//emus[ia].category = emuConf.category;
+	emus[ia].hidden = emuConf.hidden;
+	emus[ia].priority = emuConf.priority;
+	emus[ia].playcount = emuConf.playcount;
+	
+	return valid;
+	}
+
 static void Plugins (bool open)
 	{
 	char cfgpath[64];
@@ -374,52 +420,6 @@ static void FeedCoverCache (void)
 		}
 	
 	CoverCache_Pause (false);
-	}
-
-static void WriteGameConfig (int ia)
-	{
-	if (ia < 0) return;
-	
-	strcpy (emuConf.name, emus[ia].name);
-	emuConf.hidden = emus[ia].hidden;
-	emuConf.priority = emus[ia].priority;
-	//emuConf.category = emus[ia].category;
-	emuConf.playcount = emus[ia].playcount;
-	
-	char *buff = Bin2HexAscii (&emuConf, sizeof (s_emuConfig), 0);
-	cfg_SetString (cfg, GetFilename(emus[ia].name), buff);
-	free (buff);
-	}
-
-static int ReadGameConfig (int ia)
-	{
-	char buff[1024];
-	bool valid;
-	
-	valid = cfg_GetString (cfg, GetFilename(emus[ia].name), buff);
-	
-	if (valid)
-		{
-		if (HexAscii2Bin (buff, &emuConf) > sizeof (s_emuConfig))
-			{
-			valid = false;
-			}
-		}
-	
-	if (!valid)
-		{
-		emuConf.priority = 5;
-		emuConf.hidden = 0;
-		emuConf.playcount = 0;
-		//emuConf.category = 0;
-		}
-
-	//emus[ia].category = emuConf.category;
-	emus[ia].hidden = emuConf.hidden;
-	emus[ia].priority = emuConf.priority;
-	emus[ia].playcount = emuConf.playcount;
-	
-	return valid;
 	}
 
 static void StructFree (void)

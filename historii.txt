@@ -1,3 +1,7 @@
+postLoader 4.b26
+
+* fixed .conf corruption caused by recently changes in cfg library. postLoader should be able to recover actual corrupted files. Otherwise delete any *.conf and channels.* from /ploader folder
+
 postLoader 4.b25
 
 * fixed channels sorting/hiding

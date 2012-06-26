@@ -117,7 +117,7 @@ s_cfg *cfg_Alloc (char *fn, int linebuffsize) // If fn is null, it return an emp
 	if (linebuffsize == 0) linebuffsize = 1024;
 
 	FILE *f;
-	char *line = calloc (1, linebuffsize);
+	char *line = calloc (1, linebuffsize+1);
 	char *p, *pp;
 	bool addnew = false;
 	
@@ -132,24 +132,28 @@ s_cfg *cfg_Alloc (char *fn, int linebuffsize) // If fn is null, it return an emp
 		//Debug ("cfg_Alloc: (rd) %s", line);
 		
 		p = line + strlen(line) - 1;
-		while (p > line && (*(p-1) == '\32' || *(p-1) == 13 || *(p-1) == 10)) 
+		while (p > line && (*p == '\32' || *p == 13 || *p == 10)) 
 			{
 			*p = '\0';
 			p--; // remove spaces/cr/lf
 			}
-
+		
 		if (addnew)
 			c = cfg_AddNode (c);
 			
 		p = strstr (line, "=");
-		if (line[0] == '#' || p == NULL) // It is a comment or badly formatted line
+		if (line[0] == '#') // It is a comment or badly formatted line
 			{
+			//Debug ("cfg_Alloc: %s", line);
+
 			c->comment = true;
 			c->value = calloc (1, strlen (line) + 1);
 			strcpy (c->value, line);
 			}
-		else
+		else if (p != NULL)
 			{
+			//Debug ("cfg_Alloc: %s", line);
+			
 			pp = p;
 			
 			while (p > line && *(p-1) == ' ') p--; // remove spaces
