@@ -95,8 +95,8 @@ void Shutdown(bool doNotKillHBC)
 	snd_Stop ();
 	cfg_Free (vars.titlestxt);
 
-	Video_Deinit ();
 	Subsystems (false);
+	Video_Deinit ();
 	
 	if (config.usesStub)
 		{
@@ -441,7 +441,13 @@ int main(int argc, char **argv)
 				config.browseMode = BROWSE_GM;
 			else if (ret == INTERACTIVE_RET_TOEMU)
 				config.browseMode = BROWSE_EM;
-			else break;
+			else 
+				{
+				grlib_SetRedrawCallback (Redraw, NULL);
+				if (ret == INTERACTIVE_RET_SE && !CheckParental()) continue;
+				if (ret == INTERACTIVE_RET_WM && !CheckParental()) continue;
+				break;
+				}
 			}
 		while (TRUE);
 		Video_LoadTheme (0);

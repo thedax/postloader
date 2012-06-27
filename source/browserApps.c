@@ -719,6 +719,8 @@ static int AppsBrowse (void)
 
 static void ShowAppMenu (int ai)
 	{
+	if (!CheckParental()) return;
+
 	int len = 64;  // Give some space
 	char *title;
 	char buff[300];
@@ -907,6 +909,8 @@ static void SortDispMenu (void)
 
 static void ShowFilterMenu (void)
 	{
+	if (!CheckParental()) return;
+	
 	char buff[512];
 	int item;
 	
@@ -1434,7 +1438,11 @@ int AppBrowser (void)
 				FeedCoverCache ();
 				redraw = 1;
 				}
-
+			if (btn & WPAD_BUTTON_2) 
+				{
+				ShowFilterMenu();
+				redraw = 1;
+				}
 			if (btn & WPAD_BUTTON_A && appsSelected != -1 && sortMode == 0) 
 				{
 				if (apps[appsSelected].type == AT_HBA)

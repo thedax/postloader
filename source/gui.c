@@ -322,84 +322,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 	int ret = -1;
 	int i;
 
-	static int seAvailable = -1;
-	static int wmAvailable = -1;
-	static int seItem = -1, wmItem = -1;
-	
-	if (seAvailable == -1) // we need to check se
-		{
-		int dev;
-		int found = 0;
-		char path[256];
-		
-		for (dev = 0; dev < DEV_MAX; dev++)
-			{
-			if (devices_Get (dev))
-				{
-				sprintf (path, "%s://apps/SettingsEditorGUI/boot.dol", devices_Get (dev));
-				Debug ("DrawBottomBar: searching %s", path);
-				if (fsop_FileExist (path))
-					{
-					strcpy (vars.sePath, path);
-					found = 1;
-					Debug ("DrawBottomBar: found!");
-					break;
-					}
-				sprintf (path, "%s://apps/Settings Editor GUI/boot.dol", devices_Get (dev));
-				Debug ("DrawBottomBar: searching %s", path);
-				if (fsop_FileExist (path))
-					{
-					strcpy (vars.sePath, path);
-					found = 1;
-					Debug ("DrawBottomBar: found!");
-					break;
-					}
-				}
-			}
-		
-		if (found)
-			{
-			seAvailable = 1;
-			BOTBARITEMS ++;
-			}
-		else
-			{
-			seAvailable = 0;
-			}
-		}
-
-	if (wmAvailable == -1) // we need to check se
-		{
-		int dev;
-		int found = 0;
-		char path[256];
-		
-		for (dev = 0; dev < DEV_MAX; dev++)
-			{
-			if (devices_Get (dev))
-				{
-				sprintf (path, "%s://apps/wiimod/boot.dol", devices_Get (dev));
-				Debug ("DrawBottomBar: searching %s", path);
-				if (fsop_FileExist (path))
-					{
-					strcpy (vars.wmPath, path);
-					found = 1;
-					Debug ("DrawBottomBar: found!");
-					break;
-					}
-				}
-			}
-		
-		if (found)
-			{
-			wmAvailable = 1;
-			BOTBARITEMS ++;
-			}
-		else
-			{
-			wmAvailable = 0;
-			}
-		}
+	static int itemSE = -1, itemWM = -1, itemAbout = -1, itemConfig = -1, itemDisc = -1, itemExit = -1, itemNeek = -1;
 	
 	if (visible == 0 && grlib_irPos.y > 420) visible = 1;
 	if (visible == 1 && y > 355) y-=10;
@@ -428,23 +351,74 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 		
 		if (!init)
 			{
+			int dev;
+			char path[256];
+			
+			for (dev = 0; dev < DEV_MAX; dev++)
+				{
+				if (devices_Get (dev))
+					{
+					sprintf (path, "%s://apps/SettingsEditorGUI/boot.dol", devices_Get (dev));
+					Debug ("DrawBottomBar: searching %s", path);
+					if (fsop_FileExist (path))
+						{
+						strcpy (vars.sePath, path);
+						itemSE = 1;
+						Debug ("DrawBottomBar: found!");
+						BOTBARITEMS ++;
+						break;
+						}
+					sprintf (path, "%s://apps/Settings Editor GUI/boot.dol", devices_Get (dev));
+					Debug ("DrawBottomBar: searching %s", path);
+					if (fsop_FileExist (path))
+						{
+						strcpy (vars.sePath, path);
+						itemSE = 1;
+						Debug ("DrawBottomBar: found!");
+						BOTBARITEMS ++;
+						break;
+						}
+					}
+				}
+			
+			for (dev = 0; dev < DEV_MAX; dev++)
+				{
+				if (devices_Get (dev))
+					{
+					sprintf (path, "%s://apps/wiimod/boot.dol", devices_Get (dev));
+					Debug ("DrawBottomBar: searching %s", path);
+					if (fsop_FileExist (path))
+						{
+						strcpy (vars.wmPath, path);
+						itemWM = 1;
+						Debug ("DrawBottomBar: found!");
+						BOTBARITEMS ++;
+						break;
+						}
+					}
+				}
+
 			i = 0;
 			
-			strcpy (goItems[i++].text, "About..");
-			strcpy (goItems[i++].text, "Config");
-			strcpy (goItems[i++].text, "Run Disc");
-			strcpy (goItems[i++].text, "Exit");
-			strcpy (goItems[i++].text, "Neek");
-			if (seAvailable > 0) 
+			strcpy (goItems[i].text, "About.."); 	itemAbout = i++;
+			strcpy (goItems[i].text, "Config");		itemConfig = i++;
+			strcpy (goItems[i].text, "Run Disc");	itemDisc = i++;
+			strcpy (goItems[i].text, "Neek");		itemNeek = i++;
+
+			if (itemSE > 0) 
 				{
-				seItem = i;
+				itemSE = i;
 				strcpy (goItems[i++].text, "Setting Ed.");
 				}
-			if (wmAvailable > 0) 
+
+			if (itemWM > 0) 
 				{
-				wmItem = i;
+				itemWM = i;
 				strcpy (goItems[i++].text, "WiiMod");
 				}
+
+			strcpy (goItems[i].text, "Exit");		itemExit = i++;
+
 			init = 1;
 			}
 		
@@ -490,23 +464,39 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 				
 				if (btn && *btn == WPAD_BUTTON_A) 
 					{
-					if (i == seItem)
+					if (i == itemAbout)
+						ret = 0;
+					else if (i == itemConfig)
+						ret = 1;
+					else if (i == itemDisc)
+						ret = 2;
+					else if (i == itemExit)
+						ret = 3;
+					else if (i == itemNeek)
+						ret = 4;
+					else if (i == itemSE)
 						ret = 5;
-					else if (i == wmItem)
+					else if (i == itemWM)
 						ret = 6;
-					else
-						ret = i;
 					}
 				}
 			else
 				grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
 				
-			if (i == seItem)
+			if (i == itemSE)
 				Video_DrawIconZ (TEX_ICO_SE, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
-			else if (i == wmItem)
+			else if (i == itemWM)
 				Video_DrawIconZ (TEX_ICO_WM, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
-			else
-				Video_DrawIconZ (TEX_ICO_ABOUT + i, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else if (i == itemAbout)
+				Video_DrawIconZ (TEX_ICO_ABOUT, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else if (i == itemConfig)
+				Video_DrawIconZ (TEX_ICO_CONFIG, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else if (i == itemDisc)
+				Video_DrawIconZ (TEX_ICO_DVD, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else if (i == itemNeek)
+				Video_DrawIconZ (TEX_ICO_NEEK, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
+			else if (i == itemExit)
+				Video_DrawIconZ (TEX_ICO_EXIT, x + btnWidth/2, go.y1 + 45, 1.0, 1.3);
 			
 			x += (btnWidth + BTNOFFSET);
 			}

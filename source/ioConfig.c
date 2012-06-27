@@ -2,6 +2,7 @@
 #include "globals.h"
 #include "mystring.h"
 #include "devices.h"
+#include "fsop/fsop.h"
 
 /*
 ioConfig manage the configuration file
@@ -18,7 +19,7 @@ bool ConfigWrite (void)
 	
 	Debug ("ConfigWrite()");
 	
-	if (vars.defMount[0] == '\0') return FALSE;	
+	if (vars.defMount[0] == '\0') return false;	
 	
 	if (vars.neek == NEEK_NONE)
 		sprintf (path, "%s://ploader/ploader.cfg", vars.defMount);
@@ -28,7 +29,7 @@ bool ConfigWrite (void)
 	Debug ("ConfigWrite: %s", path);
 
 	f = fopen (path, "wb");
-	if (!f) return FALSE;
+	if (!f) return false;
 	
 	// Let's write version
 	sprintf (ver, "%s", CFGVER);
@@ -38,7 +39,7 @@ bool ConfigWrite (void)
 	fwrite (&config, sizeof(config), 1, f);
 	fclose (f);
 	
-	return TRUE;
+	return true;
 	}
 	
 bool ConfigRead (void)
@@ -49,17 +50,25 @@ bool ConfigRead (void)
 	
 	memset (&config, 0, sizeof(config));
 	
-	if (vars.defMount[0] == '\0') return FALSE;
+	if (vars.defMount[0] == '\0') return false;
 	
 	if (vars.neek == NEEK_NONE)
 		sprintf (path, "%s://ploader/ploader.cfg", vars.defMount);
 	else
 		sprintf (path, "%s://ploader/pldneek.cfg", vars.defMount);
+		
+	size_t config_size;
 	
-	Debug ("ConfigRead: %s", path);
+	if (fsop_GetFileSizeBytes (path, &config_size) && config_size != (sizeof(config) + sizeof(ver)))
+		{
+		gprintf ("ConfigRead: %s, filesize mismatch, resetting settins\n", path);
+		return true;
+		}
+	
+	gprintf ("ConfigRead: %s\n", path);
 
 	f = fopen (path, "rb");
-	if (!f) return FALSE;
+	if (!f) return false;
 	
 	// read configuration data
 	fread (ver, sizeof(ver), 1, f);
@@ -70,7 +79,7 @@ bool ConfigRead (void)
 		
 	fclose (f);
 	
-	return TRUE;
+	return true;
 	}
 
 //////////////////////////////////////////////////
@@ -122,7 +131,7 @@ bool ExtConfigWrite (void)
 				}
 			}
 		
-	return TRUE;
+	return true;
 	}
 	
 bool ExtConfigRead (void)
@@ -149,5 +158,5 @@ bool ExtConfigRead (void)
 	gprintf ("extConfig.disableUSB = %d\n", extConfig.disableUSB);
 	gprintf ("extConfig.disableUSBneek = %d\n", extConfig.disableUSBneek);
 		
-	return TRUE;
+	return true;
 	}

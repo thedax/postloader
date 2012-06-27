@@ -125,12 +125,12 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	int x, y, yTop;
 	int columns = 0;
 	int titleLines;
-	char buff[4096];
+	char *buff = NULL;
 	char *line;
 	u32 btn;
 	time_t t;
 	
-	Debug ("grlib_menu: size = %d", strlen (itemsstring));
+	//Debug ("grlib_menu: size = %d", strlen (itemsstring));
 	
 	int cols[MAXCOLS];
 	s_grlibobj goWindow, goItems[MAXITEMS];
@@ -144,10 +144,15 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 		{
 		va_list argp;
 		va_start(argp, itemsstring);
-		vsprintf(buff, itemsstring, argp);
+		
+		vasprintf(&buff, itemsstring,argp);
+		
 		va_end(argp);
 		}
-	else return 0;
+	else 
+		return 0;
+		
+	if (!buff) return 0;
 	
 	j = strlen(buff);
 	if (buff[j-1] == '|' && j > 2) buff[j-1] = '\0';
@@ -337,7 +342,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 		}
 	grlibSettings.fontBMF = grlibSettings.fontNormBMF;
 
-	y += YSPACINGFAKE;
+	y += YSPACING / 2;
 	yTop = y;
 	x = halfx - ((columns - 1) * ((itemw+10) / 2));
 	for (i = 0; i < itemsCnt; i++)
@@ -416,6 +421,8 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 			if (btn & WPAD_BUTTON_B) {item = MNUBTN_B; break;}
 			if (btn & WPAD_BUTTON_PLUS) {item = MNUBTN_PLUS; break;}
 			if (btn & WPAD_BUTTON_MINUS) {item = MNUBTN_MINUS; break;}
+			if (btn & WPAD_BUTTON_1) {item = MNUBTN_1; break;}
+			if (btn & WPAD_BUTTON_2) {item = MNUBTN_2; break;}
 			}
 			
 		if (grlibSettings.wiiswitch_reset || grlibSettings.wiiswitch_poweroff)
@@ -435,6 +442,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 		grlib_Render ();
 		}
 	*/	
+	free (buff);
 	free (line);
 	
 	// Report cancel
@@ -442,4 +450,90 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 
 	// Restore previous screen
 	return retcodes[item];
+	}
+
+int grlib_Keyboard (char *title, char *string, int max)
+	{
+	char t[256];
+	char buff[2048];
+	int item;
+	
+	do
+		{
+		*buff = '\0';
+		
+		grlib_menuAddItem (buff, '1', "1");
+		grlib_menuAddItem (buff, 'A', "A");
+		grlib_menuAddItem (buff, 'K', "K");
+		grlib_menuAddItem (buff, 'U', "U");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '2', "2");
+		grlib_menuAddItem (buff, 'B', "B");
+		grlib_menuAddItem (buff, 'L', "L");
+		grlib_menuAddItem (buff, 'V', "V");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '3', "3");
+		grlib_menuAddItem (buff, 'C', "C");
+		grlib_menuAddItem (buff, 'M', "M");
+		grlib_menuAddItem (buff, 'W', "W");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '4', "4");
+		grlib_menuAddItem (buff, 'D', "D");
+		grlib_menuAddItem (buff, 'N', "N");
+		grlib_menuAddItem (buff, 'X', "X");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '5', "5");
+		grlib_menuAddItem (buff, 'E', "E");
+		grlib_menuAddItem (buff, 'O', "O");
+		grlib_menuAddItem (buff, 'Y', "Y");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '6', "6");
+		grlib_menuAddItem (buff, 'F', "F");
+		grlib_menuAddItem (buff, 'P', "P");
+		grlib_menuAddItem (buff, 'Z', "Z");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '7', "7");
+		grlib_menuAddItem (buff, 'G', "G");
+		grlib_menuAddItem (buff, 'Q', "Q");
+		grlib_menuAddItem (buff, ' ', " ");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '8', "8");
+		grlib_menuAddItem (buff, 'H', "H");
+		grlib_menuAddItem (buff, 'R', "R");
+		grlib_menuAddItem (buff,   2, "<");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '9', "9");
+		grlib_menuAddItem (buff, 'I', "I");
+		grlib_menuAddItem (buff, 'S', "S");
+		grlib_menuAddItem (buff,   0, "DEL");
+		grlib_menuAddColumn (buff);
+		grlib_menuAddItem (buff, '0', "0");
+		grlib_menuAddItem (buff, 'J', "J");
+		grlib_menuAddItem (buff, 'T', "T");
+		grlib_menuAddItem (buff,   1, "OK");
+		
+		sprintf (t, "%s: %s|", title, string);
+		item = grlib_menu (t, buff);
+		
+		if (item == 2)
+			{
+			//Debug ("string = '%s'", string);
+			int l = strlen (string) - 1;
+			if (l >= 0) string[l] = 0;
+			}
+		else if (item == 0)
+			{
+			}
+		else if (item > 2)
+			{
+			int l = strlen (string);
+			if (l >= max) continue;
+			
+			string[l++] = (char)item;
+			string[l++] = 0;
+			}
+		}
+	while (item > 1);
+	
+	return item;
 	}

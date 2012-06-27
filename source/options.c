@@ -233,6 +233,8 @@ void ShowAdvancedOptions (void)
 
 void ShowAboutMenu (void)
 	{
+	if (!CheckParental ()) return;
+
 	int item;
 	char buff[1024];
 	char options[300];
@@ -306,11 +308,9 @@ void ShowAboutMenu (void)
 			
 		if (devices_Get (DEV_SD) && devices_Get (DEV_USB) && strcmp (vars.defMount, devices_Get(DEV_SD)) == 0)
 			grlib_menuAddItem (options, 15,  "Move postLoader cfg folder to USB");
+			
+		grlib_menuAddItem (options, 16,  "Set parental control (password)");
 
-
-		grlib_menuAddSeparator (options);
-		grlib_menuAddItem (options, -1,  "Close");
-		
 		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (buff, options);
 		grlibSettings.fontNormBMF = fonts[FNTNORM];
@@ -369,6 +369,11 @@ void ShowAboutMenu (void)
 				}
 			}
 
+		if (item == 16)
+			{
+			grlib_Keyboard ("Change password", config.pwd, PWDMAXLEN);
+			}
+			
 		if (item == MENU_CHANGENEEK2o)
 			{
 			menu_SwitchNand();
@@ -468,20 +473,22 @@ int ShowExitMenu (void)
 	char options[300];
 	
 	Video_SetFont(FNTBIG);
-	
+
 	*options = '\0';
 	
-	grlib_menuAddItem (options, 1,  "to WII Menu");
-	grlib_menuAddItem (options, 2,  "to Homebrew Channel");
+	grlib_menuAddItem (options, 1,  "Exit to WII Menu");
+	grlib_menuAddItem (options, 2,  "Exit to Homebrew Channel");
 	grlib_menuAddItem (options, 3,  "Shutdown my WII");
+	grlib_menuAddItem (options, 4,  "Restart postLoader");
 	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, -1,  "Close");
 	
-	item = grlib_menu ("Select exit options", options);
+	item = grlib_menu ("Exit: Select an option", options);
 	
 	if (item == 1) return INTERACTIVE_RET_WIIMENU;
 	if (item == 2) return INTERACTIVE_RET_HBC;
 	if (item == 3) return INTERACTIVE_RET_SHUTDOWN;
+	if (item == 4) ReloadPostloader();
 	
 	return -1;
 	}
@@ -500,10 +507,34 @@ int ShowBootmiiMenu (void)
 	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, -1,  "Close");
 	
-	item = grlib_menu ("Select NEEK/BOOTMII options", options);
+	item = grlib_menu ("NEEK/BOOTMII: Select an option", options);
 	
 	if (item == 1) return INTERACTIVE_RET_NEEK2O;
 	if (item == 2) return INTERACTIVE_RET_BOOTMII;
 	
 	return -1;
+	}
+
+int CheckParental (void)
+	{
+	static bool unlocked = false;
+	char pwd[PWDMAXLEN+1] = {0};
+	
+	Debug ("pass = %s (%d)", config.pwd, strlen(config.pwd));
+	
+	if (unlocked || strlen(config.pwd) == 0) return 1;
+	
+	Video_SetFont(TTFNORM);	
+	
+	grlib_Keyboard ("Enter password", pwd, PWDMAXLEN);
+	
+	if (strcmp (config.pwd, pwd) == 0)
+		{
+		grlib_menu ("postLoader advanced options are now unlocked", "   OK   ");
+		unlocked = true;
+		return 1;
+		}
+		
+	if (strlen (pwd)) grlib_menu ("Wrong password !", "   OK   ");
+	return 0;
 	}

@@ -21,7 +21,9 @@
 #define MNUBTN_B -1	// cancel
 #define MNUBTN_PLUS -2
 #define MNUBTN_MINUS -3
-#define MNUBTN_TOUT -4	// Menu has gone in timeout
+#define MNUBTN_1 -4
+#define MNUBTN_2 -5
+#define MNUBTN_TOUT -99	// Menu has gone in timeout
 
 // THEMED FLAGS
 #define DSTF_NONE 0x0
@@ -89,6 +91,8 @@ typedef struct
 	
 	// Theme managment
 	s_grlibTheme theme;
+	
+	u32 menuItemHeight;			// 0 is auto, as should be ;)
 	} 
 s_grlibSettings;
 
@@ -204,6 +208,7 @@ int grlib_menuAddColumn (char *menu);
 int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...);
 int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *yesno, const char *itemsstring, ...);
 int grlib_menu (char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
+int grlib_Keyboard (char *title, char *string, int max);
 
 void grlib_Message (const char *text, ...);
 

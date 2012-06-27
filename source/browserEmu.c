@@ -819,6 +819,8 @@ static void ShowFilterMenu (void)
 
 static void ShowAppMenu (int ai)
 	{
+	if (!CheckParental()) return;
+	
 	char buff[512];
 	char title[256];
 	
@@ -1194,8 +1196,8 @@ static bool QuerySelection (int ai)
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
-		if (mag < 2.3) mag += 0.05;
-		if (mag >= 2.3 && ico.x == 320 && ico.y == y) break;
+		if (mag < 3.0) mag += 0.1;
+		if (mag >= 3.0 && ico.x == 320 && ico.y == y) break;
 		}
 	
 	int fr = grlibSettings.fontReverse;
@@ -1230,6 +1232,7 @@ static void StartEmu (int type, char *fullpath)
 	char cmd[256];
 	char dol[256];
 	char buff[256];
+	char *p;
 	
 	strcpy (buff, fullpath);
 	
@@ -1244,9 +1247,18 @@ static void StartEmu (int type, char *fullpath)
 	if (buff[i] == '/') buff[i] = 0;
 	strcpy (fn, &buff[i+1]);
 	strcpy (path, buff);
+	strcat (path, "/");
 	
+	p = strstr (path, "//");
+	if (p) 
+		p += 2;
+	else
+		p = path;
+
 	sprintf (cmd, "%s;%s;%s://ploader/plugins/forwarder.dol;00010001;504F5354;postLoader", path, fn, vars.defMount);
 	sprintf (dol, "%s://ploader/plugins/%s", vars.defMount, Plugins_GetDol(type));
+	
+	Debug ("StartEmu %s (%s)", dol, cmd);
 
 	if (fsop_FileExist (dol))
 		{

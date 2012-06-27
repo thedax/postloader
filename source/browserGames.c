@@ -863,6 +863,8 @@ static void ShowFilterMenu (void)
 
 static void ShowAppMenu (int ai)
 	{
+	if (!CheckParental()) return;
+
 	char buff[1024];
 	char b[64];
 	int item;
@@ -933,12 +935,14 @@ static void ShowAppMenu (int ai)
 			if (games[ai].slot == 0)
 				grlib_menuAddItem (buff, 7, "Remove from SD");
 				
+			strcat (buff, "DML: Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
+
 			if (config.dmlVersion)
 				{
 				grlib_menuAddItem (buff, 8, "DML: Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 				grlib_menuAddItem (buff, 9, "DML: Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
+				grlib_menuAddItem (buff,10, "DML: Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
 				}
-			strcat (buff, "DML: Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
 			}
 		/*
 		else
@@ -1067,6 +1071,12 @@ static void ShowAppMenu (int ai)
 	if (item == 9)
 		{
 		gameConf.dmlPadHook = !gameConf.dmlPadHook;
+		goto start;
+		}
+
+	if (item == 10)
+		{
+		gameConf.dmlNMM = !gameConf.dmlNMM;
 		goto start;
 		}
 
@@ -1737,6 +1747,8 @@ int GameBrowser (void)
 
 					if (!err)
 						{
+						MasterInterface (1, 0, 3, "Booting...");
+
 						Debug ("DMLRun");
 						ReadGameConfig (gamesSelected);
 						games[gamesSelected].playcount++;
@@ -1750,7 +1762,7 @@ int GameBrowser (void)
 						if (config.dmlVersion)
 							{
 							char *p = strstr (games[gamesSelected].source, "//")+1;
-							DMLRunNew (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode, gameConf.dmlNoDisc, gameConf.dmlPadHook);
+							DMLRunNew (p, games[gamesSelected].asciiId, &gameConf);
 							//DMLRunNew (games[gamesSelected].source, games[gamesSelected].asciiId, gameConf.dmlVideoMode, gameConf.dmlNoDisc, gameConf.dmlPadHook);
 							}
 						else
@@ -1763,6 +1775,10 @@ int GameBrowser (void)
 
 							DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode);
 							}
+							
+						Video_SetFont(TTFNORM);
+						grlib_menu ("There was a problem executing DML.\n\nPlease check if 'GameCube mode' is the right one. Press [home]", "   OK   ");
+						Conf (true);	// Store configuration on disc
 						}
 					
 					redraw = 1;

@@ -80,10 +80,6 @@ enum dmlvideomode
         DML_VID_PROG_PATCH      = (1<<4),
 };
 
-
-
-
-
 static char *dmlFolders[] = {"ngc", "games"};
 
 syssram* __SYS_LockSram();
@@ -296,14 +292,14 @@ int DMLRun (char *folder, char *id, u32 videomode)
 	return 1;
 	}
 
-int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook)
+int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
 	{
 	DML_CFG cfg;
 	char path[256];
 	
 	memset (&cfg, 0, sizeof (DML_CFG));
 	
-	Debug ("DMLRunNew (%s, %s, %u, %u, %u)", folder, id, videomode, dmlNoDisc, dmlPadHook);
+	Debug ("DMLRunNew (%s, %s, %u, %u, %u, %u)", folder, id, gameconf->dmlVideoMode, gameconf->dmlNoDisc, gameconf->dmlPadHook, gameconf->dmlNMM);
 	
 	cfg.Config |= DML_CFG_GAME_PATH;
 
@@ -323,25 +319,25 @@ int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook
 
 	Debug ("DMLRunNew -> using %s", path);
 
-	if (!devices_Get(DEV_SD)) return 0;
+	//if (!devices_Get(DEV_SD)) return 0;
 	
 	Shutdown (0);
 
 	cfg.Magicbytes = 0xD1050CF6;
 	cfg.CfgVersion = 0x00000001;
 		
-	if (videomode == PLGC_Auto) // AUTO
+	if (gameconf->dmlVideoMode == PLGC_Auto) // AUTO
 		{
 		cfg.VideoMode |= DML_VID_DML_AUTO;
 		}
-	if (videomode == PLGC_Game) // GAME
+	if (gameconf->dmlVideoMode == PLGC_Game) // GAME
 		{
 		if (id[3] == 'E' || id[3] == 'J' || id[3] == 'N')
 			cfg.VideoMode |= DML_VID_FORCE_NTSC;
 		else
 			cfg.VideoMode |= DML_VID_FORCE_PAL50;
 		}
-	if (videomode == PLGC_WII) // WII
+	if (gameconf->dmlVideoMode == PLGC_WII) // WII
 		{
 		if (CONF_GetRegion() == CONF_REGION_EU)
 			cfg.VideoMode |= DML_VID_FORCE_PAL50;
@@ -349,20 +345,23 @@ int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook
 			cfg.VideoMode |= DML_VID_FORCE_NTSC;
 		}
 	
-	if (videomode == PLGC_NTSC)
+	if (gameconf->dmlVideoMode == PLGC_NTSC)
 		cfg.VideoMode |= DML_VID_FORCE_NTSC;
 
-	if (videomode == PLGC_PAL50)
+	if (gameconf->dmlVideoMode == PLGC_PAL50)
 		cfg.VideoMode |= DML_VID_FORCE_PAL50;
 
-	if (videomode == PLGC_PAL60)
+	if (gameconf->dmlVideoMode == PLGC_PAL60)
 		cfg.VideoMode |= DML_VID_FORCE_PAL60;
 		
-	if (dmlNoDisc)
+	if (gameconf->dmlNoDisc)
 		cfg.Config |= DML_CFG_NODISC;
 
-	if (dmlPadHook)
+	if (gameconf->dmlPadHook)
 		cfg.Config |= DML_CFG_PADHOOK;
+
+	if (gameconf->dmlNMM)
+		cfg.Config |= DML_CFG_NMM;
 
 	strcpy (cfg.GamePath, path);
  	memcpy ((char *)0x80000000, id, 6);

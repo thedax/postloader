@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define VER "4.b26"
-#define CFGVER "PLCFGV0013"
+#define VER "4.b27"
+#define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
 #define IOS_SNEEK 56
@@ -244,8 +244,9 @@ typedef struct
 	u8 minPlayerAge;
 	
 	u8 dmlVideoMode;	// Current video mode for dml
-	u8 dmlNoDisc;		// Current video mode for dml
-	u8 dmlPadHook;		// Current video mode for dml
+	u8 dmlNoDisc;		// nodisc patch
+	u8 dmlPadHook;		// padhook patch
+	u8 dmlNMM;			// nmm patch
 	}
 s_gameConfig;
 
@@ -462,6 +463,7 @@ void ShowAboutMenu (void);
 void ShowAboutPLMenu (void);
 int ShowExitMenu (void);
 int ShowBootmiiMenu (void);
+int CheckParental (void);
 
 // utils.c
 u32 get_msec(bool reset);
@@ -559,7 +561,7 @@ void DMLResetCache (void);
 int DMLSelect (void);
 char * DMLScanner  (bool reset);
 int DMLRun (char *folder, char *id, u32 videomode);
-int DMLRunNew (char *folder, char *id, u8 videomode, u8 dmlNoDisc, u8 dmlPadHook);
+int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
 
 // ScreenSaver

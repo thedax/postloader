@@ -1,3 +1,16 @@
+postLoader 4.b27
+
+* DM should now to work also without SD
+* Moved "Exit" button to the far right of bottom bar
+* Added "Restart postLoader" to Exit menu
+* Added very basic virtual keyboard
+* Added NMM option to DML 1.x and DM 2.x modes
+* Added "parental control" password (CONFIG->Set parental control). This will disable all advanced and dangerous for kids options of postloader. If you loose your password you have to delete /ploader/ploader.cfg 
+* postloader configuration file (ploader.cfg/pldneek.cfg) is better checked for inconsistency
+* fixed postloader issue with genplusgx plugin
+* Added proper boot screen when executing dm/dml
+* Game preview for emulators is now bigger
+
 postLoader 4.b26
 
 * fixed .conf corruption caused by recently changes in cfg library. postLoader should be able to recover actual corrupted files. Otherwise delete any *.conf and channels.* from /ploader folder

@@ -763,6 +763,8 @@ static int FindSpot (void)
 
 static void ShowAppMenu (int ai)
 	{
+	if (!CheckParental()) return;
+	
 	char buff[1024];
 	char b[64];
 	int item;
