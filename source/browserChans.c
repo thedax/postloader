@@ -1435,7 +1435,6 @@ static int ChangePage (int next)
 			page = lp;
 			
 			Overlay ();
-			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
@@ -1458,7 +1457,6 @@ static int ChangePage (int next)
 			page = lp;
 			
 			Overlay ();
-			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
@@ -1529,7 +1527,6 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 
 		Overlay ();
-		grlib_GetUserInput();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
@@ -1552,7 +1549,6 @@ static bool QuerySelection (int ai)
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");		
 		grlibSettings.fontReverse = fr;
 		
-		grlib_GetUserInput();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 

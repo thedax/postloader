@@ -439,15 +439,17 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 		if (btnWidth < 60)
 			btnWidth = 60;
 		
-		go.x1 = 320 - (((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) - 10;
-		go.x2 = 320 + (((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) + 10;
+		go.x1 = 320 - (((btnWidth + BTNOFFSET) * (BOTBARITEMS - (vars.neek == NEEK_NONE ? 0 : 1))) / 2) - 10;
+		go.x2 = 320 + (((btnWidth + BTNOFFSET) * (BOTBARITEMS - (vars.neek == NEEK_NONE ? 0 : 1))) / 2) + 10;
 		barWidth = go.x2 - go.x1;
 		
 		grlib_DrawWindow (go);
 		
-		x = go.x1 + (barWidth / 2) - ((((btnWidth + BTNOFFSET) * BOTBARITEMS) / 2) - (BTNOFFSET / 2));
+		x = go.x1 + (barWidth / 2) - ((((btnWidth + BTNOFFSET) * (BOTBARITEMS - (vars.neek == NEEK_NONE ? 0 : 1))) / 2) - (BTNOFFSET / 2));
 		for (i = 0; i < BOTBARITEMS; i++)
 			{
+			if (vars.neek != NEEK_NONE && i == itemNeek) continue;
+			
 			goItems[i].vAlign = GRLIB_ALIGNBOTTOM;
 			goItems[i].x1 = x;
 			goItems[i].x2 = x+btnWidth;

@@ -786,7 +786,8 @@ static void ShowFilterMenu (void)
 		for (i = 0; i < pluginsCnt; i++)
 			{
 			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
-			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
+			//grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
+			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_GetName (i));
 			}
 		
 		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
@@ -1096,7 +1097,6 @@ static int ChangePage (int next)
 			page = lp;
 			
 			Overlay ();
-			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
@@ -1119,7 +1119,6 @@ static int ChangePage (int next)
 			page = lp;
 			
 			Overlay ();
-			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
@@ -1192,7 +1191,6 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 
 		Overlay ();
-		grlib_GetUserInput();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
@@ -1214,7 +1212,6 @@ static bool QuerySelection (int ai)
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
 		grlibSettings.fontReverse = fr;
 		
-		grlib_GetUserInput();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 

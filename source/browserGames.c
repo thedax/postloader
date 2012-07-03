@@ -942,6 +942,7 @@ static void ShowAppMenu (int ai)
 				grlib_menuAddItem (buff, 8, "DML: Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 				grlib_menuAddItem (buff, 9, "DML: Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
 				grlib_menuAddItem (buff,10, "DML: Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
+				grlib_menuAddItem (buff,11, "DML: Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
 				}
 			}
 		/*
@@ -1080,6 +1081,12 @@ static void ShowAppMenu (int ai)
 		goto start;
 		}
 
+    if (item == 11)
+        {
+        gameConf.ocarina = !gameConf.ocarina;
+        goto start;
+        }
+		
 	WriteGameConfig (ai);
 	
 	//GameBrowse (0);
@@ -1168,8 +1175,13 @@ static void ShowMainMenu (void)
 	
 	if (vars.neek != NEEK_NONE)
 		{
-		grlib_menuAddItem (buff, 4, "Rebuild game list (postLoader way)");
-		grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
+		if (config.gameMode == GM_WII)
+			{
+			grlib_menuAddItem (buff, 4, "Rebuild game list (postLoader way)");
+			grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
+			}
+		else
+			grlib_menuAddItem (buff, 6, "Rebuild game list (DML)...");
 		}
 	else
 		{
@@ -1447,7 +1459,6 @@ static int ChangePage (int next)
 			page = lp;
 			
 			Overlay ();
-			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
@@ -1470,7 +1481,6 @@ static int ChangePage (int next)
 			page = lp;
 			
 			Overlay ();
-			grlib_GetUserInput();
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
@@ -1601,7 +1611,6 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 
 		Overlay ();
-		grlib_GetUserInput();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
@@ -1623,7 +1632,6 @@ static bool QuerySelection (int ai)
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
 		grlibSettings.fontReverse = fr;
 		
-		grlib_GetUserInput();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 

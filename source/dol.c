@@ -109,13 +109,36 @@ int DolBootPrepareWiiload (void)
 
 	if (wiiload.argl)
 		{
+		char buff[256];
+		int l;
+		
+		strcpy (buff, vars.tempPath);
+		l = strlen (buff)+1;
+		memcpy (&buff[l], wiiload.args, arg.length);
+		l += (arg.length + 1);
+		
 		arg.argvMagic = ARGV_MAGIC;
 		arg.length  = wiiload.argl;
 		arg.commandLine = (char*)CMDL_ADDR;
 		
-		memcpy (arg.commandLine, wiiload.args, arg.length);
+		memcpy (arg.commandLine, buff, l);
 		}
-
+	/*
+	else
+		{
+		char buff[256];
+		int l;
+		
+		strcpy (buff, vars.tempPath);
+		l = strlen (buff)+1;
+		
+		arg.argvMagic = ARGV_MAGIC;
+		arg.length  = wiiload.argl;
+		arg.commandLine = (char*)CMDL_ADDR;
+		
+		memcpy (arg.commandLine, buff, l);
+		}
+	*/
 	memmove(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
 

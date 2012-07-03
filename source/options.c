@@ -71,12 +71,18 @@ void ShowAboutPLMenu (void)
 	Video_SetFont(TTFNORM);
 	
 	strcpy (buff, 	
-	"postLoader"VER" by stfour (2011-12)\n\n"
-	"postLoader is intended to be an extension to priiloader autoboot feature.\n"
-	"It aims to replace Forwarders and HB Channel (maybe... one day).\n\n"
-	"Wii coding learned and inspired by:\n"
-	"GRRLIB, TriiForce, Priiloader, CFG Usb Loader, WiiMC, USBLoaderGX...\n"
-	"... and sorry if I forgot you ;)\n\n"
+	"postLoader"VER" by stfour (2011-12)\n"
+	"\n"
+	"credits\n"
+	"\n"
+	"coding:\n"
+	"WiiFlow, NeoGamma, GRRLIB, TriiForce, Priiloader, CFG Loader, WiiMC, USBLoaderGX...\n"
+	"\n"
+	"people:\n"
+	"FIX94 (wiiflow/dmlbooter), JoostinOnline (S.E.), obcd (neek2o/uneekfs), XFlak (modmii)\n"
+	"\n"
+	"and all active testers:\n"
+	"Wever, daxtu, ZFA, AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
 
 	grlib_menu (buff, "Close");

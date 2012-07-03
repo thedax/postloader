@@ -339,7 +339,7 @@ static bool WiiLoad (s32 connection)
 		if (result <= 0)
 			{
 			--retries;
-			usleep (10000); // lets what 10 msec
+			usleep (10000); // lets wait 10 msec
 			}
 		else
 			{
