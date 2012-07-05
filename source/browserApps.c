@@ -1109,6 +1109,8 @@ static void RedrawIcons (int xoff, int yoff)
 			// Is it hidden ?
 			if (apps[ai].hidden && showHidden)
 				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+			else
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
 				
 			if (apps[ai].checked)
 				gui.spots[gui.spotsIdx].ico.iconOverlay[0] = vars.tex[TEX_CHECKED];

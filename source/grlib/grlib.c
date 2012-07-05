@@ -597,7 +597,7 @@ int grlib_GetUserInput (void)
 	if (!wbtn)
 		repeatms = 0;
 		
-	gprintf ("%u ", repeatms);
+	//gprintf ("%u ", repeatms);
 	if (gidx == -1)
 		{
 		memset (&g, 0, sizeof(g));
@@ -682,7 +682,7 @@ int grlib_GetUserInput (void)
 	if (grlib_irPos.y > 480) grlib_irPos.y = 480;
 	
 	// As usual wiimotes will have priority
-	if (wbtn)
+	if (wbtn && !cbtn)
 		{
 		grlibSettings.buttonActivity ++;
 		
@@ -693,7 +693,6 @@ int grlib_GetUserInput (void)
 		else
 			{
 			// Wait until button is released
-			gprintf ("[%u-%u=%u] ", repeatms, ticks_to_millisecs(gettime()), repeatms - ticks_to_millisecs(gettime()));
 			if (ticks_to_millisecs(gettime()) < repeatms)
 				return 0;
 			}
@@ -706,9 +705,16 @@ int grlib_GetUserInput (void)
 		{
 		grlibSettings.buttonActivity ++;
 		
-		// Wait until button is released
-		
-		//while (PAD_ButtonsDown(0) && ticks_to_millisecs(gettime()) < mstout) PAD_ScanPads();
+		if (repeatms == 0)
+			{
+			repeatms = ticks_to_millisecs(gettime()) + 1000;
+			}
+		else
+			{
+			// Wait until button is released
+			if (ticks_to_millisecs(gettime()) < repeatms)
+				return 0;
+			}
 		
 		// Convert to wiimote values
 		if (gcbtn & PAD_TRIGGER_R) return WPAD_BUTTON_PLUS;
@@ -730,10 +736,15 @@ int grlib_GetUserInput (void)
 		{
 		grlibSettings.buttonActivity ++;
 		
-		while (e.classic.btns) // && ticks_to_millisecs(gettime()) < mstout)
+		if (repeatms == 0)
 			{
-			WPAD_ScanPads();  // Scan the Wiimotes
-			WPAD_Expansion( 0, &e );
+			repeatms = ticks_to_millisecs(gettime()) + 1000;
+			}
+		else
+			{
+			// Wait until button is released
+			if (ticks_to_millisecs(gettime()) < repeatms)
+				return 0;
 			}
 		
 		// Convert to wiimote values

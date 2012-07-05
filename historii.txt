@@ -1,3 +1,11 @@
+postLoader 4.b29
+
+* fixed all issues with supported controller (and extensions). Repeat should work fine for all...
+* corrected a dump after the last song (thx Geren)
+* adotped plugin.conf by wever ;) (but renamed wiimednafen-mod3 to wiimednafen.dol)
+* added emuicons for roms without cover (see plugin.conf). Covers height and width must be divisible by 4
+* corrected displaying of hidden games
+
 postLoader 4.b28
 
 * removed crosscheck of dml for sd games. This will give a great speedup for fst games scan, but will not check consistency from game on usb and the same on sd. (thx FIX94 for pointing that)

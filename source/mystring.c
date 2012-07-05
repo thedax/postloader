@@ -117,3 +117,49 @@ u8 *ms_FindStringInBuffer (u8 *buffer, size_t size, char *string)
 	
 	return NULL;
 	}
+	
+// This function will return a section of delimited text, ex. "section0;section1;....;sectionn"
+char *ms_GetDelimitedString (char *string, char sep, int idx)
+	{
+	char *p = string;
+	char *psep;
+	char *buff;
+	int i;
+	
+	if (string == NULL)
+		return NULL;
+	
+	if (!strlen (string))
+		return NULL;
+		
+	for (i = 0; i <= idx; i++)
+		{
+		//Debug ("%d %s", idx, p);
+		
+		psep = strchr (p, sep);
+		
+		if (psep == NULL && i == idx)
+			{
+			psep = p + strlen(p);
+			}
+			
+		if (i == idx)
+			{
+			//Debug ("return %d", (psep-p));
+			buff = malloc ((psep-p)+1);
+			strncpy (buff, p, (psep-p));
+			buff[(psep-p)] = 0;
+			//Debug (">> %s <<", buff);
+			return buff;
+			}
+		
+		if (psep == NULL)
+			{
+			break;
+			}
+			
+		p = psep+1;
+		}
+	
+	return NULL;
+	}

@@ -408,7 +408,7 @@ static int bsort_hidden (const void * a, const void * b)
 	s_game *aa = (s_game*) a;
 	s_game *bb = (s_game*) b;
 	
-	if (aa->hidden < bb->hidden) return 1;
+	if (aa->hidden > bb->hidden) return 1;
 
 	return 0;
 	}
@@ -457,8 +457,8 @@ static void AppsSort (void)
 		if (games[i].filtered && (!games[i].hidden || showHidden)) games2Disp++;
 		}
 	
-	bsort (games, gamesCnt, sizeof(s_game), bsort_hidden);
 	bsort (games, gamesCnt, sizeof(s_game), bsort_filtered);
+	bsort (games, gamesCnt, sizeof(s_game), bsort_hidden);
 	qsort (games, games2Disp, sizeof(s_game), qsort_name);
 
 	// Sort by priority
@@ -1008,6 +1008,7 @@ static void ShowAppMenu (int ai)
 		games[ai].hidden = 0;
 		WriteGameConfig (ai);
 		AppsSort ();
+		redraw = 1;
 		}
 
 	if (item == 3)
@@ -1015,6 +1016,7 @@ static void ShowAppMenu (int ai)
 		games[ai].hidden = 1;
 		WriteGameConfig (ai);
 		AppsSort ();
+		redraw = 1;
 		}
 
 	if (item == 4)
@@ -1292,12 +1294,16 @@ static void ShowMainMenu (void)
 		{
 		showHidden = 0;
 		AppsSort ();
+		FeedCoverCache ();
+		redraw = 1;
 		}
 
 	if (item == 11)
 		{
 		showHidden = 1;
 		AppsSort ();
+		FeedCoverCache ();
+		redraw = 1;
 		}
 		
 	if (item == 12)
@@ -1366,6 +1372,8 @@ static void RedrawIcons (int xoff, int yoff)
 			// Is it hidden ?
 			if (games[ai].hidden && showHidden)
 				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+			else
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = 0;
 				
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 			

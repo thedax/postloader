@@ -52,17 +52,19 @@ void snd_Mp3Go (void)
 	if (!songs || stopped || MP3Player_IsPlaying()) return;
 	
 	if (mp3f) fclose (mp3f);
-		
+	
+	Debug ("snd_Mp3Go: index is %d", currentSong);	
+	Debug ("snd_Mp3Go: now playing '%s'", playlist[currentSong]);
 	mp3f = fopen (playlist[currentSong], "rb");
 	if (mp3f)
 		{
-		Debug ("snd_Mp3Go: now playing '%s'", playlist[currentSong]);
+		Debug ("snd_Mp3Go: playing....");
 		
 		MP3Player_PlayFile(mp3f , reader, NULL);
 		}
 		
 	currentSong++;
-	if (currentSong > songs)
+	if (currentSong >= songs)
 		currentSong = 0;
 	}
 

@@ -50,7 +50,7 @@ static bool redrawIcons = true;
 static int refreshPng = 0;
 
 static s_grlib_iconSetting is;
-
+\
 static void Redraw (void);
 static int EmuBrowse (void);
 static bool IsFiltered (int ai);
@@ -61,6 +61,8 @@ static s_cfg *cfg;
 
 static s_cfg *plugins;
 static int pluginsCnt = 0;
+
+static GRRLIB_texImg **emuicons;
 
 #define ICONW 100
 #define ICONH 93
@@ -236,113 +238,35 @@ static int ReadGameConfig (int ia)
 	return valid;
 	}
 
-static void Plugins (bool open)
-	{
-	char cfgpath[64];
-	sprintf (cfgpath, "%s://ploader/plugins.conf", vars.defMount);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	if (open)
+#define PIN_NAME 0
+#define PIN_DOL 1
+#define PIN_PATH 2
+#define PIN_EXT 3
+#define PIN_ICON 4
+
+static char *Plugins_Get (int idx, int type)
+	{
+	static char name[128];
+	char *p;
+	s_cfg *item;
+	
+	item = cfg_GetItemFromIndex (plugins, idx);
+	
+	if (!item || !item->value)
 		{
-		plugins = cfg_Alloc (cfgpath, 0);
+		return NULL;
+		}
 		
-		pluginsCnt = 0;
-		s_cfg *item;
-		while ((item = cfg_GetItemFromIndex (plugins, pluginsCnt)))
-			{
-			Debug ("Plugins: %d -> %s", pluginsCnt, item->value);
-			pluginsCnt++;
-			}
-		}
-	else
+	*name = '\0';
+	p = ms_GetDelimitedString (item->value, ';', type);
+	if (p)
 		{
-		cfg_Free (plugins);
+		strcpy (name, p);
+		free (p);
 		}
-	}
-	
-static char *Plugins_GetName (int idx)
-	{
-	static char name[128];
-	char buff[256];
-	char *p;
-	s_cfg *item;
-	
-	item = cfg_GetItemFromIndex (plugins, idx);
-	
-	if (!item || !item->value)
-		{
-		return NULL;
-		}
-	
-	strncpy (buff, item->value, 255);
-	
-	p = strstr (buff, ";");
-	if (!p) return NULL;
-	
-	*p = '\0';
-	strcpy (name, buff);	
-	
-	return name;
-	}
-	
-static char *Plugins_GetDol (int idx)
-	{
-	static char name[128];
-	char buff[256];
-	char *p;
-	s_cfg *item;
-	
-	item = cfg_GetItemFromIndex (plugins, idx);
-	
-	if (!item || !item->value)
-		{
-		return NULL;
-		}
-	
-	p = strstr (item->value, ";");
-	if (!p) return NULL;
-	p++;
-	
-	strncpy (buff, p, 255);
-	
-	p = strstr (buff, ";");
-	if (!p) return NULL;
-	
-	*p = '\0';
-	strcpy (name, buff);	
-	
-	return name;
-	}
-	
-static char *Plugins_GetPath (int idx)
-	{
-	static char name[128];
-	char buff[256];
-	char *p;
-	s_cfg *item;
-	
-	item = cfg_GetItemFromIndex (plugins, idx);
-	
-	if (!item || !item->value)
-		{
-		return NULL;
-		}
-	
-	p = strstr (item->value, ";");
-	if (!p) return NULL;
-	p++;
-	
-	p = strstr (p, ";");
-	if (!p) return NULL;
-	p++;
-	
-	strncpy (buff, p, 255);
-	
-	p = strstr (buff, ";");
-	if (!p) return NULL;
-	
-	*p = '\0';
-	strcpy (name, buff);	
-	
+
 	return name;
 	}
 	
@@ -360,36 +284,48 @@ static int Plugins_GetId (int idx)
 	return atoi(item->tag);
 	}
 	
-static char *Plugins_GetExt (int idx)
+static void Plugins (bool open)
 	{
-	static char name[128];
-	char *p;
-	s_cfg *item;
+	char cfgpath[64];
+	char path[256];
+	int i;
 	
-	item = cfg_GetItemFromIndex (plugins, idx);
-	
-	if (!item || !item->value)
-		{
-		return NULL;
-		}
-	
-	p = strstr (item->value, ";");
-	if (!p) return NULL;
-	p++;
-	
-	p = strstr (p, ";");
-	if (!p) return NULL;
-	p++;
-	
-	p = strstr (p, ";");
-	if (!p) return NULL;
-	p++;
-	
-	strncpy (name, p, 127);
+	sprintf (cfgpath, "%s://ploader/plugins.conf", vars.defMount);
 
-	return name;
+	if (open)
+		{
+		plugins = cfg_Alloc (cfgpath, 0);
+		
+		pluginsCnt = 0;
+		s_cfg *item;
+		while ((item = cfg_GetItemFromIndex (plugins, pluginsCnt)))
+			{
+			Debug ("Plugins: %d -> %s", pluginsCnt, item->value);
+			pluginsCnt++;
+			}
+			
+		emuicons = calloc (sizeof (GRRLIB_texImg), pluginsCnt);
+		for (i = 0; i < pluginsCnt; i++)
+			{
+			sprintf (path, "%s://ploader/plugins/%s", vars.defMount, Plugins_Get(i, PIN_ICON));
+			emuicons[i] = GRRLIB_LoadTextureFromFile (path);;
+			}
+		
+		}
+	else
+		{
+		int i;
+		
+		for (i = 0; i < pluginsCnt; i++)
+			GRRLIB_FreeTexture (emuicons[i]);
+		
+		free (emuicons);
+			
+		cfg_Free (plugins);
+		}
 	}
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 static void MakeCoverPath (int ai, char *path)
 	{
@@ -537,7 +473,7 @@ static int qsort_name (const void * a, const void * b)
 	{
 	s_emu *aa = (s_emu*) a;
 	s_emu *bb = (s_emu*) b;
-	return (ms_strcmp (aa->name, bb->name));
+	return (ms_strcmp (strrchr (aa->name, '/') + 1, strrchr (bb->name, '/') + 1));
 	}
 	
 static int bsort_filter (const void * a, const void * b)
@@ -586,7 +522,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	char ext[256];
 	char *p;
 	
-	strcpy (ext, Plugins_GetExt(type));
+	strcpy (ext, Plugins_Get(type, PIN_EXT));
 
 	pdir=opendir(path);
 	
@@ -667,7 +603,7 @@ static int EmuBrowse (void)
 			
 			for (i = 0; i < pluginsCnt; i++)
 				{
-				sprintf (path, "%s:/%s", devices_Get (dev), Plugins_GetPath (i));
+				sprintf (path, "%s:/%s", devices_Get (dev), Plugins_Get (i, PIN_PATH));
 				cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path);
 				emusCnt += cnt;
 				Debug ("found %d roms in %s", cnt, path);
@@ -707,7 +643,7 @@ static int FindSpot (void)
 			gui.spots[i].ico.sel = true;
 			grlib_IconDraw (&is, &gui.spots[i].ico);
 
-			sprintf (buff, "%s: %s", Plugins_GetName (emus[emuSelected].type), GetFilename (emus[emuSelected].name));
+			sprintf (buff, "%s: %s", Plugins_Get (emus[emuSelected].type, PIN_NAME), GetFilename (emus[emuSelected].name));
 						
 			Video_SetFont(TTFNORM);
 			char title[256];
@@ -785,9 +721,9 @@ static void ShowFilterMenu (void)
 		buff[0] = '\0';
 		for (i = 0; i < pluginsCnt; i++)
 			{
-			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
+			if (i == 10 || i == 20 || i == 30) grlib_menuAddColumn (buff);
 			//grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
-			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_GetName (i));
+			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_Get (i, PIN_NAME));
 			}
 		
 		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
@@ -994,6 +930,8 @@ static void RedrawIcons (int xoff, int yoff)
 				
 			if (!gui.spots[gui.spotsIdx].ico.icon)
 				{
+				gui.spots[gui.spotsIdx].ico.icon = emuicons[emus[ai].type];
+				
 				char title[256];
 				strcpy (title, GetFilename(emus[ai].name));
 				title[48] = 0;
@@ -1005,6 +943,8 @@ static void RedrawIcons (int xoff, int yoff)
 			// Is it hidden ?
 			if (emus[ai].hidden && showHidden)
 				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = vars.tex[TEX_GHOST];
+			else
+				gui.spots[gui.spotsIdx].ico.iconOverlay[1] = NULL;
 				
 			grlib_IconDraw (&is, &gui.spots[gui.spotsIdx].ico);
 			
@@ -1253,7 +1193,7 @@ static void StartEmu (int type, char *fullpath)
 		p = path;
 
 	sprintf (cmd, "%s;%s;%s://ploader/plugins/forwarder.dol;00010001;504F5354;postLoader", path, fn, vars.defMount);
-	sprintf (dol, "%s://ploader/plugins/%s", vars.defMount, Plugins_GetDol(type));
+	sprintf (dol, "%s://ploader/plugins/%s", vars.defMount, Plugins_Get(type, PIN_DOL));
 	
 	Debug ("StartEmu %s (%s)", dol, cmd);
 
