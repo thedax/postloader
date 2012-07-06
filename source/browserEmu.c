@@ -112,6 +112,7 @@ static void InitializeGui (void)
 		gui.spots[i].ico.y = y;
 		gui.spots[i].ico.w = ICONW;
 		gui.spots[i].ico.h = ICONH;
+		gui.spots[i].ico.titleAlign = GRLIB_ALIGNICOTEXT_BOTTOM;
 
 		il++;
 		if (il == gui.spotsXline)
@@ -636,16 +637,16 @@ static int FindSpot (void)
 		if (grlib_irPos.x > gui.spots[i].ico.rx1 && grlib_irPos.x < gui.spots[i].ico.rx2 && grlib_irPos.y > gui.spots[i].ico.ry1 && grlib_irPos.y < gui.spots[i].ico.ry2)
 			{
 			// Ok, we have the point
-			Video_SetFont(TTFNORM);
 			
 			emuSelected = gui.spots[i].id;
 
+			Video_SetFont(TTFVERYSMALL);
 			gui.spots[i].ico.sel = true;
 			grlib_IconDraw (&is, &gui.spots[i].ico);
 
-			sprintf (buff, "%s: %s", Plugins_Get (emus[emuSelected].type, PIN_NAME), GetFilename (emus[emuSelected].name));
-						
 			Video_SetFont(TTFNORM);
+			sprintf (buff, "%s: %s", Plugins_Get (emus[emuSelected].type, PIN_NAME), GetFilename (emus[emuSelected].name));
+
 			char title[256];
 			strcpy (title, buff);
 			if (strlen (title) > 48)
@@ -709,7 +710,7 @@ static void ShowFilterMenu (void)
 	char buff[512];
 	u8 f[CATMAX];
 	int i, item;
-
+	
 	for (i = 0; i < pluginsCnt; i++)
 		f[i] = 0;
 	
@@ -721,12 +722,14 @@ static void ShowFilterMenu (void)
 		buff[0] = '\0';
 		for (i = 0; i < pluginsCnt; i++)
 			{
-			if (i == 10 || i == 20 || i == 30) grlib_menuAddColumn (buff);
+			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
 			//grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
 			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_Get (i, PIN_NAME));
 			}
 		
+		Video_SetFontMenu(TTFVERYSMALL);
 		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
+		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
 			{
@@ -778,9 +781,7 @@ static void ShowAppMenu (int ai)
 		grlib_menuAddItem (buff,  2, "Delete this rom (and cover)");
 		grlib_menuAddItem (buff,  3, "Delete this cover");
 		
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		int item = grlib_menu (title, buff);
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 		if (item == 1)
 			{
@@ -861,9 +862,7 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Emulators menu", buff);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
 	
 	if (item == 1)
 		{
@@ -894,6 +893,7 @@ static void ShowMainMenu (void)
 
 	if (item == 7)
 		{
+		if(!CheckParental()) return;
 		showHidden = 1;
 		AppsSort ();
 		}
@@ -906,7 +906,7 @@ static void RedrawIcons (int xoff, int yoff)
 	int ai;	// Application index (corrected by the offset)
 	char path[256];
 	
-	Video_SetFont(TTFNORM);
+	Video_SetFont(TTFVERYSMALL);
 
 	// Prepare black box
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -1012,8 +1012,6 @@ static int ChangePage (int next)
 	if (page < 0)
 		page = pageMax;
 		
-	gprintf ("(CP)");
-		
 	FeedCoverCache ();
 
 	redrawIcons = false;
@@ -1069,8 +1067,6 @@ static int ChangePage (int next)
 	
 	redrawIcons = true;
 	redraw = 1;
-	
-	gprintf ("(cp)");
 	
 	return page;
 	}
@@ -1138,7 +1134,7 @@ static bool QuerySelection (int ai)
 		if (mag >= 3.0 && ico.x == 320 && ico.y == y) break;
 		}
 	
-	int fr = grlibSettings.fontReverse;
+	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1147,10 +1143,10 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		grlibSettings.fontReverse = 0;
+		grlibSettings.fontDef.reverse = 0;
 		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, emus[ai].name);		
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
-		grlibSettings.fontReverse = fr;
+		grlibSettings.fontDef.reverse = fr;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();

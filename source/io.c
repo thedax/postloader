@@ -84,9 +84,9 @@ bool MountDevices (bool silent)
 	cbsilent = silent;
 	
 	if (vars.ios > 200)
-		devices_Mount (DEVMODE_CIOSX, vars.usbtime, cb_Mount);
+		devices_Mount (DEVMODE_CIOSX, vars.neek, vars.usbtime, cb_Mount);
 	else
-		devices_Mount (DEVMODE_IOS, vars.usbtime, cb_Mount);
+		devices_Mount (DEVMODE_IOS, vars.neek, vars.usbtime, cb_Mount);
 	
 	bool cfgSD = false, cfgUSB = false;
 	

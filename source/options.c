@@ -76,13 +76,11 @@ void ShowAboutPLMenu (void)
 	"credits\n"
 	"\n"
 	"coding:\n"
-	"WiiFlow, NeoGamma, GRRLIB, TriiForce, Priiloader, CFG Loader, WiiMC, USBLoaderGX...\n"
-	"\n"
+	"WiiFlow, NeoGamma,GRRLIB,TriiForce,Priiloader,CFG Loader,WiiMC,USBLoaderGX\n"
 	"people:\n"
-	"FIX94 (wiiflow/dmlbooter), JoostinOnline (S.E.), obcd (neek2o/uneekfs), XFlak (modmii)\n"
-	"\n"
+	"FIX94(wiiflow/dmlbooter),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\n"
 	"and all active testers:\n"
-	"Wever, daxtu, ZFA, AbdallahTerro... and sorry if I forgot you ;)\n\n"
+	"Wever,daxstu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
 
 	grlib_menu (buff, "Close");
@@ -149,7 +147,7 @@ void ShowAdvancedOptions (void)
 	do
 		{
 		strcpy (buff, "Advanced Options\n\n");
-		strcat (buff, "Important notice: postLoader forwarder channel V4 must be installed to use\n this option and keep the ability to run homebrews with ahbprot.");
+		strcat (buff, "Important notice: postLoader forwarder channel V4 must be installed to use\nIOS249 option and keep the ability to run homebrews with ahbprot.");
 		
 		*options = '\0';
 		
@@ -177,9 +175,7 @@ void ShowAdvancedOptions (void)
 		grlib_menuAddSeparator (options);
 		grlib_menuAddItem (options, -1,  "Close");
 		
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (buff, options);
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 		if (item == 1)
 			{
@@ -317,9 +313,7 @@ void ShowAboutMenu (void)
 			
 		grlib_menuAddItem (options, 16,  "Set parental control (password)");
 
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (buff, options);
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 		if (item == 1)
 			{
@@ -478,8 +472,6 @@ int ShowExitMenu (void)
 	int item;
 	char options[300];
 	
-	Video_SetFont(FNTBIG);
-
 	*options = '\0';
 	
 	grlib_menuAddItem (options, 1,  "Exit to WII Menu");
@@ -503,8 +495,6 @@ int ShowBootmiiMenu (void)
 	{
 	int item;
 	char options[300];
-	
-	Video_SetFont(FNTBIG);
 	
 	*options = '\0';
 	

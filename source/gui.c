@@ -129,9 +129,7 @@ int Menu_SelectBrowsingMode (void)
 	strcat (buff, "|");
 	strcat (buff, "Close##-1");
 	
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int ret = grlib_menu ("Select browsing mode...", buff);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
 	
 	if (ret == 100) return INTERACTIVE_RET_TOHOMEBREW;
 	if (ret == 101) return INTERACTIVE_RET_TOCHANNELS;
@@ -308,7 +306,7 @@ int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn)
 		visible = 3; // Start close
 
 	if (browserRet) *browserRet = br;
-	if (visibleflag) *visibleflag = visible;
+	if (visibleflag) *visibleflag = (visible == 2 ? 1 : 0);
 	
 	return ret;
 	}
@@ -510,7 +508,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 		y = 480;
 		}
 
-	if (visibleflag) *visibleflag = visible;
+	if (visibleflag) *visibleflag = (visible == 2 ? 1 : 0);
 	
 	return ret;
 	}

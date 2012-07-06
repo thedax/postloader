@@ -838,9 +838,9 @@ static void ShowAppMenu (int ai)
 			//
 		*/
 		
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
+		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (chans[ai].name, buff);
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
+		Video_SetFontMenu(TTFNORM);
 		
 		if (item < 100) break;
 		if (item >= 100)
@@ -1021,9 +1021,7 @@ static void ShowNandMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Select NAND Source", buff);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
 
 	if (item > 0)
 		config.chnBrowser.nandPath[0] = '\0';
@@ -1193,10 +1191,8 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Channel menu", buff);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
-		
+			
 	if (item == 1)
 		{
 		ShowNandMenu();
@@ -1237,6 +1233,7 @@ static void ShowMainMenu (void)
 
 	if (item == 8)
 		{
+		if(!CheckParental()) return;
 		showHidden = 1;
 		AppsSort ();
 		}
@@ -1535,7 +1532,7 @@ static bool QuerySelection (int ai)
 		}
 	
 	vars.useChannelCompatibleMode = 0;	
-	int fr = grlibSettings.fontReverse;
+	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1544,10 +1541,10 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		grlibSettings.fontReverse = 0;
+		grlibSettings.fontDef.reverse = 0;
 		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, chans[ai].name);
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");		
-		grlibSettings.fontReverse = fr;
+		grlibSettings.fontDef.reverse = fr;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();

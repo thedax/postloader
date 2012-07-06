@@ -91,7 +91,7 @@ static void InitializeGui (void)
 	is.bkgColor = RGBA (0,0,0,255);
 	is.borderSelColor = RGBA (255,255,255,255); 	// Border color
 	is.borderColor = RGBA (128,128,128,255); 		// Border color
-	is.fontReverse = 0; 		// Border color
+	is.fontReverse = 0;
 
 	il = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -871,6 +871,7 @@ static void SortDispMenu (void)
 	
 	if (item == 4)
 		{
+		if (!showHidden && !CheckParental()) return;
 		showHidden = 1 - showHidden;
 		AppsBrowse ();
 		}
@@ -943,9 +944,7 @@ static void ShowMainMenu (void)
 	grlib_menuAddItem (buff,  1, "View options...");
 	grlib_menuAddItem (buff,  2, "Select device(s)...");
 		
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Homebrew menu", buff);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 	if (item == 0)
 		{
@@ -1347,7 +1346,7 @@ static bool QuerySelection (int ai)
 		if (mag >= 3.0 && ico.x == 320 && ico.y == y) break;
 		}
 	
-	int fr = grlibSettings.fontReverse;
+	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1356,10 +1355,10 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 
-		grlibSettings.fontReverse = 0;
+		grlibSettings.fontDef.reverse = 0;
 		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, apps[ai].name);		
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");		
-		grlibSettings.fontReverse = fr;
+		grlibSettings.fontDef.reverse = fr;
 
 		grlib_DrawIRCursor ();
 		grlib_Render();

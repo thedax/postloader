@@ -197,7 +197,7 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 	return -1;
 }
 
-void devices_Mount (int devmode, int usbTimeout, devicesCallback cb)
+void devices_Mount (int devmode, int neek, int usbTimeout, devicesCallback cb)
 	{
 	memset (mounted, 0, sizeof (mounted));
 	memset (partinfo, 0, sizeof (partinfo));
@@ -212,11 +212,21 @@ void devices_Mount (int devmode, int usbTimeout, devicesCallback cb)
 	if (usbTimeout)
 		{
 		if (devmode == DEVMODE_CIOSX)
-			storage=(DISC_INTERFACE*)&__io_wiiums;
+			storage = (DISC_INTERFACE*)&__io_wiiums;
 		else
 			storage=(DISC_INTERFACE*)&__io_usbstorage;
-			
-		USBDevice_Init (usbTimeout, cb);
+		
+		if (neek == 0)
+			{
+			USBDevice_Init (usbTimeout, cb);
+			}
+		else
+			{
+			if (fatMountSimple(DeviceName[DEV_USB], &__io_usbstorage))
+				{
+				mounted[DEV_USB] = 1;
+				}
+			}
 		}
 	}
 

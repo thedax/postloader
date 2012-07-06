@@ -11,6 +11,10 @@
 #define GRLIB_ALIGNTOP 3
 #define GRLIB_ALIGNBOTTOM 4
 
+#define GRLIB_ALIGNICOTEXT_MIDDLE 0
+#define GRLIB_ALIGNICOTEXT_TOP 1
+#define GRLIB_ALIGNICOTEXT_BOTTOM 2
+
 #define GRLIB_FONTMODE_BMF 0
 #define GRLIB_FONTMODE_TTF 1
 
@@ -55,6 +59,15 @@ typedef struct
 	} 
 s_grlibTheme;
 
+typedef struct
+	{
+	int size;
+	int reverse;						// If true font color is reversed
+	int offsetY;
+	int sizeOffsetY;
+	} 
+s_grlibFontDef;
+
 // grlib is extension to grrlib
 typedef struct
 	{
@@ -64,13 +77,11 @@ typedef struct
 	GRRLIB_texImg *pointer[4];
 
 	GRRLIB_ttfFont *font;
-	int fontSize;
-	int fontReverse;						// If true font color is reversed
-	int fontOffsetY;
-	int fontSizeOffsetY;
-	int fontSizeMenuNorm;
 
 	u8 fontMode;
+	
+	s_grlibFontDef fontDef;		// used for standard drawing
+	s_grlibFontDef fontDefMenu; // used for menu drawing
 	
 	GRRLIB_bytemapFont *fontBMF;				// Current bmf font to use
 	GRRLIB_bytemapFont *fontNormBMF;			// Used by menu
@@ -131,6 +142,7 @@ typedef struct
 	GRRLIB_texImg *iconOverlay[4];	// topleft, topright,bottomright, bottomleft overlay icons.
 	
 	char title[64];	// Icon text (font must be selected before)
+	int titleAlign;
 	
 	f32 rx1, rx2, ry1, ry2; // After icon has been drawn, this is the bounding rect
 	}
@@ -179,6 +191,7 @@ void grlib_Redraw (void);
 void grlib_Render (void);
 void grlib_SetFontBMF2 (GRRLIB_bytemapFont *bmf);
 void grlib_SetFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY);
+void grlib_SetMenuFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY); // This fill menu struct
 int grlib_GetFontMetrics (const char *text, int *width, int *height);
 void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text);
 void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...);

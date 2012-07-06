@@ -11,9 +11,9 @@ int grlib_dosm (const char *text, ...) // ab > 0 show and wait ab second, otherw
 	static char mex[1024];
 	char *p1,*p2;
 	
-	int reverse = grlibSettings.fontReverse;
+	int reverse = grlibSettings.fontDef.reverse;
 	
-	grlibSettings.fontReverse = 0;
+	grlibSettings.fontDef.reverse = 0;
 	
 	if (text != NULL)
 		{
@@ -69,7 +69,7 @@ int grlib_dosm (const char *text, ...) // ab > 0 show and wait ab second, otherw
 	while (ret == 0);
 	do {WPAD_ScanPads();} while (WPAD_ButtonsDown(0));
 	
-	grlibSettings.fontReverse = reverse;
+	grlibSettings.fontDef.reverse = reverse;
 	return ret;
 	}
 	

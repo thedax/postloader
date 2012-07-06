@@ -93,10 +93,19 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 			}
 		if (cutted) strcat (desc, "...");
 		
-		int ofr = grlibSettings.fontReverse;
-		grlibSettings.fontReverse = is->fontReverse;
-		grlib_printf (gro.x1 + w / 2, gro.y1 + h / 2 - 5, GRLIB_ALIGNCENTER, 0, desc); 
-		grlibSettings.fontReverse = ofr;
+		int ofr = grlibSettings.fontDef.reverse;
+		grlibSettings.fontDef.reverse = is->fontReverse;
+		if (icon->titleAlign == GRLIB_ALIGNICOTEXT_MIDDLE)
+			grlib_printf (gro.x1 + w / 2, gro.y1 + h / 2 - 5, GRLIB_ALIGNCENTER, 0, desc); 
+		
+		if (icon->titleAlign == GRLIB_ALIGNICOTEXT_BOTTOM)
+			{
+			int fh;
+			grlib_GetFontMetrics (desc, NULL, &fh);
+			grlib_printf (gro.x1 + w / 2, gro.y2 - fh - 5, GRLIB_ALIGNCENTER, 0, desc); 
+			}
+			
+		grlibSettings.fontDef.reverse = ofr;
 		}
 	
 	// Draw overlay icons

@@ -1,3 +1,16 @@
+postLoader 4.b30
+
+* solved some issue with fonts
+* now fonts have correct proportions
+* smoother wiimote ir pointer movement during page tranitions
+* now focus over icons can be gained even when botombar and topbar are opening/closing
+* moved and reduced in size the text for emulators icon.
+* new emu icons for roms without cover, with the space for the text
+* new small font for emu icon text and filter selection. Let me know if it is readable.
+* added in support for Parental Controls on hidden homebrew apps, games, channels, and emulators (thx daxtsu)
+* chenged the way usb is mounted in (s/n)neek(2o)
+* corrected daxsu to daxtsu :P ;)
+
 postLoader 4.b29
 
 * fixed all issues with supported controller (and extensions). Repeat should work fine for all...
@@ -11,8 +24,8 @@ postLoader 4.b28
 * removed crosscheck of dml for sd games. This will give a great speedup for fst games scan, but will not check consistency from game on usb and the same on sd. (thx FIX94 for pointing that)
 * removed an useless space check during dml scanner
 * corrected autorepeat for wiimote keys (you can now keep +/- pressed to change pages)
-* fixed classic controllers button and key repeat (thx daxtu!)
-* added DML1.x and DM2.x cheats support (thx daxtu)
+* fixed classic controllers button and key repeat (thx daxtsu!)
+* added DML1.x and DM2.x cheats support (thx daxtsu)
 * removed source path from emulators filters (thx wever)
 * corrected DM2.x game search (games on both sd and usb where not listed) (thx wever)
 * remove bottom bar neek icon when postloader is already running in neek (thx wever)

@@ -106,8 +106,8 @@ static bool ScreenSaver (void)
 	
 	Debug ("ScreenSaver: start"); 
 	
-	fr = grlibSettings.fontReverse;
-	grlibSettings.fontReverse = 0;
+	fr = grlibSettings.fontDef.reverse;
+	grlibSettings.fontDef.reverse = 0;
 	
 	sprintf (path, "%s://ploader/covers", vars.defMount);
 		
@@ -133,7 +133,7 @@ static bool ScreenSaver (void)
 		
 	closedir(pdir);
 	
-	grlibSettings.fontReverse = fr;
+	grlibSettings.fontDef.reverse = fr;
 	
 	if (ret) return true;
 	return false;

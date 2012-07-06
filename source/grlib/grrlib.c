@@ -446,8 +446,8 @@ void GRRLIB_PrintfTTFW(int x, int y, GRRLIB_ttfFont *myFont, const wchar_t *utf3
     u8 cR = R(color), cG = G(color), cB = B(color);
 	int ghostchar = 0;
 
-    if (FT_Set_Pixel_Sizes(Face, 0, fontSize)) {
-        FT_Set_Pixel_Sizes(Face, 0, 12);
+    if(FT_Set_Pixel_Sizes(myFont->face, (int)((f32)fontSize / 1.2), fontSize)) {
+         FT_Set_Pixel_Sizes(myFont->face, 0, 12);
     }
 
     /* Loop over each character, until the
@@ -644,7 +644,7 @@ unsigned int GRRLIB_WidthTTFW(GRRLIB_ttfFont *myFont, const wchar_t *utf32, unsi
     FT_UInt glyphIndex;
     FT_UInt previousGlyph = 0;
 
-    if(FT_Set_Pixel_Sizes(myFont->face, 0, fontSize)) {
+    if(FT_Set_Pixel_Sizes(myFont->face, (int)((f32)fontSize / 1.2), fontSize)) {
          FT_Set_Pixel_Sizes(myFont->face, 0, 12);
     }
 

@@ -64,14 +64,13 @@ void Video_Init (void)
 	vars.tex[TEX_ICO_WM] = GRRLIB_LoadTexturePNG (ico_wm_png);
 
 	grlibSettings.font = GRRLIB_LoadTTF (font_ttf, font_ttf_size);
-	grlibSettings.fontSize = 14;
+	grlibSettings.fontDef.size = 14;
 	
-	fonts[FNTNORM] = GRRLIB_LoadBMF (fnorm_bmf);
-	fonts[FNTSMALL] = GRRLIB_LoadBMF (fsmall_bmf);
-	fonts[FNTBIG] = GRRLIB_LoadBMF (fbig_bmf);
+	//fonts[FNTNORM] = GRRLIB_LoadBMF (fnorm_bmf);
+	//fonts[FNTSMALL] = GRRLIB_LoadBMF (fsmall_bmf);
 	
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
-	grlibSettings.fontSmallBMF = fonts[FNTSMALL];
+	//grlibSettings.fontNormBMF = fonts[FNTNORM];
+	//grlibSettings.fontSmallBMF = fonts[FNTSMALL];
 	
 	//GRRLIB_SetHandle (vars.tex[TEX_CUR], 10, 3);
 	vars.tex[TEX_CUR]->offsetx = 10;
@@ -81,6 +80,8 @@ void Video_Init (void)
 	GRRLIB_SetHandle (vars.tex[TEX_HGL], 18, 18);
 	
 	grlib_SetWiimotePointer (vars.tex[TEX_CUR], 0);
+	
+	Video_SetFontMenu(TTFNORM);
 	}
 	
 void Video_Deinit (void)
@@ -88,9 +89,6 @@ void Video_Deinit (void)
 	int i;
 	
 	GRRLIB_FreeTTF (grlibSettings.font);
-	GRRLIB_FreeBMF (fonts[FNTNORM]);
-	GRRLIB_FreeBMF (fonts[FNTSMALL]);
-	GRRLIB_FreeBMF (fonts[FNTBIG]);
 	
 	GRRLIB_FreeTexture (bkg[0]);
 	GRRLIB_FreeTexture (bkg[1]);
@@ -204,7 +202,7 @@ void Video_WaitPanel (int icon, const char *text, ...)
 	{
 	char mex[1024];
 	char *p;
-
+	
 	if (text != NULL)
 		{
 		va_list argp;
@@ -217,12 +215,16 @@ void Video_WaitPanel (int icon, const char *text, ...)
 	if (p) *p = '\0';
 	
 	grlib_PopScreen() ;
+	
+	Video_SetFont (TTFNORM);
+
 	grlib_DrawCenteredWindow (mex, WAITPANWIDTH, 133, 0, NULL);
 	
 	if (p)
 		{
 		Video_DrawIcon (icon, 320, 240);
 		p++;
+	
 		grlib_Text (320, 280, GRLIB_ALIGNCENTER, 0, p);
 		}
 	else
@@ -247,7 +249,7 @@ void Video_LoadTheme (int init)
 		theme.line1Y = 410;
 		theme.line2Y = 425;
 		theme.line3Y = 450;
-		grlibSettings.fontReverse = 0;
+		grlibSettings.fontDef.reverse = 0;
 		
 		sprintf (path, "%s://ploader/theme/bkg.png", vars.defMount);
 		theme.bkg = GRRLIB_LoadTextureFromFile (path);
@@ -307,7 +309,7 @@ void Video_LoadTheme (int init)
 			cfg_GetInt (cfg, "grlibSettings.theme.buttonMagY", &grlibSettings.theme.buttonMagY);
 			
 			cfg_GetInt (cfg, "grlibSettings.theme.buttonsTextOffsetY", &grlibSettings.theme.buttonsTextOffsetY);
-			cfg_GetInt (cfg, "grlibSettings.fontBMF_reverse", &grlibSettings.fontReverse);
+			cfg_GetInt (cfg, "grlibSettings.fontBMF_reverse", &grlibSettings.fontDef.reverse);
 
 			cfg_GetInt (cfg, "theme.line1Y", &theme.line1Y);
 			cfg_GetInt (cfg, "theme.line3Y", &theme.line3Y);
@@ -318,7 +320,7 @@ void Video_LoadTheme (int init)
 			Debug ("grlibSettings.theme.buttonMagX = %d", grlibSettings.theme.buttonMagX);
 			Debug ("grlibSettings.theme.buttonMagY = %d", grlibSettings.theme.buttonMagY);
 			Debug ("grlibSettings.theme.buttonsTextOffsetY = %d", grlibSettings.theme.buttonsTextOffsetY);
-			Debug ("grlibSettings.fontReverse = %d", grlibSettings.fontReverse);
+			Debug ("grlibSettings.fontReverse = %d", grlibSettings.fontDef.reverse);
 
 			Debug ("theme.line1Y = %d", theme.line1Y);
 			Debug ("theme.line2Y = %d", theme.line2Y);
@@ -326,7 +328,7 @@ void Video_LoadTheme (int init)
 			
 			cfg_Free (cfg);
 			
-			if (grlibSettings.fontReverse) // we likely need to revert textures (skipping cursor)
+			if (grlibSettings.fontDef.reverse) // we likely need to revert textures (skipping cursor)
 				{
 				Debug ("inverting tex");
 				GRRLIB_BMFX_Invert (vars.tex[TEX_HDD],vars.tex[TEX_HDD]);
@@ -354,7 +356,7 @@ void Video_LoadTheme (int init)
 		theme.ok = 0;
 		grlibSettings.theme.enabled = false;
 		
-		if (grlibSettings.fontReverse) // we likely need to revert textures (again)  (skipping cursor)
+		if (grlibSettings.fontDef.reverse) // we likely need to revert textures (again)  (skipping cursor)
 			{
 			GRRLIB_BMFX_Invert (vars.tex[TEX_HDD],vars.tex[TEX_HDD]);
 			GRRLIB_BMFX_Invert (vars.tex[TEX_HGL],vars.tex[TEX_HGL]);
@@ -366,7 +368,7 @@ void Video_LoadTheme (int init)
 			GRRLIB_BMFX_Invert (vars.tex[TEX_GK],vars.tex[TEX_GK]);
 			}
 
-		grlibSettings.fontReverse = 0;
+		grlibSettings.fontDef.reverse = 0;
 		
 		GRRLIB_FreeTexture (theme.bkg);
 		GRRLIB_FreeTexture (theme.frame);
@@ -388,6 +390,26 @@ void Video_SetFont (int size)
 	if (size == TTFSMALL)
 		{
 		grlib_SetFontTTF (NULL, size, TTFSMALL_fontOffsetY, TTFSMALL_fontSizeOffsetY);
+		}
+	if (size == TTFVERYSMALL)
+		{
+		grlib_SetFontTTF (NULL, size, TTFVERYSMALL_fontOffsetY, TTFVERYSMALL_fontSizeOffsetY);
+		}
+	}
+	
+void Video_SetFontMenu (int size)
+	{
+	if (size == TTFNORM)
+		{
+		grlib_SetMenuFontTTF (NULL, size, TTFNORM_fontOffsetY, TTFNORM_fontSizeOffsetY);
+		}
+	if (size == TTFSMALL)
+		{
+		grlib_SetMenuFontTTF (NULL, size, TTFSMALL_fontOffsetY, TTFSMALL_fontSizeOffsetY);
+		}
+	if (size == TTFVERYSMALL)
+		{
+		grlib_SetMenuFontTTF (NULL, size, TTFVERYSMALL_fontOffsetY, TTFVERYSMALL_fontSizeOffsetY);
 		}
 	}
 	

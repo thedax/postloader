@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b29"
+#define VER "4.b30"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -24,16 +24,16 @@
 
 #define HBAPPFOLDER "/apps/postloader"
 
-#define FNTNORM 0
-#define FNTSMALL 1
-#define FNTBIG 2
+#define TTFVERYSMALL 17
+#define TTFVERYSMALL_fontOffsetY -2
+#define TTFVERYSMALL_fontSizeOffsetY -2
 
-#define TTFSMALL 16
+#define TTFSMALL 18
 #define TTFSMALL_fontOffsetY -2
 #define TTFSMALL_fontSizeOffsetY -2
 
-#define TTFNORM 18
-#define TTFNORM_fontOffsetY -5
+#define TTFNORM 22
+#define TTFNORM_fontOffsetY -6
 #define TTFNORM_fontSizeOffsetY -5
 
 #define CFG_HOME_PRIILOAER 0x4461636F
@@ -437,7 +437,6 @@ extern s_grlibSettings grlibSettings;
 	s_config config;
 	s_extConfig extConfig;
 	int sdStatus = -1;
-	GRRLIB_bytemapFont *fonts[3];
 	s_vars vars;
 	s_theme theme;
 	const char CHANNEL_FILTERS[] = "HWFECJLMNPQ ";
@@ -525,6 +524,7 @@ void Video_WaitPanel (int icon, const char *text, ...); // Draw a panel with a w
 void Video_LoadTheme (int init);
 void Video_DrawWIFI (void);
 void Video_SetFont (int size);
+void Video_SetFontMenu (int size);
 void Video_DrawVersionInfo (void);
 
 // appbrowser.c

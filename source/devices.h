@@ -11,7 +11,7 @@
 // This is the devices callback. Return 0 to interrupt the process
 typedef int (*devicesCallback)(void); 
 
-void devices_Mount (int devmode, int usbTimeout, devicesCallback cb);
+void devices_Mount (int devmode, int neek, int usbTimeout, devicesCallback cb);
 void devices_Unmount (void);
 char *devices_Get (int dev);
 int devices_PartitionInfo (int dev);

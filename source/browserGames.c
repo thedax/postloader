@@ -712,11 +712,9 @@ static void ShowGameFilterMenu (int idx)
 	u8 f[CATMAX];
 	int i, item;
 
-	Debug ("#1");
 	for (i = 0; i <CATMAX; i++)
 		f[i] = 0;
 	
-	Debug ("#2");
 	for (i = 0; i < CATMAX; i++)
 		f[i] = (games[idx].category & (1 << i)) ? 1:0;
 	
@@ -730,9 +728,10 @@ static void ShowGameFilterMenu (int idx)
 			}
 			
 		sprintf (title, "Category: %s\nPress (B) to close, (+) Select all, (-) Deselect all", games[idx].name);
-		Debug ("#3");
+
+		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (title, buff);
-		Debug ("#4");
+		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
 			{
@@ -823,8 +822,11 @@ static void ShowFilterMenu (void)
 			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
 			grlib_menuAddCheckItem (buff, 100 + i, f[i], flt[i]);
 			}
-		
+
+		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
+		Video_SetFontMenu(TTFNORM);
+
 		if (item == MNUBTN_PLUS)
 			{
 			int i; 	for (i = 0; i < CATN; i++) f[i] = 1;
@@ -979,9 +981,7 @@ static void ShowAppMenu (int ai)
 		strcat (buff, "|");
 		strcat (buff, "Close##-1");
 		
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		item = grlib_menu (games[ai].name, buff);
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
 
 		if (item >= 100)
 			{
@@ -1232,9 +1232,7 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	grlibSettings.fontNormBMF = fonts[FNTBIG];
 	int item = grlib_menu ("Games menu", buff);
-	grlibSettings.fontNormBMF = fonts[FNTNORM];
 	
 	if (item == 1)
 		{
@@ -1300,6 +1298,7 @@ static void ShowMainMenu (void)
 
 	if (item == 11)
 		{
+		if(!CheckParental()) return;
 		showHidden = 1;
 		AppsSort ();
 		FeedCoverCache ();
@@ -1626,7 +1625,7 @@ static bool QuerySelection (int ai)
 		if (mag >= 2.3 && ico.x == 320 && ico.y == y) break;
 		}
 	
-	int fr = grlibSettings.fontReverse;
+	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1635,10 +1634,10 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		grlibSettings.fontReverse = 0;
+		grlibSettings.fontDef.reverse = 0;
 		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, games[ai].name);		
 		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
-		grlibSettings.fontReverse = fr;
+		grlibSettings.fontDef.reverse = fr;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();

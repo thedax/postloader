@@ -201,10 +201,10 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 		
 	if (grlibSettings.fontMode == GRLIB_FONTMODE_TTF) 
 		{
-		if (grlibSettings.fontReverse)
-			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontOffsetY, grlibSettings.font, text, grlibSettings.fontSize, 0x0 | 0xFF);
+		if (grlibSettings.fontDef.reverse)
+			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontDef.offsetY, grlibSettings.font, text, grlibSettings.fontDef.size, 0x0 | 0xFF);
 		else
-			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontOffsetY, grlibSettings.font, text, grlibSettings.fontSize, 0xFFFFFFFF | 0xFF);
+			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontDef.offsetY, grlibSettings.font, text, grlibSettings.fontDef.size, 0xFFFFFFFF | 0xFF);
 		return;
 		}
 
@@ -235,7 +235,7 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 						{
 						u32 c = grlibSettings.fontBMF->palette[*pdata];
 						
-						if (!grlibSettings.fontReverse)
+						if (!grlibSettings.fontDef.reverse)
 							{
 							r = R(c);	
 							g = G(c);
@@ -329,11 +329,26 @@ void grlib_SetFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int f
 	if (ttf) grlibSettings.font = ttf;
 	
 	if (fontSize < 10) fontSize = 10;
-	
-	grlibSettings.fontSize = fontSize;
+
 	grlibSettings.fontMode = GRLIB_FONTMODE_TTF;
-	grlibSettings.fontOffsetY = fontOffsetY;
-	grlibSettings.fontSizeOffsetY = fontSizeOffsetY;
+	
+	grlibSettings.fontDef.size = fontSize;
+	grlibSettings.fontDef.offsetY = fontOffsetY;
+	grlibSettings.fontDef.sizeOffsetY = fontSizeOffsetY;
+	}
+
+// Assign the font to be used in menu
+void grlib_SetMenuFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY) 
+	{
+	if (ttf) grlibSettings.font = ttf;
+	
+	if (fontSize < 10) fontSize = 10;
+	
+	grlibSettings.fontMode = GRLIB_FONTMODE_TTF;
+	
+	grlibSettings.fontDefMenu.size = fontSize;
+	grlibSettings.fontDefMenu.offsetY = fontOffsetY;
+	grlibSettings.fontDefMenu.sizeOffsetY = fontSizeOffsetY;
 	}
 
 // return width and height of the font. height/with can be NULL... return is the widht
@@ -347,13 +362,13 @@ int grlib_GetFontMetrics (const char *text, int *width, int *height)
 	
 	if (grlibSettings.fontMode == GRLIB_FONTMODE_TTF)
 		{
-		xoff = GRRLIB_WidthTTF(grlibSettings.font, text, grlibSettings.fontSize);
+		xoff = GRRLIB_WidthTTF(grlibSettings.font, text, grlibSettings.fontDef.size);
 		// gprintf ("GRRLIB_WidthTTF '%s' = %d\r\n", text, xoff);
 		/*
 		for (i = 0; i < strlen (text); i++) 
 			xoff += wtable[grlibSettings.fontSize-10][(unsigned char)text[i]];
 		*/
-		if (height) *height = grlibSettings.fontSize + grlibSettings.fontSizeOffsetY; // Should be measured
+		if (height) *height = grlibSettings.fontDef.size + grlibSettings.fontDef.sizeOffsetY; // Should be measured
 		if (width) *width = xoff;
 		return xoff;
 		}
@@ -531,6 +546,7 @@ void grlib_DrawIRCursor (void)
 	static u32 startms = 0;
 	u32 ms = ticks_to_millisecs(gettime());
 	
+	WPAD_ScanPads();  // Scan the Wiimotes
 	WPAD_IR (0, &ir);
 	
 	if (ms > startms)

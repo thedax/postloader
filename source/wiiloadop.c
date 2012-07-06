@@ -405,9 +405,7 @@ bool WiiloadPostloaderDolMenu (void)
 	{
 	if (stricmp (wiiload.filename, "postloader.dol") == 0 && wiiload.buffsize)
 		{
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		int ret = grlib_menu ("wiiload: postLoader.dol received", "Update postLoader installation##1|Boot it without updating##2|Cancel##-1");
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
 		
 		if (ret <= 0)
 			{
@@ -439,9 +437,7 @@ bool WiiloadPostloaderDolMenu (void)
 
 	if (stricmp (wiiload.filename, "neekbooter.dol") == 0 && wiiload.buffsize)
 		{
-		grlibSettings.fontNormBMF = fonts[FNTBIG];
 		grlib_menu ("wiiload: neekbooter.dol updated", "  OK  ");
-		grlibSettings.fontNormBMF = fonts[FNTNORM];
 
 		char path[64];
 		

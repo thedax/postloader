@@ -159,6 +159,13 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	
 	if (grlibSettings.RedrawCallback != NULL) grlibSettings.RedrawCallback();
 	
+	if (grlibSettings.fontDefMenu.size > 0)
+		{
+		grlibSettings.fontDef.size = grlibSettings.fontDefMenu.size;
+		grlibSettings.fontDef.offsetY = grlibSettings.fontDefMenu.offsetY;
+		grlibSettings.fontDef.sizeOffsetY = grlibSettings.fontDefMenu.sizeOffsetY;
+		}
+	
 	// Grayout background
 	goWindow.x1 = 0;
 	goWindow.y1 = 0;
@@ -279,9 +286,9 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	titleh = ((titleLines+1) * (lineh + 5));
 	
 	itemw += 10;
-	winw = ((itemw+XCOLSPACING) * (columns)) + 40;
+	winw = ((itemw+XCOLSPACING) * (columns)) + 20;
 	if (linew > winw)
-		winw = linew + 40;
+		winw = linew + 20;
 		
 	if (winw < titlew)
 		winw = titlew;
@@ -293,6 +300,8 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 		if (j > winh)
 			winh = j;
 		}
+		
+	winh -= (YSPACINGFAKE*2);
 	
 	halfx = rmode->fbWidth / 2;
 	halfy = rmode->efbHeight / 2;
