@@ -115,11 +115,13 @@ static void *thread (void *arg)
 				{
 				threadPause = PAUSE_YES;
 				
-				while (threadPause == PAUSE_YES)
+				int tout = 10000;
+				while (threadPause == PAUSE_YES && --tout > 0)
 					{
 					usleep (100);
 					}
-
+				if (tout < 0) Debug ("tout on threadPause");
+				
 				doPrio = 1;
 				i = 0;
 				}
@@ -150,10 +152,13 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	if (yes)
 		{
 		threadPause = PAUSE_REQUEST;
-		while (threadPause != PAUSE_YES)
+		
+		int tout = 10000;
+		while (threadPause != PAUSE_YES && --tout > 0)
 			{
 			usleep(100);
 			}
+		if (tout < 0) Debug ("tout on CoverCache_Pause request");
 		}
 	else
 		{
@@ -172,7 +177,7 @@ void CoverCache_Start (void)
     LWP_MutexInit (&mutex, false);
 
 	threadStack = (u8 *) memalign(32, STACKSIZE);
-	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 32);
+	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 16);
 	LWP_ResumeThread(hthread);
 	}
 

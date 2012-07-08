@@ -94,14 +94,17 @@ static bool Play (char * fn) // return true interrupt the screensaver
 	return false;
 	}
 
+#define PATHS 2
 static bool ScreenSaver (void)
 	{
 	bool ret = false;
-	DIR *pdir;
+	DIR *pdir[2];
 	struct dirent *pent;
 	int fr;
+	int cp = 0;
+	int count = 0;
 
-	char path[128];
+	char path[2][128];
 	char fn[128];
 	
 	Debug ("ScreenSaver: start"); 
@@ -109,29 +112,54 @@ static bool ScreenSaver (void)
 	fr = grlibSettings.fontDef.reverse;
 	grlibSettings.fontDef.reverse = 0;
 	
-	sprintf (path, "%s://ploader/covers", vars.defMount);
+	sprintf (path[0], "%s://ploader/covers", vars.defMount);
+	sprintf (path[1], "%s://ploader/covers.emu", vars.defMount);
+	
+	pdir[0] = NULL;
+	pdir[1] = NULL;
 		
 	do
 		{
-		pdir=opendir(path);
+		if (!pdir[cp])
+			pdir[cp] = opendir(path[cp]);
+			
+		if (pdir[cp])
+			pent = readdir(pdir[cp]);
+		else
+			pent = NULL;
 		
-		while ((pent=readdir(pdir)) != NULL) 
+		if (pent)
 			{
 			if (strstr (pent->d_name, ".png") != NULL || strstr (pent->d_name, ".PNG") != NULL)
 				{
-				sprintf (fn, "%s/%s", path, pent->d_name);
+				sprintf (fn, "%s/%s", path[cp], pent->d_name);
+				
+				Debug ("ScreenSaver: %s", fn);
 				
 				ret = Play (fn);
 				if (ret) break;
 				}
-
+			}
+			
+		if (count++ > 4)
+			{
 			ret = Play (NULL);
 			if (ret) break;
 			}
+			
+		if (!pent)
+			{
+			if (pdir[cp]) closedir(pdir[cp]);
+			pdir[cp] = NULL;
+			}
+			
+		cp ++;
+		if (cp >= PATHS) cp = 0;
 		}
 	while (!ret);
-		
-	closedir(pdir);
+	
+	if (pdir[0]) closedir(pdir[0]);
+	if (pdir[1]) closedir(pdir[1]);
 	
 	grlibSettings.fontDef.reverse = fr;
 	

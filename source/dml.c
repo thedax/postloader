@@ -712,3 +712,31 @@ int DMLInstall (char *gamename, size_t reqKb)
 	return 0;
 	}
 	
+int DMLRunDisc (void)
+	{
+	DML_CFG cfg;
+	char path[256];
+	
+	memset (&cfg, 0, sizeof (DML_CFG));
+	
+	cfg.Config |= DML_CFG_BOOT_DISC;
+	
+	Shutdown (0);
+
+	cfg.Magicbytes = 0xD1050CF6;
+	cfg.CfgVersion = 0x00000001;
+		
+	strcpy (cfg.GamePath, path);
+ 	
+	//Write options into memory
+	memcpy((void *)0x80001700, &cfg, sizeof(DML_CFG));
+	DCFlushRange((void *)(0x80001700), sizeof(DML_CFG));
+
+	//DML v1.2+
+	memcpy((void *)0x81200000, &cfg, sizeof(DML_CFG));
+	DCFlushRange((void *)(0x81200000), sizeof(DML_CFG));
+
+	/* Boot BC */
+	WII_Initialize();
+	return WII_LaunchTitle(0x100000100LL);
+	}

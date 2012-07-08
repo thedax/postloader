@@ -49,20 +49,6 @@ void Video_Init (void)
 	vars.tex[TEX_USB] = GRRLIB_LoadTexturePNG (miniusb_png);
 	vars.tex[TEX_SD] = GRRLIB_LoadTexturePNG (minisd_png);
 	
-	vars.tex[TEX_CAT_HB] = GRRLIB_LoadTexturePNG (cat_hb_png);
-	vars.tex[TEX_CAT_GAMECUBE] = GRRLIB_LoadTexturePNG (cat_gamecube_png);
-	vars.tex[TEX_CAT_WII] = GRRLIB_LoadTexturePNG (cat_wii_png);
-	vars.tex[TEX_CAT_WIIWARE] = GRRLIB_LoadTexturePNG (cat_wiiware_png);
-	vars.tex[TEX_CAT_EMUL] = GRRLIB_LoadTexturePNG (cat_emul_png);
-
-	vars.tex[TEX_ICO_ABOUT] = GRRLIB_LoadTexturePNG (ico_about_png);
-	vars.tex[TEX_ICO_CONFIG] = GRRLIB_LoadTexturePNG (ico_config_png);
-	vars.tex[TEX_ICO_DVD] = GRRLIB_LoadTexturePNG (ico_dvd_png);
-	vars.tex[TEX_ICO_EXIT] = GRRLIB_LoadTexturePNG (ico_exit_png);
-	vars.tex[TEX_ICO_NEEK] = GRRLIB_LoadTexturePNG (ico_neek_png);
-	vars.tex[TEX_ICO_SE] = GRRLIB_LoadTexturePNG (ico_se_png);
-	vars.tex[TEX_ICO_WM] = GRRLIB_LoadTexturePNG (ico_wm_png);
-
 	grlibSettings.font = GRRLIB_LoadTTF (font_ttf, font_ttf_size);
 	grlibSettings.fontDef.size = 14;
 	
@@ -274,6 +260,62 @@ void Video_LoadTheme (int init)
 		
 		sprintf (path, "%s://ploader/theme/windowbk.png", vars.defMount);
 		grlibSettings.theme.texWindowBk = GRRLIB_LoadTextureFromFile (path);
+		
+		// Let's load icon resources ------------------------------
+		
+		sprintf (path, "%s://ploader/theme/cat_hb.png", vars.defMount);
+		vars.tex[TEX_CAT_HB] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_CAT_HB]) vars.tex[TEX_CAT_HB] = GRRLIB_LoadTexturePNG (cat_hb_png);
+		
+		sprintf (path, "%s://ploader/theme/cat_gamecube.png", vars.defMount);
+		vars.tex[TEX_CAT_GAMECUBE] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_CAT_GAMECUBE]) vars.tex[TEX_CAT_GAMECUBE] = GRRLIB_LoadTexturePNG (cat_gamecube_png);
+
+		sprintf (path, "%s://ploader/theme/cat_wii.png", vars.defMount);
+		vars.tex[TEX_CAT_WII] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_CAT_WII]) vars.tex[TEX_CAT_WII] = GRRLIB_LoadTexturePNG (cat_wii_png);
+
+		sprintf (path, "%s://ploader/theme/cat_wiiware.png", vars.defMount);
+		vars.tex[TEX_CAT_WIIWARE] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_CAT_WIIWARE]) vars.tex[TEX_CAT_WIIWARE] = GRRLIB_LoadTexturePNG (cat_wiiware_png);
+
+		sprintf (path, "%s://ploader/theme/cat_wiiware.png", vars.defMount);
+		vars.tex[TEX_CAT_WIIWARE] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_CAT_WIIWARE]) vars.tex[TEX_CAT_WIIWARE] = GRRLIB_LoadTexturePNG (cat_wiiware_png);
+
+		sprintf (path, "%s://ploader/theme/cat_emul.png", vars.defMount);
+		vars.tex[TEX_CAT_EMUL] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_CAT_EMUL]) vars.tex[TEX_CAT_EMUL] = GRRLIB_LoadTexturePNG (cat_emul_png);
+
+
+		sprintf (path, "%s://ploader/theme/ico_about.png", vars.defMount);
+		vars.tex[TEX_ICO_ABOUT] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_ABOUT]) vars.tex[TEX_ICO_ABOUT] = GRRLIB_LoadTexturePNG (ico_about_png);
+
+		sprintf (path, "%s://ploader/theme/ico_config.png", vars.defMount);
+		vars.tex[TEX_ICO_CONFIG] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_CONFIG]) vars.tex[TEX_ICO_CONFIG] = GRRLIB_LoadTexturePNG (ico_config_png);
+
+		sprintf (path, "%s://ploader/theme/ico_dvd.png", vars.defMount);
+		vars.tex[TEX_ICO_DVD] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_DVD]) vars.tex[TEX_ICO_DVD] = GRRLIB_LoadTexturePNG (ico_dvd_png);
+
+		sprintf (path, "%s://ploader/theme/ico_exit.png", vars.defMount);
+		vars.tex[TEX_ICO_EXIT] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_EXIT]) vars.tex[TEX_ICO_EXIT] = GRRLIB_LoadTexturePNG (ico_exit_png);
+
+		sprintf (path, "%s://ploader/theme/ico_neek.png", vars.defMount);
+		vars.tex[TEX_ICO_NEEK] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_NEEK]) vars.tex[TEX_ICO_NEEK] = GRRLIB_LoadTexturePNG (ico_neek_png);
+
+		sprintf (path, "%s://ploader/theme/ico_se.png", vars.defMount);
+		vars.tex[TEX_ICO_SE] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_SE]) vars.tex[TEX_ICO_SE] = GRRLIB_LoadTexturePNG (ico_se_png);
+
+		sprintf (path, "%s://ploader/theme/ico_wm.png", vars.defMount);
+		vars.tex[TEX_ICO_WM] = GRRLIB_LoadTextureFromFile (path);
+		if (!vars.tex[TEX_ICO_WM]) vars.tex[TEX_ICO_WM] = GRRLIB_LoadTexturePNG (ico_wm_png);
+		
 
 		Debug ("theme.bkg = 0x%X", theme.bkg);
 		Debug ("theme.frame = 0x%X", theme.frame);
@@ -369,6 +411,34 @@ void Video_LoadTheme (int init)
 			}
 
 		grlibSettings.fontDef.reverse = 0;
+		
+		GRRLIB_FreeTexture (vars.tex[TEX_CAT_HB]);
+        GRRLIB_FreeTexture (vars.tex[TEX_CAT_GAMECUBE]);
+        GRRLIB_FreeTexture (vars.tex[TEX_CAT_WII]);
+        GRRLIB_FreeTexture (vars.tex[TEX_CAT_WIIWARE]);
+        GRRLIB_FreeTexture (vars.tex[TEX_CAT_EMUL]);
+
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_ABOUT]);
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_CONFIG]);
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_DVD]);
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_EXIT]);
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_NEEK]);
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_SE]);
+        GRRLIB_FreeTexture (vars.tex[TEX_ICO_WM]);
+
+		vars.tex[TEX_CAT_HB] = NULL;
+        vars.tex[TEX_CAT_GAMECUBE] = NULL;
+        vars.tex[TEX_CAT_WII] = NULL;
+        vars.tex[TEX_CAT_WIIWARE] = NULL;
+        vars.tex[TEX_CAT_EMUL] = NULL;
+
+        vars.tex[TEX_ICO_ABOUT] = NULL;
+        vars.tex[TEX_ICO_CONFIG] = NULL;
+        vars.tex[TEX_ICO_DVD] = NULL;
+        vars.tex[TEX_ICO_EXIT] = NULL;
+        vars.tex[TEX_ICO_NEEK] = NULL;
+        vars.tex[TEX_ICO_SE] = NULL;
+        vars.tex[TEX_ICO_WM] = NULL;
 		
 		GRRLIB_FreeTexture (theme.bkg);
 		GRRLIB_FreeTexture (theme.frame);

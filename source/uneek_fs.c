@@ -55,6 +55,8 @@ distribution.
 //#include <gctypes.h>
 //#include <ogc/disc_io.h>
 
+#define SECTORSIZE					512 		//yet to be determined how much is allowed?
+
 #define MAX_READ_SECTORS			16			//yet to be determined how much is allowed?
 #define MAX_WRITE_SECTORS			16			//yet to be determined how much is allowed?
 #define CACHE_SECTOR_LOCATION		1			//not sure if it will improve speed much...
@@ -131,7 +133,8 @@ bool __io_uns_ReadSectors(u32 sector, u32 count, void *buffer)
 	}
 //	buf = (u8 *)memalign(32, 512 * amount);
 //  sdhc aligns it's buffers on 64 byte boundaries
-	buf = (u8 *)memalign(64, 512 * amount);
+	
+	buf = (u8 *)memalign(64, SECTORSIZE * amount);
 
 	while(done < count)
 	{	
@@ -150,11 +153,11 @@ bool __io_uns_ReadSectors(u32 sector, u32 count, void *buffer)
 			seek_cache = sector + done; 
 		}
 #endif		
-		s32 ret = ISFS_Read(fu,buf,512*amount);
-		if (ret == (s32)(512*amount))
+		s32 ret = ISFS_Read(fu,buf, SECTORSIZE * amount);
+		if (ret == (s32)(SECTORSIZE * amount))
 		{
-			resultbuf = (u8*)buffer + (done * 512);
-			memcpy(resultbuf,buf,512*amount);
+			resultbuf = (u8*)buffer + (done * SECTORSIZE);
+			memcpy(resultbuf,buf,SECTORSIZE*amount);
 	 		done+=amount;
 			sec = sector + done;
 #ifdef CACHE_SECTOR_LOCATION		
@@ -208,7 +211,7 @@ bool __io_uns_WriteSectors(u32 sector, u32 count, void *buffer)
 	}
 //	buf = (u8 *)memalign(32, 512 * amount);
 //  sdhc aligns it's buffers on 64 byte boundaries
-	buf = (u8 *)memalign(64, 512 * amount);
+	buf = (u8 *)memalign(64, SECTORSIZE * amount);
 
 	while(done < count)
 	{	
@@ -227,10 +230,10 @@ bool __io_uns_WriteSectors(u32 sector, u32 count, void *buffer)
 			seek_cache = sector + done; 
 		}
 #endif		
-		resultbuf = (u8*)buffer + (done * 512);
-		memcpy(buf,resultbuf,512*amount);
-		s32 ret = ISFS_Write(fu,buf,512*amount);
-	 	if (ret == (s32)(512*amount))
+		resultbuf = (u8*)buffer + (done * SECTORSIZE);
+		memcpy(buf,resultbuf,SECTORSIZE*amount);
+		s32 ret = ISFS_Write(fu,buf,SECTORSIZE*amount);
+	 	if (ret == (s32)(SECTORSIZE*amount))
 		{
 	 		done+=amount;
 			sec = sector + done;
