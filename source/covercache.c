@@ -11,7 +11,7 @@
 static mutex_t mutex;
 
 #define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
-#define MAXITEMS 64
+#define MAXITEMS 128
 
 #define STACKSIZE	8192
 static u8 * threadStack = NULL;
@@ -177,7 +177,7 @@ void CoverCache_Start (void)
     LWP_MutexInit (&mutex, false);
 
 	threadStack = (u8 *) memalign(32, STACKSIZE);
-	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 16);
+	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 32);
 	LWP_ResumeThread(hthread);
 	}
 

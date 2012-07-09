@@ -656,12 +656,12 @@ void WiiLoad_Start(char *tempPath, int startSleep)
 		return;
 		}
 	else
-		LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 30);
+		LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 24);
 
 	threadStackG = (u8 *) memalign(32, STACKSIZE);
 	if (threadStackG)
 		{
-		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 30);
+		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 24);
 		}
 
 	}

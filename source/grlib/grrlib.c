@@ -39,6 +39,7 @@ THE SOFTWARE.
 
 #define ENABLE_JPEG
 #define ENABLE_TTF
+#define ONE_FB
 
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
@@ -144,14 +145,19 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
     // --
     VIDEO_Configure(rmode);
 
-    // Get some memory to use for a "double buffered" frame buffer
-    if ( !(xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode))) )  return -1;
-    if ( !(xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode))) )  return -1;
+    xfb[0] = NULL;
+	xfb[1] = NULL;
 	
+	// Get some memory to use for a "double buffered" frame buffer
+    if ( !(xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode))) )  return -1;
 	VIDEO_ClearFrameBuffer(rmode, xfb[0], COLOR_BLACK);
+#ifndef ONE_FB
+    if ( !(xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode))) )  return -1;
 	VIDEO_ClearFrameBuffer(rmode, xfb[1], COLOR_BLACK);
+#endif
 
-    VIDEO_SetNextFramebuffer(xfb[fb]);  // Choose a frame buffer to start with
+    fb = 0;
+	VIDEO_SetNextFramebuffer(xfb[fb]);  // Choose a frame buffer to start with
 
     VIDEO_Flush();                      // flush the frame to the TV
     VIDEO_WaitVSync();                  // Wait for the TV to finish updating
@@ -269,7 +275,9 @@ void  GRRLIB_Exit (void)
 
     // Free up memory allocated for frame buffers & FIFOs
     if (xfb[0]  != NULL) {  free(MEM_K1_TO_K0(xfb[0]));  xfb[0]  = NULL;  }
+#ifndef ONE_FB
     if (xfb[1]  != NULL) {  free(MEM_K1_TO_K0(xfb[1]));  xfb[1]  = NULL;  }
+#endif
 
 	VIDEO_SetBlack(TRUE);
 	VIDEO_Flush();
@@ -303,7 +311,9 @@ void  GRRLIB_ExitLight (void)
 
     // Free up memory allocated for frame buffers & FIFOs
     if (xfb[0]  != NULL) {  free(MEM_K1_TO_K0(xfb[0]));  xfb[0]  = NULL;  }
+#ifndef ONE_FB
     if (xfb[1]  != NULL) {  free(MEM_K1_TO_K0(xfb[1]));  xfb[1]  = NULL;  }
+#endif
 
     // Done with TTF
 #ifdef ENABLE_TTF
@@ -1102,8 +1112,10 @@ void  GRRLIB_Screen2Texture (int posx, int posy, GRRLIB_texImg *tex, bool clear)
         GX_CopyTex(tex->data, GX_FALSE);
         GX_PixModeSync();
         GRRLIB_FlushTex(tex);
+#ifndef ONE_FB
         if(clear)
             GX_CopyDisp(xfb[!fb], GX_TRUE);
+#endif
     }
 }
 
@@ -1517,10 +1529,22 @@ void  GRRLIB_DrawTileQuad (const guVector pos[4], GRRLIB_texImg *tex, const u32 
  * Call this function after drawing.
  */
 void  GRRLIB_Render (void) {
+	if (enable_output) // stfour: this prevent strange behaveur on first frame
+		{
+		VIDEO_SetBlack(false);  // Enable video output
+		enable_output = 0;
+		}
+		
     GX_DrawDone();          // Tell the GX engine we are done drawing
     GX_InvalidateTexAll();
 
-    fb ^= 1;  // Toggle framebuffer index
+#ifndef ONE_FB
+	fb ^= 1;  // Toggle framebuffer index
+#endif
+
+#ifdef ONE_FB
+	fb = 0;
+#endif
 
     GX_SetZMode      (GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate(GX_TRUE);
@@ -1529,12 +1553,6 @@ void  GRRLIB_Render (void) {
     VIDEO_SetNextFramebuffer(xfb[fb]);  // Select eXternal Frame Buffer
     VIDEO_Flush();                      // Flush video buffer to screen
 	
-	if (enable_output) // stfour: this prevent strange behaveur on first frame
-		{
-		VIDEO_SetBlack(false);  // Enable video output
-		enable_output = 0;
-		}
-		
     VIDEO_WaitVSync();                  // Wait for screen to update
     // Interlaced screens require two frames to update
     if (rmode->viTVMode &VI_NON_INTERLACE)  VIDEO_WaitVSync();

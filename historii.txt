@@ -1,3 +1,13 @@
+postLoader 4.b32
+
+* emu default icons can now be added to theme. If they are not present, standard one are used
+* corrected a little issue when applying background tiles using themes
+* fixed fonts for homebrew app menu (thx gl1mml1ng)
+* semplified render process. Now only one fb is used.
+* increased covercache items
+* under neek gc and wii games are no more mixed in wii games view (thx etheboss for your diconfig.bin)
+* added support for emulators icon (check holoDark2 theme on googlecode, thx gl1mml1ng)
+
 postLoader 4.b31
 
 * screensaver will play also emu covers
@@ -8,20 +18,20 @@ postLoader 4.b30
 
 * solved some issue with fonts
 * now fonts have correct proportions
-* smoother wiimote ir pointer movement during page tranitions
-* now focus over icons can be gained even when botombar and topbar are opening/closing
+* smoother wiimote ir pointer movement during page transitions
+* now focus over icons can be gained even when bottombar and topbar are opening/closing
 * moved and reduced in size the text for emulators icon.
 * new emu icons for roms without cover, with the space for the text
 * new small font for emu icon text and filter selection. Let me know if it is readable.
 * added in support for Parental Controls on hidden homebrew apps, games, channels, and emulators (thx daxtsu)
-* chenged the way usb is mounted in (s/n)neek(2o)
+* changed the way usb is mounted in (s/n)neek(2o)
 * corrected daxsu to daxtsu :P ;)
 
 postLoader 4.b29
 
 * fixed all issues with supported controller (and extensions). Repeat should work fine for all...
 * corrected a dump after the last song (thx Geren)
-* adotped plugin.conf by wever ;) (but renamed wiimednafen-mod3 to wiimednafen.dol)
+* adopted plugin.conf by wever ;) (but renamed wiimednafen-mod3 to wiimednafen.dol)
 * added emuicons for roms without cover (see plugin.conf). Covers height and width must be divisible by 4
 * corrected displaying of hidden games
 

@@ -308,8 +308,14 @@ static void Plugins (bool open)
 		emuicons = calloc (sizeof (GRRLIB_texImg), pluginsCnt);
 		for (i = 0; i < pluginsCnt; i++)
 			{
-			sprintf (path, "%s://ploader/plugins/%s", vars.defMount, Plugins_Get(i, PIN_ICON));
-			emuicons[i] = GRRLIB_LoadTextureFromFile (path);;
+			sprintf (path, "%s://ploader/theme/%s", vars.defMount, Plugins_Get(i, PIN_ICON));
+			emuicons[i] = GRRLIB_LoadTextureFromFile (path);
+
+			if (!emuicons[i])
+				{
+				sprintf (path, "%s://ploader/plugins/%s", vars.defMount, Plugins_Get(i, PIN_ICON));
+				emuicons[i] = GRRLIB_LoadTextureFromFile (path);
+				}
 			}
 		
 		}

@@ -155,6 +155,10 @@ char* neek_GetCDIGames(void)
 			{
 			p = (char*)&DICfg->GameInfo[i];
 			
+			if (p[CDI_GAME_NAME_OFF-1] == '=') continue;
+			
+			//Debug ("> %s:%s", &p[CDI_GAME_NAME_OFF], &p[CDI_GAME_ID_OFF]);
+
 			sprintf (buff, "%s%c%s%c", &p[CDI_GAME_NAME_OFF], SEP, &p[CDI_GAME_ID_OFF], SEP);
 			strcat (ob, buff);
 			}

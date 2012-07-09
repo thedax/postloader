@@ -111,7 +111,7 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 			}
 		else
 			{
-			grlib_printf (b->x1 + (b->x2 - b->x1) / 2, b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, GRLIB_ALIGNCENTER, 0, text						);
+			grlib_printf (b->x1 + (b->x2 - b->x1) / 2, b->y1 + (b->y2 - b->y1) / 2 - (h / 2) + grlibSettings.theme.buttonsTextOffsetY, GRLIB_ALIGNCENTER, 0, text);
 			}
 		}
 	else

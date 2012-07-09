@@ -757,7 +757,7 @@ static void ShowAppMenu (int ai)
 		lines = 0;
 		for (i = 0; i < strlen (apps[ai].longdesc); i++)
 			{
-			if (k > 50) nl = 1;
+			if (k > 80) nl = 1;
 			
 			if (apps[ai].longdesc[i] == '\n')
 				{
@@ -778,7 +778,7 @@ static void ShowAppMenu (int ai)
 				title[j+1] = 0;			
 				}
 				
-			if (lines > 14)
+			if (lines > 12)
 				{
 				strcat (title, "... CUT ...");
 				j = strlen(title);
@@ -808,7 +808,10 @@ static void ShowAppMenu (int ai)
 	strcat (buff, "Close##-1");
 	
 	spotSelected = -1;
+	
+	Video_SetFontMenu(TTFSMALL);
 	int item = grlib_menu (title, buff);
+	Video_SetFontMenu(TTFNORM);
 	
 	if (item == 0) AppsSetDefault (ai);
 	

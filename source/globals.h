@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b31"
+#define VER "4.b32"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -26,11 +26,11 @@
 
 #define TTFVERYSMALL 17
 #define TTFVERYSMALL_fontOffsetY -2
-#define TTFVERYSMALL_fontSizeOffsetY -2
+#define TTFVERYSMALL_fontSizeOffsetY -3
 
 #define TTFSMALL 18
-#define TTFSMALL_fontOffsetY -2
-#define TTFSMALL_fontSizeOffsetY -2
+#define TTFSMALL_fontOffsetY -6
+#define TTFSMALL_fontSizeOffsetY -6
 
 #define TTFNORM 22
 #define TTFNORM_fontOffsetY -6

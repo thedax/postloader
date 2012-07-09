@@ -9,7 +9,7 @@
 void Debug (const char *text, ...);
 
 GRRLIB_texImg *popPushTex = NULL;
-GRRLIB_texImg *redrawTex = NULL;
+//GRRLIB_texImg *redrawTex = NULL;
 
 s_grlibSettings grlibSettings;
 
@@ -83,7 +83,7 @@ void grlib_Init (void)
 	SYS_SetPowerCallback (power_cb);
     SYS_SetResetCallback (reset_cb);
 	
-	redrawTex = GRRLIB_CreateEmptyTexture (rmode->fbWidth, rmode->efbHeight);
+	//redrawTex = GRRLIB_CreateEmptyTexture (rmode->fbWidth, rmode->efbHeight);
 	popPushTex = GRRLIB_CreateEmptyTexture (rmode->fbWidth, rmode->efbHeight);
 	
 	grlibSettings.RedrawCallback = NULL;
@@ -96,7 +96,7 @@ void grlib_Init (void)
 
 void grlib_Exit (void)
 	{
-	GRRLIB_FreeTexture (redrawTex);
+	//GRRLIB_FreeTexture (redrawTex);
 	GRRLIB_FreeTexture (popPushTex);
 	if (!grlibSettings.doNotCall_GRRLIB_Exit) 
 		GRRLIB_Exit ();
@@ -144,7 +144,7 @@ GRRLIB_texImg * grlib_CreateTexFromTex (GRRLIB_texImg *source)
 	GRRLIB_texImg * tex;
 	GRRLIB_SetAntiAliasing (FALSE);
 	if (source == NULL) 
-		source = redrawTex; //return NULL;
+		return NULL;
 		
 	tex = GRRLIB_CreateEmptyTexture (source->w, source->h);
 	if (tex == NULL) return NULL;
@@ -175,8 +175,8 @@ void grlib_Render (void)
 	// but copyng display to tex and redrawing it solves without big effort
 	// and loss of performance.
 	// In continuos update mode, doesn't heppen, so GRRLIB_Render can be called.
-	GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
-	grlib_DrawScreenTex (redrawTex);
+	//GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
+	//grlib_DrawScreenTex (redrawTex);
 	GRRLIB_Render ();
 	} 
 

@@ -69,11 +69,12 @@ void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg 
 		{
 		// Applichiamo la texture come sfondo
 
-		int tbw, tbh;
-		int bx, by, bw, bh;
+		f32 tbw, tbh;
+		f32 bx, by, bw, bh;
 		
 		if (flag == DSTF_BKFILLBORDER)
 			{
+			//gprintf ("#1");
 			bx = gb.x1+1;
 			by = gb.y1+th;
 			bw = gb.x2 - gb.x1 - 2;
@@ -81,10 +82,11 @@ void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg 
 			}
 		else
 			{
+			//Ugprintf ("#2");
 			bx = gb.x1+tw;
 			by = gb.y1+th;
-			bw = gb.x2-gb.x1 - (tw*2.0)+1;
-			bh = gb.y2-gb.y1 - (th*2.0)+1;
+			bw = gb.x2-gb.x1 - (tw*2.0);
+			bh = gb.y2-gb.y1 - (th*2.0);
 			}
 		
 		if (texbk->w > bw) 
