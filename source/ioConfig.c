@@ -68,7 +68,11 @@ bool ConfigRead (void)
 	gprintf ("ConfigRead: %s\n", path);
 
 	f = fopen (path, "rb");
-	if (!f) return false;
+	if (!f) 
+		{
+		gprintf ("unable to open configuration file\n", path);
+		return false;
+		}
 	
 	// read configuration data
 	fread (ver, sizeof(ver), 1, f);

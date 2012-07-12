@@ -300,6 +300,7 @@ static void DownloadCovers (void)
 		
 	WiiLoad_Resume ();
 	
+	CoverCache_Flush ();	
 	GameBrowse (0);
 	}
 
@@ -515,7 +516,9 @@ static int GameBrowse (int forcescan)
 	char *p;
 	
 	Video_WaitPanel (TEX_HGL, "Please wait...");
+	
 	CoverCache_Pause (true);
+	
 	if (config.gameMode == GM_WII)
 		{
 		if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
@@ -548,13 +551,13 @@ static int GameBrowse (int forcescan)
 		if (*p != '\0' && strlen(p))
 			{
 			// Add name
-//			Debug ("name = %s (%d)", p, strlen(p));
+			Debug ("name = %s (%d)", p, strlen(p));
 			games[i].name = malloc (strlen(p)+1);
 			strcpy (games[i].name, p);
 			p += (strlen(p) + 1);
 			
 			// Add id
-//			Debug ("id = %s (%d)", p, strlen(p));
+			Debug ("id = %s (%d)", p, strlen(p));
 			strncpy (games[i].asciiId, p, 6);
 			if (config.gameMode == GM_DML)
 				games[i].disc = p[6];
@@ -585,7 +588,7 @@ static int GameBrowse (int forcescan)
 				p += (strlen(p) + 1);
 				}
 			
-			//Debug (" > %s (%s:%d:%d)", games[i].name, games[i].asciiId, games[i].disc, games[i].slot);
+			Debug (" > %s (%s:%d:%d)", games[i].name, games[i].asciiId, games[i].disc, games[i].slot);
 
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 			
@@ -977,9 +980,6 @@ static void ShowAppMenu (int ai)
 				}
 			}
 		*/
-
-		strcat (buff, "|");
-		strcat (buff, "Close##-1");
 		
 		item = grlib_menu (games[ai].name, buff);
 
@@ -1328,7 +1328,9 @@ static void RedrawIcons (int xoff, int yoff)
 	int ai;	// Application index (corrected by the offset)
 	char path[128];
 
-	Video_SetFont(TTFNORM);
+	//GRRLIB_PrintfTTF_Debug (1);
+
+	Video_SetFont(TTFSMALL);
 	
 	// Prepare black box
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -1396,6 +1398,8 @@ static void RedrawIcons (int xoff, int yoff)
 		grlib_DrawCenteredWindow ("No games found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
+	
+	//GRRLIB_PrintfTTF_Debug (0);
 	}
 
 static void Redraw (void)
@@ -1468,8 +1472,6 @@ static int ChangePage (int next)
 			Overlay ();
 			grlib_DrawIRCursor ();
 			grlib_Render();
-			
-			usleep (1);
 			}
 		while (x > -640);
 		}
@@ -1490,8 +1492,6 @@ static int ChangePage (int next)
 			Overlay ();
 			grlib_DrawIRCursor ();
 			grlib_Render();
-			
-			usleep (1);
 			}
 		while (x < 640);
 		}
@@ -1863,7 +1863,6 @@ int GameBrowser (void)
 		if (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)
 			{
 			browserRet = INTERACTIVE_RET_SHUTDOWN;
-			break;
 			}
 
 		if (wiiload.status == WIILOAD_HBZREADY)
@@ -1874,11 +1873,10 @@ int GameBrowser (void)
 			
 		if (wiiload.status == WIILOAD_HBREADY)
 			{
-			if (WiiloadPostloaderDolMenu())
+			if (WiiloadCheck())
 				browserRet = INTERACTIVE_RET_WIILOAD;
 			else
 				redraw = 1;
-			break;
 			}
 			
 		if (vars.themeReloaded) // Restart the browser
@@ -1886,13 +1884,12 @@ int GameBrowser (void)
 			vars.themeReloaded = 0;
 			browserRet = INTERACTIVE_RET_TOGAMES;
 			}
-		
-		usleep (5000);
 		}
 		
 	
 	// Lets close the topbar, if needed
 	CLOSETOPBAR();
+	CLOSEBOTTOMBAR();
 
 	// save current page
 	if (gameModeLast == GM_WII)

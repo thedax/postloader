@@ -1,4 +1,5 @@
 #define WIILOAD_ZIPFILE "wiiload.zip"
+#define WIILOAD_TMPFILE "wiiload.tmp"
 
 enum 
 	{
@@ -18,10 +19,8 @@ typedef struct
 	int status;
 	int gecko;
 	
-	char filename[32];	// Filename of the dol/elf sended
-	
-	u8 *buff;
-	int buffsize;
+	char filename[64];	// Filename sended by wiiload protocolo
+	char fullpath[256];	// full path to temp file on device
 	
 	char *args;
 	int argl;

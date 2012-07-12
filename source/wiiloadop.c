@@ -100,12 +100,10 @@ int ZipUnpack (char *path, char *target, char *dols, int *errcnt)
 	Debug("ZipUnpack target: %s", target);
 	
 	uf = unzOpen (path);
+	Debug("ZipUnpack opening: 0x%X", (int)uf);
+
 	if (!uf)
 		return false;	// unable to open the zip
-		
-	fsop_FileExist (path);
-	
-	Debug("ZipUnpack opening: 0x%X", (int)uf);
 	
 	// Let's create folder struct
 	count = 0;
@@ -261,23 +259,8 @@ void SelectDol(char *dol, char *target)
 	if (ret <= 0) return;
 	
 	ret -= 100;
-	char path[300];
-	sprintf (path, "%s/%s", target, fn[ret]);
-	
-	size_t s;
-	wiiload.buff = fsop_ReadFile (path, 0, &s);
-	
-	Debug ("SelectDol '%s' 0x%X", path, wiiload.buff);
-	if (wiiload.buff)
-		{
-		wiiload.buffsize = s;
-		wiiload.args = malloc (strlen(path)+1);
-		strcpy (wiiload.args, path);
-		wiiload.args[strlen(path)] = 0;
-		wiiload.argl = strlen(path);
-		wiiload.status = WIILOAD_HBREADY;
-		}
-
+	sprintf (wiiload.fullpath, "%s/%s", target, fn[ret]);
+	wiiload.status = WIILOAD_HBREADY;
 	}
 	
 void WiiloadZipMenu (void)
@@ -400,61 +383,98 @@ void WiiloadZipMenu (void)
 		}
 	}
 
-// If the host send postloader.dol, this menu is recalled. It allow to update/install
-bool WiiloadPostloaderDolMenu (void)
+// This function will check for file type... sending postloader.dol or neekbooter.dol or a wad will change behaveur
+bool WiiloadCheck (void)
 	{
-	if (stricmp (wiiload.filename, "postloader.dol") == 0 && wiiload.buffsize)
+	char path[256];
+
+	if (stricmp (wiiload.filename, "postloader.dol") == 0)
 		{
 		int ret = grlib_menu ("wiiload: postLoader.dol received", "Update postLoader installation##1|Boot it without updating##2|Cancel##-1");
 		
 		if (ret <= 0)
 			{
 			wiiload.status = WIILOAD_IDLE;
-			return FALSE;
+			return false;
 			}
 			
 		if (ret == 1)
 			{
-			char path[64];
-			
 			vars.saveExtendedConf = 1;
 			
-			if (devices_Get(DEV_SD)) 
+			int i;
+			for (i = 0; i < DEV_MAX; i++)
 				{
-				strcpy (path, "sd://apps/postloader/boot.dol");
-				if (fsop_FileExist (path))
-					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
-				}
-
-			if (devices_Get(DEV_USB)) 
-				{
-				strcpy (path, "usb://apps/postloader/boot.dol");
-				if (fsop_FileExist (path))
-					fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
+				if (devices_Get(i)) 
+					{
+					sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(i));
+					Video_WaitPanel (TEX_HGL, "Please wait...|Updating '%s'", path);
+					
+					if (fsop_FileExist (path))
+						{
+						fsop_CopyFile (wiiload.fullpath, path, NULL);
+						}
+					}
 				}
 			}
 		}
 
-	if (stricmp (wiiload.filename, "neekbooter.dol") == 0 && wiiload.buffsize)
+	if (stricmp (wiiload.filename, "neekbooter.dol") == 0)
 		{
 		grlib_menu ("wiiload: neekbooter.dol updated", "  OK  ");
 
-		char path[64];
-		
-		if (devices_Get(DEV_SD)) 
+		int i;
+		for (i = 0; i < DEV_MAX; i++)
 			{
-			strcpy (path, "sd://neekbooter.dol");
-			if (fsop_FileExist (path))
-				fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
-			}
-
-		if (devices_Get(DEV_USB)) 
-			{
-			strcpy (path, "usb://neekbooter.dol");
-			if (fsop_FileExist (path))
-				fsop_StoreBuffer (path, wiiload.buff, wiiload.buffsize, NULL);
+			if (devices_Get(i)) 
+				{
+				sprintf (path, "%s://neekbooter.dol", devices_Get(i));
+				
+				if (fsop_FileExist (path))
+					{
+					fsop_CopyFile (wiiload.fullpath, path, NULL);
+					}
+				}
 			}
 		}
 	
-	return TRUE;
+	if (ms_strstr (wiiload.filename, ".wad"))
+		{
+		int i;
+		
+		for (i = 0; i < DEV_MAX; i++)
+			{
+			if (devices_Get(i)) 
+				{
+				Video_WaitPanel (TEX_HGL, "Please wait...|Copying file...");
+				
+				sprintf (path, "%s://wad", devices_Get(i));
+				fsop_MakeFolder (path);
+				
+				sprintf (path, "%s://wad/%s", devices_Get(i), wiiload.filename);
+				if (fsop_CopyFile (wiiload.fullpath, path, 0))
+					{
+					char title[256];
+					
+					sprintf (title, "wiiload: your wad has been copied to\n'%s'", path);
+					grlib_menu (title, "  OK  ");
+					break;
+					}
+				else
+					{
+					char title[256];
+					
+					sprintf (title, "wiiload: there was an error copying\n'%s'\nPlese check free space on device", path);
+					grlib_menu (title, "  OK  ");
+					}
+				}
+			}
+		
+		wiiload.status = WIILOAD_IDLE;
+		
+		Debug ("returning false...");
+		return false; // We doesn't want run anything
+		}
+		
+	return true;
 	}

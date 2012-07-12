@@ -182,7 +182,7 @@ int GoToPage (int page, int pageMax)
 #define BTNOFFSET 15
 #define TOPBARH 160
 
-int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn)
+int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn, int *closed)
 	{
 	s_grlibobj go;
 	static int visible = 0;
@@ -201,7 +201,12 @@ int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn)
 	if (y <= -TOPBARH)
 		{
 		visible = 0;
+		if (closed) *closed = 1;
 		y = -TOPBARH;
+		}
+	else
+		{
+		if (closed) *closed = 0;
 		}
 	
 	go.y1 = y;
@@ -312,7 +317,7 @@ int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn)
 	}
 	
 static int BOTBARITEMS = 5;
-int DrawBottomBar (int *visibleflag, u32 *btn)
+int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 	{
 	s_grlibobj go;
 	static int visible = 0;
@@ -331,9 +336,14 @@ int DrawBottomBar (int *visibleflag, u32 *btn)
 	if (y >= 480)
 		{
 		visible = 0;
+		if (closed) *closed = 1;
 		y = 480;
 		}
-	
+	else
+		{
+		if (closed) *closed = 0;
+		}
+		
 	go.y1 = y;
 	go.y2 = y + TOPBARH;
 	

@@ -310,7 +310,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	goWindow.x2 = halfx + (winw / 2);
 	
 	goWindow.y1 = halfy - (winh / 2);
-	goWindow.y2 = halfy + (winh / 2);
+	goWindow.y2 = halfy + (winh / 2) + 10;
 	
 	goWindow.bcolor = RGBA (32, 32, 32, 192);
 	goWindow.color = RGBA (192, 192, 192, 255);

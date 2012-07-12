@@ -528,9 +528,13 @@ bool fsop_KillFolderTree (char *source, fsopCallback vc)
 	
 	pdir=opendir(source);
 	
+	//Debug ("fsop_KillFolderTree: '%s' 0x%08X", source, pdir);
+	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
 		// Skip it
+		// Debug ("fsop_KillFolderTree: checking '%s'", pent->d_name);
+
 		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
 			continue;
 			

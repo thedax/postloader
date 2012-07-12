@@ -4,7 +4,6 @@ browser.h contain common code as macro
 */
 
 #ifndef _BROWSERCOMMON_
-
 #define _BROWSERCOMMON_
 
 #define REDRAW()\
@@ -13,8 +12,8 @@ browser.h contain common code as macro
 	FindSpot ();\
 	Overlay ();\
 	int ds1,ds2;\
-	DrawTopBar (&ds1, &browserRet, &btn);\
-	int bbcmd = DrawBottomBar (&ds2, &btn);\
+	DrawTopBar (&ds1, &browserRet, &btn, NULL);\
+	int bbcmd = DrawBottomBar (&ds2, &btn, NULL);\
 	if (ds1 || ds2) disableSpots = 1; else disableSpots = 0;\
 	grlib_DrawIRCursor ();\
 	grlib_Render();\
@@ -28,7 +27,7 @@ browser.h contain common code as macro
 	if (bbcmd == 6)	browserRet = INTERACTIVE_RET_WM;\
 	}
 
-#define CLOSETOPBAR()\
+#define CLOSETOPBAR_OLD()\
 	{\
 	do\
 		{\
@@ -40,5 +39,37 @@ browser.h contain common code as macro
         grlib_Render();\
 		}\
 	while (disableSpots);\
+	}
+
+#define CLOSETOPBAR()\
+	{\
+	int closed;\
+	do\
+		{\
+		grlib_irPos.x = 320;\
+		grlib_irPos.y = 240;\
+		\
+		grlib_PopScreen ();\
+		Overlay ();\
+		DrawTopBar (&disableSpots, NULL, NULL, &closed);\
+        grlib_Render();\
+		}\
+	while (!closed);\
+	}
+
+#define CLOSEBOTTOMBAR()\
+	{\
+	int closed;\
+	do\
+		{\
+		grlib_irPos.x = 320;\
+		grlib_irPos.y = 240;\
+		\
+		grlib_PopScreen ();\
+		Overlay ();\
+		DrawBottomBar (&disableSpots, NULL, &closed);\
+        grlib_Render();\
+		}\
+	while (!closed);\
 	}
 #endif

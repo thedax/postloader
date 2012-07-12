@@ -188,7 +188,7 @@ void grlib_PopScreen (void);
 GRRLIB_texImg * grlib_CreateTexFromTex (GRRLIB_texImg *source);
 void grlib_DrawScreenTex (GRRLIB_texImg * tex);
 void grlib_Redraw (void);
-void grlib_Render (void);
+void inline grlib_Render (void);
 void grlib_SetFontBMF2 (GRRLIB_bytemapFont *bmf);
 void grlib_SetFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY);
 void grlib_SetMenuFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY); // This fill menu struct

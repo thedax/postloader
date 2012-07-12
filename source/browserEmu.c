@@ -472,6 +472,9 @@ static void GetCovers (void)
 			GetCovers_Scan (pngpath);
 			}
 		}
+	
+	CoverCache_Flush ();
+	redraw = 1;
 	}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1025,11 +1028,13 @@ static int ChangePage (int next)
 	grlib_PushScreen ();
 	
 	int x = 0, lp;
+	//u32 ms1, ms2;
 	
 	if (!next)
 		{
 		do
 			{
+			//ms1 = ticks_to_millisecs(gettime());
 			x-=20;
 
 			grlib_PopScreen ();
@@ -1044,7 +1049,13 @@ static int ChangePage (int next)
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
-			usleep (1);
+			/*
+			do
+				{
+				ms2 = ticks_to_millisecs(gettime());
+				}
+			while ((ms2-ms1) < 20);
+			*/
 			}
 		while (x > -640);
 		}
@@ -1052,6 +1063,8 @@ static int ChangePage (int next)
 		{
 		do
 			{
+			//ms1 = ticks_to_millisecs(gettime());
+
 			x+=20;
 
 			grlib_PopScreen ();
@@ -1066,7 +1079,13 @@ static int ChangePage (int next)
 			grlib_DrawIRCursor ();
 			grlib_Render();
 			
-			usleep (1);
+			/*
+			do
+				{
+				ms2 = ticks_to_millisecs(gettime());
+				}
+			while ((ms2-ms1) < 20);
+			*/
 			}
 		while (x < 640);
 		}
@@ -1353,7 +1372,6 @@ int EmuBrowser (void)
 		if (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)
 			{
 			browserRet = INTERACTIVE_RET_SHUTDOWN;
-			break;
 			}
 
 		if (wiiload.status == WIILOAD_HBZREADY)
@@ -1364,11 +1382,10 @@ int EmuBrowser (void)
 			
 		if (wiiload.status == WIILOAD_HBREADY)
 			{
-			if (WiiloadPostloaderDolMenu())
+			if (WiiloadCheck())
 				browserRet = INTERACTIVE_RET_WIILOAD;
 			else
 				redraw = 1;
-			break;
 			}
 			
 		if (vars.themeReloaded) // Restart the browser
@@ -1376,12 +1393,11 @@ int EmuBrowser (void)
 			vars.themeReloaded = 0;
 			browserRet = INTERACTIVE_RET_TOGAMES;
 			}
-		
-		usleep (5000);
 		}
 		
 	// Lets close the topbar, if needed
 	CLOSETOPBAR();
+	CLOSEBOTTOMBAR();
 	
 	config.gamePageEmu = page;
 	

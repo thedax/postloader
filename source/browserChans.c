@@ -233,6 +233,8 @@ static void DownloadCovers (void)
 	
 	WiiLoad_Resume ();
 	
+	CoverCache_Flush ();
+	
 	ChnBrowse ();
 	FeedCoverCache ();
 	}
@@ -1434,8 +1436,6 @@ static int ChangePage (int next)
 			Overlay ();
 			grlib_DrawIRCursor ();
 			grlib_Render();
-			
-			usleep (1);
 			}
 		while (x > -640);
 		}
@@ -1456,8 +1456,6 @@ static int ChangePage (int next)
 			Overlay ();
 			grlib_DrawIRCursor ();
 			grlib_Render();
-			
-			usleep (1);
 			}
 		while (x < 640);
 		}
@@ -1767,7 +1765,6 @@ int ChnBrowser (void)
 		if (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)
 			{
 			browserRet = INTERACTIVE_RET_SHUTDOWN;
-			break;
 			}
 
 		if (wiiload.status == WIILOAD_HBZREADY)
@@ -1778,11 +1775,10 @@ int ChnBrowser (void)
 			
 		if (wiiload.status == WIILOAD_HBREADY)
 			{
-			if (WiiloadPostloaderDolMenu())
+			if (WiiloadCheck())
 				browserRet = INTERACTIVE_RET_WIILOAD;
 			else
 				redraw = 1;
-			break;
 			}
 		
 		if (vars.themeReloaded) // Restart the browser
@@ -1790,12 +1786,11 @@ int ChnBrowser (void)
 			vars.themeReloaded = 0;
 			browserRet = INTERACTIVE_RET_TOCHANNELS;
 			}
-
-		usleep (5000);
 		}
 		
 	// Lets close the topbar, if needed
 	CLOSETOPBAR();
+	CLOSEBOTTOMBAR();
 
 	// save current page
 	config.chnPage = page;

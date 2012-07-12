@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b32"
+#define VER "4.b33"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -499,7 +499,7 @@ void bsort(_PTR __base, size_t __nmemb, size_t __size, int(*_compar)(const _PTR,
 u32 load_dol(const void *dolstart, struct __argv *argv);
 void DolBoot (void);
 int DolBootPrepare (s_run *run);
-int DolBootPrepareWiiload (void);
+int BootWiiload (void);
 bool DirectDolBoot (char *fn, char *arguments, int addpl);
 
 // io.c
@@ -542,7 +542,7 @@ int EmuBrowser (void);
 // wiiloadzip
 int ZipUnpack (char *path, char *target, char *dols, int *errcnt);
 void WiiloadZipMenu (void);
-bool WiiloadPostloaderDolMenu (void);
+bool WiiloadCheck (void);
 
 // options.c
 

@@ -1,12 +1,25 @@
+postLoader 4.b33
+
+* wiiload (network) has been rearranged to allow file of (almost) any dimension to be transferred. Now sd or usb dev are used to bufferize the transfer. With a slow sd based setup (/ploader folder on sd), some dalays are possibile.
+* wiiload accepts wads files via wiiload protocol. If a wad is send to postloader, postloader will move it to sd://wad (or usb://wad if sd is not available)
+* wiiload is now compatible with TransmitMii 1.3.
+* To send large wads, person66's sharpii is required (in dol mode, http://code.google.com/p/sharpii/downloads/list)
+* during wiiload self update a wait panel is now shown
+* covercache, added a cache for not existing items. This should allow much less access to devices.
+* covercache has variable thread priority
+* fixed a memory leak in ttf font managment
+* better checking of ttf wide chars coversion
+* back to double buffered fb as there where artefacts during page change
+* smoother page change effect
+
 postLoader 4.b32
 
-* emu default icons can now be added to theme. If they are not present, standard one are used
+* emu default icons can now be added to theme. If they are not present, standard one are used(check holoDark2 theme on googlecode, thx gl1mml1ng)
 * corrected a little issue when applying background tiles using themes
 * fixed fonts for homebrew app menu (thx gl1mml1ng)
 * semplified render process. Now only one fb is used.
 * increased covercache items
 * under neek gc and wii games are no more mixed in wii games view (thx etheboss for your diconfig.bin)
-* added support for emulators icon (check holoDark2 theme on googlecode, thx gl1mml1ng)
 
 postLoader 4.b31
 

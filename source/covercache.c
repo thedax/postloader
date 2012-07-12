@@ -8,14 +8,22 @@
 #include "mem2.h"
 #include "globals.h"
 
+#define PRIO_IDLE 8
+#define PRIO_HI 32
+
 static mutex_t mutex;
 
-#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
+#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
+//#define SET(a, b) a = b;
 #define MAXITEMS 128
 
 #define STACKSIZE	8192
 static u8 * threadStack = NULL;
 static lwp_t hthread = LWP_THREAD_NULL;
+
+#define NOTFOUNDBUFFSIZE 8192
+static char notFoundBuff[NOTFOUNDBUFFSIZE];
+static volatile int notFoundBuffLen = 0;
 
 typedef struct 
 	{
@@ -34,12 +42,54 @@ static int age = 0;
 #define PAUSE_REQUEST 1
 #define PAUSE_YES 2
 
-static volatile int threadPause = PAUSE_NO;
+static int threadPause = PAUSE_NO;
 static volatile int threadStop = 0;
 static volatile int threadRunning = 0;
 static volatile int cId = 0;
 static volatile int update = 0;
 
+#define UPDATE_TP() DCFlushRange(threadPause, sizeof(int))
+
+static void notFound_Init (void)
+	{
+	*notFoundBuff = '\0';
+	notFoundBuffLen = 0;
+	}
+	
+static void notFound_Add (char *path)
+	{
+	char *p = strrchr (path, '/');
+	if (!p) return;
+	
+	p++;
+	
+	int l = strlen (p);
+	
+	if (l + notFoundBuffLen >= NOTFOUNDBUFFSIZE)
+		{
+		notFound_Init (); // we should do something more clever :P
+		}
+		
+	strcat (notFoundBuff, p);
+	strcat (notFoundBuff, ";");
+	
+	DCFlushRange(&notFoundBuff[notFoundBuffLen], l+1);
+	
+	notFoundBuffLen += (l+1);
+	}
+
+static bool notFound_Find (char *path)
+	{
+	char *p = strrchr (path, '/');
+	if (!p) return false;
+	
+	p++;
+	
+	if (strstr (notFoundBuff, p)) // found
+		return true;
+		
+	return false;
+	}
 
 static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex)
 	{
@@ -90,36 +140,53 @@ static void *thread (void *arg)
 	
 	int doPrio = 0;
 	int i;
-
+	int read;
+	int currentPrio = PRIO_IDLE;
+	
 	while (true)
 		{
+		read = 0;
+		
 		for (i = 0; i < MAXITEMS; i++)
 			{
 			if (*cc[i].id != '\0' && !cc[i].cover && ((doPrio == 1 && cc[i].prio == 1) || doPrio == 0))
 				{
-				//gprintf ("*");
+				read = 1;
+
+				if (currentPrio == PRIO_IDLE) 
+					{
+					currentPrio = PRIO_HI;
+					LWP_SetThreadPriority (hthread, currentPrio);
+					}
+			
 				cId = i;
 				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
 				
 				cc[i].prio = 0;
  				cc[i].cover = MoveTex2Mem2 (tex);
-				if (!cc[i].cover) *cc[i].id = '\0'; // do not try again
+				
+				if (!cc[i].cover) 
+					{
+					notFound_Add (cc[i].id); // add to blacklist
+					*cc[i].id = '\0'; // do not try again
+					}
 				DCFlushRange(&cc[i], sizeof(s_cc));
 				update ++;
 
 				cId = -1;
-				//gprintf ("#");
 				}
 				
+			//gprintf ("%d ",*threadPause);
 			if (threadPause == PAUSE_REQUEST)
 				{
-				threadPause = PAUSE_YES;
+				SET (threadPause, PAUSE_YES);
 				
 				int tout = 10000;
 				while (threadPause == PAUSE_YES && --tout > 0)
-					{
-					usleep (100);
-					}
+						{
+						usleep (100);
+						LWP_YieldThread();
+						}
 				if (tout < 0) Debug ("tout on threadPause");
 				
 				doPrio = 1;
@@ -131,13 +198,17 @@ static void *thread (void *arg)
 				threadRunning = 0;
 				return NULL;
 				}
-
-			usleep (500);
 			}
+			
+		if (read == 0 && currentPrio == PRIO_HI) 
+			{
+			currentPrio = PRIO_IDLE;
+			LWP_SetThreadPriority (hthread, currentPrio);
+			}
+
+		usleep (100);
 		
 		doPrio = 0;
-
-		//gprintf (".");
 		}
 	
 	return NULL;
@@ -147,16 +218,15 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	{
 	if (!threadRunning) return;
 	
-	//Debug ("CoverCache_Pause %d", yes);
-	
 	if (yes)
 		{
-		threadPause = PAUSE_REQUEST;
-		
+		SET (threadPause, PAUSE_REQUEST);
+
 		int tout = 10000;
 		while (threadPause != PAUSE_YES && --tout > 0)
 			{
 			usleep(100);
+			LWP_YieldThread();
 			}
 		if (tout < 0) Debug ("tout on CoverCache_Pause request");
 		}
@@ -164,20 +234,19 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 		{
 		threadPause = PAUSE_NO;
 		}
-	//gprintf ("[OUT]");
 	}
 	
 void CoverCache_Start (void)
 	{
 	Debug ("CoverCache_Start");
-
+	
 	cc = calloc (1, MAXITEMS * sizeof(s_cc));
 
 	mutex = LWP_MUTEX_NULL;
     LWP_MutexInit (&mutex, false);
 
 	threadStack = (u8 *) memalign(32, STACKSIZE);
-	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, 32);
+	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, PRIO_IDLE);
 	LWP_ResumeThread(hthread);
 	}
 
@@ -189,15 +258,15 @@ void CoverCache_Flush (void)	// empty the cache
 	
 	CoverCache_Pause (true);
 	
+	notFound_Init ();
+	
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (cc[i].cover) 
 			{
-			//Debug ("CoverCache_Flush: 0x%08X %s", cc[i].cover, cc[i].id);
 			FreeMem2Tex (cc[i].cover);
-			//Debug ("CoverCache_Flush: (done)");
 			cc[i].cover = NULL;
 			
 			count ++;
@@ -208,6 +277,8 @@ void CoverCache_Flush (void)	// empty the cache
 		}
 	age = 0;
 	
+	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
+
 	CoverCache_Pause (false);
 
 	Debug ("CoverCache_Flush: %d covers flushed", count);
@@ -232,23 +303,14 @@ void CoverCache_Stop (void)
 			threadStop = 1;
 			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
 			}
-		
-		//Debug ("CoverCache_Stop #1");
-		LWP_JoinThread (hthread, NULL);
-
-		//Debug ("CoverCache_Stop #2");
-		CoverCache_Flush ();
-
-		//Debug ("CoverCache_Stop #3");
-		free (threadStack);
-
-		//Debug ("CoverCache_Stop #5");
-		free (cc);
-
-		//Debug ("CoverCache_Stop #4");
-        LWP_MutexDestroy (mutex);
-
-		Debug ("CoverCache_Stop completed");
+		else
+			{
+			LWP_JoinThread (hthread, NULL);
+			CoverCache_Flush ();
+			free (threadStack);
+			free (cc);
+			LWP_MutexDestroy (mutex);
+			}
 		}
 	else
 		Debug ("CoverCache_Stop: thread was already stopped");
@@ -298,15 +360,16 @@ bool CoverCache_IsUpdated (void) // this will return the same text
 	return false;
 	}
 
-void CoverCache_Add (char *id, bool priority) // gameid without .png extension, if pt is true, thread will be paused
+void CoverCache_Add (char *id, bool priority)
 	{
 	int i;
 	bool found = false;
 	
+	if (notFound_Find (id)) return;	// blacklisted
+	
 	if (threadPause != PAUSE_YES)
 		{
 		CoverCache_Pause (true);
-		//gprintf ("[CoverCache_Add:NOTPAUSED]");
 		return;
 		}
 

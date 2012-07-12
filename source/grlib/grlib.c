@@ -9,7 +9,7 @@
 void Debug (const char *text, ...);
 
 GRRLIB_texImg *popPushTex = NULL;
-//GRRLIB_texImg *redrawTex = NULL;
+GRRLIB_texImg *redrawTex = NULL;
 
 s_grlibSettings grlibSettings;
 
@@ -83,7 +83,7 @@ void grlib_Init (void)
 	SYS_SetPowerCallback (power_cb);
     SYS_SetResetCallback (reset_cb);
 	
-	//redrawTex = GRRLIB_CreateEmptyTexture (rmode->fbWidth, rmode->efbHeight);
+	redrawTex = GRRLIB_CreateEmptyTexture (rmode->fbWidth, rmode->efbHeight);
 	popPushTex = GRRLIB_CreateEmptyTexture (rmode->fbWidth, rmode->efbHeight);
 	
 	grlibSettings.RedrawCallback = NULL;
@@ -96,7 +96,7 @@ void grlib_Init (void)
 
 void grlib_Exit (void)
 	{
-	//GRRLIB_FreeTexture (redrawTex);
+	GRRLIB_FreeTexture (redrawTex);
 	GRRLIB_FreeTexture (popPushTex);
 	if (!grlibSettings.doNotCall_GRRLIB_Exit) 
 		GRRLIB_Exit ();
@@ -128,7 +128,6 @@ int grlib_GetScreenH (void)
 void grlib_PushScreen (void)
 	{
 	GRRLIB_Screen2Texture (0, 0, popPushTex, 0);
-	//grlib_PopScreen ();
 	}
 
 void grlib_PopScreen (void)
@@ -169,14 +168,14 @@ void grlib_Redraw (void)
 	if (grlibSettings.RedrawCallback != NULL) grlibSettings.RedrawCallback();
 	}
 
-void grlib_Render (void) 
+void inline grlib_Render (void) 
 	{
 	// Sometimes same fb are skipped, I do not know why, 
 	// but copyng display to tex and redrawing it solves without big effort
 	// and loss of performance.
 	// In continuos update mode, doesn't heppen, so GRRLIB_Render can be called.
-	//GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
-	//grlib_DrawScreenTex (redrawTex);
+	GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
+	grlib_DrawScreenTex (redrawTex);
 	GRRLIB_Render ();
 	} 
 

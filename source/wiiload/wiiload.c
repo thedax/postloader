@@ -11,9 +11,13 @@
 #include <zlib.h>
 #include "wiiload.h"
 #include "../debug.h"
-
+#include "../zip/infdef.h"
+#include "../fsop/fsop.h"
 #define PORT	4299
 #define STACKSIZE	8192
+
+#define PRIO_IDLE 8
+#define PRIO_RCV 32
 
 #define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
 
@@ -30,7 +34,7 @@ static u8 * threadStack = NULL;
 static lwp_t networkthread = LWP_THREAD_NULL;
 static lwp_t geckothread = LWP_THREAD_NULL;
 
-static char *tpath;
+static char tpath[256];
 static int errors = 0;
 static int firstInit = 1;
 static volatile int pauseWiiload = 0;
@@ -92,7 +96,6 @@ static int GeckoRead(int connection, u8 *buf, u32 len, u32 tout) // timeout in m
 	while (read < len)
 		{
 		ret = usb_recvbuffer_safe_ex(connection,  buf + read, len - read, 500);
-		//ret = usb_recvbuffer_ex(connection,  buf + read, len - read, 1000);
 		
 		if (ret > 0)
 			{
@@ -110,72 +113,53 @@ static int GeckoRead(int connection, u8 *buf, u32 len, u32 tout) // timeout in m
 	}
 	
 
-static u8 * UncompressData (char *wiiloadVersion)
+static bool UncompressData (char *wiiloadVersion, int isZip)
 	{
-	if (!wiiload.buff)
-		return NULL;
-		
 	printopt("UncompressData");
 
-	//Zip File
-	if (wiiload.buff[0] == 'P' && wiiload.buff[1] == 'K' && wiiload.buff[2] == 0x03 && wiiload.buff[3] == 0x04)
+	char source[256];
+	char target[256];
+
+	if (isZip)
 		{
-		char path[200];
+		sprintf (source, "%s/%s", tpath, WIILOAD_TMPFILE);
+		sprintf (target, "%s/%s", tpath, WIILOAD_ZIPFILE);
 		
-		sprintf (path, "%s/%s", tpath, WIILOAD_ZIPFILE);
-		
-		// TODO: blockwrite to let other thread works...
-		FILE * file = fopen(path, "wb");
-		if (!file)
+		unlink (target);
+		if (rename (source, target) == 0) //success
 			{
-			printopt("unable to open %s", path);
-			free (wiiload.buff);
-			return NULL;
-			}
-
-		int ret;
-		ret = fwrite(wiiload.buff, 1, wiiload.buffsize, file);
-		fclose(file);
-
-		free (wiiload.buff);
-		wiiload.buff = NULL;
-		
-		if (ret == wiiload.buffsize)
 			wiiload.status = WIILOAD_HBZREADY;
+			}
 		}
 	else if ((wiiloadVersion[0] > 0 || wiiloadVersion[1] > 4) && uncfilesize != 0) //WiiLoad zlib compression
 		{
 		printopt("compressed file");
 		
-		u8 * unc = (u8 *) malloc(uncfilesize);
-		if (!unc)
-			{
-			free (wiiload.buff);
-			return NULL;
-			}
-
-		uLongf f = uncfilesize;
-
-		if (uncompress(unc, &f, wiiload.buff, wiiload.buffsize) != Z_OK)
-			{
-			printopt("uncompression filed");
-			
-			free(unc);
-			free(wiiload.buff);
-			
-			wiiload.buff = NULL;
-			return NULL;
-			}
-
-		free(wiiload.buff);
+		sprintf (source, "%s/%s", tpath, WIILOAD_TMPFILE);
+		sprintf (target, "%s/%s", tpath, wiiload.filename);
 		
-		printopt("uncompression ok: newsize %u (old %u)", uncfilesize, wiiload.buffsize);
-
-		wiiload.buff = unc;
-		wiiload.buffsize = f;
+		int ret = zlib_inf (source, target);
+		
+		printopt ("zlib_inf = %d", ret);
+		
+		// OLD MODE buff = fsop_ReadFile (target, 0, &buffsize);
+		strcpy (wiiload.fullpath, target);
+		wiiload.status = WIILOAD_HBREADY;
+		}
+	else
+		{
+		sprintf (source, "%s/%s", tpath, WIILOAD_TMPFILE);
+		sprintf (target, "%s/%s", tpath, wiiload.filename);
+		
+		unlink (target);
+		if (rename (source, target) == 0) //success
+			{
+			strcpy (wiiload.fullpath, target);
+			wiiload.status = WIILOAD_HBREADY;
+			}
 		}
 
-    return wiiload.buff;
+    return true;
 	}
 
 int __usb_checkrecv(s32 chn);
@@ -186,6 +170,8 @@ static bool GeckoLoad (void)
 	int ret;
 	char wiiloadVersion[2];
 	unsigned char header[16];
+	size_t buffsize;
+	u8 *buff;
 	
 	memset (header, 0, sizeof (header));
 	ret = GeckoRead(EXI_CHANNEL_1, header, 16, 1000);
@@ -197,11 +183,13 @@ static bool GeckoLoad (void)
 		usb_flush (EXI_CHANNEL_1);
 		return false;
 		}
+		
+	LWP_SetThreadPriority (geckothread, PRIO_RCV);
 
 	wiiloadVersion[0] = header[4];
 	wiiloadVersion[1] = header[5];
 	
-	memcpy ((u8 *) &wiiload.buffsize, &header[8], 4);
+	memcpy ((u8 *) &buffsize, &header[8], 4);
 	if (header[4] > 0 || header[5] > 4)
 		{
 		//printopt ("compressed file !");
@@ -209,10 +197,10 @@ static bool GeckoLoad (void)
 		memcpy ((u8 *) &uncfilesize, &header[12], 4);
 		}
 	
-	wiiload.buff = NULL;
+	buff = NULL;
 
-	wiiload.buff = (u8 *) malloc(wiiload.buffsize);
-	if (!wiiload.buff)
+	buff = (u8 *) malloc(buffsize);
+	if (!buff)
 		{
 		usb_flush (EXI_CHANNEL_1);
 		printopt ("Not enough memory.");
@@ -228,33 +216,33 @@ static bool GeckoLoad (void)
 	
 	if (!compressed) // if the file isn't compressed, 4 bytes of file are in the header vect...
 		{
-		memcpy ((u8 *) wiiload.buff, &header[12], 4);
+		memcpy ((u8 *) buff, &header[12], 4);
 		done += 4;
 		}
 
 	do
 		{
-		if (blocksize > wiiload.buffsize - done)
-			blocksize = wiiload.buffsize - done;
+		if (blocksize > buffsize - done)
+			blocksize = buffsize - done;
 
-		result = GeckoRead(EXI_CHANNEL_1, wiiload.buff+done, blocksize, 1000);
+		result = GeckoRead(EXI_CHANNEL_1, buff+done, blocksize, 1000);
 		if (result > 0)
 			done += result;
 		else
 			break;
 
-		printopt ("!%d%c", (done * 100) / wiiload.buffsize, 37);
+		printopt ("!%d%c", (done * 100) / buffsize, 37);
 		} 
-	while (done < wiiload.buffsize);
+	while (done < buffsize);
 	
 	LWP_SetThreadPriority(geckothread, 8);
 	
-	if (done != wiiload.buffsize)
+	if (done != buffsize)
 		{
 		wiiload.status = WIILOAD_IDLE;
-		free (wiiload.buff);
-		wiiload.buffsize = 0;
-		wiiload.buff = 0;
+		free (buff);
+		buffsize = 0;
+		buff = 0;
 		printopt("Filesize doesn't match.");
 		return false;
 		}
@@ -271,18 +259,44 @@ static bool GeckoLoad (void)
 		if (wiiload.args)
 			{
 			memcpy (wiiload.args, temp, ret);
+			
+			// convert arguments in ; separated items
+			int i;
+			for (i = 0; i < ret; i++)
+				{
+				if (wiiload.args[i] == '\0' && wiiload.args[i+1] != '\0')
+					wiiload.args[i] = ';';
+				}
+
 			wiiload.argl = ret;
 			}
 		}
-
 	temp[ret] = 0;
 
 	printopt("Filename %s (%d)", temp, ret);
 	strcpy (wiiload.filename, temp);
 	
-	if (UncompressData (wiiloadVersion))
-		wiiload.status = WIILOAD_HBREADY;
+	int isZip = 0;
+	if (buff[0] == 'P' && buff[1] == 'K' && buff[2] == 0x03 && buff[3] == 0x04)
+		isZip = 1;
+
+	// to keep compatibility with wiiload over network, we must store the file on device...
+	char path[256];
+	sprintf (path, "%s/%s", tpath, WIILOAD_TMPFILE);
+
+	ret = fsop_WriteFile (path, buff, buffsize);
+	free (buff);
+	buff = NULL;
+	
+	if (ret)
+		{
+		UncompressData (wiiloadVersion, isZip);
+		}
 		
+	free (buff);
+	
+	LWP_SetThreadPriority (geckothread, PRIO_IDLE);
+	
 	return true;
 	}
 	
@@ -290,7 +304,8 @@ static bool WiiLoad (s32 connection)
 	{
 	char wiiloadVersion[2];
 	unsigned char header[9];
-	
+	size_t buffsize;
+
 	wiiload.status = WIILOAD_RECEIVING;
 			
 	printopt ("WiiLoad begin");
@@ -302,11 +317,13 @@ static bool WiiLoad (s32 connection)
 		printopt ("unsupported protocol");
 		return false;
 		}
+		
+	LWP_SetThreadPriority (networkthread, PRIO_RCV);
 
 	wiiloadVersion[0] = header[4];
 	wiiloadVersion[1] = header[5];
 
-	NetRead(connection, (u8 *) &wiiload.buffsize, 4, 250);
+	NetRead(connection, (u8 *) &buffsize, 4, 250);
 
 	if (header[4] > 0 || header[5] > 4)
 		{
@@ -314,60 +331,81 @@ static bool WiiLoad (s32 connection)
 		NetRead(connection, (u8*) &uncfilesize, 4, 250); // Compressed protocol, read another 4 bytes
 		}
 	
-	wiiload.buff = NULL;
-
-	wiiload.buff = (u8 *) malloc(wiiload.buffsize);
-	if (!wiiload.buff)
+	/*
+	buff = (u8 *) malloc(buffsize);
+	if (!buff)
 		{
 		printopt ("Not enough memory.");
 		return false;
 		}
-
+	*/
+	
 	printopt ("Receiving file (%s)...", incommingIP);
 
 	u32 done = 0;
-	u32 blocksize = 1024*4;
+	u32 blocksize = 4096;
+	
+	u8 *buff = malloc (blocksize);
+
 	int retries = 10;
 	int result;
+	int isZip = 0;
+	
+	FILE *f;
+	char path[300];
+	sprintf (path, "%s/%s", tpath, WIILOAD_TMPFILE);
+	f = fopen (path, "wb");
 
 	do
 		{
-		if (blocksize > wiiload.buffsize - done)
-			blocksize = wiiload.buffsize - done;
+		if (blocksize > buffsize - done)
+			blocksize = buffsize - done;
 
-		result = net_read(connection, wiiload.buff+done, blocksize);
+		result = net_read(connection, buff, blocksize);
 		if (result <= 0)
 			{
 			--retries;
-			usleep (10000); // lets wait 10 msec
+			usleep (100000); // lets wait 10 msec
 			}
 		else
 			{
+			if (f) fwrite (buff, 1, result, f);
+			
 			retries = 10;
+			
+			if (done == 0 && (buff[0] == 'P' && buff[1] == 'K' && buff[2] == 0x03 && buff[3] == 0x04))
+				{
+				Debug ("This is a ZIP file");
+				isZip = 1;
+				}
+				
 			done += result;
 			}
 
 		if (retries == 0)
 			{
-			free (wiiload.buff);
-			wiiload.buff = 0;
-			wiiload.buffsize = 0;
+			free (buff);
+			buff = 0;
+			buffsize = 0;
+			if (f) fclose(f);
 			printopt ("Transfer failed.");
 			return false;
 			}
 
-		//printopt ("%d of %d bytes (r %d)", done, wiiload.buffsize, retries);
-		printopt ("!%d%c", (done * 100) / wiiload.buffsize, 37);
+		//printopt ("%d of %d bytes (r %d)", done, buffsize, retries);
+		printopt ("!%d%c", (done * 100) / buffsize, 37);
 		//fflush(stdout);
 		} 
-	while (done < wiiload.buffsize);
+	while (done < buffsize);
 	
-	if (done != wiiload.buffsize)
+	if (f) fclose(f);
+	
+	if (done != buffsize)
 		{
 		wiiload.status = WIILOAD_IDLE;
-		free (wiiload.buff);
-		wiiload.buffsize = 0;
-		wiiload.buff = 0;
+		//free (buff);
+		//buffsize = 0;
+		//buff = 0;
 		printopt("Filesize doesn't match.");
 		return false;
 		}
@@ -375,8 +413,9 @@ static bool WiiLoad (s32 connection)
 	// These are the arguments....
 	char temp[1024];
 	int ret = NetRead(connection, (u8 *) temp, 1023, 250);
-	
 	temp[ret] = 0;
+	
+	Debug_hexdump (temp, ret);
 	
 	if (ret > 2 && temp[ret - 1] == '\0' && temp[ret - 2] == '\0') // Check if it is really an arg
 		{
@@ -384,6 +423,15 @@ static bool WiiLoad (s32 connection)
 		if (wiiload.args)
 			{
 			memcpy (wiiload.args, temp, ret);
+
+			// convert arguments in ; separated items
+			int i;
+			for (i = 0; i < ret; i++)
+				{
+				if (wiiload.args[i] == '\0' && wiiload.args[i+1] != '\0')
+					wiiload.args[i] = ';';
+				}
+
 			wiiload.argl = ret;
 			}
 		}
@@ -393,8 +441,12 @@ static bool WiiLoad (s32 connection)
 	printopt("Filename %s (%d)", temp, ret);
 	strcpy (wiiload.filename, temp);
 	
-	if (UncompressData (wiiloadVersion))
-		wiiload.status = WIILOAD_HBREADY;
+	wiiload.status = WIILOAD_IDLE;
+	UncompressData (wiiloadVersion, isZip);
+	
+	free (buff);
+	
+	LWP_SetThreadPriority (networkthread, PRIO_IDLE);
 		
 	return true;
 	}
@@ -413,10 +465,8 @@ static bool StartWiiLoadServer (void)
 		}
 
 	// Clean old data, if any
-	if (wiiload.buff) free (wiiload.buff);
 	if (wiiload.args) free (wiiload.args);
 	
-	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
 	
@@ -502,6 +552,8 @@ static bool StartWiiLoadServer (void)
 				}
 			net_close(connection);
 			}
+			
+		usleep (100);
 		}
 	while (!stopNetworkThread);
 	
@@ -526,6 +578,8 @@ static void * GeckoThread(void *arg)
 			{
 			if (!GeckoLoad ())
 				usb_flush (EXI_CHANNEL_1);
+				
+			usleep (100);
 			}
 		}
 	else
@@ -644,7 +698,6 @@ void WiiLoad_Start(char *tempPath, int startSleep)
 	
 	if (tempPath != NULL)
 		{
-		tpath = malloc (strlen(tempPath) + 1);
 		strcpy (tpath, tempPath);
 		}
 	
@@ -656,12 +709,12 @@ void WiiLoad_Start(char *tempPath, int startSleep)
 		return;
 		}
 	else
-		LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 24);
+		LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 8);
 
 	threadStackG = (u8 *) memalign(32, STACKSIZE);
 	if (threadStackG)
 		{
-		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 24);
+		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 8);
 		}
 
 	}
@@ -692,14 +745,12 @@ void WiiLoad_Stop(void)
 		free (threadStackG);
 
 		// Clean old data, if any
-		if (wiiload.buff) free (wiiload.buff);
 		if (wiiload.args) free (wiiload.args);
 		}
 	else	
-		Debug ("WiiLoad_Stop: Something gone wrong !");
+		Debug ("WiiLoad_Stop: Something gone wrong ! %d %d", stopNetworkThread, stopGeckoThread );
 
 	
-	wiiload.buff = NULL;
 	wiiload.args = NULL;
 	wiiload.argl = 0;
 

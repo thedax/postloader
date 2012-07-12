@@ -95,58 +95,6 @@ bool NeedArgs (u8 *buffer)
 	return false;
 	}
 
-int DolBootPrepareWiiload (void)
-	{
-	CoverCache_Flush ();
-	
-	MasterInterface (1, 0, 3, "Booting...");
-
-	memcpy(EXECUTE_ADDR, wiiload.buff, wiiload.buffsize);
-	DCFlushRange((void *) EXECUTE_ADDR, wiiload.buffsize);
-	
-	struct __argv arg;
-	memset (&arg, 0, sizeof(struct __argv));
-
-	if (wiiload.argl)
-		{
-		char buff[256];
-		int l;
-		
-		strcpy (buff, vars.tempPath);
-		l = strlen (buff)+1;
-		memcpy (&buff[l], wiiload.args, arg.length);
-		l += (arg.length + 1);
-		
-		arg.argvMagic = ARGV_MAGIC;
-		arg.length  = wiiload.argl;
-		arg.commandLine = (char*)CMDL_ADDR;
-		
-		memcpy (arg.commandLine, buff, l);
-		}
-	/*
-	else
-		{
-		char buff[256];
-		int l;
-		
-		strcpy (buff, vars.tempPath);
-		l = strlen (buff)+1;
-		
-		arg.argvMagic = ARGV_MAGIC;
-		arg.length  = wiiload.argl;
-		arg.commandLine = (char*)CMDL_ADDR;
-		
-		memcpy (arg.commandLine, buff, l);
-		}
-	*/
-	memmove(ARGS_ADDR, &arg, sizeof(arg));
-	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
-
-	mssleep (500);
-	
-	return 1;
-	}
-
 //static u8 *execBuffer = NULL;
 //static size_t filesize;
 static struct __argv arg;
@@ -329,4 +277,10 @@ bool DirectDolBoot (char *fn, char *arguments, int addpl)
 	DolBoot();
 	
 	return true;
+	}
+
+int BootWiiload (void)
+	{
+	DirectDolBoot (wiiload.fullpath, wiiload.args, 0);
+	return 1;
 	}

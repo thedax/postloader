@@ -198,19 +198,30 @@ void Video_WaitPanel (int icon, const char *text, ...)
 		}
 		
 	p = strstr (mex, "|");
-	if (p) *p = '\0';
+	if (p) 
+		{
+		*p = '\0';
+		p++;
+		}
 	
 	grlib_PopScreen() ;
 	
 	Video_SetFont (TTFNORM);
+	
+	int w = WAITPANWIDTH;
+	
+	int l1 = grlib_GetFontMetrics (mex, NULL, NULL);
+	int l2 = 0;
+	if (p) l2 = grlib_GetFontMetrics (mex, NULL, NULL);
+	
+	if (l1 > w - 10) w = l1 + 10;
+	if (l2 > w - 10) w = l2 + 10;
 
-	grlib_DrawCenteredWindow (mex, WAITPANWIDTH, 133, 0, NULL);
+	grlib_DrawCenteredWindow (mex, w, 133, 0, NULL);
 	
 	if (p)
 		{
 		Video_DrawIcon (icon, 320, 240);
-		p++;
-	
 		grlib_Text (320, 280, GRLIB_ALIGNCENTER, 0, p);
 		}
 	else
@@ -257,6 +268,7 @@ void Video_LoadTheme (int init)
 		
 		sprintf (path, "%s://ploader/theme/window.png", vars.defMount);
 		grlibSettings.theme.texWindow = GRRLIB_LoadTextureFromFile (path);
+		
 		
 		sprintf (path, "%s://ploader/theme/windowbk.png", vars.defMount);
 		grlibSettings.theme.texWindowBk = GRRLIB_LoadTextureFromFile (path);
@@ -333,8 +345,7 @@ void Video_LoadTheme (int init)
 			theme.frameBack &&
 			grlibSettings.theme.texButton &&
 			grlibSettings.theme.texButtonSel &&
-			grlibSettings.theme.texWindow /* &&
-			grlibSettings.theme.texWindowBk*/
+			grlibSettings.theme.texWindow
 			)
 			{
 			theme.ok = 1;

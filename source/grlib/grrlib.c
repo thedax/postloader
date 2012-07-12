@@ -31,6 +31,7 @@ THE SOFTWARE.
 #include <jpeglib.h>
 #include <string.h>
 #include "pngu.h"
+#include "../debug.h"
 
 #define __GRRLIB_CORE__
 #include "grrlib.h"
@@ -39,7 +40,7 @@ THE SOFTWARE.
 
 #define ENABLE_JPEG
 #define ENABLE_TTF
-#define ONE_FB
+//#define ONE_FB
 
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
@@ -392,6 +393,12 @@ void  GRRLIB_FreeTTF (GRRLIB_ttfFont *myFont) {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static int printfTTF_Debug = 0;
+void GRRLIB_PrintfTTF_Debug (int enable)
+	{
+	printfTTF_Debug = enable;
+	}
 /**
  * Print function for TTF font.
  * @param x Specifies the x-coordinate of the upper-left corner of the text.
@@ -401,9 +408,9 @@ void  GRRLIB_FreeTTF (GRRLIB_ttfFont *myFont) {
  * @param fontSize Size of the font.
  * @param color Text color in RGBA format.
  */
-void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, unsigned int fontSize, const u32 color) {
-    if(myFont == NULL || string == NULL)
-        return;
+void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, unsigned int fontSize, const u32 color) 
+	{
+    if(myFont == NULL || string == NULL) return;
 
 	size_t l = strlen(string);
 	char *s = calloc (1, l + 1);
@@ -419,14 +426,19 @@ void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, 
     if (utf32) 
 		{
 		size_t length = mbstowcs(utf32, s, l);
+		
+		if (printfTTF_Debug)
+			gprintf ("buffsize=%d, lenght=%d, %u: %s\r\n", (l + 1) * sizeof(wchar_t), length, (size_t)-1, string);
         
-		if (length > 0) 
+		if (length > 0 && length != (size_t)-1) 
 			{
             utf32[length] = L'\0';
             GRRLIB_PrintfTTFW(x, y, myFont, utf32, fontSize, color);
 			}
         free(utf32);
 		}
+		
+	free (s);
 	}
 
 /**
@@ -1550,7 +1562,10 @@ void  GRRLIB_Render (void) {
     GX_SetColorUpdate(GX_TRUE);
     GX_CopyDisp      (xfb[fb], GX_TRUE);
 
+#ifndef ONE_FB
     VIDEO_SetNextFramebuffer(xfb[fb]);  // Select eXternal Frame Buffer
+#endif
+
     VIDEO_Flush();                      // Flush video buffer to screen
 	
     VIDEO_WaitVSync();                  // Wait for screen to update

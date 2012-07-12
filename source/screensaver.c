@@ -208,12 +208,12 @@ bool LiveCheck (int reset)
 		{
 		t = ct;
 		
-		CoverCache_Pause (true);
+		//CoverCache_Pause (true);
 		devices_TickUSB ();
-		CoverCache_Pause (false);
+		//CoverCache_Pause (false);
 		}
 
-	if ((ct - tp) > 1)
+	if ((ct - tp) > 2)
 		{
 		tp = ct;
 		snd_Mp3Go ();

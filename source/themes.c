@@ -70,6 +70,7 @@ int ThemeSelect (void)
 		}
 	
 	int ret = grlib_menu ("Please select a theme file\n\nPress (B) to close", menu);
+	Debug ("themes = %d (%s)", ret, files[ret]);
 	if (ret < 0) return 0;
 		
 	sprintf (targpath, "%s://ploader/theme", vars.defMount);
@@ -80,6 +81,7 @@ int ThemeSelect (void)
 	strcat (path, "/");
 	strcat (path, files[ret]);
 	
+	Debug ("ZipUnpack = %s", path);
 	ZipUnpack (path, targpath, NULL, NULL);
 	
 	sprintf (targpath, "%s://ploader/theme/ploader.png", vars.defMount);

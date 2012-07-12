@@ -519,11 +519,7 @@ int main(int argc, char **argv)
 	if (ret == INTERACTIVE_RET_WIILOAD) // boot a channel
 		{
 		ExtConfigWrite ();
-		if (DolBootPrepareWiiload ())
-			{
-			// NOTE: Shutdown() is called inside dolboot
-			DolBoot ();
-			}
+		BootWiiload ();
 		}
 
 	if (ret == INTERACTIVE_RET_HBSEL) // boot a channel
