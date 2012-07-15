@@ -601,7 +601,7 @@ static int bsort_priority (const void * a, const void * b)
 	return 0;
 	}
 
-static void AppsSort (void)
+static void SortItems (void)
 	{
 	int i;
 	
@@ -619,6 +619,8 @@ static void AppsSort (void)
 	bsort (apps, apps2Disp, sizeof(s_app), bsort_priority);
 
 	pageMax = (apps2Disp - 1) / gui.spotsXpage;
+	
+	FeedCoverCache ();
 	
 	Debug ("AppSort (end)");
 	}
@@ -712,8 +714,8 @@ static int AppsBrowse (void)
 	
 	page = 0;
 	
-	AppsSort ();
-	FeedCoverCache ();
+	SortItems ();
+	
 	return appsCnt;
 	}
 
@@ -906,7 +908,7 @@ static void SortDispMenu (void)
 				apps[i].priority = 1;
 				}
 			
-			AppsSort();
+			SortItems();
 			}
 		}
 	}
@@ -932,7 +934,6 @@ static void ShowFilterMenu (void)
 	if (item == 102) config.appDev = 0;
 
 	AppsBrowse ();
-	AppsSort ();
 	}
 
 static void ShowMainMenu (void)
@@ -1235,6 +1236,8 @@ static int ChangePage (int next)
 	
 	int x = 0, lp;
 	
+	GRRLIB_SetFBMode (1); // Enable double fbmode
+	
 	if (!next)
 		{
 		do
@@ -1278,6 +1281,8 @@ static int ChangePage (int next)
 	
 	redrawIcons = true;
 	redraw = 1;
+	
+	GRRLIB_SetFBMode (0); // Enable double fbmode
 	
 	return page;
 	}
@@ -1504,7 +1509,7 @@ int AppBrowser (void)
 			// If user press (B) stop sort mode
 			if (btn & WPAD_BUTTON_B && sortMode > 0)
 				{
-				AppsSort();
+				SortItems();
 				
 				int i;
 				for (i = 0; i < appsCnt; i++)

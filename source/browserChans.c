@@ -236,7 +236,6 @@ static void DownloadCovers (void)
 	CoverCache_Flush ();
 	
 	ChnBrowse ();
-	FeedCoverCache ();
 	}
 	
 static void WriteTitleConfig (int ia)
@@ -393,7 +392,7 @@ static int bsort_priority (const void * a, const void * b)
 	return 0;
 	}
 
-static void AppsSort (void)
+static void SortItems (void)
 	{
 	int i;
 	
@@ -418,6 +417,8 @@ static void AppsSort (void)
 	bsort (chans, chans2Disp, sizeof(s_channel), bsort_priority);
 
 	pageMax = (chans2Disp-1) / gui.spotsXpage;
+	
+	FeedCoverCache ();
 	}
 	
 static void GetCacheFileName (char *path)
@@ -685,7 +686,7 @@ static int ChnBrowse (void)
 		neek_UID_Dump ();
 	*/
 	UpdateTitlesFromTxt ();
-	AppsSort ();
+	SortItems ();
 	
 	nandScanned = true;
 	
@@ -877,15 +878,11 @@ static void ShowAppMenu (int ai)
 	if (item == 2)
 		{
 		chans[chansSelected].hidden = 0;
-		WriteTitleConfig (chansSelected);
-		AppsSort ();
 		}
 
 	if (item == 3)
 		{
 		chans[chansSelected].hidden = 1;
-		WriteTitleConfig (chansSelected);
-		AppsSort ();
 		}
 
 	if (item == 4)
@@ -894,9 +891,6 @@ static void ShowAppMenu (int ai)
 		item = grlib_menu ("Vote Title", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
 		if (item >= 0)
 			chans[chansSelected].priority = 10-item;
-		
-		WriteTitleConfig (chansSelected);
-		AppsSort ();
 		}
 	/*	
 	if (item == 5)
@@ -905,6 +899,7 @@ static void ShowAppMenu (int ai)
 		}
 	*/
 	WriteTitleConfig (chansSelected);
+	SortItems ();
 	
 	//ChnBrowse ();
 	}
@@ -945,8 +940,8 @@ static void ShowFilterMenu (void)
 			}
 		}
 	while (item != -1);
-	ChnBrowse ();
-	AppsSort ();
+
+	SortItems ();
 	}
 
 // Nand folder can be only root child...
@@ -1204,7 +1199,6 @@ static void ShowMainMenu (void)
 		{
 		RebuildCacheFile ();
 		ChnBrowse ();
-		FeedCoverCache ();
 		}
 
 	if (item == 3)
@@ -1230,30 +1224,26 @@ static void ShowMainMenu (void)
 	if (item == 7)
 		{
 		showHidden = 0;
-		AppsSort ();
 		}
 
 	if (item == 8)
 		{
 		if(!CheckParental()) return;
 		showHidden = 1;
-		AppsSort ();
 		}
 		
 	if (item == 9)
 		{
 		manageUID = 1;
-		
 		grlib_menu ("Manage UID.sys\n\nPress (A) to hide/show title\nPress (B) to exit from editing mode\nPress (1) add/remove item from uid.sys\nPress (2) to show/hide ALLL entries from uid.sys", "  OK  ");
-		
-		AppsSort ();
-		
-		//neek_UID_Dump ();
 		}
+
 	if (item == 10)
 		{
 		ChangeDefaultIOS ();
 		}
+
+	SortItems ();
 	}
 
 static void CheckFilters()
@@ -1419,6 +1409,8 @@ static int ChangePage (int next)
 	
 	int x = 0, lp;
 	
+	GRRLIB_SetFBMode (1); // Enable double fbmode
+	
 	if (!next)
 		{
 		do
@@ -1462,6 +1454,8 @@ static int ChangePage (int next)
 	
 	redrawIcons = true;
 	redraw = 1;
+	
+	GRRLIB_SetFBMode (0); // Enable double fbmode
 	
 	return page;
 	}
@@ -1609,16 +1603,11 @@ int ChnBrowser (void)
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	CheckFilters ();
 	
+	page = config.chnPage;
 	ChnBrowse ();
 	
 	redraw = 1;
 	
-	if (config.chnPage >= 0 && config.chnPage <= pageMax)
-		page = config.chnPage;
-	else
-		page = 0;
-	
-	FeedCoverCache ();
 	LiveCheck (1);
 	
 	// Loop forever
@@ -1757,7 +1746,6 @@ int ChnBrowser (void)
 		if (browse)
 			{
 			ChnBrowse ();
-			FeedCoverCache ();
 			browse = 0;
 			redraw = 1;
 			}

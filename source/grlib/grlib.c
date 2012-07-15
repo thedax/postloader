@@ -174,8 +174,10 @@ void inline grlib_Render (void)
 	// but copyng display to tex and redrawing it solves without big effort
 	// and loss of performance.
 	// In continuos update mode, doesn't heppen, so GRRLIB_Render can be called.
-	GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
-	grlib_DrawScreenTex (redrawTex);
+	
+	// GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
+	// grlib_DrawScreenTex (redrawTex);
+	
 	GRRLIB_Render ();
 	} 
 

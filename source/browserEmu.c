@@ -19,7 +19,7 @@
 #include "browser.h"
 #include "fsop/fsop.h"
 
-#define CHNMAX 8192
+#define EMUMAX 8192
 
 /*
 
@@ -47,8 +47,6 @@ static int showHidden = 0;
 static u8 redraw = 1;
 static bool redrawIcons = true;
 
-static int refreshPng = 0;
-
 static s_grlib_iconSetting is;
 \
 static void Redraw (void);
@@ -63,6 +61,8 @@ static s_cfg *plugins;
 static int pluginsCnt = 0;
 
 static GRRLIB_texImg **emuicons;
+
+static int fulldebug = 0;
 
 #define ICONW 100
 #define ICONH 93
@@ -305,6 +305,9 @@ static void Plugins (bool open)
 			pluginsCnt++;
 			}
 			
+		if (pluginsCnt > CATMAX)
+			pluginsCnt = CATMAX;
+			
 		emuicons = calloc (sizeof (GRRLIB_texImg), pluginsCnt);
 		for (i = 0; i < pluginsCnt; i++)
 			{
@@ -435,8 +438,8 @@ static void GetCovers_Scan (char *path)
 				}
 			}
 		}
-	
 	closedir(pdir);
+	
 	FeedCoverCache ();
 	redraw = 1;
 	}
@@ -496,9 +499,9 @@ static int bsort_filter (const void * a, const void * b)
 	return 0;
 	}
 	
-static void AppsSort (void)
+static void SortItems (void)
 	{
-	Debug ("AppsSort: begin");
+	Debug ("SortItems: begin");
 	
 	int i;
 	
@@ -517,9 +520,10 @@ static void AppsSort (void)
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
-	refreshPng = 1;
 	
-	Debug ("AppsSort: end");
+	FeedCoverCache ();
+	
+	Debug ("SortItems: end");
 	}
 	
 static int BrowsePluginFolder (int type, int startidx, char *path)
@@ -538,7 +542,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
-		if (i >= CHNMAX)
+		if (i >= EMUMAX)
 			continue;
 		
 		// Skip it
@@ -625,8 +629,7 @@ static int EmuBrowse (void)
 	
 	Debug ("end EmuBrowse");
 
-	AppsSort ();
-	FeedCoverCache ();
+	SortItems ();
 
 	return emusCnt;
 	}
@@ -716,7 +719,7 @@ static bool IsFiltered (int ai)
 	
 static void ShowFilterMenu (void)
 	{
-	char buff[512];
+	char buff[2048];
 	u8 f[CATMAX];
 	int i, item;
 	
@@ -763,7 +766,6 @@ static void ShowFilterMenu (void)
 		if (f[i]) config.emuFilter |= (1 << i);
 	
 	EmuBrowse ();
-	AppsSort ();
 	}
 
 static void ShowAppMenu (int ai)
@@ -792,15 +794,14 @@ static void ShowAppMenu (int ai)
 		
 		int item = grlib_menu (title, buff);
 		
+		if (item < 0) break;
+		
 		if (item == 1)
 			{
 			int item = grlib_menu ("Reset play count ?", "Yes~No");
 			
 			if (item == 0)
 				emus[ai].playcount = 0;
-			
-			WriteGameConfig (ai);
-			AppsSort ();
 			}
 			
 		if (item == 2)
@@ -835,11 +836,14 @@ static void ShowAppMenu (int ai)
 				unlink (cover);
 
 				EmuBrowse();
+				break;
 				}
 			}
-		break;
 		}
 	while (TRUE);
+	
+	WriteGameConfig (ai);
+	SortItems ();
 
 	return;
 	}
@@ -883,8 +887,6 @@ static void ShowMainMenu (void)
 		{
 		config.gameSort ++;
 		if (config.gameSort > 2) config.gameSort = 0;
-		AppsSort ();
-		FeedCoverCache ();
 		goto start;
 		}
 
@@ -897,16 +899,16 @@ static void ShowMainMenu (void)
 	if (item == 6)
 		{
 		showHidden = 0;
-		AppsSort ();
 		}
 
 	if (item == 7)
 		{
 		if(!CheckParental()) return;
 		showHidden = 1;
-		AppsSort ();
 		}
 		
+	SortItems ();
+	redraw = 1;
 	}
 
 static void RedrawIcons (int xoff, int yoff)
@@ -999,8 +1001,6 @@ static void Redraw (void)
 		grlib_DrawCenteredWindow ("No emus found, check /ploader/plugins.conf", WAITPANWIDTH+50, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
-		
-	refreshPng = 0;
 	}
 	
 static void Overlay (void)
@@ -1028,13 +1028,13 @@ static int ChangePage (int next)
 	grlib_PushScreen ();
 	
 	int x = 0, lp;
-	//u32 ms1, ms2;
+	
+	GRRLIB_SetFBMode (1); // Enable double fbmode
 	
 	if (!next)
 		{
 		do
 			{
-			//ms1 = ticks_to_millisecs(gettime());
 			x-=20;
 
 			grlib_PopScreen ();
@@ -1048,14 +1048,6 @@ static int ChangePage (int next)
 			Overlay ();
 			grlib_DrawIRCursor ();
 			grlib_Render();
-			
-			/*
-			do
-				{
-				ms2 = ticks_to_millisecs(gettime());
-				}
-			while ((ms2-ms1) < 20);
-			*/
 			}
 		while (x > -640);
 		}
@@ -1063,8 +1055,6 @@ static int ChangePage (int next)
 		{
 		do
 			{
-			//ms1 = ticks_to_millisecs(gettime());
-
 			x+=20;
 
 			grlib_PopScreen ();
@@ -1078,20 +1068,14 @@ static int ChangePage (int next)
 			Overlay ();
 			grlib_DrawIRCursor ();
 			grlib_Render();
-			
-			/*
-			do
-				{
-				ms2 = ticks_to_millisecs(gettime());
-				}
-			while ((ms2-ms1) < 20);
-			*/
 			}
 		while (x < 640);
 		}
 	
 	redrawIcons = true;
 	redraw = 1;
+	
+	GRRLIB_SetFBMode (0);
 	
 	return page;
 	}
@@ -1248,7 +1232,7 @@ int EmuBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	emus = calloc (CHNMAX, sizeof(s_emu));
+	emus = calloc (EMUMAX, sizeof(s_emu));
 	
 	// Immediately draw the screen...
 	StructFree ();
@@ -1259,37 +1243,31 @@ int EmuBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	
-	page = config.gamePageWii;
+	page = config.gamePageEmu;
 	EmuBrowse ();
 	
-	/*
-	int i;
-	for (i = 0; i < emusCnt; i++)
-		{
-		Debug ("%s", emus[i].name);
-		}
-	*/
-	
 	LiveCheck (1);
-
-	page = config.gamePageEmu;
-
-	FeedCoverCache ();
 
 	redraw = 1;
 	
 	// Loop forever
     while (browserRet == -1) 
 		{
+		if (fulldebug) gprintf ("#1");
 		if (LiveCheck (0)) redraw = 1;
 		
+		if (fulldebug) gprintf ("#2");
 		btn = grlib_GetUserInput();
 		
 		// If [HOME] was pressed on the first Wiimote, break out of the loop
 		if (btn)
 			{
+			if (fulldebug) gprintf ("#3");
+
 			browserRet = ChooseDPadReturnMode (btn);
-			if (browserRet != -1) break;
+			if (browserRet != -1) btn = 0;
+			
+			if (fulldebug) gprintf ("#4");
 			
 			if (btn & WPAD_BUTTON_A && emuSelected != -1) 
 				{
@@ -1342,31 +1320,43 @@ int EmuBrowser (void)
 			
 			if (btn & WPAD_BUTTON_MINUS)
 				{
+				if (fulldebug) gprintf ("#5");
 				page = ChangePage (0);
+				if (fulldebug) gprintf ("#6");
 				}
 			if (btn & WPAD_BUTTON_PLUS) 
 				{
+				if (fulldebug) gprintf ("#7");
 				page = ChangePage (1);
+				if (fulldebug) gprintf ("#8");
 				}
 			}
 		
+		if (fulldebug) gprintf ("#9");
 		if (CoverCache_IsUpdated ()) redraw = 1;
+		if (fulldebug) gprintf ("#10");
 		
 		if (redraw)
 			{
+			if (fulldebug) gprintf ("#11");
 			Redraw ();
+			if (fulldebug) gprintf ("#12");
 			grlib_PushScreen ();
-			
+			if (fulldebug) gprintf ("#13");
 			redraw = 0;
 			}
 		
+		if (fulldebug) gprintf ("#14");
 		REDRAW();
+		if (fulldebug) gprintf ("#15");
 		
 		if (browse)
 			{
+			if (fulldebug) gprintf ("#16");
 			browse = 0;
 			EmuBrowse ();
 			redraw = 1;
+			if (fulldebug) gprintf ("#17");
 			}
 		
 		if (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)

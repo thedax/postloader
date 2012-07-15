@@ -19,7 +19,7 @@
 #include "browser.h"
 
 
-#define CHNMAX 1024
+#define GAMEMAX 1024
 
 /*
 
@@ -86,8 +86,6 @@ static int showHidden = 0;
 static u8 redraw = 1;
 static bool redrawIcons = true;
 
-static int refreshPng = 0;
-
 static s_grlib_iconSetting is;
 
 static void Redraw (void);
@@ -136,9 +134,9 @@ static void InitializeGui (void)
 	is.fgrSelTex = theme.frameSel;
 	is.fgrTex = theme.frame;
 	is.bkgColor = RGBA (0,0,0,255);
-	is.borderSelColor = RGBA (255,255,255,255); 	// Border color
-	is.borderColor = RGBA (128,128,128,255); 		// Border color
-	is.fontReverse = 0; 		// Border color
+	is.borderSelColor = RGBA (255,255,255,255);
+	is.borderColor = RGBA (128,128,128,255);
+	is.fontReverse = 0;
 	
 	Debug ("theme.frameBack = 0x%X 0x%X", theme.frameBack, is.bkgTex);
 
@@ -444,9 +442,9 @@ static int bsort_slot (const void * a, const void * b)
 	return 0;
 	}
 
-static void AppsSort (void)
+static void SortItems (void)
 	{
-	Debug ("AppsSort: begin");
+	Debug ("Sort: begin");
 	
 	int i;
 
@@ -462,22 +460,20 @@ static void AppsSort (void)
 	bsort (games, gamesCnt, sizeof(s_game), bsort_hidden);
 	qsort (games, games2Disp, sizeof(s_game), qsort_name);
 
-	// Sort by priority
 	if (config.gameSort == 0)
 		bsort (games, games2Disp, sizeof(s_game), bsort_priority);
 
-	// Sort by priority
 	if (config.gameSort == 2)
 		bsort (games, games2Disp, sizeof(s_game), bsort_playcount);
 
-	// Sort by priority
 	if (config.gameMode == GM_DML)
 		bsort (games, games2Disp, sizeof(s_game), bsort_slot);
 
 	pageMax = (games2Disp-1) / gui.spotsXpage;
-	refreshPng = 1;
 	
-	Debug ("AppsSort: end");
+	FeedCoverCache ();
+	
+	Debug ("Sort: end");
 	}
 	
 static void UpdateTitlesFromTxt (void)
@@ -615,8 +611,7 @@ static int GameBrowse (int forcescan)
 	Debug ("end GameBrowse");
 
 	UpdateTitlesFromTxt ();
-	AppsSort ();
-	FeedCoverCache ();
+	SortItems ();
 
 	return gamesCnt;
 	}
@@ -853,7 +848,6 @@ static void ShowFilterMenu (void)
 		if (f[i]) config.gameFilter |= (1 << i);
 	
 	GameBrowse (0);
-	AppsSort ();
 	}
 
 #define CHOPT_IOS 7
@@ -1006,17 +1000,11 @@ static void ShowAppMenu (int ai)
 	if (item == 2)
 		{
 		games[ai].hidden = 0;
-		WriteGameConfig (ai);
-		AppsSort ();
-		redraw = 1;
 		}
 
 	if (item == 3)
 		{
 		games[ai].hidden = 1;
-		WriteGameConfig (ai);
-		AppsSort ();
-		redraw = 1;
 		}
 
 	if (item == 4)
@@ -1026,17 +1014,11 @@ static void ShowAppMenu (int ai)
 		
 		if (item >= 0)
 			games[ai].priority = 10-item;
-		
-		WriteGameConfig (ai);
-		AppsSort ();
 		}
 
 	if (item == 5)
 		{
 		ShowGameFilterMenu (ai);
-		WriteGameConfig (ai);
-		AppsSort ();
-
 		goto start;
 		}
 
@@ -1047,9 +1029,6 @@ static void ShowAppMenu (int ai)
 		
 		if (item == 0)
 			games[ai].playcount = 0;
-		
-		WriteGameConfig (ai);
-		AppsSort ();
 		
 		goto start;
 		}
@@ -1090,8 +1069,8 @@ static void ShowAppMenu (int ai)
         }
 		
 	WriteGameConfig (ai);
-	
-	//GameBrowse (0);
+	SortItems ();
+	redraw = 1;
 	}
 
 static void ChangeDefaultLoader (void)
@@ -1171,7 +1150,7 @@ static void ShowMainMenu (void)
 	char buff[512];
 	int rebrowse = 0;
 	
-	start:
+start:
 	
 	buff[0] = '\0';
 	
@@ -1277,8 +1256,6 @@ static void ShowMainMenu (void)
 		{
 		config.gameSort ++;
 		if (config.gameSort > 2) config.gameSort = 0;
-		AppsSort ();
-		FeedCoverCache ();
 		goto start;
 		}
 
@@ -1291,8 +1268,6 @@ static void ShowMainMenu (void)
 	if (item == 10)
 		{
 		showHidden = 0;
-		AppsSort ();
-		FeedCoverCache ();
 		redraw = 1;
 		}
 
@@ -1300,8 +1275,6 @@ static void ShowMainMenu (void)
 		{
 		if(!CheckParental()) return;
 		showHidden = 1;
-		AppsSort ();
-		FeedCoverCache ();
 		redraw = 1;
 		}
 		
@@ -1316,9 +1289,9 @@ static void ShowMainMenu (void)
 		}
 			
 	if (rebrowse)
-		{
 		GameBrowse (0);
-		}
+	else
+		SortItems ();
 	
 	}
 
@@ -1425,8 +1398,6 @@ static void Redraw (void)
 		grlib_DrawCenteredWindow ("No games found !", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
-		
-	refreshPng = 0;
 	}
 	
 static void Overlay (void)
@@ -1454,6 +1425,8 @@ static int ChangePage (int next)
 	grlib_PushScreen ();
 	
 	int x = 0, lp;
+	
+	GRRLIB_SetFBMode (1); // Enable double fbmode
 	
 	if (!next)
 		{
@@ -1498,6 +1471,8 @@ static int ChangePage (int next)
 	
 	redrawIcons = true;
 	redraw = 1;
+	
+	GRRLIB_SetFBMode (0); // Enable double fbmode
 	
 	return page;
 	}
@@ -1682,7 +1657,7 @@ int GameBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	games = calloc (CHNMAX, sizeof(s_game));
+	games = calloc (GAMEMAX, sizeof(s_game));
 	
 	// Immediately draw the screen...
 	StructFree ();

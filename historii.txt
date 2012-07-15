@@ -1,3 +1,10 @@
+postLoader 4.b34
+
+* increased the buffer for filter menu (thx kuwanger)
+* now postLoader uses single or double fb as required
+* performed a lot of code clean (thx kuwanger)
+* it seems that b34 has stopped to randomly hang
+
 postLoader 4.b33
 
 * wiiload (network) has been rearranged to allow file of (almost) any dimension to be transferred. Now sd or usb dev are used to bufferize the transfer. With a slow sd based setup (/ploader folder on sd), some dalays are possibile.

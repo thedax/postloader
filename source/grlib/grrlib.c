@@ -40,7 +40,6 @@ THE SOFTWARE.
 
 #define ENABLE_JPEG
 #define ENABLE_TTF
-//#define ONE_FB
 
 GRRLIB_drawSettings  GRRLIB_Settings;
 Mtx                  GXmodelView2D;
@@ -49,6 +48,7 @@ static void  *gp_fifo = NULL;
 
 static bool  is_setup = false;  // To control entry and exit
 static bool  enable_output = 1;
+static bool  fbMode = 0;	// 0 single buffer, 1 double buffer
 
 #define TTFCACHE_ITEMS 256
  
@@ -152,10 +152,9 @@ int  GRRLIB_Init (int skipVideo, int fixPal) {
 	// Get some memory to use for a "double buffered" frame buffer
     if ( !(xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode))) )  return -1;
 	VIDEO_ClearFrameBuffer(rmode, xfb[0], COLOR_BLACK);
-#ifndef ONE_FB
+
     if ( !(xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode))) )  return -1;
 	VIDEO_ClearFrameBuffer(rmode, xfb[1], COLOR_BLACK);
-#endif
 
     fb = 0;
 	VIDEO_SetNextFramebuffer(xfb[fb]);  // Choose a frame buffer to start with
@@ -276,9 +275,7 @@ void  GRRLIB_Exit (void)
 
     // Free up memory allocated for frame buffers & FIFOs
     if (xfb[0]  != NULL) {  free(MEM_K1_TO_K0(xfb[0]));  xfb[0]  = NULL;  }
-#ifndef ONE_FB
     if (xfb[1]  != NULL) {  free(MEM_K1_TO_K0(xfb[1]));  xfb[1]  = NULL;  }
-#endif
 
 	VIDEO_SetBlack(TRUE);
 	VIDEO_Flush();
@@ -312,9 +309,7 @@ void  GRRLIB_ExitLight (void)
 
     // Free up memory allocated for frame buffers & FIFOs
     if (xfb[0]  != NULL) {  free(MEM_K1_TO_K0(xfb[0]));  xfb[0]  = NULL;  }
-#ifndef ONE_FB
     if (xfb[1]  != NULL) {  free(MEM_K1_TO_K0(xfb[1]));  xfb[1]  = NULL;  }
-#endif
 
     // Done with TTF
 #ifdef ENABLE_TTF
@@ -1124,10 +1119,11 @@ void  GRRLIB_Screen2Texture (int posx, int posy, GRRLIB_texImg *tex, bool clear)
         GX_CopyTex(tex->data, GX_FALSE);
         GX_PixModeSync();
         GRRLIB_FlushTex(tex);
-#ifndef ONE_FB
-        if(clear)
-            GX_CopyDisp(xfb[!fb], GX_TRUE);
-#endif
+		
+		if (fbMode == 1) // double
+			{
+			if(clear) GX_CopyDisp(xfb[!fb], GX_TRUE);
+			}
     }
 }
 
@@ -1550,21 +1546,17 @@ void  GRRLIB_Render (void) {
     GX_DrawDone();          // Tell the GX engine we are done drawing
     GX_InvalidateTexAll();
 
-#ifndef ONE_FB
-	fb ^= 1;  // Toggle framebuffer index
-#endif
-
-#ifdef ONE_FB
-	fb = 0;
-#endif
+	if (fbMode == 1)
+		fb ^= 1;  // Toggle framebuffer index
+	else
+		fb = 0;
 
     GX_SetZMode      (GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate(GX_TRUE);
     GX_CopyDisp      (xfb[fb], GX_TRUE);
 
-#ifndef ONE_FB
-    VIDEO_SetNextFramebuffer(xfb[fb]);  // Select eXternal Frame Buffer
-#endif
+	if (fbMode == 1)
+		VIDEO_SetNextFramebuffer(xfb[fb]);  // Select eXternal Frame Buffer
 
     VIDEO_Flush();                      // Flush video buffer to screen
 	
@@ -2872,3 +2864,8 @@ void GRRLIB_SetLightOff(void) {
 
     GRRLIB_Settings.lights  = 0;
 }
+
+void GRRLIB_SetFBMode (int mode)
+	{
+	fbMode = mode;
+	}
