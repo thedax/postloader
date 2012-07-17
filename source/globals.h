@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b34"
+#define VER "4.b35"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -69,6 +69,14 @@ enum {
 	INTERACTIVE_RET_SE,
 	INTERACTIVE_RET_WM,
 	INTERACTIVE_RET_HBC
+	};
+
+enum {
+	GCMODE_DML0x = 0,
+	GCMODE_DML1x,
+	GCMODE_DM2x,
+	GCMODE_DEVO,
+	GCMODE_MAX
 	};
 
 #define WAITPANWIDTH 300
@@ -163,9 +171,149 @@ enum {
 
 typedef void (*voidCallback)(void); 
 
-/*
-This structure is filled by fs functions that support voidCallback
-*/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct
+	{
+	u32 priority;	// Vote !
+	bool hidden;	// if 1, this app will be not listed
+	
+	u64 titleId; 	// title id
+	u8 ios;		 	// ios to reload
+	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
+	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
+	u8 vpatch;	 	// 0 No Video patches	1 Smart Video patching	2 More Video patching	3 Full Video patching
+	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
+	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
+	u8 bootMode;	// 0 Normal boot method	1 Load apploader
+	int playcount;	// how many time this title has bin executed
+	}
+s_channelConfig;
+
+typedef struct
+	{
+	u64 titleId; 			// title id
+	char asciiId[6];		// id in ascii format
+	char *name;				// name
+	u8 *png;				// Address of png in cache area
+	size_t pngSize;
+
+	bool filtered;			// if 1, this app match the filter
+	bool needUpdate;
+	bool checked;
+	u8 hasCover;			// if != 0 this rom has it own cover
+
+	// These are updated from s_channelConfig when browsing
+	int priority;	// Vote !
+	bool hidden;	// if 1, this app will be not listed
+	}
+s_channel;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct
+	{
+	int priority;	// Vote !
+	bool hidden;	// if 1, this app will be not listed
+	
+	char asciiId[8];// id in ascii format (6 needed)
+	u8 ios;		 	// ios to reload
+	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
+	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
+	u8 vpatch;	 	// 0 No Video patches	1 Smart Video patching	2 More Video patching	3 Full Video patching
+	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
+	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
+	
+	u8 nand;		// neek nand index  0:"Default", "USA" , "EURO", "JAP", "Korean"
+	u8 loader;		// 0 cfg, 1 gx, 2 wiiflow
+	u16 playcount;	// how many time this title has bin executed
+	u32 category;	// bitmask category
+	u8 minPlayerAge;
+	
+	u8 dmlVideoMode;	// Current video mode for dml
+	u8 dmlNoDisc;		// nodisc patch
+	u8 dmlPadHook;		// padhook patch
+	u8 dmlNMM;			// nmm patch
+	}
+s_gameConfig;
+
+typedef struct
+	{
+	u32 slot;				// under neeek, this is the slot, in real this is the partition, in dml if 1 it is on usb device
+	char asciiId[8];		// id in ascii format (6 needed)
+	char *name;				// name
+	u8 *png;				// Address of png in cache area
+	size_t pngSize;
+
+	bool filtered;			// if 1, this app match the filter
+	bool needUpdate;
+	bool checked;
+	u8 hasCover;			// if != 0 this rom has it own cover
+
+	// These are updated from s_channelConfig when browsing
+	int priority;			// Vote !
+	bool hidden;			// if 1, this app will be not listed
+	u32 category;
+	u16 playcount;			// how many time this title has bin executed
+	
+	bool dml;				// if true we are executing a dml game
+	char source[96];		// source folder
+	u8 disc;
+	}
+s_game;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct
+	{
+	char name[128];
+	u8 priority;	// Vote !
+	u8 hidden;		// if 1, this app will be not listed
+	u16 playcount;	// how many time this title has bin executed
+	}
+s_emuConfig;
+
+typedef struct
+	{
+	char *name;				// name
+	u8 *png;				// Address of png in cache area
+
+	u8 filtered;			// if 1, this app match the filter
+	u8 needUpdate;
+	u8 checked;
+	u8 hasCover;			// if != 0 this rom has it own cover
+
+	u16 playcount;			// how many time this title has bin executed
+	u8 priority;			// Vote !
+	u8 type;				// Vote !
+	u8 hidden;				// if 1, this app will be not listed
+	}
+s_emu;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct 
+	{
+	char *name;
+	char *desc;
+	char *longdesc;
+	char *path;
+	char *args;
+	char *version;
+	char filename[32];	// boot.dol... boot.elf...
+	char mount[5];		// keep track of where is located the homebrew, as we mix sd and usb...
+	int priority; 		// if true is listed before others
+	int type;			// 1 hb, 2 folder
+	int iosReload;
+	bool hidden;		// if 1, this app will be not listed
+	bool needUpdate;
+	bool checked;
+	bool fixCrashOnExit;
+	}
+s_app;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef struct 
 	{
 	int neek;						// if true we are under neek emulation
@@ -205,51 +353,6 @@ typedef struct
 	}
 s_theme;
 
-//Follow triiforce(light) interface
-
-typedef struct
-	{
-	u32 priority;	// Vote !
-	bool hidden;	// if 1, this app will be not listed
-	
-	u64 titleId; 	// title id
-	u8 ios;		 	// ios to reload
-	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
-	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
-	u8 vpatch;	 	// 0 No Video patches	1 Smart Video patching	2 More Video patching	3 Full Video patching
-	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
-	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
-	u8 bootMode;	// 0 Normal boot method	1 Load apploader
-	int playcount;	// how many time this title has bin executed
-	}
-s_channelConfig;
-
-typedef struct
-	{
-	int priority;	// Vote !
-	bool hidden;	// if 1, this app will be not listed
-	
-	char asciiId[8];// id in ascii format (6 needed)
-	u8 ios;		 	// ios to reload
-	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
-	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
-	u8 vpatch;	 	// 0 No Video patches	1 Smart Video patching	2 More Video patching	3 Full Video patching
-	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
-	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
-	
-	u8 nand;		// neek nand index  0:"Default", "USA" , "EURO", "JAP", "Korean"
-	u8 loader;		// 0 cfg, 1 gx, 2 wiiflow
-	u16 playcount;	// how many time this title has bin executed
-	u32 category;	// bitmask category
-	u8 minPlayerAge;
-	
-	u8 dmlVideoMode;	// Current video mode for dml
-	u8 dmlNoDisc;		// nodisc patch
-	u8 dmlPadHook;		// padhook patch
-	u8 dmlNMM;			// nmm patch
-	}
-s_gameConfig;
-
 typedef struct
 	{
 	u8 nand; 	 	// 0 no nand emu	1 sd nand emu	2 usb nand emu
@@ -257,102 +360,6 @@ typedef struct
 	s_channelConfig channel;
 	}
 s_nandbooter;
-
-typedef struct
-	{
-	u64 titleId; 			// title id
-	char asciiId[6];		// id in ascii format
-	char *name;				// name
-	u8 *png;				// Address of png in cache area
-	size_t pngSize;
-
-	bool filtered;			// if 1, this app match the filter
-	bool needUpdate;
-	bool checked;
-
-	// These are updated from s_channelConfig when browsing
-	int priority;	// Vote !
-	bool hidden;	// if 1, this app will be not listed
-	}
-s_channel;
-
-typedef struct
-	{
-	u32 slot;				// under neeek, this is the slot, in real this is the partition, in dml if 1 it is on usb device
-	char asciiId[8];		// id in ascii format (6 needed)
-	char *name;				// name
-	u8 *png;				// Address of png in cache area
-	size_t pngSize;
-
-	bool filtered;			// if 1, this app match the filter
-	bool needUpdate;
-	bool checked;
-
-	// These are updated from s_channelConfig when browsing
-	int priority;			// Vote !
-	bool hidden;			// if 1, this app will be not listed
-	u32 category;
-	u16 playcount;			// how many time this title has bin executed
-	
-	bool dml;				// if true we are executing a dml game
-	char source[96];		// source folder
-	u8 disc;
-	}
-s_game;
-
-typedef struct
-	{
-	char name[128];
-	int priority;	// Vote !
-	bool hidden;	// if 1, this app will be not listed
-	u16 playcount;	// how many time this title has bin executed
-	//u32 category;	// bitmask category
-	}
-s_emuConfig;
-
-#define EMU_SNES 0
-#define EMU_NES 1
-#define EMU_VBA 2 //Game Boy/Game Boy Advance Emulator
-#define EMU_GEN 3 //Sega genesis
-#define EMU_WII64 4 //Wii64
-
-typedef struct
-	{
-	char *name;				// name
-	u8 *png;				// Address of png in cache area
-	size_t pngSize;
-
-	bool filtered;			// if 1, this app match the filter
-	bool needUpdate;
-	bool checked;
-
-	// These are updated from s_channelConfig when browsing
-	int priority;			// Vote !
-	int type;			// Vote !
-	bool hidden;			// if 1, this app will be not listed
-	u16 playcount;			// how many time this title has bin executed
-	}
-s_emu;
-
-typedef struct 
-	{
-	char *name;
-	char *desc;
-	char *longdesc;
-	char *path;
-	char *args;
-	char *version;
-	char filename[32];	// boot.dol... boot.elf...
-	char mount[5];		// keep track of where is located the homebrew, as we mix sd and usb...
-	int priority; 		// if true is listed before others
-	int type;			// 1 hb, 2 folder
-	int iosReload;
-	bool hidden;		// if 1, this app will be not listed
-	bool needUpdate;
-	bool checked;
-	bool fixCrashOnExit;
-	}
-s_app;
 
 typedef struct 
 	{
@@ -556,13 +563,14 @@ void RunLoader(void);
 // Themes
 int ThemeSelect (void);
 
-// DML
+// DML/Gamecube support
 void DMLResetCache (void);
 int DMLSelect (void);
 char * DMLScanner  (bool reset);
 int DMLRun (char *folder, char *id, u32 videomode);
 int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
+bool DEVO_Boot (char *path);
 
 // ScreenSaver
 bool LiveCheck (int reset);

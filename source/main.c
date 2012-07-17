@@ -452,6 +452,8 @@ int main(int argc, char **argv)
 		while (TRUE);
 		Video_LoadTheme (0);
 		}
+		
+	MasterInterface (1, 0, TEX_HGL, "Please wait...");
 	
 	if (ret == INTERACTIVE_RET_SE)
 		{

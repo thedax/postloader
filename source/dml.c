@@ -6,6 +6,7 @@
 #include <ogc/es.h>
 #include <ogc/video_types.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include "globals.h"
 #include "fsop/fsop.h"
 #include "devices.h"
@@ -42,89 +43,50 @@
 #define SRAM_DUTCH 5
 
 typedef struct DML_CFG
-{
-        u32 Magicbytes;                 //0xD1050CF6
-        u32 CfgVersion;                 //0x00000001
-        u32 VideoMode;
-        u32 Config;
-        char GamePath[255];
-        char CheatPath[255];
-} DML_CFG;
+	{
+	u32 Magicbytes;                 //0xD1050CF6
+	u32 CfgVersion;                 //0x00000001
+	u32 VideoMode;
+	u32 Config;
+	char GamePath[255];
+	char CheatPath[255];
+	} 
+DML_CFG;
 
 enum dmlconfig
-{
-        DML_CFG_CHEATS          = (1<<0),
-        DML_CFG_DEBUGGER        = (1<<1),
-        DML_CFG_DEBUGWAIT       = (1<<2),
-        DML_CFG_NMM             = (1<<3),
-        DML_CFG_NMM_DEBUG       = (1<<4),
-        DML_CFG_GAME_PATH       = (1<<5),
-        DML_CFG_CHEAT_PATH      = (1<<6),
-        DML_CFG_ACTIVITY_LED	= (1<<7),
-        DML_CFG_PADHOOK         = (1<<8),
-        DML_CFG_NODISC          = (1<<9),
-        DML_CFG_BOOT_DISC       = (1<<10),
-        DML_CFG_BOOT_DOL        = (1<<11),
-};
+	{
+	DML_CFG_CHEATS          = (1<<0),
+	DML_CFG_DEBUGGER        = (1<<1),
+	DML_CFG_DEBUGWAIT       = (1<<2),
+	DML_CFG_NMM             = (1<<3),
+	DML_CFG_NMM_DEBUG       = (1<<4),
+	DML_CFG_GAME_PATH       = (1<<5),
+	DML_CFG_CHEAT_PATH      = (1<<6),
+	DML_CFG_ACTIVITY_LED	= (1<<7),
+	DML_CFG_PADHOOK         = (1<<8),
+	DML_CFG_NODISC          = (1<<9),
+	DML_CFG_BOOT_DISC       = (1<<10),
+	DML_CFG_BOOT_DOL        = (1<<11),
+	};
 
 enum dmlvideomode
-{
-        DML_VID_DML_AUTO        = (0<<16),
-        DML_VID_FORCE           = (1<<16),
-        DML_VID_NONE            = (2<<16),
+	{
+	DML_VID_DML_AUTO        = (0<<16),
+	DML_VID_FORCE           = (1<<16),
+	DML_VID_NONE            = (2<<16),
 
-        DML_VID_FORCE_PAL50     = (1<<0),
-        DML_VID_FORCE_PAL60     = (1<<1),
-        DML_VID_FORCE_NTSC      = (1<<2),
-        DML_VID_FORCE_PROG      = (1<<3),
-        DML_VID_PROG_PATCH      = (1<<4),
-};
+	DML_VID_FORCE_PAL50     = (1<<0),
+	DML_VID_FORCE_PAL60     = (1<<1),
+	DML_VID_FORCE_NTSC      = (1<<2),
+	DML_VID_FORCE_PROG      = (1<<3),
+	DML_VID_PROG_PATCH      = (1<<4),
+	};
 
 static char *dmlFolders[] = {"ngc", "games"};
 
 syssram* __SYS_LockSram();
 u32 __SYS_UnlockSram(u32 write);
 u32 __SYS_SyncSram(void);
-
-s32 setstreaming()
-	{
-	char __di_fs[] ATTRIBUTE_ALIGN(32) = "/dev/di";
-	u32 bufferin[0x20] __attribute__((aligned(32)));
-	u32 bufferout[0x20] __attribute__((aligned(32)));
-	s32 __dvd_fd = -1;
-	
-	u8 ioctl;
-	ioctl = IOCTL_DI_DVDLowAudioBufferConfig;
-
-	__dvd_fd = IOS_Open(__di_fs,0);
-	if(__dvd_fd < 0) return __dvd_fd;
-
-	memset(bufferin, 0, 0x20);
-	memset(bufferout, 0, 0x20);
-
-	bufferin[0] = (ioctl << 24);
-
-	if ( (*(u32*)0x80000008)>>24 )
-		{
-		bufferin[1] = 1;
-		if( ((*(u32*)0x80000008)>>16) & 0xFF )
-			bufferin[2] = 10;
-		else 
-			bufferin[2] = 0;
-		}
-	else
-		{		
-		bufferin[1] = 0;
-		bufferin[2] = 0;
-		}			
-	DCFlushRange(bufferin, 0x20);
-	
-	int Ret = IOS_Ioctl(__dvd_fd, ioctl, bufferin, 0x20, bufferout, 0x20);
-	
-	IOS_Close(__dvd_fd);
-	
-	return ((Ret == 1) ? 0 : -Ret);
-	}
 
 static void SetGCVideoMode (void)
 	{
@@ -190,8 +152,6 @@ static void SetGCVideoMode (void)
 s32 StartMIOS (void)
 	{
 	s32 ret;
-	
-	//ret = setstreaming ();
 	
 	SetGCVideoMode ();
 	
@@ -449,9 +409,9 @@ char *DMLScanner  (bool reset)
 	if (reset == 1)
 		{
 		// Allow usb only for DM
-		if (config.dmlVersion < 2 && !devices_Get(DEV_SD)) return 0;
+		if (config.dmlVersion < GCMODE_DM2x && !devices_Get(DEV_SD)) return 0;
 		
-		if (config.dmlVersion < 2 && devices_Get(DEV_SD))
+		if (config.dmlVersion != GCMODE_DM2x && devices_Get(DEV_SD))
 			{
 			sprintf (path, "%s://games", devices_Get(DEV_SD));
 			
@@ -465,9 +425,9 @@ char *DMLScanner  (bool reset)
 					
 				sprintf (b, "%s/%s/game.iso", path, pent->d_name);
 				
-				if (!fsop_FileExist (b))
+				if (config.dmlVersion != GCMODE_DEVO && !fsop_FileExist (b))
 					sprintf (b, "%s/%s/sys/boot.bin", path, pent->d_name);
-				
+					
 				Debug ("DML: checking %s", b);
 				
 				if (fsop_FileExist (b))
@@ -549,7 +509,7 @@ char *DMLScanner  (bool reset)
 						ms_strtoupper (pent->d_name);
 						sprintf (b, "%s/%s/game.iso", path, pent->d_name);
 
-						if (!fsop_FileExist (b))
+						if (config.dmlVersion != GCMODE_DEVO && !fsop_FileExist (b))
 							sprintf (b, "%s/%s/sys/boot.bin", path, pent->d_name);
 
 						Debug ("DML: checking %s", b);
@@ -740,3 +700,142 @@ int DMLRunDisc (void)
 	WII_Initialize();
 	return WII_LaunchTitle(0x100000100LL);
 	}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Devolution: based on FIX94 implementation in WiiFlow
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// constant value for identification purposes
+#define CONFIG_SIG        0x3EF9DB23
+
+// version may change when future options are added
+#define CONFIG_VERSION    0x0100
+
+typedef struct global_config
+{
+	uint32_t signature;
+	uint16_t version;
+	uint16_t device_signature;
+	uint32_t memcard_cluster;
+	uint32_t disc1_cluster;
+	uint32_t disc2_cluster;
+} gconfig; 
+
+u8 *loader_bin = NULL;
+static gconfig *DEVO_CONFIG = (gconfig*)0x80000020;
+
+static bool IsGCCardAvailable (void)
+	{
+	CARD_Init (NULL, NULL);
+    return (CARD_Probe (CARD_SLOTA) <= 0) ? false : true;
+	}
+
+// path is the full path to iso image
+bool DEVO_Boot (char *path)
+	{       
+	//Read in loader.bin
+	char loader_path[256];
+	
+	Debug ("DEVO_Boot: %s", path);
+		
+	snprintf(loader_path, sizeof (loader_path), "%s://ploader/plugins/loader.bin", vars.defMount);
+	
+	loader_bin = fsop_ReadFile (loader_path, 0, NULL);
+	if (!loader_bin) return false;
+	
+	Debug ("DEVO_Boot: loader in memory");
+	
+	//start writing cfg to mem
+	struct stat st;
+	char full_path[256];
+	int data_fd;
+	char gameID[7];
+
+	FILE *f = fopen(path, "rb");
+	if (!f)
+		{
+		free (loader_bin);
+		return false;
+		}
+		
+	fread ((u8*)0x80000000, 1, 32, f);
+	fclose (f);
+
+	memcpy (&gameID, (u8*)0x80000000, 6);
+
+	stat (path, &st);
+
+	// fill out the Devolution config struct
+	memset(DEVO_CONFIG, 0, sizeof(*DEVO_CONFIG));
+	DEVO_CONFIG->signature = 0x3EF9DB23;
+	DEVO_CONFIG->version = 0x00000100;
+	DEVO_CONFIG->device_signature = st.st_dev;
+	DEVO_CONFIG->disc1_cluster = st.st_ino;
+
+	// make sure these directories exist, they are required for Devolution to function correctly
+	snprintf(full_path, sizeof(full_path), "%s:/apps", fsop_GetDev (path));
+	fsop_MakeFolder(full_path);
+	
+	snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo", fsop_GetDev (path));
+	fsop_MakeFolder(full_path);
+
+	if (!IsGCCardAvailable ())
+		{
+		Debug ("DEVO_Boot: using emulated card");
+		
+		// find or create a 16MB memcard file for emulation
+		// this file can be located anywhere since it's passed by cluster, not name
+		// it must be at least 16MB though
+		if(gameID[3] == 'J') //Japanese Memory Card
+			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/memcard_jap.bin", fsop_GetDev (path));
+		else
+			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/memcard.bin", fsop_GetDev (path));
+
+		// check if file doesn't exist or is less than 16MB
+		if (stat(full_path, &st) == -1 || st.st_size < 16<<20)
+			{
+			// need to enlarge or create it
+			data_fd = open(full_path, O_WRONLY|O_CREAT);
+			if (data_fd >= 0)
+				{
+				// make it 16MB
+				gprintf("Resizing memcard file...\n");
+				ftruncate(data_fd, 16<<20);
+				if (fstat(data_fd, &st) == -1 || st.st_size < 16<<20)
+					{
+					// it still isn't big enough. Give up.
+					st.st_ino = 0;
+					}
+				close(data_fd);
+				}
+			else
+				{
+				// couldn't open or create the memory card file
+				st.st_ino = 0;
+				}
+			}
+		}
+	else
+		{
+		Debug ("DEVO_Boot: using real card");
+		st.st_ino = 0;
+		}
+
+	// set FAT cluster for start of memory card file
+	// if this is zero memory card emulation will not be used
+	DEVO_CONFIG->memcard_cluster = st.st_ino;
+
+	// flush disc ID and Devolution config out to memory
+	DCFlushRange((void*)0x80000000, 64);
+	
+	Shutdown (0);
+
+	// the Devolution blob has an ID string at offset 4
+	gprintf((const char*)loader_bin + 4);
+
+	((void(*)(void))loader_bin)();
+
+	return true;
+	}
+
+

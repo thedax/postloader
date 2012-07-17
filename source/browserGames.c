@@ -217,7 +217,7 @@ static void FeedCoverCache (void)
 		{
 		ai = (page * gui.spotsXpage) + i;
 		
-		if (ai >= 0 && ai < gamesCnt)
+		if (ai >= 0 && ai < gamesCnt && games[ai].hasCover)
 			{
 			MakeCoverPath (ai, path);
 			CoverCache_Add (path, (i >= 0 && i < gui.spotsXpage) ? true:false );
@@ -497,6 +497,38 @@ static void UpdateTitlesFromTxt (void)
 		}
 	Debug ("UpdateTitlesFromTxt: end");
 	}
+	
+// This will check if cover is available
+static void CheckForCovers (void)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+
+	char path[256];
+	int i;
+	
+	// Cleanup cover flag
+	for (i = 0; i < gamesCnt; i++)
+		games[i].hasCover = 0;
+		
+	sprintf (path, "%s://ploader/covers", vars.defMount);
+	pdir=opendir(path);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		// Skip it
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || ms_strstr (pent->d_name, ".png") == NULL)
+			continue;
+			
+		for (i = 0; i < gamesCnt; i++)
+			{
+			if (!games[i].hasCover && ms_strstr (pent->d_name, games[i].asciiId))
+				games[i].hasCover = 1;
+			}
+		}
+	closedir(pdir);
+	}
+
 
 static int GameBrowse (int forcescan)
 	{
@@ -547,13 +579,13 @@ static int GameBrowse (int forcescan)
 		if (*p != '\0' && strlen(p))
 			{
 			// Add name
-			Debug ("name = %s (%d)", p, strlen(p));
+			// Debug ("name = %s (%d)", p, strlen(p));
 			games[i].name = malloc (strlen(p)+1);
 			strcpy (games[i].name, p);
 			p += (strlen(p) + 1);
 			
 			// Add id
-			Debug ("id = %s (%d)", p, strlen(p));
+			// Debug ("id = %s (%d)", p, strlen(p));
 			strncpy (games[i].asciiId, p, 6);
 			if (config.gameMode == GM_DML)
 				games[i].disc = p[6];
@@ -584,16 +616,24 @@ static int GameBrowse (int forcescan)
 				p += (strlen(p) + 1);
 				}
 			
-			Debug (" > %s (%s:%d:%d)", games[i].name, games[i].asciiId, games[i].disc, games[i].slot);
+			Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
 
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 			
-			if (config.gameMode == GM_DML && config.dmlVersion == 2 && games[i].slot == 0)
-				;
+			if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM2x && games[i].slot == 0)
+				{
+				// do nothing, only games on USB are added (slot != 0)
+				}
+			else if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DEVO && (games[i].slot == 0 || strstr (games[i].source, "usb:")))
+				{
+				// with devolution, games from sd and first usb partition (opefully FAT/FAT32) can be used
+				
+				ReadGameConfig (i);
+				i ++;
+				}
 			else
 				{
 				ReadGameConfig (i);
-				
 				i ++;
 				}
 			}
@@ -607,6 +647,8 @@ static int GameBrowse (int forcescan)
 	free (titles);
 
 	scanned = 1;
+	
+	CheckForCovers ();
 
 	Debug ("end GameBrowse");
 
@@ -934,15 +976,26 @@ static void ShowAppMenu (int ai)
 			if (games[ai].slot == 0)
 				grlib_menuAddItem (buff, 7, "Remove from SD");
 				
-			strcat (buff, "DML: Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
+			if (config.dmlVersion != GCMODE_DEVO)
+				{
+				strcat (buff, "DML: Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
+				}
 
-			if (config.dmlVersion)
+			if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM2x)
 				{
 				grlib_menuAddItem (buff, 8, "DML: Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 				grlib_menuAddItem (buff, 9, "DML: Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
 				grlib_menuAddItem (buff,10, "DML: Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
 				grlib_menuAddItem (buff,11, "DML: Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
 				}
+				
+			// DEVO will use gccard autodetect (thx daxtsu)
+			/*
+			if (config.dmlVersion == GCMODE_DEVO)
+				{
+				grlib_menuAddItem (buff,10, "DEVO: Use virtual card (%s)", gameConf.dmlNMM ? "Yes" : "No" );
+				}
+			*/
 			}
 		/*
 		else
@@ -975,7 +1028,9 @@ static void ShowAppMenu (int ai)
 			}
 		*/
 		
+		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (games[ai].name, buff);
+		Video_SetFontMenu(TTFNORM);
 
 		if (item >= 100)
 			{
@@ -1162,7 +1217,7 @@ start:
 			grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
 			}
 		else
-			grlib_menuAddItem (buff, 6, "Rebuild game list (DML)...");
+			grlib_menuAddItem (buff, 6, "Rebuild game list...");
 		}
 	else
 		{
@@ -1192,12 +1247,14 @@ start:
 	else
 		{
 		grlib_menuAddItem (buff, 3, "Set default DML videomode...");
-		if (config.dmlVersion == 0)
+		if (config.dmlVersion == GCMODE_DML0x)
 			grlib_menuAddItem (buff, 12, "GameCube mode: DML v0.x");
-		if (config.dmlVersion == 1)
+		if (config.dmlVersion == GCMODE_DML1x)
 			grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
-		if (config.dmlVersion == 2)
+		if (config.dmlVersion == GCMODE_DM2x)
 			grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.x USB");
+		if (config.dmlVersion == GCMODE_DEVO)
+			grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
 		}
 	
 	// note: maybe it is not the right place for this option
@@ -1281,15 +1338,15 @@ start:
 	if (item == 12)
 		{
 		config.dmlVersion++;
-		if (config.dmlVersion > 2)
-			config.dmlVersion = 0;
+		if (config.dmlVersion >= GCMODE_MAX)
+			config.dmlVersion = GCMODE_DML0x;
 			
 		rebrowse = 1;
 		goto start;
 		}
 			
 	if (rebrowse)
-		GameBrowse (0);
+		GameBrowse (1);
 	else
 		SortItems ();
 	
@@ -1337,7 +1394,7 @@ static void RedrawIcons (int xoff, int yoff)
 
 			if (config.gameMode == GM_DML)
 				{
-				if (config.dmlVersion < 2 && games[ai].slot)
+				if (config.dmlVersion < GCMODE_DM2x && games[ai].slot)
 					gui.spots[gui.spotsIdx].ico.transparency = 128;
 				else
 					gui.spots[gui.spotsIdx].ico.transparency = 255;
@@ -1720,7 +1777,7 @@ int GameBrowser (void)
 					
 					Debug ("gamebrowser: requested dml");
 
-					if (config.dmlVersion < 2 && games[gamesSelected].slot)
+					if (config.dmlVersion < GCMODE_DM2x && games[gamesSelected].slot)
 						{
 						int ret = DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected));
 
@@ -1749,23 +1806,37 @@ int GameBrowser (void)
 						//Debug ("%s -> %s", games[gamesSelected].source, p);
 						
 						// Execute !
-						if (config.dmlVersion)
+						
+						switch (config.dmlVersion)
 							{
-							char *p = strstr (games[gamesSelected].source, "//")+1;
-							DMLRunNew (p, games[gamesSelected].asciiId, &gameConf);
-							//DMLRunNew (games[gamesSelected].source, games[gamesSelected].asciiId, gameConf.dmlVideoMode, gameConf.dmlNoDisc, gameConf.dmlPadHook);
-							}
-						else
-							{
-							// Retrive the folder name
-							char *p;
-							p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
-							while (*p != '/') p--;
-							p++;
+							case GCMODE_DML0x:
+								{
+								// Retrive the folder name
+								char *p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
+								while (*p != '/') p--;
+								p++;
 
-							DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode);
-							}
+								DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode);
+								}
+								break;
 							
+							case GCMODE_DML1x:
+							case GCMODE_DM2x:
+								{
+								char *p = strstr (games[gamesSelected].source, "//")+1;
+								DMLRunNew (p, games[gamesSelected].asciiId, &gameConf);
+								}
+								break;
+								
+							case GCMODE_DEVO:
+								{
+								char path[256];
+								sprintf (path, "%s/game.iso", games[gamesSelected].source);
+								DEVO_Boot (path);
+								}
+								break;
+							}
+						
 						Video_SetFont(TTFNORM);
 						grlib_menu ("There was a problem executing DML.\n\nPlease check if 'GameCube mode' is the right one. Press [home]", "   OK   ");
 						Conf (true);	// Store configuration on disc

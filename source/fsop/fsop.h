@@ -26,6 +26,10 @@ s_fsop;
 
 extern s_fsop fsop;
 
+char * fsop_GetFilename (char *path, bool killExt);
+char * fsop_GetPath (char *path);
+char * fsop_GetDev (char *path);
+
 u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded);
 bool fsop_WriteFile (char *path, u8 *buff, size_t len);
 u32 fsop_CountDirItems (char *source);

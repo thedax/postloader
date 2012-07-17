@@ -86,7 +86,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		bool cutted = FALSE;
 		int pt3 = grlib_GetFontMetrics("...", NULL, NULL);
 		
-		while (grlib_GetFontMetrics(desc, NULL, NULL) > (w - pt3) && strlen(desc) > 0)
+		while (strlen(desc) > 0 && grlib_GetFontMetrics(desc, NULL, NULL) > (w - pt3))
 			{
 			desc[strlen(desc)-1] = 0;
 			cutted = TRUE;

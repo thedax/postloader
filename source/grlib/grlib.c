@@ -58,7 +58,7 @@ void grlib_Controllers (bool enable)
 		PAD_Reset(0xf0000000);
 		}
 	}
-
+	
 void grlib_Init (void)
 	{
 	memset (&grlibSettings, 0, sizeof (s_grlibSettings));
@@ -175,8 +175,11 @@ void inline grlib_Render (void)
 	// and loss of performance.
 	// In continuos update mode, doesn't heppen, so GRRLIB_Render can be called.
 	
-	// GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
-	// grlib_DrawScreenTex (redrawTex);
+	if (!GRRLIB_GetFBMode())
+		{
+		GRRLIB_Screen2Texture (0, 0, redrawTex, 1);
+		grlib_DrawScreenTex (redrawTex);
+		}
 	
 	GRRLIB_Render ();
 	} 
@@ -364,11 +367,7 @@ int grlib_GetFontMetrics (const char *text, int *width, int *height)
 	if (grlibSettings.fontMode == GRLIB_FONTMODE_TTF)
 		{
 		xoff = GRRLIB_WidthTTF(grlibSettings.font, text, grlibSettings.fontDef.size);
-		// gprintf ("GRRLIB_WidthTTF '%s' = %d\r\n", text, xoff);
-		/*
-		for (i = 0; i < strlen (text); i++) 
-			xoff += wtable[grlibSettings.fontSize-10][(unsigned char)text[i]];
-		*/
+
 		if (height) *height = grlibSettings.fontDef.size + grlibSettings.fontDef.sizeOffsetY; // Should be measured
 		if (width) *width = xoff;
 		return xoff;
@@ -782,8 +781,7 @@ int grlib_GetUserInput (void)
         if (cbtn & CLASSIC_CTRL_BUTTON_LEFT) return WPAD_BUTTON_LEFT;
         if (cbtn & CLASSIC_CTRL_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
 		}
-	
-	
+
 	return 0;
 	}
 

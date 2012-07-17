@@ -152,10 +152,20 @@ int GoToPage (int page, int pageMax)
 		cols = 10;
 		inc = 1;
 		}
-	else
+	else if (pageMax < 500)
 		{
 		cols = 10;
 		inc = 5;
+		}
+	else if (pageMax < 2500)
+		{
+		cols = 10;
+		inc = 25;
+		}
+	else
+		{
+		cols = 10;
+		inc = 100;
 		}
 	
 	for (col = 0; col < cols; col++)

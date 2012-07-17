@@ -1021,7 +1021,8 @@ u8  GRRLIB_ClampVar8 (f32 Value) {
    }
 #endif /* __cplusplus */
 
-void GRRLIB_SetFBMode (int mode); //stfour
+void inline GRRLIB_SetFBMode (int mode); //stfour
+int inline GRRLIB_GetFBMode (void); //stfour
 
 #endif // __GRRLIB_H__
 /** @} */ // end of group

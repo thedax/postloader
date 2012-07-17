@@ -13,17 +13,13 @@
 
 static mutex_t mutex;
 
-#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
+//#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
 //#define SET(a, b) a = b;
 #define MAXITEMS 128
 
 #define STACKSIZE	8192
 static u8 * threadStack = NULL;
 static lwp_t hthread = LWP_THREAD_NULL;
-
-#define NOTFOUNDBUFFSIZE 8192
-static char notFoundBuff[NOTFOUNDBUFFSIZE];
-static volatile int notFoundBuffLen = 0;
 
 typedef struct 
 	{
@@ -42,54 +38,13 @@ static int age = 0;
 #define PAUSE_REQUEST 1
 #define PAUSE_YES 2
 
-static int threadPause = PAUSE_NO;
+static volatile int threadPause = PAUSE_NO;
 static volatile int threadStop = 0;
 static volatile int threadRunning = 0;
 static volatile int cId = 0;
 static volatile int update = 0;
 
 #define UPDATE_TP() DCFlushRange(threadPause, sizeof(int))
-
-static void notFound_Init (void)
-	{
-	*notFoundBuff = '\0';
-	notFoundBuffLen = 0;
-	}
-	
-static void notFound_Add (char *path)
-	{
-	char *p = strrchr (path, '/');
-	if (!p) return;
-	
-	p++;
-	
-	int l = strlen (p);
-	
-	if (l + notFoundBuffLen >= NOTFOUNDBUFFSIZE)
-		{
-		notFound_Init (); // we should do something more clever :P
-		}
-		
-	strcat (notFoundBuff, p);
-	strcat (notFoundBuff, ";");
-	
-	DCFlushRange(&notFoundBuff[notFoundBuffLen], l+1);
-	
-	notFoundBuffLen += (l+1);
-	}
-
-static bool notFound_Find (char *path)
-	{
-	char *p = strrchr (path, '/');
-	if (!p) return false;
-	
-	p++;
-	
-	if (strstr (notFoundBuff, p)) // found
-		return true;
-		
-	return false;
-	}
 
 static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex)
 	{
@@ -162,16 +117,17 @@ static void *thread (void *arg)
 				cId = i;
 				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
 				
+				LWP_MutexLock (mutex);
 				cc[i].prio = 0;
  				cc[i].cover = MoveTex2Mem2 (tex);
 				
 				if (!cc[i].cover) 
 					{
-					notFound_Add (cc[i].id); // add to blacklist
 					*cc[i].id = '\0'; // do not try again
 					}
 				DCFlushRange(&cc[i], sizeof(s_cc));
 				update ++;
+				LWP_MutexUnlock (mutex);
 
 				cId = -1;
 				}
@@ -179,7 +135,7 @@ static void *thread (void *arg)
 			//gprintf ("%d ",*threadPause);
 			if (threadPause == PAUSE_REQUEST)
 				{
-				SET (threadPause, PAUSE_YES);
+				threadPause = PAUSE_YES;
 				
 				int tout = 10000;
 				while (threadPause == PAUSE_YES && --tout > 0)
@@ -220,7 +176,7 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	
 	if (yes)
 		{
-		SET (threadPause, PAUSE_REQUEST);
+		threadPause = PAUSE_REQUEST;
 
 		int tout = 10000;
 		while (threadPause != PAUSE_YES && --tout > 0)
@@ -257,8 +213,6 @@ void CoverCache_Flush (void)	// empty the cache
 	Debug ("CoverCache_Flush");
 	
 	CoverCache_Pause (true);
-	
-	notFound_Init ();
 	
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
@@ -322,7 +276,8 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 
 	int i;
 	GRRLIB_texImg *tex = NULL;
-
+	
+	LWP_MutexLock (mutex);
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (i != cId && *cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
@@ -331,7 +286,8 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 			break;
 			}
 		}
-
+	LWP_MutexUnlock (mutex);
+	
 	return tex;
 	}
 	
@@ -364,8 +320,6 @@ void CoverCache_Add (char *id, bool priority)
 	{
 	int i;
 	bool found = false;
-	
-	if (notFound_Find (id)) return;	// blacklisted
 	
 	if (threadPause != PAUSE_YES)
 		{

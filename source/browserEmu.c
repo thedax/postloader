@@ -19,7 +19,7 @@
 #include "browser.h"
 #include "fsop/fsop.h"
 
-#define EMUMAX 8192
+#define EMUMAX 16384
 
 /*
 
@@ -63,6 +63,8 @@ static int pluginsCnt = 0;
 static GRRLIB_texImg **emuicons;
 
 static int fulldebug = 0;
+
+static int usedBytes = 0;
 
 #define ICONW 100
 #define ICONH 93
@@ -128,55 +130,6 @@ static void InitializeGui (void)
 		}
 	}
 
-/*
-This will extract the pathname from full rom path
-*/
-static char * GetFilename (char *path)
-	{
-	static char fn[256];
-	char buff[256];
-	
-	strcpy (buff, path);
-	
-	int i;
-	
-	// remove extension
-	i = strlen(buff)-1;
-	while (i > 0 && buff[i] != '.')
-		{
-		i--;
-		}
-	if (buff[i] == '.') buff[i] = 0;
-
-	i = strlen(buff)-1;
-	while (i > 0 && buff[i] != '/')
-		{
-		i--;
-		}
-	strcpy (fn, &buff[i+1]);
-	
-	return fn;
-	}
-	
-static char * GetPath (char *path)
-	{
-	static char fn[256];
-	
-	strcpy (fn, path);
-	
-	int i;
-	
-	i = strlen(fn)-1;
-	while (i > 0 && fn[i] != '/')
-		{
-		i--;
-		}
-	fn[i] = 0;
-	
-	return fn;
-	}
-	
-
 static void Conf (bool open)
 	{
 	char cfgpath[64];
@@ -204,7 +157,7 @@ static void WriteGameConfig (int ia)
 	emuConf.playcount = emus[ia].playcount;
 	
 	char *buff = Bin2HexAscii (&emuConf, sizeof (s_emuConfig), 0);
-	cfg_SetString (cfg, GetFilename(emus[ia].name), buff);
+	cfg_SetString (cfg, fsop_GetFilename(emus[ia].name, true), buff);
 	free (buff);
 	}
 
@@ -213,7 +166,7 @@ static int ReadGameConfig (int ia)
 	char buff[1024];
 	bool valid;
 	
-	valid = cfg_GetString (cfg, GetFilename(emus[ia].name), buff);
+	valid = cfg_GetString (cfg, fsop_GetFilename(emus[ia].name, true), buff);
 	
 	if (valid)
 		{
@@ -336,11 +289,23 @@ static void Plugins (bool open)
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int CountRomsPlugin (int type)
+	{
+	int i;
+	int count = 0;
+	
+	for (i = 0; i < emusCnt; i++)
+		{
+		if (emus[i].type == type) count++;
+		}
+	
+	return count;
+	}
 	
 static void MakeCoverPath (int ai, char *path)
 	{
-	sprintf (path, "%s://ploader/covers.emu/%s.png", vars.defMount, GetFilename(emus[ai].name));
-	//grlib_dosm (path);
+	sprintf (path, "%s://ploader/covers.emu/%s.png", vars.defMount, fsop_GetFilename(emus[ai].name, true));
 	}
 
 static void FeedCoverCache (void)
@@ -358,7 +323,7 @@ static void FeedCoverCache (void)
 		{
 		ai = (page * gui.spotsXpage) + i;
 		
-		if (ai >= 0 && ai < emusCnt)
+		if (ai >= 0 && ai < emusCnt && emus[ai].hasCover)
 			{
 			MakeCoverPath (ai, path);
 			CoverCache_Add (path, (i >= 0 && i < gui.spotsXpage) ? true:false );
@@ -409,13 +374,13 @@ static void GetCovers_Scan (char *path)
 			{
 			if (time(NULL) > t)
 				{
-				strcpy (romname, GetFilename (emus[i].name));
+				strcpy (romname, fsop_GetFilename (emus[i].name, true));
 				romname[32] = 0;
 				Video_WaitPanel (TEX_HGL, "Searching...|(B) Stop", romname, emusCnt);
 				t = time(NULL)+1;
 				}
 
-			strcpy (romname, GetFilename (emus[i].name));
+			strcpy (romname, fsop_GetFilename (emus[i].name, true));
 			
 			if (ms_strstr (pent->d_name, romname))
 				{
@@ -526,6 +491,40 @@ static void SortItems (void)
 	Debug ("SortItems: end");
 	}
 	
+// This will check if cover is available
+static void CheckForCovers (void)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+
+	char path[256];
+	int i;
+	
+	// Cleanup cover flag
+	for (i = 0; i < emusCnt; i++)
+		emus[i].hasCover = 0;
+		
+	sprintf (path, "%s://ploader/covers.emu", vars.defMount);
+	pdir=opendir(path);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		// Skip it
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || ms_strstr (pent->d_name, ".png") == NULL)
+			continue;
+
+		for (i = 0; i < emusCnt; i++)
+			{
+			if (!emus[i].hasCover && ms_strstr (pent->d_name, fsop_GetFilename (emus[i].name, true)))
+				{
+				emus[i].hasCover = 1;
+				break;
+				}
+			}
+		}
+	closedir(pdir);
+	}
+	
 static int BrowsePluginFolder (int type, int startidx, char *path)
 	{
 	int i = startidx;
@@ -543,7 +542,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	while ((pent=readdir(pdir)) != NULL) 
 		{
 		if (i >= EMUMAX)
-			continue;
+			break;
 		
 		// Skip it
 		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
@@ -558,8 +557,6 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 			
 		p++;
 		
-		//Debug ("  %s > %s", p, ext);
-		
 		if (!ms_strstr (ext, p))
 			continue;
 
@@ -568,6 +565,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 		//Debug ("   > %s", fn);
 		
 		emus[i].name = calloc (1, strlen (fn) + 1);
+		
+		usedBytes += (strlen (fn) + 1);
 		
 		if (!emus[i].name)
 			{
@@ -608,6 +607,7 @@ static int EmuBrowse (void)
 	
 	Debug ("Emu Browse: searching for plugins data roms");
 	
+	usedBytes = 0;
 	emusCnt = 0;
 	for (dev = 0; dev < DEV_MAX; dev++)
 		{
@@ -626,6 +626,10 @@ static int EmuBrowse (void)
 		}
 			
 	scanned = 1;
+	
+	Debug ("Allocated %d bytes (%d Kb)", EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
+	
+	CheckForCovers ();
 	
 	Debug ("end EmuBrowse");
 
@@ -657,7 +661,7 @@ static int FindSpot (void)
 			grlib_IconDraw (&is, &gui.spots[i].ico);
 
 			Video_SetFont(TTFNORM);
-			sprintf (buff, "%s: %s", Plugins_Get (emus[emuSelected].type, PIN_NAME), GetFilename (emus[emuSelected].name));
+			sprintf (buff, "%s: %s", Plugins_Get (emus[emuSelected].type, PIN_NAME), fsop_GetFilename (emus[emuSelected].name, true));
 
 			char title[256];
 			strcpy (title, buff);
@@ -669,7 +673,7 @@ static int FindSpot (void)
 			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, title);
 
 			Video_SetFont(TTFSMALL);
-			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, GetPath(emus[emuSelected].name));
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, fsop_GetPath(emus[emuSelected].name));
 			
 			t = time(NULL);
 			break;
@@ -732,11 +736,16 @@ static void ShowFilterMenu (void)
 	do
 		{
 		buff[0] = '\0';
+		int col = 0;
 		for (i = 0; i < pluginsCnt; i++)
 			{
-			if (i == 8 || i == 16 || i == 24) grlib_menuAddColumn (buff);
+			if (col == 8 || col == 16 || col == 24) grlib_menuAddColumn (buff);
 			//grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
-			grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_Get (i, PIN_NAME));
+			if (CountRomsPlugin(i))
+				{
+				grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_Get (i, PIN_NAME));
+				col ++;
+				}
 			}
 		
 		Video_SetFontMenu(TTFVERYSMALL);
@@ -944,7 +953,7 @@ static void RedrawIcons (int xoff, int yoff)
 				gui.spots[gui.spotsIdx].ico.icon = emuicons[emus[ai].type];
 				
 				char title[256];
-				strcpy (title, GetFilename(emus[ai].name));
+				strcpy (title, fsop_GetFilename(emus[ai].name, true));
 				title[48] = 0;
 				strcpy (gui.spots[gui.spotsIdx].ico.title, title);
 				}
@@ -1232,6 +1241,7 @@ int EmuBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
+	usedBytes = 0;
 	emus = calloc (EMUMAX, sizeof(s_emu));
 	
 	// Immediately draw the screen...
@@ -1276,6 +1286,7 @@ int EmuBrowser (void)
 					redraw = 1;
 					continue;
 					}
+					
 				Debug ("emuRun");
 				ReadGameConfig (emuSelected);
 				emus[emuSelected].playcount++;

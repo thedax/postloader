@@ -1,3 +1,17 @@
+postLoader 4.b35
+
+* added support to Devolution. (thx to tueidj (sample loader) / fix94 (wiiflow implementation) / daxtsu (hints))
+  > loader.bin must be copied in /ploader/plugins.
+  > images must be in /games/<what you want>/game.iso (like dml).
+* emu filters shown now only plugins with associated roms
+* up to 16536 roms can be browsed (even if I think is a crazy number, but until ram is available....)
+* adjusted roms structure (about 192Kb are saved).
+* "go to page" adjusted to be able to manage all that roms (kuwanger)
+* added mutex on covercache_get. This may have solved postloader random hang
+* added better and faster control for missing covers, so covercache thread don't need to check for them.
+* new case insensitive strstr. This give a general speedup to postloader (http://www.daniweb.com/software-development/c/code/216564/strings-case-insensitive-strstr)
+* code clean
+
 postLoader 4.b34
 
 * increased the buffer for filter menu (thx kuwanger)

@@ -16,7 +16,39 @@ void ms_strtoupper(char *str1)
 	for (i = 0; i < strlen(str1); i++) str1[i] = (char)toupper((int)str1[i]);
 	}
 
+//taken from http://www.daniweb.com/software-development/c/code/216564/strings-case-insensitive-strstr
 char *ms_strstr(char *str1, char *str2)
+	{
+	if ( !*str2 )
+		{
+		return str1;
+		}
+
+	for ( ; *str1; ++str1 )
+		{
+		if ( toupper((int)*str1) == toupper((int)*str2) )
+			{
+			/*
+			* Matched starting char -- loop through remaining chars.
+			*/
+			const char *h, *n;
+			for ( h = str1, n = str2; *h && *n; ++h, ++n )
+				{
+				if ( toupper((int)*h) != toupper((int)*n) )
+					{
+					break;
+					}
+				}
+			if ( !*n ) /* matched all of 'str2' to null termination */
+				{
+				return str1; /* return the start of the match */
+				}
+			}
+		}
+	return 0;
+	}
+
+/*
 	{
 	if (!str1 || !str2 || !*str1 || !*str2)
 		return NULL;
@@ -42,6 +74,7 @@ char *ms_strstr(char *str1, char *str2)
 	
 	return p;
 	}
+*/
 
 int ms_strcmp(char *str1, char *str2)
 	{

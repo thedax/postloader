@@ -158,7 +158,7 @@ static void FeedCoverCache (void)
 		{
 		ai = (page * gui.spotsXpage) + i;
 		
-		if (ai >= 0 && ai < chansCnt)
+		if (ai >= 0 && ai < chansCnt && chans[ai].hasCover)
 			{
 			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
 			CoverCache_Add (path,  (i >= 0 && i < gui.spotsXpage) ? true:false );
@@ -599,6 +599,37 @@ static void UpdateTitlesFromTxt (void)
 		}
 	}
 
+// This will check if cover is available
+static void CheckForCovers (void)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+
+	char path[256];
+	int i;
+	
+	// Cleanup cover flag
+	for (i = 0; i < chansCnt; i++)
+		chans[i].hasCover = 0;
+		
+	sprintf (path, "%s://ploader/covers", vars.defMount);
+	pdir=opendir(path);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		// Skip it
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || ms_strstr (pent->d_name, ".png") == NULL)
+			continue;
+			
+		for (i = 0; i < chansCnt; i++)
+			{
+			if (!chans[i].hasCover && ms_strstr (pent->d_name, chans[i].asciiId))
+				chans[i].hasCover = 1;
+			}
+		}
+	closedir(pdir);
+	}
+
 static int ChnBrowse (void)
 	{
 	int i;
@@ -691,6 +722,8 @@ static int ChnBrowse (void)
 	nandScanned = true;
 	
 	free (titles);
+	
+	CheckForCovers ();
 	
 	Debug ("ChnBrowse: done!");
 	return chansCnt;

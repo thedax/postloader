@@ -405,10 +405,16 @@ void GRRLIB_PrintfTTF_Debug (int enable)
  */
 void GRRLIB_PrintfTTF(int x, int y, GRRLIB_ttfFont *myFont, const char *string, unsigned int fontSize, const u32 color) 
 	{
-    if(myFont == NULL || string == NULL) return;
+    if (myFont == NULL || string == NULL || *string == '\0') return;
 
 	size_t l = strlen(string);
 	char *s = calloc (1, l + 1);
+	
+	if (!s)
+		{
+		gprintf ("GRRLIB_PrintfTTF !!! failed to allacate buffer %d '%s'", l, string);
+		return;
+		}
 	
 	strcpy (s, string);
 
@@ -620,26 +626,40 @@ static void DrawBitmap_old(FT_Bitmap *bitmap, int offset, int top, const u8 cR, 
  */
 unsigned int GRRLIB_WidthTTF(GRRLIB_ttfFont *myFont, const char *string, unsigned int fontSize) 
 	{
-    if(myFont == NULL || string == NULL) 
-		{
-        return 0;
-		}
-    
+	if (myFont == NULL || string == NULL || *string == '\0') return 0;
+	
 	unsigned int penX = 0;
-	
-    int length = strlen(string);
 
-    wchar_t *utf32 = (wchar_t*)malloc((length+1) * sizeof(wchar_t));
-	if (!utf32) return 0;
+	size_t l = strlen(string);
+	char *s = calloc (1, l + 1);
 	
-    length = mbstowcs(utf32, string, length);
-	if (length > 0)
+	if (!s)
 		{
-		utf32[length] = L'\0';
-		penX = GRRLIB_WidthTTFW(myFont, utf32, fontSize);
+		gprintf ("GRRLIB_PrintfTTF !!! failed to allacate buffer %d '%s'", l, string);
+		return 0;
 		}
 	
-	free(utf32);
+	strcpy (s, string);
+
+	int i;
+	for (i = 0; i < l; i++)
+		if (s[i] == 255)
+			s[i] = 27;
+	
+    wchar_t *utf32 = (wchar_t*)malloc((l + 1) * sizeof(wchar_t));
+    if (utf32) 
+		{
+		size_t length = mbstowcs(utf32, s, l);
+
+		if (length > 0 && length != (size_t)-1) 
+			{
+            utf32[length] = L'\0';
+            penX = GRRLIB_WidthTTFW(myFont, utf32, fontSize);
+			}
+        free(utf32);
+		}
+		
+	free (s);
 
     return penX;
 	}
@@ -651,19 +671,22 @@ unsigned int GRRLIB_WidthTTF(GRRLIB_ttfFont *myFont, const char *string, unsigne
  * @param fontSize The size of the font.
  * @return The width of a text in pixel.
  */
-unsigned int GRRLIB_WidthTTFW(GRRLIB_ttfFont *myFont, const wchar_t *utf32, unsigned int fontSize) {
-    if(myFont == NULL || utf32 == NULL) {
+unsigned int GRRLIB_WidthTTFW(GRRLIB_ttfFont *myFont, const wchar_t *utf32, unsigned int fontSize) 
+	{
+    if (myFont == NULL || utf32 == NULL) 
+		{
         return 0;
-    }
+		}
 
     FT_Face Face = (FT_Face)myFont->face;
     unsigned int penX = 0;
     FT_UInt glyphIndex;
     FT_UInt previousGlyph = 0;
 
-    if(FT_Set_Pixel_Sizes(myFont->face, (int)((f32)fontSize / 1.2), fontSize)) {
-         FT_Set_Pixel_Sizes(myFont->face, 0, 12);
-    }
+    if(FT_Set_Pixel_Sizes(myFont->face, (int)((f32)fontSize / 1.2), fontSize)) 
+		{
+        FT_Set_Pixel_Sizes(myFont->face, 0, 12);
+		}
 
     while(*utf32) 
 		{
@@ -1120,9 +1143,13 @@ void  GRRLIB_Screen2Texture (int posx, int posy, GRRLIB_texImg *tex, bool clear)
         GX_PixModeSync();
         GRRLIB_FlushTex(tex);
 		
-		if (fbMode == 1) // double
+		if (fbMode) // double
 			{
 			if(clear) GX_CopyDisp(xfb[!fb], GX_TRUE);
+			}
+		else
+			{
+			if(clear) GX_CopyDisp(xfb[fb], GX_TRUE);
 			}
     }
 }
@@ -1546,16 +1573,14 @@ void  GRRLIB_Render (void) {
     GX_DrawDone();          // Tell the GX engine we are done drawing
     GX_InvalidateTexAll();
 
-	if (fbMode == 1)
+	if (fbMode)
 		fb ^= 1;  // Toggle framebuffer index
-	else
-		fb = 0;
 
     GX_SetZMode      (GX_TRUE, GX_LEQUAL, GX_TRUE);
     GX_SetColorUpdate(GX_TRUE);
     GX_CopyDisp      (xfb[fb], GX_TRUE);
 
-	if (fbMode == 1)
+	if (fbMode)
 		VIDEO_SetNextFramebuffer(xfb[fb]);  // Select eXternal Frame Buffer
 
     VIDEO_Flush();                      // Flush video buffer to screen
@@ -2865,7 +2890,12 @@ void GRRLIB_SetLightOff(void) {
     GRRLIB_Settings.lights  = 0;
 }
 
-void GRRLIB_SetFBMode (int mode)
+void inline GRRLIB_SetFBMode (int mode)
 	{
 	fbMode = mode;
+	}
+	
+int inline GRRLIB_GetFBMode (void)
+	{
+	return fbMode;
 	}

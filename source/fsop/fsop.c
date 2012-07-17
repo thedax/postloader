@@ -25,9 +25,75 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 #include "../debug.h"
 #include "../mem2.h"
 
-#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
+//#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
+#define SET(a, b) a = b;
 
 s_fsop fsop;
+
+// retrive filename from a full path. !! NOT THREAD SAFE !!
+char * fsop_GetFilename (char *path, bool killExt)
+	{
+	static char fn[256];
+	char buff[256];
+	
+	strcpy (buff, path);
+	
+	int i;
+	
+	// remove extension
+	if (killExt)
+		{
+		i = strlen(buff)-1;
+		while (i > 0 && buff[i] != '.')
+			{
+			i--;
+			}
+		if (buff[i] == '.') buff[i] = 0;
+		}
+
+	i = strlen(buff)-1;
+	while (i > 0 && buff[i] != '/')
+		{
+		i--;
+		}
+	strcpy (fn, &buff[i+1]);
+	
+	return fn;
+	}
+
+// retrive path from a full path. !! NOT THREAD SAFE !!
+char * fsop_GetPath (char *path)
+	{
+	static char fn[256];
+	
+	strcpy (fn, path);
+	
+	int i;
+	
+	i = strlen(fn)-1;
+	while (i > 0 && fn[i] != '/')
+		{
+		i--;
+		}
+	fn[i] = 0;
+	
+	return fn;
+	}
+
+// retrive dev from a full path. !! NOT THREAD SAFE !!
+char * fsop_GetDev (char *path)
+	{
+	static char fn[256];
+	
+	strcpy (fn, path);
+	
+	char *p = strstr (fn, ":");
+	if (!p) return NULL;
+	
+	*p = '\0';
+
+	return fn;
+	}
 
 
 // read a file from disk
@@ -245,11 +311,11 @@ bool fsop_DirExist (char *path)
 #define STACKSIZE	8192
 static u8 *copybuff = NULL;
 static FILE *fs = NULL, *ft = NULL;
-static u32 block = 32768;
-static u32 blockIdx = 0;
-static u32 blockInfo[2] = {0,0};
-static u32 blockReady = 0;
-static u32 stopThread;
+static volatile u32 block = 32768;
+static volatile u32 blockIdx = 0;
+static volatile u32 blockInfo[2] = {0,0};
+static volatile u32 blockReady = 0;
+static volatile u32 stopThread;
 
 static void *thread_CopyFileReader (void *arg)
 	{
@@ -268,7 +334,6 @@ static void *thread_CopyFileReader (void *arg)
 	while (stopThread == 0);
 	
 	stopThread = -1;
-	DCFlushRange(&stopThread, sizeof(stopThread));
 	
 	return NULL;
 	}
@@ -421,7 +486,6 @@ bool fsop_CopyFile (char *source, char *target, fsopCallback vc)
 		Debug ("fsop_CopyFile: stopping");
 		
 		stopThread = 1;
-		DCFlushRange(&stopThread, sizeof(stopThread));
 		
 		while (stopThread != -1)
 			{
