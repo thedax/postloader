@@ -72,7 +72,10 @@ static int ShowInfo (char *buff, char *ver)
 		}
 	title[j] = 0;
 
+	Video_SetFont(TTFVERYSMALL);
 	int item = grlib_menu (title, "Update to %s~Skip", ver);
+	Video_SetFont(TTFNORM);
+	
 	free (title);
 	free (buff);
 

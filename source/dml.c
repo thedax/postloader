@@ -11,6 +11,7 @@
 #include "fsop/fsop.h"
 #include "devices.h"
 #include "mystring.h"
+#include "stub.h"
 
 #define DMLVER "DMLSDAT0001"
 #define SEP 0xFF
@@ -833,6 +834,8 @@ bool DEVO_Boot (char *path)
 	// the Devolution blob has an ID string at offset 4
 	gprintf((const char*)loader_bin + 4);
 
+	// devolution seems to like hbc stub. So we can force it.
+	StubLoad ();
 	((void(*)(void))loader_bin)();
 
 	return true;

@@ -10,9 +10,9 @@
 #include "debug.h"
 #include "cfg.h"
 
-//#define DOLPHINE
+#define DOLPHINE
 
-#define VER "4.b35"
+#define VER "4.b36"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58

@@ -23,6 +23,7 @@
 #define IOCTL_DI_SETWBFSMODE	0xF4
 #define IOCTL_DI_GETWBFSMODE	0xF5 // odip
 #define IOCTL_DI_DISABLERESET   0xF6 // odip
+#define IOCTL_DI_SETAUDIO           0xE4 
 
 /** Hermes IOS222 **/
 #define DI_SETWBFSMODE	0xfe
@@ -412,3 +413,21 @@ s32 WDVD_hello(u32 *status)
 
 	return -ret;
 }
+
+int WDVD_EnableAudio(int enable) 
+	{
+	int ret;
+	u8 *dicommand = (u8*)inbuf;
+	
+	memset(dicommand, 0, 32);
+	
+	inbuf[0] = IOCTL_DI_SETAUDIO;
+	if (enable) 
+		{
+		dicommand[7] = 1;
+		dicommand[11] = 0xA;
+		}
+	
+	ret = IOS_Ioctl(di_fd,dicommand[0],&dicommand,0x20,NULL,0);
+	return ret;
+	}

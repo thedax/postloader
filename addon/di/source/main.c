@@ -11,13 +11,13 @@
 #include "disc.h"
 #include "patchcode.h"
 #include "debug.h"
+#include "wdvd.h"
 
-#define VER "[0.4]"
-#define POSTLOADER_SD "sd://postloader.dol"
-#define POSTLOADER_USB "usb://postloader.dol"
-#define PRII_WII_MENU 0x50756E65
+#define VER "[0.5]"
+#define BC 0x0000000100000100ULL
+static tikview view ATTRIBUTE_ALIGN(32);
 
-void green_fix(void); //GREENSCREEN FIX
+//void green_fix(void); //GREENSCREEN FIX
 
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv) 
@@ -50,16 +50,43 @@ int main(int argc, char **argv)
 	Debug("Disc_Open() returned: %d", rr);
 
 	// Check disc 
+	rr = Disc_IsGC();
+	Debug("Disc_IsGC() returned: %d", rr);
+	
+	if (rr)
+		{
+		rr = WDVD_ReadDiskId ((void*)0x80000000);
+		Debug("WDVD_ReadDiskId() returned: %d", rr);
+		
+		rr = WDVD_EnableAudio(*(u8*)0x80000008);
+		Debug("WDVD_EnableAudio() returned: %d", rr);
+		
+		*(volatile unsigned int *)0xCC003024 |= 7;
+
+		int retval = ES_GetTicketViews(BC, &view, 1);
+
+		if (retval != 0)
+			{
+			Debug("ES_GetTicketViews fail %d", retval);
+			exit (0);
+			}
+			
+		retval = ES_LaunchTitle(BC, &view);
+		exit (0);
+		}
+		
+	// Check disc 
 	rr = Disc_IsWii();
 	Debug("Disc_IsWii() returned: %d", rr);
 
-	// Read header 
-	rr = Disc_ReadHeader(header);
-	Debug("Disc_ReadHeader() returned: %d", rr);
+	if (rr)
+		{
+		// Read header 
+		rr = Disc_ReadHeader(header);
+		Debug("Disc_ReadHeader() returned: %d", rr);
 
-	//green_fix ();
-	Disc_WiiBoot (0, FALSE, TRUE, 0);
-	//Disc_WiiBoot (0, TRUE, TRUE, 0);
+		Disc_WiiBoot (0, FALSE, TRUE, 0);
+		}
 	
 	exit (0);
 	}

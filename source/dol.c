@@ -12,7 +12,7 @@
 #include "globals.h"
 #include "ios.h"
 #include "bin2o.h"
-#include "hbcstub.h"
+#include "stub.h"
 #include "devices.h"
 
 extern s32 __IOS_ShutdownSubsystems();

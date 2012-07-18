@@ -319,7 +319,7 @@ s32 CheckDisk(void *id)
 	if (ret < 0) return ret;
 	if (ret == 1 && id)
 		memcpy(id, outbuf, sizeof(dvddiskid));
-
+		
 	/* Stop motor */
 	memset(inbuf, 0, sizeof(inbuf));
 	inbuf[0] = IOCTL_DI_STOPMOTOR << 24;

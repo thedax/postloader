@@ -567,14 +567,15 @@ static int AppExist (const char *mount, char *path, char *filename)
 	return 0;
 	}
 
-static int qsort_name (const void * a, const void * b)
+static int bsort_name (const void * a, const void * b)
 	{
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
 	
+	if (aa->type == AT_FOLDERUP) return 0;
 	if (!aa->name || !bb->name) return 0;
 
-	return (ms_strcmp (aa->name, bb->name));
+	return (ms_strcmp (bb->name, aa->name) < 0 ? 1:0);
 	}
 
 static int bsort_hidden (const void * a, const void * b)
@@ -615,7 +616,7 @@ static void SortItems (void)
 		}
 	
 	bsort (apps, appsCnt, sizeof(s_app), bsort_hidden);
-	qsort (apps, apps2Disp, sizeof(s_app), qsort_name);
+	bsort (apps, apps2Disp, sizeof(s_app), bsort_name);
 	bsort (apps, apps2Disp, sizeof(s_app), bsort_priority);
 
 	pageMax = (apps2Disp - 1) / gui.spotsXpage;

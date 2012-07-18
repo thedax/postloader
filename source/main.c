@@ -7,7 +7,7 @@
 #include "wiiload/wiiload.h"
 #include "globals.h"
 #include "ios.h"
-#include "hbcstub.h"
+#include "stub.h"
 #include "identify.h"
 #include "neek.h"
 #include "uneek_fs.h"
@@ -20,6 +20,7 @@ extern void __exception_setreload(int t); // In the event of a code dump, app wi
 int Disc (void);
 bool plneek_GetNandName (void);
 
+/*
 void DumpStub (void)
 	{
 	FILE *f;
@@ -33,6 +34,7 @@ void DumpStub (void)
 		fclose (f);
 		}
 	}
+*/
 
 void BootToSystemMenu(void)
 	{
@@ -98,23 +100,13 @@ void Shutdown(bool doNotKillHBC)
 	Subsystems (false);
 	Video_Deinit ();
 	
-	if (config.usesStub)
+	// Load proper stub
+	StubLoad ();
+	
+	if (!config.usesStub && !doNotKillHBC)
 		{
-		//Debug ("Loading stub");
-		StubLoad ();
-		}
-	else
-		{
-		// Kill HBC stub
-		if (!doNotKillHBC)
-			{
-			*(u32*)0x80001804 = (u32) 0L;
-			*(u32*)0x80001808 = (u32) 0L;
-			DCFlushRange((void*)0x80001804,8);
-			}
-			
-		// Also modify it
-		Set_Stub (((u64)(1) << 32) | (2));
+		// This will clear the stub, so homebrews will not detect it
+		StubUnload ();
 		}
 	
 	if (vars.neek != NEEK_NONE) // We are not working under neek

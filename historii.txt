@@ -1,3 +1,12 @@
+postLoader 4.b36
+
+* Adopted stub by FIX94
+* Before devo is executed, stub is updated even if "Patch stub and use return to HBC method" is not active
+* code clean
+* Corrected online menu font size
+* fixed sorting issues in homebrew browser
+* di module should now support gamecube retail disk
+
 postLoader 4.b35
 
 * added support to Devolution. (thx to tueidj (sample loader) / fix94 (wiiflow implementation) / daxtsu (hints))

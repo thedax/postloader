@@ -7,7 +7,6 @@
 #include "wiiload/wiiload.h"
 #include "globals.h"
 #include "ios.h"
-#include "hbcstub.h"
 #include "identify.h"
 #include "neek.h"
 #include "devices.h"
