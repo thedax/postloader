@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 	rr = Disc_IsGC();
 	Debug("Disc_IsGC() returned: %d", rr);
 	
-	if (rr)
+	if (rr == 0)
 		{
 		rr = WDVD_ReadDiskId ((void*)0x80000000);
 		Debug("WDVD_ReadDiskId() returned: %d", rr);
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	rr = Disc_IsWii();
 	Debug("Disc_IsWii() returned: %d", rr);
 
-	if (rr)
+	if (rr == 0)
 		{
 		// Read header 
 		rr = Disc_ReadHeader(header);

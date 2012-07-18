@@ -368,6 +368,7 @@ char *DMLScanner  (bool reset)
 	struct dirent *pent;
 	char cachepath[128];
 	char path[128];
+	char fullpath[128];
 	char name[32];
 	char src[32];
 	char b[128];
@@ -423,15 +424,30 @@ char *DMLScanner  (bool reset)
 			while ((pent=readdir(pdir)) != NULL) 
 				{
 				if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0) continue;
-					
-				sprintf (b, "%s/%s/game.iso", path, pent->d_name);
 				
-				if (config.dmlVersion != GCMODE_DEVO && !fsop_FileExist (b))
-					sprintf (b, "%s/%s/sys/boot.bin", path, pent->d_name);
-					
-				Debug ("DML: checking %s", b);
+				int found = 0;
+				if (config.dmlVersion == GCMODE_DEVO)
+					{
+					sprintf (fullpath, "%s/%s", path, pent->d_name);
+					if (ms_strstr (fullpath, ".iso") && fsop_FileExist (fullpath))
+						found = 1;
+					}
 				
-				if (fsop_FileExist (b))
+				if (!found)
+					{
+					sprintf (fullpath, "%s/%s/game.iso", path, pent->d_name);
+					found = fsop_FileExist (fullpath);
+					}
+				
+				if (!found && config.dmlVersion != GCMODE_DEVO)
+					{
+					sprintf (fullpath, "%s/%s/sys/boot.bin", path, pent->d_name);
+					found = fsop_FileExist (fullpath);
+					}
+					
+				Debug ("DML: checking %s", fullpath);
+				
+				if (found)
 					{
 					Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 					
@@ -472,7 +488,7 @@ char *DMLScanner  (bool reset)
 					
 					if (!skip)
 						{
-						if (!GetName (b, id, name)) continue;
+						if (!GetName (fullpath, id, name)) continue;
 						
 						//ms_strtoupper (pent->d_name);
 
@@ -508,14 +524,30 @@ char *DMLScanner  (bool reset)
 						Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
 						
 						ms_strtoupper (pent->d_name);
-						sprintf (b, "%s/%s/game.iso", path, pent->d_name);
-
-						if (config.dmlVersion != GCMODE_DEVO && !fsop_FileExist (b))
-							sprintf (b, "%s/%s/sys/boot.bin", path, pent->d_name);
-
-						Debug ("DML: checking %s", b);
-
-						if (!GetName (b, id, name)) continue;
+						
+						int found = 0;
+						if (config.dmlVersion == GCMODE_DEVO)
+							{
+							sprintf (fullpath, "%s/%s", path, pent->d_name);
+							if (ms_strstr (fullpath, ".iso") && fsop_FileExist (fullpath))
+								found = 1;
+							}
+						
+						if (!found)
+							{
+							sprintf (fullpath, "%s/%s/game.iso", path, pent->d_name);
+							found = fsop_FileExist (fullpath);
+							}
+						
+						if (!found && config.dmlVersion != GCMODE_DEVO)
+							{
+							sprintf (fullpath, "%s/%s/sys/boot.bin", path, pent->d_name);
+							found = fsop_FileExist (fullpath);
+							}
+							
+						Debug ("DML: checking %s", fullpath);
+						
+						if (found && !GetName (fullpath, id, name)) continue;
 						
 						sprintf (src, "%c%s%c", SEP, id, SEP); // make sure to find the exact name
 						if (strstr (buff, src) == NULL)	// Make sure to not add the game twice
@@ -829,7 +861,7 @@ bool DEVO_Boot (char *path)
 	// flush disc ID and Devolution config out to memory
 	DCFlushRange((void*)0x80000000, 64);
 	
-	Shutdown (0);
+	Shutdown (1);	// force keep stub in memory
 
 	// the Devolution blob has an ID string at offset 4
 	gprintf((const char*)loader_bin + 4);

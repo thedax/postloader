@@ -1,3 +1,15 @@
+postLoader 4.b38
+
+* postLoader will now ask to dump your hbc stub. This is required one. You cannot do this in neek2o, as postloader must be executed by hbc to save the stub.
+* corrected font size on some menu
+
+postLoader 4.b37
+
+* di, corrected a return value checking for gamecube/wii disc
+* updated usbstorage to latest used in usbloaderGX/wiiflow (still postloader has problems running with ciosx v9)
+* devolution has problems with FIX94 stub, like the old stub postloader was using (take from priiloader). Using the stub from hbc1.1.0 it works as should. This is a temporaly solution.
+* support for gc games in /games/<filename>.iso (only in devolution mode). A game rebuild is required when changing mode. This is done automatically
+
 postLoader 4.b36
 
 * Adopted stub by FIX94
@@ -12,6 +24,7 @@ postLoader 4.b35
 * added support to Devolution. (thx to tueidj (sample loader) / fix94 (wiiflow implementation) / daxtsu (hints))
   > loader.bin must be copied in /ploader/plugins.
   > images must be in /games/<what you want>/game.iso (like dml).
+  > postloader will check if a gc memory card is present, if no, emulated one is used.
 * emu filters shown now only plugins with associated roms
 * up to 16536 roms can be browsed (even if I think is a crazy number, but until ram is available....)
 * adjusted roms structure (about 192Kb are saved).

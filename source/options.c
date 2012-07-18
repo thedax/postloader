@@ -170,11 +170,15 @@ void ShowAdvancedOptions (void)
 		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, "(YES)|(NO)", "Use wiimotion gestures ");
 			
 		grlib_menuAddItem (options, 4,  "Restart/Reboot...");
+		
+		grlib_menuAddItem (options, 7,  "Remove stub.bin...");
 
 		grlib_menuAddSeparator (options);
 		grlib_menuAddItem (options, -1,  "Close");
 		
+		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (buff, options);
+		Video_SetFontMenu(TTFNORM);
 		
 		if (item == 1)
 			{
@@ -197,7 +201,9 @@ void ShowAdvancedOptions (void)
 		if (item == 4)
 			{
 			int ret = grlib_menu ("What do you want to do ?\n", "  Restart  ##0~Reboot##1~Cancel##-1");
-
+			if (ret < 0) continue;
+			
+			vars.saveExtendedConf = 1;
 			ConfigWrite ();
 			ExtConfigWrite ();
 
@@ -222,6 +228,14 @@ void ShowAdvancedOptions (void)
 			config.usesStub = !config.usesStub;
 			}
 
+		if (item == 7)
+			{
+			char path[256];
+
+			sprintf (path, "%s://ploader/stub.bin", vars.defMount);
+			unlink (path);
+			grlib_menu ( "stub.bin removed", "  Ok  ");
+			}
 		}
 	while (item != -1);
 	

@@ -978,15 +978,15 @@ static void ShowAppMenu (int ai)
 				
 			if (config.dmlVersion != GCMODE_DEVO)
 				{
-				strcat (buff, "DML: Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
+				strcat (buff, "DM(L): Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
 				}
 
 			if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM2x)
 				{
-				grlib_menuAddItem (buff, 8, "DML: Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
-				grlib_menuAddItem (buff, 9, "DML: Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
-				grlib_menuAddItem (buff,10, "DML: Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
-				grlib_menuAddItem (buff,11, "DML: Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
+				grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+				grlib_menuAddItem (buff, 9, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
+				grlib_menuAddItem (buff,10, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
+				grlib_menuAddItem (buff,11, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
 				}
 				
 			// DEVO will use gccard autodetect (thx daxtsu)
@@ -1224,7 +1224,7 @@ start:
 		if (config.gameMode == GM_WII)
 			grlib_menuAddItem (buff, 6, "Rebuild game list (ntfs/fat)...");
 		else
-			grlib_menuAddItem (buff, 6, "Rebuild game list (DML)...");
+			grlib_menuAddItem (buff, 6, "Rebuild game list...");
 		}
 
 	grlib_menuAddItem (buff, 1, "Download covers...");
@@ -1441,7 +1441,16 @@ static void Redraw (void)
 	if (config.gameMode == GM_WII)
 		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::WII Games");
 	else
-		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GameCube Games (DML)");
+		{
+		char buff[32];
+		
+		if (config.dmlVersion == GCMODE_DML0x) strcpy (buff, "DML 0.X");
+		if (config.dmlVersion == GCMODE_DML1x) strcpy (buff, "DML 1.X");
+		if (config.dmlVersion == GCMODE_DM2x) strcpy (buff, "DM 2.X");
+		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
+		
+		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GameCube Games (%s)", buff);
+		}
 	
 	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
 	
@@ -1830,9 +1839,7 @@ int GameBrowser (void)
 								
 							case GCMODE_DEVO:
 								{
-								char path[256];
-								sprintf (path, "%s/game.iso", games[gamesSelected].source);
-								DEVO_Boot (path);
+								DEVO_Boot (games[gamesSelected].source);
 								}
 								break;
 							}

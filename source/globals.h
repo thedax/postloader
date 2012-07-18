@@ -10,9 +10,9 @@
 #include "debug.h"
 #include "cfg.h"
 
-#define DOLPHINE
+//#define DOLPHINE
 
-#define VER "4.b36"
+#define VER "4.b38"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -334,7 +334,7 @@ typedef struct
 	char sePath[256];				// setting editor
 	char wmPath[256];				// wiimod
 	
-	s_cfg *titlestxt;		// this will keep titles.txt file
+	s_cfg *titlestxt;				// this will keep titles.txt file
 	}
 s_vars;
 

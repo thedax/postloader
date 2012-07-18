@@ -214,7 +214,7 @@ void devices_Mount (int devmode, int neek, int usbTimeout, devicesCallback cb)
 		if (devmode == DEVMODE_CIOSX)
 			{
 			gprintf ("using wiiums\r\n");
-			storage = (DISC_INTERFACE*)&__io_wiiums;
+			storage = (DISC_INTERFACE*)&__io_usbstorage2_port1;
 			}
 		else
 			{
