@@ -491,8 +491,11 @@ char *DMLScanner  (bool reset)
 						if (!GetName (fullpath, id, name)) continue;
 						
 						//ms_strtoupper (pent->d_name);
-
-						sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, path, pent->d_name, SEP);
+						if (config.dmlVersion != GCMODE_DEVO)
+							sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, path, pent->d_name, SEP);
+						else
+							sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, fullpath, pent->d_name, SEP);
+						
 						strcat (buff, b);
 						}
 					}
@@ -552,7 +555,10 @@ char *DMLScanner  (bool reset)
 						sprintf (src, "%c%s%c", SEP, id, SEP); // make sure to find the exact name
 						if (strstr (buff, src) == NULL)	// Make sure to not add the game twice
 							{
-							sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_USB, SEP, path, pent->d_name, SEP);
+							if (config.dmlVersion != GCMODE_DEVO)
+								sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, path, pent->d_name, SEP);
+							else
+								sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, fullpath, pent->d_name, SEP);
 							strcat (buff, b);
 							}
 						}
@@ -867,7 +873,6 @@ bool DEVO_Boot (char *path)
 	gprintf((const char*)loader_bin + 4);
 
 	// devolution seems to like hbc stub. So we can force it.
-	StubLoad ();
 	((void(*)(void))loader_bin)();
 
 	return true;

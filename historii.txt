@@ -1,3 +1,7 @@
+postLoader 4.b39
+
+* corrected iso names in devolution mode (thx daxtsu)
+
 postLoader 4.b38
 
 * postLoader will now ask to dump your hbc stub. This is required one. You cannot do this in neek2o, as postloader must be executed by hbc to save the stub.
