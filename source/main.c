@@ -20,47 +20,6 @@ extern void __exception_setreload(int t); // In the event of a code dump, app wi
 int Disc (void);
 bool plneek_GetNandName (void);
 
-void GetStub (void)
-	{
-	u8 *stub = ((u8 *) 0x80001800);
-	char mex[500];
-	char path[256];
-
-	sprintf (path, "%s://ploader/stub.bin", vars.defMount);
-	
-	FILE *f;
-	f = fopen (path, "rb");
-	if (f)
-		{
-		fread (stub, 1, 0x1800, f);
-		fclose (f);
-
-		Debug ("stub loaded succesfully");
-		return;
-		}
-	
-	sprintf (mex, "stub.bin not found\n\n"
-					"postLoader need to save current HBC stub\n"
-					"Make sure you have started postLoader\n"
-					"from genuine HomeBrewChannel\n"
-					"If you have executed postloader from priiloader\n"
-					"or other loader, press 'skip'\n\n"
-					"Do not forget to install postLoader forwarder\n"
-					"channel to have return to postLoader working.");
-	
-	int item = grlib_menu ( mex, "Ok, dump it!~Skip");
-	
-	if (item == 0)
-		{
-		if (fsop_WriteFile (path, stub, 0x1800))
-			{
-			Debug ("stub saved succesfully");
-			grlib_menu ( "stub saved succesfully", "  Ok  ");
-			}
-		}
-	}
-
-
 void BootToSystemMenu(void)
 	{
 	Shutdown (0);
@@ -131,7 +90,7 @@ void Shutdown(bool doNotKillHBC)
 	if (!config.usesStub && !doNotKillHBC)
 		{
 		// This will clear the stub, so homebrews will not detect it
-		StubUnload ();
+		//StubUnload ();
 		}
 	
 	if (vars.neek != NEEK_NONE) // We are not working under neek
@@ -367,7 +326,7 @@ int main(int argc, char **argv)
 			}
 		}
 		
-	GetStub();
+	StubGet();
 		
 	if (vars.neek && neek_IsNeek2o())
 		{

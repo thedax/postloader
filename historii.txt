@@ -1,10 +1,16 @@
+postLoader 4.b40
+
+* better stub handling (postloader forwarder channel is now required to go back to postloader)
+* gamecube games browsing is now fixed
+* fixed the crash on exit of some homebrews
+
 postLoader 4.b39
 
-* corrected iso names in devolution mode (thx daxtsu)
+* corrected iso nomes in devolution mode (thx daxtsu)
 
 postLoader 4.b38
 
-* postLoader will now ask to dump your hbc stub. This is required one. You cannot do this in neek2o, as postloader must be executed by hbc to save the stub.
+* postLoader will now ask to dump your hbc stub. This is required one time only. You cannot do this in neek2o, as postloader must be executed by hbc to save the stub.
 * corrected font size on some menu
 
 postLoader 4.b37

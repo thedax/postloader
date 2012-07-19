@@ -5,6 +5,9 @@
 #include <string.h>
 #include "stub.h"
 #include "debug.h"
+#include "globals.h"
+
+#define STUBSIZE 0x1800
 
 /*
 
@@ -44,23 +47,78 @@ void StubUnload ( void )
 
 */
 
+static u8 *stub = NULL;
+
+void StubGet (void)
+	{
+	char mex[500];
+	char path[256];
+	size_t read;
+
+	sprintf (path, "%s://ploader/stub.bin", vars.defMount);
+	
+	stub = fsop_ReadFile (path, STUBSIZE, &read);
+	
+	if (stub && read == STUBSIZE)
+		{
+		Debug ("%s loaded succesfully", path);
+		return;
+		}
+	
+	sprintf (mex, "stub.bin not found\n\n"
+					"postLoader need to save current HBC stub\n"
+					"Make sure you have started postLoader\n"
+					"from genuine HomeBrewChannel\n"
+					"If you have executed postloader from priiloader\n"
+					"or other loader, press 'skip'\n\n"
+					"Do not forget to install postLoader forwarder\n"
+					"channel to have return to postLoader working.");
+	
+	int item = grlib_menu ( mex, "Ok, dump it!~Skip");
+	
+	if (item == 0)
+		{
+		DCFlushRange((void*)0x80001800, STUBSIZE);
+		
+		if (fsop_WriteFile (path, ((u8 *) 0x80001800), STUBSIZE))
+			{
+			Debug ("stub saved succesfully");
+			grlib_menu ( "stub saved succesfully", "  Ok  ");
+			}
+		}
+	}
+
 static char* determineStubTIDLocation()
 {
     u32 *stubID = (u32*) 0x80001818;
 
-    //HBC stub 1.0.6 and lower, and stub.bin
     if (stubID[0] == 0x480004c1 && stubID[1] == 0x480004f5)
+		{
+		//HBC stub 1.0.6 and lower, and stub.bin
+		
         return (char *) 0x800024C6;
+		}
+    else if (stubID[0] == 0x48000859 && stubID[1] == 0x4800088d) 
+		{
+		//HBC stub changed @ version 1.0.7.  this file was last updated for HBC 1.0.8
+		
+		return (char *) 0x8000286A;
+		}
+    else if (stubID[0] == 0x00000000 && stubID[1] == 0x00000000) 
+		{
+		//HBC stub changed @ version 1.1.0
+		
+		return (char *) 0x8000286A;
+		}
+		
+	Debug ("stubID[0] = 0x%08X, stubID[1] = 0x%08X",  stubID[0],  stubID[1]);
 
-    //HBC stub changed @ version 1.0.7.  this file was last updated for HBC 1.0.8
-    else if (stubID[0] == 0x48000859 && stubID[1] == 0x4800088d) return (char *) 0x8000286A;
-
-    Debug_hexdump( stubID, 0x20 );
+    // Debug_hexdump( stubID, 0x20 );
     return NULL;
 
 }
 
-#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
+#define TITLE_0(x)      ((u8)(x))
 #define TITLE_1(x)      ((u8)((x) >> 8))
 #define TITLE_2(x)      ((u8)((x) >> 16))
 #define TITLE_3(x)      ((u8)((x) >> 24))
@@ -74,14 +132,14 @@ s32 Set_Stub(u64 reqID)
     char *stub = determineStubTIDLocation();
     if (!stub) return -68;
 
-    stub[0] = TITLE_7( reqID );
-    stub[1] = TITLE_6( reqID );
-    stub[8] = TITLE_5( reqID );
-    stub[9] = TITLE_4( reqID );
-    stub[4] = TITLE_3( reqID );
-    stub[5] = TITLE_2( reqID );
+    stub[0]  = TITLE_7( reqID );
+    stub[1]  = TITLE_6( reqID );
+    stub[8]  = TITLE_5( reqID );
+    stub[9]  = TITLE_4( reqID );
+    stub[4]  = TITLE_3( reqID );
+    stub[5]  = TITLE_2( reqID );
     stub[12] = TITLE_1( reqID );
-    stub[13] = ((u8) (reqID));
+    stub[13] = TITLE_0( reqID );
 
     DCFlushRange(stub, 0x10);
 
@@ -91,6 +149,8 @@ s32 Set_Stub(u64 reqID)
 void StubLoad ( void )
 	{
 	Debug ("StubLoad()");
+	
+	memcpy((void*)0x80001800, stub, STUBSIZE);
 	
 	if (Set_Stub (TITLE_ID(0x00010001,0x504f5354)) > 0)
 		{
@@ -102,11 +162,10 @@ void StubLoad ( void )
 		
 		Debug ("STUB 0x%X 0x%X 0x%X 0x%X ", ptr[0x762], ptr[0x763], ptr[0x76A], ptr[0x76B]);
 		    
-		if (ptr[0x762] == 0x50 && ptr[0x763] == 0x4F && ptr[0x76A] == 0x53 && ptr[0x76B] == 0x54)
+		if (ptr[0x762] == 0xAF && ptr[0x763] == 0x1B && ptr[0x76A] == 0xF5 && ptr[0x76B] == 0x16)
 			{
 			Debug ("stub is from hbc 1.1.0");
 			
-			//memcpy (ptr, stub_bin, stub_bin_size);
 			ptr[0x762] = 'P';
 			ptr[0x763] = 'O';
 			ptr[0x76A] = 'S';
@@ -120,10 +179,7 @@ void StubLoad ( void )
 			}
 		
 		}
-	
-	/*
-	*/
-	
+
 	return;	
 	}
 
@@ -131,8 +187,11 @@ void StubUnload ( void )
 {
 	Debug ("StubUnload()");
 	
-	//some apps apparently dislike it if the stub stays in memory but for some reason isn't active :/
-	memset((void*)0x80001800, 0, 0x1800);
-	DCFlushRange((void*)0x80001800, 0x1800);	
+	// Simple clear the STUBHAXX... some homebrew will try to call it
+	
+	*(u32*)0x80001804 = (u32) 0L;
+	*(u32*)0x80001808 = (u32) 0L;
+	DCFlushRange((void*)0x80001804,8);
+
 	return;
 }

@@ -494,7 +494,7 @@ char *DMLScanner  (bool reset)
 						if (config.dmlVersion != GCMODE_DEVO)
 							sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, path, pent->d_name, SEP);
 						else
-							sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, fullpath, pent->d_name, SEP);
+							sprintf (b, "%s%c%s%c%d%c%s%c", name, SEP, id, SEP, DEV_SD, SEP, fullpath, SEP);
 						
 						strcat (buff, b);
 						}
@@ -550,15 +550,18 @@ char *DMLScanner  (bool reset)
 							
 						Debug ("DML: checking %s", fullpath);
 						
-						if (found && !GetName (fullpath, id, name)) continue;
+						if (!found || !GetName (fullpath, id, name)) continue;
+						
+						Debug ("DML: valid image!");
 						
 						sprintf (src, "%c%s%c", SEP, id, SEP); // make sure to find the exact name
 						if (strstr (buff, src) == NULL)	// Make sure to not add the game twice
 							{
 							if (config.dmlVersion != GCMODE_DEVO)
-								sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, path, pent->d_name, SEP);
+								sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_USB, SEP, path, pent->d_name, SEP);
 							else
-								sprintf (b, "%s%c%s%c%d%c%s/%s%c", name, SEP, id, SEP, DEV_SD, SEP, fullpath, pent->d_name, SEP);
+								sprintf (b, "%s%c%s%c%d%c%s%c", name, SEP, id, SEP, DEV_USB, SEP, fullpath, SEP);
+							
 							strcat (buff, b);
 							}
 						}
