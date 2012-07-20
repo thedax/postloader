@@ -442,6 +442,7 @@ static void GetCovers (void)
 		}
 	
 	CoverCache_Flush ();
+	EmuBrowse ();
 	redraw = 1;
 	}
 

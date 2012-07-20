@@ -620,7 +620,7 @@ static int GameBrowse (int forcescan)
 
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 			
-			if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM2x && games[i].slot == 0)
+			if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM22 && games[i].slot == 0)
 				{
 				// do nothing, only games on USB are added (slot != 0)
 				}
@@ -981,9 +981,14 @@ static void ShowAppMenu (int ai)
 				strcat (buff, "DM(L): Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
 				}
 
-			if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM2x)
-				{
+			if (config.dmlVersion == GCMODE_DM22)
+				grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+
+			if (config.dmlVersion == GCMODE_DML1x)
 				grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+
+			if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22)
+				{
 				grlib_menuAddItem (buff, 9, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
 				grlib_menuAddItem (buff,10, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
 				grlib_menuAddItem (buff,11, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
@@ -1246,15 +1251,17 @@ start:
 		}
 	else
 		{
-		grlib_menuAddItem (buff, 3, "Set default DML videomode...");
 		if (config.dmlVersion == GCMODE_DML0x)
 			grlib_menuAddItem (buff, 12, "GameCube mode: DML v0.x");
 		if (config.dmlVersion == GCMODE_DML1x)
 			grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
-		if (config.dmlVersion == GCMODE_DM2x)
-			grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.x USB");
+		if (config.dmlVersion == GCMODE_DM22)
+			grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.2+ USB");
 		if (config.dmlVersion == GCMODE_DEVO)
 			grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
+
+		if (config.dmlVersion != GCMODE_DEVO)
+			grlib_menuAddItem (buff, 3, "Set default videomode...");
 		}
 	
 	// note: maybe it is not the right place for this option
@@ -1394,7 +1401,7 @@ static void RedrawIcons (int xoff, int yoff)
 
 			if (config.gameMode == GM_DML)
 				{
-				if (config.dmlVersion < GCMODE_DM2x && games[ai].slot)
+				if (config.dmlVersion < GCMODE_DM22 && games[ai].slot)
 					gui.spots[gui.spotsIdx].ico.transparency = 128;
 				else
 					gui.spots[gui.spotsIdx].ico.transparency = 255;
@@ -1446,7 +1453,7 @@ static void Redraw (void)
 		
 		if (config.dmlVersion == GCMODE_DML0x) strcpy (buff, "DML 0.X");
 		if (config.dmlVersion == GCMODE_DML1x) strcpy (buff, "DML 1.X");
-		if (config.dmlVersion == GCMODE_DM2x) strcpy (buff, "DM 2.X");
+		if (config.dmlVersion == GCMODE_DM22) strcpy (buff, "DM 2.2+");
 		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
 		
 		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GameCube Games (%s)", buff);
@@ -1786,7 +1793,7 @@ int GameBrowser (void)
 					
 					Debug ("gamebrowser: requested dml");
 
-					if (config.dmlVersion < GCMODE_DM2x && games[gamesSelected].slot)
+					if (config.dmlVersion < GCMODE_DM22 && games[gamesSelected].slot)
 						{
 						int ret = DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected));
 
@@ -1830,7 +1837,7 @@ int GameBrowser (void)
 								break;
 							
 							case GCMODE_DML1x:
-							case GCMODE_DM2x:
+							case GCMODE_DM22:
 								{
 								char *p = strstr (games[gamesSelected].source, "//")+1;
 								DMLRunNew (p, games[gamesSelected].asciiId, &gameConf);

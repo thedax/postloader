@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.b39"
+#define VER "4.b41"
 #define CFGVER "PLCFGV0014"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -74,7 +74,7 @@ enum {
 enum {
 	GCMODE_DML0x = 0,
 	GCMODE_DML1x,
-	GCMODE_DM2x,
+	GCMODE_DM22,
 	GCMODE_DEVO,
 	GCMODE_MAX
 	};

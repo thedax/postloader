@@ -1,3 +1,11 @@
+postLoader 4.b41
+
+* Added support for DM2.2 (previous versions of DM are no more supported)
+* Removed "DM(L): Video mode" when in devolution mode
+* Devolution: added video configuration like the sample loader
+* plugin.con and icons are now in the separated plugin package (actually v3)
+* fixed a crash when the stub is dumped the first time
+
 postLoader 4.b40
 
 * better stub handling (postloader forwarder channel is now required to go back to postloader)

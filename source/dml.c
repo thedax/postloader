@@ -118,7 +118,7 @@ static void SetGCVideoMode (void)
 	
 	// TVPal528IntDf
 	
-	u32 *xfb;
+	u32 *sfb;
 	static GXRModeObj *rmode;
 	
 	//config.dmlvideomode = DMLVIDEOMODE_PAL;
@@ -136,10 +136,10 @@ static void SetGCVideoMode (void)
 
 	VIDEO_SetBlack(TRUE);
 	VIDEO_Configure(rmode);
-	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+	sfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
 
-	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
-	VIDEO_SetNextFramebuffer(xfb);
+	VIDEO_ClearFrameBuffer(rmode, sfb, COLOR_BLACK);
+	VIDEO_SetNextFramebuffer(sfb);
 
 	VIDEO_Flush();
 	VIDEO_WaitVSync();
@@ -285,7 +285,10 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
 	Shutdown (0);
 
 	cfg.Magicbytes = 0xD1050CF6;
-	cfg.CfgVersion = 0x00000001;
+	if (config.dmlVersion == GCMODE_DM22)
+		cfg.CfgVersion = 0x00000002;
+	else
+		cfg.CfgVersion = 0x00000001;
 		
 	if (gameconf->dmlVideoMode == PLGC_Auto) // AUTO
 		{
@@ -411,9 +414,9 @@ char *DMLScanner  (bool reset)
 	if (reset == 1)
 		{
 		// Allow usb only for DM
-		if (config.dmlVersion < GCMODE_DM2x && !devices_Get(DEV_SD)) return 0;
+		if (config.dmlVersion < GCMODE_DM22 && !devices_Get(DEV_SD)) return 0;
 		
-		if (config.dmlVersion != GCMODE_DM2x && devices_Get(DEV_SD))
+		if (config.dmlVersion != GCMODE_DM22 && devices_Get(DEV_SD))
 			{
 			sprintf (path, "%s://games", devices_Get(DEV_SD));
 			
@@ -714,34 +717,6 @@ int DMLInstall (char *gamename, size_t reqKb)
 	return 0;
 	}
 	
-int DMLRunDisc (void)
-	{
-	DML_CFG cfg;
-	char path[256];
-	
-	memset (&cfg, 0, sizeof (DML_CFG));
-	
-	cfg.Config |= DML_CFG_BOOT_DISC;
-	
-	Shutdown (0);
-
-	cfg.Magicbytes = 0xD1050CF6;
-	cfg.CfgVersion = 0x00000001;
-		
-	strcpy (cfg.GamePath, path);
- 	
-	//Write options into memory
-	memcpy((void *)0x80001700, &cfg, sizeof(DML_CFG));
-	DCFlushRange((void *)(0x80001700), sizeof(DML_CFG));
-
-	//DML v1.2+
-	memcpy((void *)0x81200000, &cfg, sizeof(DML_CFG));
-	DCFlushRange((void *)(0x81200000), sizeof(DML_CFG));
-
-	/* Boot BC */
-	WII_Initialize();
-	return WII_LaunchTitle(0x100000100LL);
-	}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Devolution: based on FIX94 implementation in WiiFlow
@@ -871,6 +846,25 @@ bool DEVO_Boot (char *path)
 	DCFlushRange((void*)0x80000000, 64);
 	
 	Shutdown (1);	// force keep stub in memory
+
+	// Configure video mode as "suggested" to devolution
+	GXRModeObj *vidmode;
+
+	if (gameID[3] == 'E' || gameID[3] == 'J')
+		vidmode = &TVNtsc480IntDf;
+	else
+		vidmode = &TVPal528IntDf;
+		
+	static u8 *sfb = NULL;
+	sfb = SYS_AllocateFramebuffer(vidmode);
+	VIDEO_ClearFrameBuffer(vidmode, sfb, COLOR_BLACK);
+	sfb = MEM_K0_TO_K1(sfb);
+	VIDEO_Configure(vidmode);
+	VIDEO_SetNextFramebuffer(sfb);
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	VIDEO_WaitVSync();
 
 	// the Devolution blob has an ID string at offset 4
 	gprintf((const char*)loader_bin + 4);

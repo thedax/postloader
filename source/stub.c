@@ -84,6 +84,13 @@ void StubGet (void)
 			{
 			Debug ("stub saved succesfully");
 			grlib_menu ( "stub saved succesfully", "  Ok  ");
+
+			stub = fsop_ReadFile (path, STUBSIZE, &read);
+			if (stub && read == STUBSIZE)
+				{
+				Debug ("%s loaded succesfully", path);
+				return;
+				}
 			}
 		}
 	}
@@ -149,6 +156,9 @@ s32 Set_Stub(u64 reqID)
 void StubLoad ( void )
 	{
 	Debug ("StubLoad()");
+	
+	if (!stub)
+		Debug ("stub is not in memory");
 	
 	memcpy((void*)0x80001800, stub, STUBSIZE);
 	
