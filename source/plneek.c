@@ -111,7 +111,7 @@ bool plneek_ShowMenu (void)
 			sprintf (buff, "Your new NAND is selected\n\nWII Will now reboot\nNAND: %s", path);
 			grlib_menu (buff, "OK");
 
-			Shutdown (0);
+			Shutdown ();
 			SYS_ResetSystem(SYS_RESTART,0,0);
 			}
 		else

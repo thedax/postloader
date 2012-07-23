@@ -247,7 +247,7 @@ int DMLRun (char *folder, char *id, u32 videomode)
 	
  	memcpy ((char *)0x80000000, id, 6);
 	
-	Shutdown (0);
+	Shutdown ();
 	
 	StartMIOS ();
 	return 1;
@@ -282,7 +282,7 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
 
 	//if (!devices_Get(DEV_SD)) return 0;
 	
-	Shutdown (0);
+	Shutdown ();
 
 	cfg.Magicbytes = 0xD1050CF6;
 	if (config.dmlVersion == GCMODE_DM22)
@@ -845,7 +845,7 @@ bool DEVO_Boot (char *path)
 	// flush disc ID and Devolution config out to memory
 	DCFlushRange((void*)0x80000000, 64);
 	
-	Shutdown (1);	// force keep stub in memory
+	Shutdown ();
 
 	// Configure video mode as "suggested" to devolution
 	GXRModeObj *vidmode;

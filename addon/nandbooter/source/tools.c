@@ -296,9 +296,9 @@ void tell_cIOS_to_return_to_channel(void)
 	{
     if (TITLE_UPPER(old_title_id) > 1 && TITLE_LOWER(old_title_id) > 2) // Don't change anything for system menu or no title id
         {
-		static u64 sm_title_id  ATTRIBUTE_ALIGN(32);
+		static u64 sm_title_id ATTRIBUTE_ALIGN(32);
 		sm_title_id = old_title_id; // title id to be launched in place of the system menu
-
+		
 		int ret;
 		
 		static ioctlv vector[0x08] ATTRIBUTE_ALIGN(32);
@@ -309,7 +309,7 @@ void tell_cIOS_to_return_to_channel(void)
 		int es_fd = IOS_Open("/dev/es", 0);
 		if (es_fd < 0)
 			{
-			debug("Couldn't open ES module(2)\n");
+			debug("Couldn't open ES module\n");
 			return;
 			}
 		

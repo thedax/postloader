@@ -30,14 +30,13 @@ typedef struct
 	}
 s_cc; // covercache
 
-static s_cc *cc;
-
-static int age = 0;
+static s_cc *cc = NULL;
 
 #define PAUSE_NO 0
 #define PAUSE_REQUEST 1
 #define PAUSE_YES 2
 
+static int age = 0;
 static volatile int threadPause = PAUSE_NO;
 static volatile int threadStop = 0;
 static volatile int threadRunning = 0;
@@ -208,6 +207,8 @@ void CoverCache_Start (void)
 
 void CoverCache_Flush (void)	// empty the cache
 	{
+	if (!cc) return; // start wasn't called
+	
 	int i;
 	int count = 0;
 	Debug ("CoverCache_Flush");
@@ -240,6 +241,8 @@ void CoverCache_Flush (void)	// empty the cache
 	
 void CoverCache_Stop (void)
 	{
+	if (!cc) return; // start wasn't called
+	
 	Debug ("CoverCache_Stop");
 	if (threadRunning)
 		{

@@ -715,7 +715,7 @@ static int FindSpot (void)
 			strcat (info, ")");
 			if (config.gameMode == GM_DML)
 				{
-				char b[32];
+				char b[256];
 
 				sprintf (b, " DISC %d", games[gamesSelected].disc);
 				strcat (info, b);
@@ -724,6 +724,11 @@ static int FindSpot (void)
 				strcat (info, b);
 				}
 
+			if (strlen (info) > 60)
+				{
+				info[60] = 0;
+				strcat (info, "...");
+				}
 			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, info);
 			
 			t = time(NULL);
@@ -1295,14 +1300,14 @@ start:
 	if (item == 4)
 		{
 		neek_CreateCDIConfig (NULL);
-		Shutdown (0);
+		Shutdown ();
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		}
 
 	if (item == 5)
 		{
 		neek_KillDIConfig ();
-		Shutdown (0);
+		Shutdown ();
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		}
 

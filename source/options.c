@@ -55,7 +55,7 @@ s32 menu_SwitchNand (void)
 	
 	nandConfig->NandSel = ret;
 	neek_WriteNandConfig ();
-	Shutdown (0);
+	Shutdown ();
 	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 	
 	return 0;
@@ -165,8 +165,6 @@ void ShowAdvancedOptions (void)
 			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, "(YES)|(NO)", "Use pl3 channel to run homebrews ");
 			}
 
-		grlib_menuAddCustomCheckItem (options, 6, config.usesStub, "(YES)|(NO)", "Patch stub and use return to HBC method ");
-			
 		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, "(YES)|(NO)", "Use wiimotion gestures ");
 			
 		grlib_menuAddItem (options, 4,  "Restart/Reboot...");
@@ -213,7 +211,7 @@ void ShowAdvancedOptions (void)
 				}
 			if (ret == 1)
 				{
-				Shutdown (0);
+				Shutdown ();
 				SYS_ResetSystem(SYS_RESTART,0,0);
 				}
 			}
@@ -221,11 +219,6 @@ void ShowAdvancedOptions (void)
 		if (item == 5)
 			{
 			config.usesGestures = !config.usesGestures;
-			}
-
-		if (item == 6)
-			{
-			config.usesStub = !config.usesStub;
 			}
 
 		if (item == 7)
@@ -376,7 +369,7 @@ void ShowAboutMenu (void)
 				grlib_menu ("Your Wii will now rebooot", "  OK  ");
 
 				fsop_KillFolderTree ("sd://ploader", cb_remove2);
-				Shutdown (0);
+				Shutdown ();
 				SYS_ResetSystem(SYS_RESTART,0,0);
 				item = -1;
 				}

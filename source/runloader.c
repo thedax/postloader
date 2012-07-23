@@ -28,7 +28,7 @@ static void PrepareNeek2o(void)
 
 	// Boot neek2o
 	Neek2oLoadKernel ();
-	Shutdown (0);
+	Shutdown ();
 	Neek2oBoot ();
 	}
 
@@ -85,6 +85,6 @@ void RunLoader(void)
 	
 	ReloadPostloader ();
 	
-	Shutdown (0);
+	Shutdown ();
 	SYS_ResetSystem(SYS_RESTART,0,0);
 	}

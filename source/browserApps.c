@@ -434,7 +434,7 @@ static int AppsManageCfgFile (int ia, int write)
 			*p = 0;
 			}
 			
-		sprintf (token, "\n<ploader>%d;%d;%d</ploader>", apps[ia].priority, apps[ia].hidden, apps[ia].fixCrashOnExit);
+		sprintf (token, "\n<ploader>%d;%d</ploader>", apps[ia].priority, apps[ia].hidden);
 		strcat (buff, token);
 
 		ret = fwrite(buff, 1, strlen(buff), f );
@@ -476,23 +476,10 @@ static int AppsManageCfgFile (int ia, int write)
 				err = 1;
 			}
 			
-		if (p)
-			{
-			p = strstr (p, ";");
-			if (p)
-				{
-				p++;
-				apps[ia].fixCrashOnExit = atoi(p);
-				}
-			else
-				err = 1;
-			}
-			
 		if (err)
 			{
 			apps[ia].priority = 1;
 			apps[ia].hidden = 0;
-			apps[ia].fixCrashOnExit = 0;
 			}
 		}
 	
@@ -508,7 +495,7 @@ static int AppsSetDefault (int ia)
 	{
 	config.autoboot.enabled = TRUE;
 	config.autoboot.appMode = APPMODE_HBA;
-	config.autoboot.fixCrashOnExit = apps[ia].fixCrashOnExit;
+
 	sprintf (config.autoboot.path,"%s:/apps/%s%s/", apps[ia].mount, subpath, apps[ia].path);
 	sprintf (config.autoboot.filename, "%s", apps[ia].filename);
 	
@@ -523,7 +510,6 @@ static int AppsSetDefault (int ia)
 static int AppsSetRun (int ia)
 	{
 	config.run.appMode = APPMODE_HBA;
-	config.run.fixCrashOnExit = apps[ia].fixCrashOnExit;
 	
 	sprintf (config.run.path,"%s:/apps/%s%s/", apps[ia].mount, subpath, apps[ia].path);
 	sprintf (config.run.filename,"%s", apps[ia].filename);
@@ -802,11 +788,6 @@ static void ShowAppMenu (int ai)
 		
 	strcat (buff, "~");
 		
-	if (apps[ai].fixCrashOnExit)
-		strcat (buff, "Fix crash on exit (active)##3|");
-	else
-		strcat (buff, "Fix crash on exit (disabled)##4|");
-	
 	strcat (buff, "Remove this application##5");
 	strcat (buff, "Close##-1");
 	
@@ -824,12 +805,6 @@ static void ShowAppMenu (int ai)
 	if (item == 2)
 		apps[ai].hidden = 1;
 
-	if (item == 3)
-		apps[ai].fixCrashOnExit = 0;
-
-	if (item == 4)
-		apps[ai].fixCrashOnExit = 1;
-		
 	if (item == 5)
 		{
 		//xxxxxx
@@ -1018,6 +993,8 @@ void DrawInfo (void)
 		if (apps[appsSelected].desc)
 			{
 			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
+			
+			Video_SetFont(TTFSMALL);
 			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
 			}
 		else

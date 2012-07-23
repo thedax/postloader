@@ -98,7 +98,6 @@ bool NeedArgs (u8 *buffer)
 //static u8 *execBuffer = NULL;
 //static size_t filesize;
 static struct __argv arg;
-static bool fixCrashOnExit;
 
 int LoadHB (char *path, u8 *addr)
 	{
@@ -174,8 +173,6 @@ int DolBootPrepare (s_run *run)
 				arg.commandLine[i] = 0;
 		}
 		
-	fixCrashOnExit = run->fixCrashOnExit;
-			
 	mssleep (500);
 
 	return 1;
@@ -187,7 +184,7 @@ void DolBoot (void)
 	
 	gprintf ("DolBoot\n");
 
-	Shutdown (fixCrashOnExit);
+	Shutdown ();
 
 	memmove(ARGS_ADDR, &arg, sizeof(arg));
 	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
@@ -198,7 +195,7 @@ void DolBoot (void)
 		HBMAGIC_ADDR[1] = 'O';
 		HBMAGIC_ADDR[2] = 'S';
 		HBMAGIC_ADDR[3] = 'T';
-		HBMAGIC_ADDR[4] = fixCrashOnExit;
+		HBMAGIC_ADDR[4] = 0;
 		DCFlushRange(HBMAGIC_ADDR, 8);
 		
 		ReloadPostloaderChannel ();

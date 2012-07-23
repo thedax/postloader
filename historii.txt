@@ -1,3 +1,15 @@
+postLoader 4.0.0
+
+* fixed a crash caused by cover cache when autostarting something (thx daxtsu)
+* fixed a (long) delay when stopping wiiload thread when in autostart mode
+* removed "fix crash on exit" for homebrew applications
+* removed "use stub" option
+* added ciosx return to postloader (channel)
+* fixed a buffer overflow in game browser (thx DEFIANT)
+* packed with new default theme by pepxl and me. Thank pep ;) (soon a new theme package with all featured themes)
+
+NOTE: this version will clear all configuration files (autoboot settings... etc.etc.)
+
 postLoader 4.b42
 
 * fixed covers for channel browser (thx daxtsu)

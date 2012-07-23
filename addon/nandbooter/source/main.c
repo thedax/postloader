@@ -37,7 +37,7 @@
 #include "codes/patchcode.h"
 #include "nand.h"
 
-#define VER "2.4"
+#define VER "2.5"
 
 // This must reflect postloader ---------------------------------------------------------------
 typedef struct
@@ -716,7 +716,7 @@ void bootTitle(u64 titleid)
 
 	appJump = (entrypoint)entryPoint;
 
-	tell_cIOS_to_return_to_channel();
+	//tell_cIOS_to_return_to_channel();
 	
 	/*
 	IRQ_Disable();
@@ -892,11 +892,6 @@ int main(int argc, char* argv[])
 	debug ("NandBooter "VER"\n");
 	debug ("\n");
 	
-	if (ES_GetTitleID(&old_title_id) < 0)
-		{
-		old_title_id = (0x00010001ULL << 32) | *(u32 *)0x80000000;
-		}
-	
 	int ios[7] = { 249, 250, 251, 252, 247 , 248};
 	if (!SenseSneek (true))
 		{
@@ -921,7 +916,7 @@ int main(int argc, char* argv[])
 	ocarinaoption = nb.channel.ocarina;
 	bootmethodoption = nb.channel.bootMode;
 
-	debug("nandBooter (b4): postLoader triiforce mod...\n\n");
+	debug("nandBooter (b5): postLoader triiforce mod...\n\n");
 	debug("CONF: %d, %d, %d, %d, %d, %d, %d\n", ios[nb.channel.ios], videooption, languageoption, videopatchoption, hooktypeoption, ocarinaoption, bootmethodoption);
 	debug("NAND: %d, %s\n\n", nb.nand, nb.nandPath);
 	
@@ -932,6 +927,15 @@ int main(int argc, char* argv[])
 	debug ("ocarinaoption = %d\n", ocarinaoption);
 	debug ("bootmethodoption = %d\n", bootmethodoption);
 	debug ("\n");
+	
+	if (ES_GetTitleID(&old_title_id) < 0)
+		{
+		debug ("ES_GetTitleID failed\n");
+		old_title_id = TITLE_ID(0x00010001,0x504f5354);
+		}
+
+	debug ("old_title_id = 0x%08X:0x%08X\n", TITLE_UPPER (old_title_id), TITLE_LOWER (old_title_id));
+	tell_cIOS_to_return_to_channel();
 	
 	// Preload codes
 	if (hooktypeoption) preload_codes ((u64)(nb.channel.titleId));

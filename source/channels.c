@@ -775,7 +775,7 @@ bool RunChannelNeek2o (s_run *run)
 
 	// Boot neek2o
 	Neek2oLoadKernel ();
-	Shutdown (0);
+	Shutdown ();
 	Neek2oBoot ();
 	
 	//IOS_ReloadIOS(254);
@@ -830,7 +830,7 @@ int BootChannel(s_run *run)
 	
 	if (vars.useChannelCompatibleMode || ((vars.neek != NEEK_NONE || config.chnBrowser.nand == NAND_REAL) && run->channel.bootMode == 2))
 		{
-		Shutdown (0);
+		Shutdown ();
 		
 		WII_Initialize();
 		WII_LaunchTitle((u64)(run->channel.titleId));
@@ -863,7 +863,7 @@ int BootChannel(s_run *run)
 	
 	// bootit !
 	grlibSettings.doNotCall_GRRLIB_Exit = true;
-	Shutdown (0);
+	Shutdown ();
 	
 	u32 level;
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);

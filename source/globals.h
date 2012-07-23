@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define VER "4.b42"
-#define CFGVER "PLCFGV0014"
+#define VER "4.0.0"
+#define CFGVER "PLCFGV0015"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
 #define IOS_SNEEK 56
@@ -308,7 +308,6 @@ typedef struct
 	bool hidden;		// if 1, this app will be not listed
 	bool needUpdate;
 	bool checked;
-	bool fixCrashOnExit;
 	}
 s_app;
 
@@ -371,7 +370,6 @@ typedef struct
 	char path[PATHMAX]; 		// Full app path with also the device
 	char filename[32]; 			// file name, tipically boot.dol or boot.elf
 	char args[ARGSMAX]; 		// arguments to pass
-	bool fixCrashOnExit;		// Fix for old app that exit with return
 
 	char nandPath[64];			// Folder of the nand
 	int nand;					// Nandmode
@@ -421,7 +419,6 @@ typedef struct
 	u8 usesGestures;
 
 	bool runHBwithForwarder;
-	bool usesStub;
 	
 	u32 emuFilter;			// 
 	}
@@ -463,7 +460,7 @@ extern s_grlibSettings grlibSettings;
 // main.c
 void Subsystems (bool up);
 int Initialize(int silent);
-void Shutdown(bool doNotKillHBC);
+void Shutdown(void);
 int MasterInterface (int full, int showCursor, int icon, const char *text, ...);	// icon 0 = none, 1 hdd, 2 hg
 void ShowAboutMenu (void);
 void ShowAboutPLMenu (void);

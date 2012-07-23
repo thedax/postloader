@@ -37,6 +37,7 @@ static lwp_t geckothread = LWP_THREAD_NULL;
 static char tpath[256];
 static int errors = 0;
 static int firstInit = 1;
+static int started = 0;
 static volatile int pauseWiiload = 0;
 static int threadStartSleep;
 
@@ -712,11 +713,14 @@ void WiiLoad_Start(char *tempPath, int startSleep)
 		LWP_CreateThread (&networkthread, WiiloadThread, NULL, threadStack, STACKSIZE, 8);
 
 	threadStackG = (u8 *) memalign(32, STACKSIZE);
-	if (threadStackG)
+	if (!threadStackG)
 		{
-		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 8);
+		return;
 		}
+	else
+		LWP_CreateThread (&geckothread, GeckoThread, NULL, threadStackG, STACKSIZE, 8);
 
+	started = 1;
 	}
 
 void WiiLoad_Stop(void)
@@ -724,8 +728,11 @@ void WiiLoad_Stop(void)
 	int tout;
 	
 	Debug ("WiiLoad_Stop");
-	if (stopNetworkThread == 1) 
-		return; // It is already stopped
+	if (!started || stopNetworkThread == 1)
+		{
+		Debug ("WiiLoad_Stop: nothing to do...");
+		return; // 
+		}
 		
 	stopNetworkThread = 1;	
 	stopGeckoThread = 1;

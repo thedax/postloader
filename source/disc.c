@@ -175,7 +175,7 @@ void Disc(void)
 		else
 			grlib_menu ("Error occurred\n\npostLoader wasn't unable to select required nand", "   OK   ");
 		
-		Shutdown (0);
+		Shutdown ();
 		
 		SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 		
@@ -200,7 +200,7 @@ void Disc(void)
 
 	// Shutdown all system
 	grlibSettings.doNotCall_GRRLIB_Exit = true;
-	Shutdown (0);
+	Shutdown ();
 	
 	// bootit !
 	u32 level;

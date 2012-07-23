@@ -22,7 +22,7 @@ bool plneek_GetNandName (void);
 
 void BootToSystemMenu(void)
 	{
-	Shutdown (0);
+	Shutdown ();
 	
 	// Let's try to start system menu... use magic word, as we may have priiloader behind
 	*(vu32*)0x8132FFFB = PRIILOADER_TOMENU;
@@ -32,7 +32,7 @@ void BootToSystemMenu(void)
 
 void BootToHBC(void)
 	{
-	Shutdown (0);
+	Shutdown ();
 
 	WII_Initialize();
 
@@ -74,7 +74,7 @@ void Subsystems (bool enable)
 		}
 	}
 
-void Shutdown(bool doNotKillHBC)
+void Shutdown(void)
 	{
 	Debug ("Shutdown !");
 	
@@ -86,12 +86,6 @@ void Shutdown(bool doNotKillHBC)
 	
 	// Load proper stub
 	StubLoad ();
-	
-	if (!config.usesStub && !doNotKillHBC)
-		{
-		// This will clear the stub, so homebrews will not detect it
-		//StubUnload ();
-		}
 	
 	if (vars.neek != NEEK_NONE) // We are not working under neek
 		{
@@ -133,7 +127,7 @@ static void Redraw (void)
 	{
 	Video_DrawBackgroud (0);
 	Video_SetFont(TTFNORM);
-	grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (c) 2011 by stfour");
+	grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (c) 2011-12 by stfour");
 	}
 	
 int MasterInterface (int full, int showCursor, int icon, const char *text, ...)
@@ -300,7 +294,7 @@ int main(int argc, char **argv)
 		
 		if (grlibSettings.wiiswitch_poweroff)
 			{
-			Shutdown (0);
+			Shutdown ();
 			SYS_ResetSystem( SYS_POWEROFF, 0, 0 );
 			}
 		
@@ -446,7 +440,7 @@ int main(int argc, char **argv)
 
 	if (ret == INTERACTIVE_RET_BOOTMII)
 		{
-		Shutdown (0);
+		Shutdown ();
 		IOS_ReloadIOS(254);
 		return(0);
 		}
@@ -454,14 +448,14 @@ int main(int argc, char **argv)
 	if (ret == INTERACTIVE_RET_NEEK2O)
 		{
 		Neek2oLoadKernel ();
-		Shutdown (0);
+		Shutdown ();
 		Neek2oBoot ();
 		return(0);
 		}
 
 	if (ret == INTERACTIVE_RET_SHUTDOWN || grlibSettings.wiiswitch_poweroff)
 		{
-		Shutdown (0);
+		Shutdown ();
 		SYS_ResetSystem( SYS_POWEROFF, 0, 0 );
 		}
 	
@@ -533,7 +527,7 @@ int main(int argc, char **argv)
 		BootChannel(&config.autoboot);
 		}
 
-	Shutdown (0);
+	Shutdown ();
 	
 	// Uh ?
     exit(0);  // Use exit() to exit a program, do not use 'return' from main()
