@@ -712,18 +712,13 @@ static int ChnBrowse (void)
 			}
 		}
 		
-	/*
-	if (vars.neek != NEEK_NONE)
-		neek_UID_Dump ();
-	*/
-	UpdateTitlesFromTxt ();
-	SortItems ();
-	
 	nandScanned = true;
 	
 	free (titles);
 	
+	UpdateTitlesFromTxt ();
 	CheckForCovers ();
+	SortItems ();
 	
 	Debug ("ChnBrowse: done!");
 	return chansCnt;

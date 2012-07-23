@@ -1,3 +1,7 @@
+postLoader 4.b42
+
+* fixed covers for channel browser (thx daxtsu)
+
 postLoader 4.b41
 
 * Added support for DM2.2 (previous versions of DM are no more supported)

@@ -631,10 +631,9 @@ static int EmuBrowse (void)
 	Debug ("Allocated %d bytes (%d Kb)", EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
 	
 	CheckForCovers ();
-	
-	Debug ("end EmuBrowse");
-
 	SortItems ();
+
+	Debug ("end EmuBrowse");
 
 	return emusCnt;
 	}
