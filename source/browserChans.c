@@ -1725,7 +1725,7 @@ int ChnBrowser (void)
 				btn = 0;
 				}
 				
-			if (btn & WPAD_BUTTON_B && chansSelected != -1 && !manageUID && redraw != 1)
+			if (btn & WPAD_BUTTON_B && chansSelected != -1 && !manageUID)
 				{
 				ShowAppMenu (chansSelected);
 				redraw = 1;
