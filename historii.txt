@@ -1,3 +1,8 @@
+postLoader 4.0.2
+
+* fixed homebrew/emulator/wii/gc game menus popping up when cancelling the
+launch of them on GC controller (daxtsu)
+
 postLoader 4.0.1
 
 * added NODISC2 patching for DM 2.2+ (daxtsu)
