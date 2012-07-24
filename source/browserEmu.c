@@ -1300,7 +1300,7 @@ int EmuBrowser (void)
 				
 			/////////////////////////////////////////////////////////////////////////////////////////////
 			// Select application as default
-			if (btn & WPAD_BUTTON_B && emuSelected != -1)
+			if (btn & WPAD_BUTTON_B && emuSelected != -1 && redraw != 1)
 				{
 				ShowAppMenu (emuSelected);
 				redraw = 1;

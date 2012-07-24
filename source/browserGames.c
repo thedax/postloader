@@ -1876,7 +1876,7 @@ int GameBrowser (void)
 				
 			/////////////////////////////////////////////////////////////////////////////////////////////
 			// Select application as default
-			if (btn & WPAD_BUTTON_B && gamesSelected != -1)
+			if (btn & WPAD_BUTTON_B && gamesSelected != -1 && redraw != 1)
 				{
 				ShowAppMenu (gamesSelected);
 				redraw = 1;

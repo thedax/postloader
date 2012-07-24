@@ -1477,7 +1477,7 @@ int AppBrowser (void)
 
 			/////////////////////////////////////////////////////////////////////////////////////////////
 			// Select application as default
-			if (btn & WPAD_BUTTON_B && appsSelected != -1 && sortMode == 0)
+			if (btn & WPAD_BUTTON_B && appsSelected != -1 && sortMode == 0 && redraw != 1)
 				{
 				ShowAppMenu (appsSelected);
 				redraw = 1;
