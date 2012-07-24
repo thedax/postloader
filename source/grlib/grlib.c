@@ -610,10 +610,6 @@ int grlib_GetUserInput (void)
 	if (!wbtn)
 		wbtn = WPAD_ButtonsHeld(0);
 		
-	if (!wbtn)
-		repeatms = 0;
-		
-	//gprintf ("%u ", repeatms);
 	if (gidx == -1)
 		{
 		memset (&g, 0, sizeof(g));
@@ -678,7 +674,7 @@ int grlib_GetUserInput (void)
 	PAD_ScanPads();
 	gcX = PAD_StickX(0);
 	gcY = PAD_StickY(0);
-	gcbtn = PAD_ButtonsDown(0);
+	gcbtn = PAD_ButtonsHeld(0);
 	
 	// sticks
 	if (abs (nX) > 10) {grlib_irPos.x += (nX / 16); grlibSettings.cursorActivity++;}
@@ -696,6 +692,9 @@ int grlib_GetUserInput (void)
 	
 	if (grlib_irPos.y < 0) grlib_irPos.y = 0;
 	if (grlib_irPos.y > 480) grlib_irPos.y = 480;
+	
+	if (!wbtn && !gcbtn && !cbtn)
+		repeatms = 0;
 	
 	// As usual wiimotes will have priority
 	if (wbtn && !cbtn)
@@ -719,6 +718,7 @@ int grlib_GetUserInput (void)
 	// Then gc
 	if (gcbtn)
 		{
+		gprintf ("%d (%u)", gcbtn, (u32)repeatms);
 		grlibSettings.buttonActivity ++;
 		
 		if (repeatms == 0)

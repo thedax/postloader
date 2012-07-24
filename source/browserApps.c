@@ -1405,8 +1405,6 @@ int AppBrowser (void)
 		// If [HOME] was pressed on the first Wiimote, break out of the loop
 		if (btn)
 			{
-			while (WPAD_ButtonsDown(0)) WPAD_ScanPads();
-			
 			browserRet = ChooseDPadReturnMode (btn);
 			if (browserRet != -1) break;
 			

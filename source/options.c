@@ -522,7 +522,7 @@ int CheckParental (void)
 	static bool unlocked = false;
 	char pwd[PWDMAXLEN+1] = {0};
 	
-	Debug ("pass = %s (%d)", config.pwd, strlen(config.pwd));
+	//Debug ("pass = %s (%d)", config.pwd, strlen(config.pwd));
 	
 	if (unlocked || strlen(config.pwd) == 0) return 1;
 	
