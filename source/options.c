@@ -79,7 +79,7 @@ void ShowAboutPLMenu (void)
 	"people:\n"
 	"FIX94(wiiflow/dmlbooter),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\n"
 	"and all active testers:\n"
-	"Wever,daxstu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
+	"Wever,daxtsu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
 
 	grlib_menu (buff, "Close");

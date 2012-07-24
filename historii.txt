@@ -1,3 +1,7 @@
+postLoader 4.0.1
+
+* added NODISC2 patching for DM 2.2+ (daxtsu)
+
 postLoader 4.0.0
 
 * fixed a crash caused by cover cache when autostarting something (thx daxtsu)

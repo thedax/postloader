@@ -987,16 +987,19 @@ static void ShowAppMenu (int ai)
 				}
 
 			if (config.dmlVersion == GCMODE_DM22)
-				grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+				   {
+				   grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+				   grlib_menuAddItem (buff, 9, "DM(L): Full NoDisc Patching (%s)", gameConf.dmlFullNoDisc ? "Yes" : "No");
+				   }
 
 			if (config.dmlVersion == GCMODE_DML1x)
 				grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 
 			if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22)
 				{
-				grlib_menuAddItem (buff, 9, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
-				grlib_menuAddItem (buff,10, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
-				grlib_menuAddItem (buff,11, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
+			   grlib_menuAddItem (buff,10, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
+			   grlib_menuAddItem (buff,11, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
+			   grlib_menuAddItem (buff,12, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
 				}
 				
 			// DEVO will use gccard autodetect (thx daxtsu)
@@ -1117,21 +1120,27 @@ static void ShowAppMenu (int ai)
 
 	if (item == 9)
 		{
+		gameConf.dmlFullNoDisc = !gameConf.dmlFullNoDisc;
+		goto start;
+		}
+ 
+	if (item == 10)
+		{
 		gameConf.dmlPadHook = !gameConf.dmlPadHook;
 		goto start;
 		}
 
-	if (item == 10)
+	if (item == 11)
 		{
 		gameConf.dmlNMM = !gameConf.dmlNMM;
 		goto start;
 		}
-
-    if (item == 11)
-        {
-        gameConf.ocarina = !gameConf.ocarina;
-        goto start;
-        }
+ 
+	if (item == 12)
+		{
+		gameConf.ocarina = !gameConf.ocarina;
+		goto start;
+		}
 		
 	WriteGameConfig (ai);
 	SortItems ();

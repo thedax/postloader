@@ -65,9 +65,10 @@ enum dmlconfig
 	DML_CFG_CHEAT_PATH      = (1<<6),
 	DML_CFG_ACTIVITY_LED	= (1<<7),
 	DML_CFG_PADHOOK         = (1<<8),
-	DML_CFG_NODISC          = (1<<9),
+	DML_CFG_NODISC          = (1<<9), //changed from NODISC to FORCE_WIDE in 2.1+, but will remain named NODISC until stfour drops support for old DM(L)
 	DML_CFG_BOOT_DISC       = (1<<10),
-	DML_CFG_BOOT_DOL        = (1<<11),
+    DML_CFG_BOOT_DISC2      = (1<<11), //changed from BOOT_DOL to BOOT_DISC2 in 2.1+
+    DML_CFG_NODISC2         = (1<<12), //added in DM 2.2+
 	};
 
 enum dmlvideomode
@@ -318,8 +319,13 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
 	if (gameconf->dmlVideoMode == PLGC_PAL60)
 		cfg.VideoMode |= DML_VID_FORCE_PAL60;
 		
+	//kept as nodisc for legacy purposes, but it also controls
+	//widescreen force 16:9 in 2.1+
 	if (gameconf->dmlNoDisc)
 		cfg.Config |= DML_CFG_NODISC;
+
+	if (gameconf->dmlFullNoDisc)
+		cfg.Config |= DML_CFG_NODISC2;
 
 	if (gameconf->dmlPadHook)
 		cfg.Config |= DML_CFG_PADHOOK;

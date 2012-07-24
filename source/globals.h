@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.0.0"
+#define VER "4.0.1"
 #define CFGVER "PLCFGV0015"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -232,6 +232,7 @@ typedef struct
 	
 	u8 dmlVideoMode;	// Current video mode for dml
 	u8 dmlNoDisc;		// nodisc patch
+	u8 dmlFullNoDisc;	// new nodisc patches added in dml 2.1+
 	u8 dmlPadHook;		// padhook patch
 	u8 dmlNMM;			// nmm patch
 	}
