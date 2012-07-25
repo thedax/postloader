@@ -903,12 +903,18 @@ bool neek_UID_Add (u64 title_id)
 		uidCount ++;
 		uidSize = uidCount * sizeof (UIDSYS);
 		
-		uid = realloc (uid, uidSize);
-		if (uid == NULL)
+		UIDSYS *uidnew = allocate_memory(uidSize * sizeof (UIDSYS));
+		if (uidnew == NULL)
 			{
 			// uid is corrupted :(
 			return false;
 			}
+			
+		memcpy (uidnew, uid, (uidCount - 1) * sizeof (UIDSYS));
+		free (uid);
+		uid = uidnew;
+		
+		found = uidCount - 1;
 		}
 	
 	memset (&uid[found], 0, sizeof (UIDSYS));

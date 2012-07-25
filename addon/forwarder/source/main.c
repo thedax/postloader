@@ -15,11 +15,10 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 #include <fat.h>
 #include <sdcard/wiisd_io.h>
 #include "../build/bin2o.h"
-#include "hbcstub.h"
 #include "ios.h"
 #include "debug.h"
 
-#define VER "1.3"
+#define VER "1.4"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -46,31 +45,17 @@ static GXRModeObj *rmode = NULL;
 void InitVideo (void)
 	{
 	VIDEO_Init();
-	VIDEO_SetBlack(TRUE); 
-	
-	rmode = VIDEO_GetPreferredMode(NULL);
-
-	//apparently the video likes to be bigger then it actually is on NTSC/PAL60/480p. lets fix that!
-	if( rmode->viTVMode == VI_NTSC || CONF_GetEuRGB60() || CONF_GetProgressiveScan() )
-	{
-		//the correct one would be * 0.035 to be sure to get on the Action safe of the screen.
-		GX_AdjustForOverscan(rmode, rmode, 0, rmode->viWidth * 0.026 ); 
-	}
-	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-	VIDEO_ClearFrameBuffer (rmode, xfb, 0); 
-	
-	console_init( xfb, 20, 20, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth*VI_DISPLAY_PIX_SZ );
-
+	rmode = VIDEO_GetPreferredMode(NULL); 
+	xfb = SYS_AllocateFramebuffer(rmode);
+	VIDEO_ClearFrameBuffer(rmode, xfb, COLOR_BLACK);
+	xfb = MEM_K0_TO_K1(xfb);
+	console_init(xfb,20,20,rmode->fbWidth,rmode->xfbHeight,rmode->fbWidth*VI_DISPLAY_PIX_SZ);
 	VIDEO_Configure(rmode);
 	VIDEO_SetNextFramebuffer(xfb);
 	VIDEO_SetBlack(FALSE);
 	VIDEO_Flush();
-
 	VIDEO_WaitVSync();
-	if(rmode->viTVMode&VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-	
-	//gprintf("resolution is %dx%d\n",rmode->viWidth,rmode->viHeight);
+	VIDEO_WaitVSync();
 	}
 
 bool LoadFile (char *path)
@@ -125,10 +110,7 @@ bool GetFileToBoot (void)
 	
 	if (ret == false && fatMountSimple("fat", &__io_wiisd))
 		{
-		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
-		if (ret == false) ret = LoadFile("fat://postloader.dol");
-		if (ret == false) ret = LoadFile("fat://boot.dol");
-		if (ret == false) ret = LoadFile("fat://boot.elf");
+		ret = LoadFile("fat://apps/postloader/boot.dol");
 		
 		fatUnmount("fat:/");
 		__io_wiisd.shutdown();
@@ -139,10 +121,7 @@ bool GetFileToBoot (void)
 
 	if (ret == false && fatMountSimple("fat", &__io_usbstorage))
 		{
-		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
-		if (ret == false) ret = LoadFile("fat://postloader.dol");
-		if (ret == false) ret = LoadFile("fat://boot.dol");
-		if (ret == false) ret = LoadFile("fat://boot.elf");
+		ret = LoadFile("fat://apps/postloader/boot.dol");
 		
 		fatUnmount("fat:/");
 		__io_wiisd.shutdown();
@@ -157,8 +136,9 @@ int main(int argc, char *argv[])
 	
 	InitVideo ();
 	
-	StubLoad ();
-
+	printf ("\n\n");
+	printf ("Loading postLoader...");
+	
 	if (
 		HBMAGIC_ADDR[0] == 'P' &&
 		HBMAGIC_ADDR[1] == 'O' &&
@@ -175,7 +155,7 @@ int main(int argc, char *argv[])
 		{
 		gprintf ("postLoader not found\n");
 		printf ("\n\n\n");
-		printf ("neekbooter: postloader not found... \n\n");
+		printf ("postloader not found... \n\n");
 		printf ("booting to system menu...");
 		
 		sleep (3);
@@ -201,8 +181,6 @@ directstart:
 	HBMAGIC_ADDR[2] = 'X';
 	HBMAGIC_ADDR[3] = 'X';
 	
-	Set_Stub (TITLE_ID(0x00010001,0x504f5354));
-
 	memcpy(BOOTER_ADDR, booter_dol, booter_dol_size);
 	DCFlushRange(BOOTER_ADDR, booter_dol_size);
 
@@ -210,6 +188,7 @@ directstart:
 	exeEntryPoint = (entrypoint) BOOTER_ADDR;
 	
 	gprintf ("booting...\n");
+	printf ("booting!");
 	
 	/* cleaning up and load dol */
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);

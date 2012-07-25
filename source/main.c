@@ -55,6 +55,8 @@ void Subsystems (bool enable)
 	{
 	if (enable)
 		{
+		if (vars.neek == NEEK_NONE) USB_Initialize ();
+		
 		grlib_Controllers (true);
 		MountDevices (1);
 		DebugStart (true, "sd://ploader.log");
@@ -71,6 +73,8 @@ void Subsystems (bool enable)
 		Debug ("stopping debug");
 		DebugStop ();
 		UnmountDevices ();
+		
+		if (vars.neek == NEEK_NONE) USB_Deinitialize ();
 		}
 	}
 
@@ -247,12 +251,6 @@ int main(int argc, char **argv)
 			vars.ios = ios_ReloadIOS (IOS_CIOS, &vars.ahbprot);
 		else
 			vars.ios = ios_ReloadIOS (-1, &vars.ahbprot); // Let's try to reload
-		/*
-		if (!vars.ios) // We where not able to patch ahbprot, so reload cios (249...)
-			{
-			vars.ios = ios_ReloadIOS (IOS_CIOS, &vars.ahbprot);
-			}
-		*/
 		}
 #endif
 

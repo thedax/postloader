@@ -242,6 +242,7 @@ void devices_Unmount (void)
     char mntName[20];
 
     for (dev = 0; dev < DEV_MAX; dev++)
+		{
 		if (mounted[dev])
 			{
 			sprintf(mntName, "%s:/", DeviceName[dev]);
@@ -251,7 +252,8 @@ void devices_Unmount (void)
 			else
 				ntfsUnmount(mntName, true);
 			}
-
+		}
+	
 	storage->shutdown();
 	}
 

@@ -1,3 +1,9 @@
+postLoader 4.0.4
+
+* added USB_Deinitialize(). May help executed application that reload ios58 without checking if they are already in 58
+* fixed neek_UID_Add memory allocation
+* forwarder channel v5: Added video initialization code and an on screen message...
+
 postLoader 4.0.3
 
 * fixed gc/classic auto repeat handling
