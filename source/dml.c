@@ -732,7 +732,7 @@ int DMLInstall (char *gamename, size_t reqKb)
 #define CONFIG_SIG        0x3EF9DB23
 
 // version may change when future options are added
-#define CONFIG_VERSION    0x0100
+#define CONFIG_VERSION    0x0110
 
 typedef struct global_config
 {
@@ -806,27 +806,26 @@ bool DEVO_Boot (char *path)
 		{
 		Debug ("DEVO_Boot: using emulated card");
 		
-		// find or create a 16MB memcard file for emulation
+		// find or create a memcard file for emulation(as of devolution r115 it doesn't need to be 16MB)
 		// this file can be located anywhere since it's passed by cluster, not name
-		// it must be at least 16MB though
 		if(gameID[3] == 'J') //Japanese Memory Card
 			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/memcard_jap.bin", fsop_GetDev (path));
 		else
 			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/memcard.bin", fsop_GetDev (path));
 
-		// check if file doesn't exist or is less than 16MB
-		if (stat(full_path, &st) == -1 || st.st_size < 16<<20)
+		// check if file doesn't exist
+		if (stat(full_path, &st) == -1)
 			{
-			// need to enlarge or create it
+			// need to create it
 			data_fd = open(full_path, O_WRONLY|O_CREAT);
 			if (data_fd >= 0)
 				{
-				// make it 16MB
-				gprintf("Resizing memcard file...\n");
+				// make it 16MB, if we're creating a new memory card image
+				//gprintf("Resizing memcard file...\n");
 				ftruncate(data_fd, 16<<20);
-				if (fstat(data_fd, &st) == -1 || st.st_size < 16<<20)
+				if (fstat(data_fd, &st) == -1)
 					{
-					// it still isn't big enough. Give up.
+					// it still isn't created. Give up.
 					st.st_ino = 0;
 					}
 				close(data_fd);

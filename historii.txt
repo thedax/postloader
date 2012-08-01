@@ -1,3 +1,7 @@
+postLoader 4.0.5
+
+* Added support for Devolution r115. 16mbyte memory card dumps no longer required, so feel free to use ctr-gcs/nugasa/gmcc dumps. (daxtsu)
+
 postLoader 4.0.4
 
 * added USB_Deinitialize(). May help executed application that reload ios58 without checking if they are already in 58
