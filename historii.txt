@@ -1,3 +1,7 @@
+postLoader 4.0.7
+
+* removed an annoying debug message
+
 postLoader 4.0.6
 
 * now using the open source stub by fix/megazig. Old stub.bin can be removed from /ploader folder
