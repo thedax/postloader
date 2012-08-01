@@ -1002,13 +1002,10 @@ static void ShowAppMenu (int ai)
 			   grlib_menuAddItem (buff,12, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
 				}
 				
-			// DEVO will use gccard autodetect (thx daxtsu)
-			/*
 			if (config.dmlVersion == GCMODE_DEVO)
 				{
-				grlib_menuAddItem (buff,10, "DEVO: Use virtual card (%s)", gameConf.dmlNMM ? "Yes" : "No" );
+				grlib_menuAddItem (buff,13, "DEVO: Virtual Memcard ID=%d", gameConf.memcardId );
 				}
-			*/
 			}
 		/*
 		else
@@ -1139,6 +1136,13 @@ static void ShowAppMenu (int ai)
 	if (item == 12)
 		{
 		gameConf.ocarina = !gameConf.ocarina;
+		goto start;
+		}
+		
+	if (item == 13)
+		{
+		gameConf.memcardId++;
+		if (gameConf.memcardId >= 8) gameConf.memcardId = 0;
 		goto start;
 		}
 		
@@ -1443,14 +1447,6 @@ static void RedrawIcons (int xoff, int yoff)
 			grlib_IconDraw (&is, &ico);
 			}
 		}
-
-	if (gamesCnt == 0)
-		{
-		grlib_DrawCenteredWindow ("No games found, rebuild cache!", WAITPANWIDTH, 133, 0, NULL);
-		Video_DrawIcon (TEX_EXCL, 320, 250);
-		}
-	
-	//GRRLIB_PrintfTTF_Debug (0);
 	}
 
 static void Redraw (void)
@@ -1482,7 +1478,7 @@ static void Redraw (void)
 	if (gamesCnt == 0 && scanned)
 		{
 		Video_SetFont(TTFNORM);
-		grlib_DrawCenteredWindow ("No games found !", WAITPANWIDTH, 133, 0, NULL);
+		grlib_DrawCenteredWindow ("No games found, please rebuild the cache!", WAITPANWIDTH, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
 	}
@@ -1631,6 +1627,7 @@ static bool QuerySelection (int ai)
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 220;
+	int yInf = 490;
 
 	Video_SetFont(TTFNORM);
 	
@@ -1679,15 +1676,18 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
+		DrawInfoWindo (yInf, games[ai].name, "Press (A) to start, (B) Cancel");
+		yInf -= 5;
+		if (yInf < 400) yInf = 400;
+
 		Overlay ();
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
-		if (mag < 2.3) mag += 0.05;
-		if (mag >= 2.3 && ico.x == 320 && ico.y == y) break;
+		if (mag < 1.8) mag += 0.05;
+		if (mag >= 1.8 && ico.x == 320 && ico.y == y) break;
 		}
 	
-	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1696,10 +1696,9 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		grlibSettings.fontDef.reverse = 0;
-		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, games[ai].name);		
-		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
-		grlibSettings.fontDef.reverse = fr;
+		DrawInfoWindo (yInf, games[ai].name, "Press (A) to start, (B) Cancel");
+		yInf -= 5;
+		if (yInf < 400) yInf = 400;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();
@@ -1860,7 +1859,7 @@ int GameBrowser (void)
 								
 							case GCMODE_DEVO:
 								{
-								DEVO_Boot (games[gamesSelected].source);
+								DEVO_Boot (games[gamesSelected].source, gameConf.memcardId);
 								}
 								break;
 							}

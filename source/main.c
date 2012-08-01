@@ -85,11 +85,11 @@ void Shutdown(void)
 	snd_Stop ();
 	cfg_Free (vars.titlestxt);
 
-	Subsystems (false);
-	Video_Deinit ();
-	
 	// Load proper stub
 	StubLoad ();
+	
+	Subsystems (false);
+	Video_Deinit ();
 	
 	if (vars.neek != NEEK_NONE) // We are not working under neek
 		{
@@ -317,8 +317,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		
-	StubGet();
 		
 	if (vars.neek && neek_IsNeek2o())
 		{

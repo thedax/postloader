@@ -1,3 +1,11 @@
+postLoader 4.0.6
+
+* now using the open source stub by fix/megazig. Old stub.bin can be removed from /ploader folder
+* Fixed a dump with neek2o diconfig.bin file.
+* devolution: postloader support now creation/managment of up 8 card images, per game selecatable. memcard.bin, memcard1.bin....memcard7.bin (also _jap equivalent)
+* Changed a bit the selection screen
+* some code clean
+
 postLoader 4.0.5
 
 * Added support for Devolution r115. 16mbyte memory card dumps no longer required, so feel free to use ctr-gcs/nugasa/gmcc dumps. (daxtsu)

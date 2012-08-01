@@ -151,6 +151,7 @@ void grlib_Message (const char *text, ...) // ab > 0 show and wait ab second, ot
 
 void grlib_DrawWindow (s_grlibobj go)
 	{
+	Debug ("%1.f %1.f %1.f %1.f ", go.x1, go.x2, go.y1, go.y2);
 	if (grlibSettings.theme.enabled)
 		{
 		grlib_DrawSquareThemed (&go, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER);

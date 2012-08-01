@@ -124,31 +124,16 @@ bool GetFileToBoot (void)
 	{
 	bool ret = false;
 	
-	if (ret == false && fatMountSimple("fat", &__io_wiisd))
-		{
-		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
-		if (ret == false) ret = LoadFile("fat://postloader.dol");
-		if (ret == false) ret = LoadFile("fat://boot.dol");
-		if (ret == false) ret = LoadFile("fat://boot.elf");
-		
-		fatUnmount("fat:/");
-		__io_wiisd.shutdown();
-		}
-
 	if (ret == false)
 		ret = LoadPostloaderFromISFS ();
 
-	if (ret == false && fatMountSimple("fat", &__io_usbstorage))
+	if (ret == false && fatMountSimple("fat", &__io_wiisd))
 		{
-		if (ret == false) ret = LoadFile("fat://apps/postloader/boot.dol");
-		if (ret == false) ret = LoadFile("fat://postloader.dol");
-		if (ret == false) ret = LoadFile("fat://boot.dol");
-		if (ret == false) ret = LoadFile("fat://boot.elf");
-		
+		ret = LoadFile("fat://apps/postloader/boot.dol");
+
 		fatUnmount("fat:/");
 		__io_wiisd.shutdown();
 		}
- 
 	return ret;
 	} 
 
@@ -326,7 +311,7 @@ void RestoreSneekFolder (void)
 		
 		ret = ISFS_Delete (path);
 		Debug ("RestoreSneekFolder: delete '%s' = %d", path, ret);
-		ret = 		ISFS_Rename (pathBak, path);
+		ret = ISFS_Rename (pathBak, path);
 		Debug ("RestoreSneekFolder: rename '%s'->'%s' = %d", pathBak, path, ret);
 		}
 	

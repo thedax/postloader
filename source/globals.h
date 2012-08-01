@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.0.5"
+#define VER "4.0.6"
 #define CFGVER "PLCFGV0015"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -235,6 +235,8 @@ typedef struct
 	u8 dmlFullNoDisc;	// new nodisc patches added in dml 2.1+
 	u8 dmlPadHook;		// padhook patch
 	u8 dmlNMM;			// nmm patch
+
+	u8 memcardId;		// this is for devolution, and maybe dm(l) in future... postloader support creation/managment of up 8 card images, selecatable x game
 	}
 s_gameConfig;
 
@@ -568,7 +570,7 @@ char * DMLScanner  (bool reset);
 int DMLRun (char *folder, char *id, u32 videomode);
 int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
-bool DEVO_Boot (char *path);
+bool DEVO_Boot (char *path, u8 memcardId);
 
 // ScreenSaver
 bool LiveCheck (int reset);

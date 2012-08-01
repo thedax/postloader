@@ -328,13 +328,19 @@ bool neek_GetNandConfig (void)
 	// Read the header
 	ret = ISFS_Read(fd, &NChead, sizeof(NChead));
 	Debug ("neek_GetNandConfig [IOS_Read %d]", ret);
+	
+	if (ret < 0)
+		{
+		u32 cfgSize = (NChead.NandCnt * NANDCONFIG_NANDINFO_SIZE) + NANDCONFIG_CONFIG_SIZE;
+		if (cfgSize > sizeof(u32)) // lower values are impossible
+			{
+			nandConfig = allocate_memory (cfgSize);
 
-	u32 cfgSize = (NChead.NandCnt * NANDCONFIG_NANDINFO_SIZE) + NANDCONFIG_CONFIG_SIZE;
-	nandConfig = allocate_memory (cfgSize);
+			ISFS_Seek (fd, 0, 0);
 
-	ISFS_Seek (fd, 0, 0);
-
-	ret = ISFS_Read(fd, nandConfig, cfgSize);
+			ret = ISFS_Read(fd, nandConfig, cfgSize);
+			}
+		}
 
 	ISFS_Close(fd);
 	

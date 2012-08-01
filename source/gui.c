@@ -533,3 +533,21 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 	return ret;
 	}
 	
+void DrawInfoWindo (f32 y, char *s1, char *s2)
+	{
+	int l1 = 0;
+	int l2 = 15;
+	s_grlibobj go;
+	
+	go.x1 = 40;
+	go.x2 = 600;
+	go.y1 = y + l1 - 5;
+	go.y2 = y + l2 + 10;
+	grlib_DrawWindow (go);
+	
+	Video_SetFont(TTFNORM);
+	grlib_printf (320, y+l1-10, GRLIB_ALIGNCENTER, 0, s1);
+	Video_SetFont(TTFSMALL);
+	grlib_printf (320, y+l2, GRLIB_ALIGNCENTER, 0, s2);
+	}
+	

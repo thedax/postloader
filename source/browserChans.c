@@ -1495,6 +1495,7 @@ static bool QuerySelection (int ai)
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 220;
+	int yInf = 490;
 
 	Video_SetFont(TTFNORM);
 	
@@ -1543,6 +1544,10 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
+		DrawInfoWindo (yInf, chans[ai].name, "Press (A) to start, (B) Cancel");
+		yInf -= 5;
+		if (yInf < 400) yInf = 400;
+
 		Overlay ();
 		grlib_DrawIRCursor ();
 		grlib_Render();
@@ -1552,7 +1557,6 @@ static bool QuerySelection (int ai)
 		}
 	
 	vars.useChannelCompatibleMode = 0;	
-	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1561,10 +1565,9 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		grlibSettings.fontDef.reverse = 0;
-		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, chans[ai].name);
-		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");		
-		grlibSettings.fontDef.reverse = fr;
+		DrawInfoWindo (yInf, chans[ai].name, "Press (A) to start, (B) Cancel");
+		yInf -= 5;
+		if (yInf < 400) yInf = 400;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();

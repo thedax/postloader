@@ -718,7 +718,6 @@ int grlib_GetUserInput (void)
 	// Then gc
 	if (gcbtn)
 		{
-		gprintf ("%d (%u)", gcbtn, (u32)repeatms);
 		grlibSettings.buttonActivity ++;
 		
 		if (repeatms == 0)

@@ -62,8 +62,6 @@ static int pluginsCnt = 0;
 
 static GRRLIB_texImg **emuicons;
 
-static int fulldebug = 0;
-
 static int usedBytes = 0;
 
 #define ICONW 100
@@ -1096,6 +1094,7 @@ static bool QuerySelection (int ai)
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 220;
+	int yInf = 490;
 	
 	for (i = 0; i < gui.spotsIdx; i++)
 		{
@@ -1108,6 +1107,7 @@ static bool QuerySelection (int ai)
 	s_grlib_icon ico;
 	grlib_IconInit (&ico, &gui.spots[spot].ico);
 	ico.sel = true;
+	*ico.title = '\0';
 	
 	s_grlib_iconSetting istemp;
 	memcpy (&istemp, &is, sizeof(s_grlib_iconSetting));
@@ -1144,6 +1144,10 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
+		DrawInfoWindo (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel");
+		yInf -= 5;
+		if (yInf < 400) yInf = 400;
+
 		Overlay ();
 		grlib_DrawIRCursor ();
 		grlib_Render();
@@ -1152,7 +1156,6 @@ static bool QuerySelection (int ai)
 		if (mag >= 3.0 && ico.x == 320 && ico.y == y) break;
 		}
 	
-	int fr = grlibSettings.fontDef.reverse;
 	u32 btn;
 	while (true)
 		{
@@ -1161,10 +1164,9 @@ static bool QuerySelection (int ai)
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		grlibSettings.fontDef.reverse = 0;
-		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, emus[ai].name);		
-		grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Press (A) to start, (B) Cancel");
-		grlibSettings.fontDef.reverse = fr;
+		DrawInfoWindo (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel");
+		yInf -= 5;
+		if (yInf < 400) yInf = 400;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();
@@ -1263,21 +1265,15 @@ int EmuBrowser (void)
 	// Loop forever
     while (browserRet == -1) 
 		{
-		if (fulldebug) gprintf ("#1");
 		if (LiveCheck (0)) redraw = 1;
 		
-		if (fulldebug) gprintf ("#2");
 		btn = grlib_GetUserInput();
 		
 		// If [HOME] was pressed on the first Wiimote, break out of the loop
 		if (btn)
 			{
-			if (fulldebug) gprintf ("#3");
-
 			browserRet = ChooseDPadReturnMode (btn);
 			if (browserRet != -1) btn = 0;
-			
-			if (fulldebug) gprintf ("#4");
 			
 			if (btn & WPAD_BUTTON_A && emuSelected != -1) 
 				{
@@ -1331,43 +1327,30 @@ int EmuBrowser (void)
 			
 			if (btn & WPAD_BUTTON_MINUS)
 				{
-				if (fulldebug) gprintf ("#5");
 				page = ChangePage (0);
-				if (fulldebug) gprintf ("#6");
 				}
 			if (btn & WPAD_BUTTON_PLUS) 
 				{
-				if (fulldebug) gprintf ("#7");
 				page = ChangePage (1);
-				if (fulldebug) gprintf ("#8");
 				}
 			}
 		
-		if (fulldebug) gprintf ("#9");
 		if (CoverCache_IsUpdated ()) redraw = 1;
-		if (fulldebug) gprintf ("#10");
 		
 		if (redraw)
 			{
-			if (fulldebug) gprintf ("#11");
 			Redraw ();
-			if (fulldebug) gprintf ("#12");
 			grlib_PushScreen ();
-			if (fulldebug) gprintf ("#13");
 			redraw = 0;
 			}
 		
-		if (fulldebug) gprintf ("#14");
 		REDRAW();
-		if (fulldebug) gprintf ("#15");
 		
 		if (browse)
 			{
-			if (fulldebug) gprintf ("#16");
 			browse = 0;
 			EmuBrowse ();
 			redraw = 1;
-			if (fulldebug) gprintf ("#17");
 			}
 		
 		if (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)

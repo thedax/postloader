@@ -156,3 +156,53 @@ void Debug_hexdump (void *d, int len)
         gprintf("\n");
     }
 } 
+void Debug_hexdumplog (void *d, int len)
+{
+    u8 *data;
+    int i, off;
+	char b[2048] = {0};
+	char bb[256];
+		
+    data = (u8*) d;
+
+    sprintf(bb, "\n       0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123456789ABCDEF");
+	strcat(b, bb);
+    sprintf(bb, "\n====  ===============================================  ================\n");
+	strcat(b, bb);
+
+    for (off = 0; off < len; off += 16)
+    {
+        sprintf(bb, "%04x  ", off);
+		strcat(b, bb);
+        for (i = 0; i < 16; i++)
+            if ((i + off) >= len)
+				{
+                sprintf(bb, "   ");
+				strcat(b, bb);
+				}
+            else 
+				{
+				sprintf(bb, "%02x ", data[off + i]);
+				strcat(b, bb);
+				}
+
+        sprintf(bb, " ");
+		strcat(b, bb);
+		
+        for (i = 0; i < 16; i++)
+            if ((i + off) >= len)
+				{
+                sprintf(bb, " ");
+				strcat(b, bb);
+				}
+            else 
+				{
+				sprintf(bb, "%c", ascii(data[off + i]));
+				strcat(b, bb);
+				}
+				
+        sprintf(bb, "\n");
+		strcat(b, bb);
+    }
+	Debug (b);
+} 

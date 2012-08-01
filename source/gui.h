@@ -28,3 +28,5 @@ int GoToPage (int page, int pageMax);
 
 int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn, int *closed);
 int DrawBottomBar (int *visibleflag, u32 *btn, int *closed);
+
+void DrawInfoWindo (f32 y, char *s1, char *s2);

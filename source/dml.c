@@ -754,7 +754,7 @@ static bool IsGCCardAvailable (void)
 	}
 
 // path is the full path to iso image
-bool DEVO_Boot (char *path)
+bool DEVO_Boot (char *path, u8 memcardId)
 	{       
 	//Read in loader.bin
 	char loader_path[256];
@@ -804,14 +804,31 @@ bool DEVO_Boot (char *path)
 
 	if (!IsGCCardAvailable ())
 		{
+		char cardname[64];
+		
+		if (memcardId == 0)
+			{
+			if(gameID[3] == 'J') //Japanese Memory Card
+				sprintf (cardname, "memcard_jap.bin");
+			else
+				sprintf (cardname, "memcard.bin");
+			}
+		else
+			{
+			if(gameID[3] == 'J') //Japanese Memory Card
+				sprintf (cardname, "memcard%u_jap.bin", memcardId);
+			else
+				sprintf (cardname, "memcard%u.bin", memcardId);
+			}
+		
 		Debug ("DEVO_Boot: using emulated card");
 		
 		// find or create a memcard file for emulation(as of devolution r115 it doesn't need to be 16MB)
 		// this file can be located anywhere since it's passed by cluster, not name
 		if(gameID[3] == 'J') //Japanese Memory Card
-			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/memcard_jap.bin", fsop_GetDev (path));
+			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/%s", fsop_GetDev (path), cardname);
 		else
-			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/memcard.bin", fsop_GetDev (path));
+			snprintf(full_path, sizeof(full_path), "%s:/apps/gc_devo/%s", fsop_GetDev (path), cardname);
 
 		// check if file doesn't exist
 		if (stat(full_path, &st) == -1)
@@ -824,10 +841,10 @@ bool DEVO_Boot (char *path)
 				//gprintf("Resizing memcard file...\n");
 				ftruncate(data_fd, 16<<20);
 				if (fstat(data_fd, &st) == -1)
-					{
-					// it still isn't created. Give up.
-					st.st_ino = 0;
-					}
+						{
+						// it still isn't created. Give up.
+						st.st_ino = 0;
+						}
 				close(data_fd);
 				}
 			else
@@ -842,6 +859,7 @@ bool DEVO_Boot (char *path)
 		Debug ("DEVO_Boot: using real card");
 		st.st_ino = 0;
 		}
+
 
 	// set FAT cluster for start of memory card file
 	// if this is zero memory card emulation will not be used
