@@ -305,58 +305,59 @@ bool neek_GetNandConfig (void)
 	s32 ret;
 	NandConfig NChead ATTRIBUTE_ALIGN(32);
 	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
-	
+	 
 	Debug ("neek_GetNandConfig [begin]");
-		
+	 
 	if (nandConfig)
-		free (nandConfig);
-	
+	  free (nandConfig);
+	 
+	nandConfig = NULL;
+	 
 	ISFS_Initialize ();
-	
+	 
 	sprintf (path, "/sneek/nandcfg.bin");
-	
+	 
 	s32 fd = ISFS_Open( path, ISFS_OPEN_READ);
 	Debug ("neek_GetNandConfig [ISFS_Open %d]", fd);
-
 	if (fd <= 0)
-		{
-		Debug ("neek_GetNandConfig [no config file found, only root nand available ?] [end]");
-		nandConfig = NULL;
-		return false;
-		}
-	
+	  {
+	  Debug ("neek_GetNandConfig [no config file found, only root nand available ?] [end]");
+	  nandConfig = NULL;
+	  return false;
+	  }
+	 
 	// Read the header
 	ret = ISFS_Read(fd, &NChead, sizeof(NChead));
 	Debug ("neek_GetNandConfig [IOS_Read %d]", ret);
-	
+	 
 	if (ret < 0)
-		{
-		u32 cfgSize = (NChead.NandCnt * NANDCONFIG_NANDINFO_SIZE) + NANDCONFIG_CONFIG_SIZE;
-		if (cfgSize > sizeof(u32)) // lower values are impossible
-			{
-			nandConfig = allocate_memory (cfgSize);
-
-			ISFS_Seek (fd, 0, 0);
-
-			ret = ISFS_Read(fd, nandConfig, cfgSize);
-			}
-		}
-
+	  {
+	  u32 cfgSize = (NChead.NandCnt * NANDCONFIG_NANDINFO_SIZE) + NANDCONFIG_CONFIG_SIZE;
+	  if (cfgSize > sizeof(u32)) // lower values are impossible
+	   {
+	   nandConfig = allocate_memory (cfgSize);
+	   ISFS_Seek (fd, 0, 0);
+	   ret = ISFS_Read(fd, nandConfig, cfgSize);
+	   }
+	  }
 	ISFS_Close(fd);
-	
+	 
 	//nandConfig->NandCnt = 3;
-	
-	int i;
-	for (i = 0; i < nandConfig->NandCnt; i++)
-		{
-		Debug ("neek_GetNandConfig [%d: %s]", i, nandConfig->NandInfo[i]);
-		}
-
+	if (nandConfig)
+	  {
+	  int i;
+	  for (i = 0; i < nandConfig->NandCnt; i++)
+	   {
+	   Debug ("neek_GetNandConfig [%D: %s]", i, nandConfig->NandInfo[i]);
+	   }
+	  }
+	 
 	Debug ("neek_GetNandConfig [end]");
-	
+	 
 	ISFS_Deinitialize ();
 	return true;
 	}
+
 
 bool neek_WriteNandConfig (void)
 	{
