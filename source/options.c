@@ -40,6 +40,12 @@ s32 menu_SwitchNand (void)
 	
 	*menu = '\0';
 	
+	if (!nandConfig)
+		{
+		grlib_menu ("No nands to select", "   OK   ");
+		return 0;
+		}
+	
 	for (i = 0; i < nandConfig->NandCnt; i++)
 		grlib_menuAddItem (menu, i, (char*)nandConfig->NandInfo[i]);
 		
