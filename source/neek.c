@@ -19,8 +19,8 @@
 #define CDI_CONFIG_SIZE         0x10
 #define CDI_GAMEINFO_SIZE       0x100
 #define CDI_GAME_TYPE_NAME_OFF  0x1C
-#define CDI_GAME_NAME_OFF  		0x20
-#define CDI_GAME_ID_OFF  		0x0
+#define CDI_GAME_NAME_OFF  		0x30
+#define CDI_GAME_ID_OFF  		0x10
 
 #define SEP 0xFF
 
@@ -139,6 +139,9 @@ char* neek_GetCDIGames(void)
 	for (i = 0; i < DICfg->Gamecount; i++)
 		{
 		p = (char*)&DICfg->GameInfo[i];
+		
+		Debug_hexdump (p, CDI_GAMEINFO_SIZE);
+		Debug ("----------------------------------------------");
 		
 		// Fix for corrupted diconfig.bin
 		p[CDI_GAME_ID_OFF + 6] = '\0';

@@ -1,3 +1,9 @@
+postLoader 4.1.0
+
+* Added basic support for neek2o r95 (note that older neek2o versions are supported no more)
+* Removed built in neek2o game scanner
+* Fixed detection of elf file parameters that could crash executed programs
+
 postLoader 4.0.9
 
 * fixed another neek code dumps

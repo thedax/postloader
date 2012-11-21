@@ -86,10 +86,20 @@ u32 load_dol(const void *dolstart, struct __argv *argv)
 bool NeedArgs (u8 *buffer)
 	{
 	if (
-		buffer[260] == '_' &&
-		buffer[261] == 'a' &&
-		buffer[262] == 'r' &&
-		buffer[263] == 'g')
+		(
+		buffer[0x104] == '_' &&
+		buffer[0x105] == 'a' &&
+		buffer[0x106] == 'r' &&
+		buffer[0x107] == 'g'
+		)
+		||
+		(
+		buffer[0x4004] == '_' &&
+		buffer[0x4005] == 'a' &&
+		buffer[0x4006] == 'r' &&
+		buffer[0x4007] == 'g'
+		)
+		)
 		return true;
 		
 	return false;
@@ -139,6 +149,8 @@ int DolBootPrepare (s_run *run)
 	int i,l;
 	char bootpath[PATHMAX+256]; // we need also args...
 	char path[PATHMAX];
+	
+	gprintf ("DolBootPrepare\n");
 	
 	Video_LoadTheme (0); // Make sure that theme isn't loaded
 	

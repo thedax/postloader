@@ -1236,8 +1236,11 @@ start:
 		{
 		if (config.gameMode == GM_WII)
 			{
+			grlib_menuAddItem (buff, 5, "Rebuild game list (reboot)...");
+			/*
 			grlib_menuAddItem (buff, 4, "Rebuild game list (postLoader way)");
 			grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
+			*/
 			}
 		else
 			grlib_menuAddItem (buff, 6, "Rebuild game list...");
