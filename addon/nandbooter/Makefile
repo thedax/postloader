@@ -30,7 +30,8 @@ CXXFLAGS	=	$(CFLAGS)
 #originale TRIIFORCE
 #LDFLAGS	= -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80dfff00
 #preso da booter
-LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x81598000
+#LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x81598000
+LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80E00000
 ##LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80B00000
 
 #---------------------------------------------------------------------------------

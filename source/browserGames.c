@@ -594,16 +594,10 @@ static int GameBrowse (int forcescan)
 			if (config.gameMode == GM_WII)
 				{
 				// Setup slot
-				if (vars.neek != NEEK_NONE)
-					games[i].slot = i;
-				else
-					{
-					// Add slot
-					strcpy (slot, p);
-					p += (strlen(p) + 1);
+				strcpy (slot, p);
+				p += (strlen(p) + 1);
 
-					games[i].slot = atoi (slot); // PArtition number
-					}
+				games[i].slot = atoi (slot); // PArtition number
 				}
 			else
 				{

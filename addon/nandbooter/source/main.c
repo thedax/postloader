@@ -58,7 +58,7 @@ s_channelConfig;
 
 typedef struct
 	{
-	u8 nand; 	 	// 0 no nand emu	1 sd nand emu	2 usb nand emu
+	u8 nand; 	 	// 0 no nand emu	1 sd nand emu	2 usb nand emu  3 run system menu (neek)
 	char nandPath[64];			// Folder of the nand
 	s_channelConfig channel;
 	}
@@ -89,6 +89,7 @@ u32 debuggeroption;
 u32 ocarinaoption;
 
 u32 bootmethodoption;
+bool loadSysMenu = 0;
 
 void StoreLogFile (void);
 
@@ -403,7 +404,10 @@ s32 search_and_read_dol(u64 titleid, u8 **contentBuf, u32 *contentSize, bool ski
 	free(tmdBuffer);
 
 	// Write bootcontent to filepath and overwrite it in case another .dol is found
-	sprintf(filepath, "/title/%08x/%08x/content/%08x.app", TITLE_UPPER(titleid), TITLE_LOWER(titleid), bootcontent);
+	if (loadSysMenu)
+		sprintf(filepath, "/title/%08x/%08x/content/sysmenu.app", TITLE_UPPER(titleid), TITLE_LOWER(titleid));
+	else
+		sprintf(filepath, "/title/%08x/%08x/content/%08x.app", TITLE_UPPER(titleid), TITLE_LOWER(titleid), bootcontent);
 
 	if (skip_bootcontent)
 		{
@@ -646,6 +650,7 @@ void bootTitle(u64 titleid)
 	*(vu32 *)0x800000EC = 0x81800000; // Dev Debugger Monitor Address
 	*(vu32 *)0x800000F0 = 0x01800000; // Simulated Memory Size
 	*(vu32 *)0xCD00643C = 0x00000000; // 32Mhz on Bus
+	*(vu32 *)0x8000315C = 0x80800113;  // DI Legacy mode ?
 
 	// Patch in info missing from apploader reads
 	*Sys_Magic      = 0x0d15ea5e;
@@ -728,6 +733,9 @@ void bootTitle(u64 titleid)
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 	_CPU_ISR_Disable(level);
 	__exception_closeall();
+
+	mtmsr(mfmsr() & ~0x8000);
+	mtmsr(mfmsr() | 0x2002);
 	
 	
 	if (entryPoint != 0x3400)
@@ -886,6 +894,15 @@ int main(int argc, char* argv[])
 	debug2Console (true);
 #endif	
 
+	if (nb.nand == 3)
+		{
+		loadSysMenu = 1;
+		nb.nand = 0;
+		nb.channel.language = -1;
+		nb.channel.bootMode = 1;
+		nb.channel.titleId = TITLE_ID(0x00000001,0x00000002);
+		}
+
 	Console_SetPosition (12,0);
 	PrintCenter ("nandBooter "VER" is loading...", 80);
 	
@@ -895,16 +912,7 @@ int main(int argc, char* argv[])
 	int ios[7] = { 249, 250, 251, 252, 247 , 248};
 	if (!SenseSneek (true))
 		{
-		/*
-		if (IOS_GetVersion() != ios[nb.channel.ios])
-			{
-			debug ("IOS_ReloadIOS\n");
-			IOS_ReloadIOS(ios[nb.channel.ios]);
-			}
-		*/
 		IOS_ReloadIOS(ios[nb.channel.ios]);
-		//Net ();
-		//IOSReloadBlock(IOS_GetVersion(), true);
 		}
 		
 	// Configure triiforce options

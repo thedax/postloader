@@ -58,6 +58,8 @@ NandConfig *nandConfig = NULL;
 
 s32 neek_SelectGame( u32 SlotID )
 	{
+	Debug ("neek_SelectGame: %u", SlotID);
+	
 	s32 fd = IOS_Open("/dev/di", 0 );
 	
 	if( fd < 0 ) 
@@ -140,14 +142,14 @@ char* neek_GetCDIGames(void)
 		{
 		p = (char*)&DICfg->GameInfo[i];
 		
-		Debug_hexdump (p, CDI_GAMEINFO_SIZE);
-		Debug ("----------------------------------------------");
+		//Debug_hexdump (p, CDI_GAMEINFO_SIZE);
+		//Debug ("----------------------------------------------");
 		
 		// Fix for corrupted diconfig.bin
 		p[CDI_GAME_ID_OFF + 6] = '\0';
 		p[CDI_GAME_ID_OFF + 67] = '\0';
 		
-		//Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[CDI_GAME_ID_OFF], &p[CDI_GAME_TYPE_NAME_OFF]);
+		Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[CDI_GAME_ID_OFF], &p[CDI_GAME_NAME_OFF]);
 		obsize += (strlen(&p[CDI_GAME_NAME_OFF]) + strlen (&p[CDI_GAME_ID_OFF]) + 2); // 2 is len of the two "|" "|"
 		}
 		
@@ -162,7 +164,7 @@ char* neek_GetCDIGames(void)
 			
 			//Debug ("> %s:%s", &p[CDI_GAME_NAME_OFF], &p[CDI_GAME_ID_OFF]);
 
-			sprintf (buff, "%s%c%s%c", &p[CDI_GAME_NAME_OFF], SEP, &p[CDI_GAME_ID_OFF], SEP);
+			sprintf (buff, "%s%c%s%c%d%c", &p[CDI_GAME_NAME_OFF], SEP, &p[CDI_GAME_ID_OFF], SEP, i, SEP);
 			strcat (ob, buff);
 			}
 		
@@ -240,7 +242,7 @@ char* neek_GetDIGames(void)
 			{
 			p = (char*)&DICfg->GameInfo[i];
 			
-			sprintf (buff, "%s%c%s%c", &p[DI_GAME_NAME_OFF], SEP, &p[DI_GAME_ID_OFF], SEP);
+			sprintf (buff, "%s%c%s%c%d%c", &p[DI_GAME_NAME_OFF], SEP, &p[DI_GAME_ID_OFF], SEP, i, SEP);
 			strcat (ob, buff);
 			}
 		
