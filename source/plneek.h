@@ -9,11 +9,12 @@
 #define PLNEEK_SDDAT "sd://ploader/plneek.dat"
 #define PLNEEK_USBDAT "usb://ploader/plneek.dat"
 
-#define PLN_BOOT_REAL 0
+#define PLN_BOOT_PL 0
 #define PLN_BOOT_NEEK 1
 #define PLN_BOOT_SM 2
 #define PLN_BOOT_HBC 3
 #define PLN_BOOT_NEEK2O 4
+#define PLN_BOOT_PLCHANNEL 5
 
 #define PLN_NAME_LEN 64
 

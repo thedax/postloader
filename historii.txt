@@ -1,3 +1,11 @@
+postLoader 4.1.2
+
+* Fixed a memory corruption when parsing diconfig.bin
+* Added code for multilanguage support
+* Removed "Remove stub.bin" option.
+* Reset button will now switch to system menu (as it should already do...).
+* Fixed nandcfg.bin parsing (thx cipazza)
+
 postLoader 4.1.1
 
 * WII Games selection bug under neek(2o) should be fixed

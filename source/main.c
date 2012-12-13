@@ -15,6 +15,7 @@
 #include "channels.h"
 #include "bin2o.h"
 #include "devices.h"
+#include "language.h"
 
 extern void __exception_setreload(int t); // In the event of a code dump, app will restart
 int Disc (void);
@@ -232,6 +233,8 @@ int main(int argc, char **argv)
 	memset (&vars, 0, sizeof(s_vars));
 	
 	get_msec (true);
+	
+	SetLangFileBuffer ((const char*)english_txt, english_txt_size);
 	
 	CheckNeek ();
 	

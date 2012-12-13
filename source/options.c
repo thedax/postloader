@@ -10,6 +10,7 @@
 #include "identify.h"
 #include "neek.h"
 #include "devices.h"
+#include "language.h"
 
 // Outside
 void *allocate_memory(u32 size);
@@ -88,7 +89,7 @@ void ShowAboutPLMenu (void)
 	"Wever,daxtsu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
 
-	grlib_menu (buff, "Close");
+	grlib_menu (buff, GLS("Close"));
 	}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,13 +105,13 @@ static void cb_filecopy (void)
 		u32 elapsed = time(NULL) - fsop.multy.startms;
 		u32 perc = (mb * 100)/sizemb;
 		
-		Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
+		Video_WaitPanel (TEX_HGL, GLS("pwcopying"), perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
 		
 		mstout = ms + 250;
 		
 		if (grlib_GetUserInput() & WPAD_BUTTON_B)
 			{
-			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
+			int ret = grlib_menu (GLS("interruptcopy"), GLS("YesNo"));
 			if (ret == 0) fsop.breakop = 1;
 			}
 		snd_Mp3Go ();
@@ -151,8 +152,8 @@ void ShowAdvancedOptions (void)
 	
 	do
 		{
-		strcpy (buff, "Advanced Options\n\n");
-		strcat (buff, "Important notice: postLoader forwarder channel V4 must be installed to use\nIOS249 option and keep the ability to run homebrews with ahbprot.");
+		strcpy (buff, GLS("advopt1"));
+		strcat (buff, GLS("advopt2"));
 		
 		*options = '\0';
 		
@@ -175,8 +176,6 @@ void ShowAdvancedOptions (void)
 			
 		grlib_menuAddItem (options, 4,  "Restart/Reboot...");
 		
-		grlib_menuAddItem (options, 7,  "Remove stub.bin...");
-
 		grlib_menuAddSeparator (options);
 		grlib_menuAddItem (options, -1,  "Close");
 		
@@ -226,15 +225,6 @@ void ShowAdvancedOptions (void)
 			{
 			config.usesGestures = !config.usesGestures;
 			}
-
-		if (item == 7)
-			{
-			char path[256];
-
-			sprintf (path, "%s://ploader/stub.bin", vars.defMount);
-			unlink (path);
-			grlib_menu ( "stub.bin removed", "  Ok  ");
-			}
 		}
 	while (item != -1);
 	
@@ -242,6 +232,85 @@ void ShowAdvancedOptions (void)
 	grlibSettings.usesGestures = config.usesGestures;
 	vars.saveExtendedConf = 1;
 	ExtConfigWrite ();
+	}
+
+static int n2oini_Manage(int mode) // 0 = check, 1 = write, 2 = remove
+	{
+	s32 fd;
+	int ret = 0;
+	
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	
+	ISFS_Initialize ();
+
+	sprintf (path, "/title/00000001/00000002/data/n2oboot.ini");
+	if (mode == 0)
+		{
+		fd = ISFS_Open(path, ISFS_OPEN_READ);
+		if (fd > 0)
+			{
+			ISFS_Close(fd);
+			ret = 1;
+			goto exit;
+			}
+		}
+
+	if (mode == 1)
+		{
+		char buff[256] ATTRIBUTE_ALIGN(32);
+		
+		memset (buff, 0, sizeof(buff));
+		
+		ISFS_CreateFile (path,0,3,3,3);
+		fd = ISFS_Open (path, ISFS_OPEN_RW);
+		if (fd > 0)
+			{
+			ret = ISFS_Write (fd, buff, sizeof(buff));
+			ISFS_Close(fd);
+			ret = 1;
+			goto exit;
+			}
+		}
+
+exit:
+	ISFS_Deinitialize ();
+	return ret;
+	}
+
+void ShowNeekOptions (void)
+	{
+	int item;
+	int n2oini;
+	char buff[1024];
+	char options[300];
+	
+	Video_SetFont(TTFNORM);
+	
+	do
+		{
+		strcpy (buff, "Neek(2o) options\n\n");
+		strcat (buff, "Important notice: for some options, neek2obooter.app must be installed");
+		
+		*options = '\0';
+		
+		n2oini = n2oini_Manage (0);
+		
+		if (n2oini)
+			grlib_menuAddItem (options, 1,  "neek2obooter is configured to start postLoader");
+
+		grlib_menuAddSeparator (options);
+		grlib_menuAddItem (options, -1,  "Close");
+		
+		Video_SetFontMenu(TTFSMALL);
+		item = grlib_menu (buff, options);
+		Video_SetFontMenu(TTFNORM);
+		
+		if (item == 1)
+			{
+			}
+
+		}
+	while (item != -1);
 	}
 
 
@@ -317,6 +386,11 @@ void ShowAboutMenu (void)
 		
 		grlib_menuAddItem (options, 7,  "Advanced options...");
 		
+		if (vars.neek != NEEK_NONE)
+			{
+			//grlib_menuAddItem (options, 8,  "neek options...");
+			}
+			
 		if (vars.neek == NEEK_2o && devices_Get (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 			grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
 			
@@ -340,6 +414,11 @@ void ShowAboutMenu (void)
 		if (item == 7)
 			{
 			ShowAdvancedOptions ();
+			}
+
+		if (item == 8)
+			{
+			//ShowNeekOptions ();
 			}
 
 		if (item == 10)

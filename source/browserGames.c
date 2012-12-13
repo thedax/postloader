@@ -1930,9 +1930,14 @@ int GameBrowser (void)
 			redraw = 1;
 			}
 		
-		if (grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)
+		if (grlibSettings.wiiswitch_poweroff)
 			{
 			browserRet = INTERACTIVE_RET_SHUTDOWN;
+			}
+
+		if (grlibSettings.wiiswitch_reset)
+			{
+			browserRet = INTERACTIVE_RET_WIIMENU;
 			}
 
 		if (wiiload.status == WIILOAD_HBZREADY)

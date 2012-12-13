@@ -114,7 +114,7 @@ static void Redraw (void) // Refresh screen
 		{
 		char buff[128];
 		
-		if (pln.bootMode == PLN_BOOT_REAL)
+		if (pln.bootMode == PLN_BOOT_PL)
 			strcpy (buff, "You are in REAL NAND mode");
 		if (pln.bootMode == PLN_BOOT_NEEK)
 			strcpy (buff, "You are in UNEEK mode");
@@ -124,7 +124,9 @@ static void Redraw (void) // Refresh screen
 			strcpy (buff, "You are in HomeBrewChannel mode");
 		if (pln.bootMode == PLN_BOOT_NEEK2O)
 			strcpy (buff, "You are in neek2o mode");
-			
+		if (pln.bootMode == PLN_BOOT_PLCHANNEL)
+			strcpy (buff, "You are in REAL NAND mode");
+
 		strcat (buff, ": Press any key to change");
 			
 		grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, buff);
@@ -478,7 +480,7 @@ bool LoadPLN (char *path)
 	f = fopen (path, "rb");
 	if (!f) 
 		{
-		pln.bootMode = PLN_BOOT_REAL;
+		pln.bootMode = PLN_BOOT_PL;
 		*pln.name = '\0';
 		return FALSE;
 		}
@@ -509,7 +511,8 @@ int ChooseNewMode (void)
 	do
 		{
 		menu[0] = '\0';
-		grlib_menuAddCheckItem (menu, 100, (pln.bootMode == PLN_BOOT_REAL), "postLoader");
+		grlib_menuAddCheckItem (menu, 100, (pln.bootMode == PLN_BOOT_PL), "postLoader");
+		grlib_menuAddCheckItem (menu, 105, (pln.bootMode == PLN_BOOT_PLCHANNEL), "postLoader (via channel)");
 		grlib_menuAddCheckItem (menu, 101, (pln.bootMode == PLN_BOOT_NEEK), "BOOTMII");
 		grlib_menuAddCheckItem (menu, 102, (pln.bootMode == PLN_BOOT_SM), "WII System menu");
 		grlib_menuAddCheckItem (menu, 103, (pln.bootMode == PLN_BOOT_HBC), "Homebrew Channel");
@@ -520,11 +523,12 @@ int ChooseNewMode (void)
 		
 		ret = grlib_menu ("Please select your option", menu);
 		
-		if (ret == 100) pln.bootMode = PLN_BOOT_REAL;
+		if (ret == 100) pln.bootMode = PLN_BOOT_PL;
 		if (ret == 101) pln.bootMode = PLN_BOOT_NEEK;
 		if (ret == 102) pln.bootMode = PLN_BOOT_SM;
 		if (ret == 103) pln.bootMode = PLN_BOOT_HBC;
 		if (ret == 104) pln.bootMode = PLN_BOOT_NEEK2O;
+		if (ret == 105) pln.bootMode = PLN_BOOT_PLCHANNEL;
 		}
 	while (ret > 2);
 	
@@ -558,7 +562,7 @@ void Boot (void)
 		IOS_ReloadIOS (254); 
 		}
 
-	if (pln.bootMode == PLN_BOOT_REAL)
+	if (pln.bootMode == PLN_BOOT_PL)
 		{
 		bool found = FALSE;
 		
@@ -570,6 +574,15 @@ void Boot (void)
 		devices_Unmount ();
 		grlib_Exit ();
 		BootExecFile ();
+		}
+
+	if (pln.bootMode == PLN_BOOT_PLCHANNEL)
+		{
+		devices_Unmount ();
+		grlib_Exit ();
+		
+		WII_Initialize(); 
+		WII_LaunchTitle(TITLE_ID(0x00010001,0x504f5354));
 		}
 		
 	if (pln.bootMode == PLN_BOOT_SM)

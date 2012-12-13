@@ -134,7 +134,7 @@ char* neek_GetCDIGames(void)
 	char *p;
 	
 	int obsize = 0;
-	char *ob = NULL, buff[64];
+	char *ob = NULL, buff[128];
 	
 	// ob format will be <name> '\0' <id> '\0' <name> '\0' <id> '\0'....'\0'
 	
@@ -150,7 +150,8 @@ char* neek_GetCDIGames(void)
 		p[CDI_GAME_ID_OFF + 67] = '\0';
 		
 		Debug ("%02d:%02d:%s:%s", i, DICfg->Gamecount, &p[CDI_GAME_ID_OFF], &p[CDI_GAME_NAME_OFF]);
-		obsize += (strlen(&p[CDI_GAME_NAME_OFF]) + strlen (&p[CDI_GAME_ID_OFF]) + 2); // 2 is len of the two "|" "|"
+		sprintf (buff, "%s%c%s%c%d%c", &p[CDI_GAME_NAME_OFF], SEP, &p[CDI_GAME_ID_OFF], SEP, i, SEP);
+		obsize += strlen(buff);
 		}
 		
 	if (obsize > 0)
@@ -348,15 +349,15 @@ bool neek_GetNandConfig (void)
 	Debug ("neek_GetNandConfig NChead.NandCnt = %d, NChead.NandSel", NChead.NandCnt, NChead.NandSel);
 	sleep (1);
 	
-	if (ret < 0)
+	if (ret > 0)
 	  {
 	  u32 cfgSize = (NChead.NandCnt * NANDCONFIG_NANDINFO_SIZE) + NANDCONFIG_CONFIG_SIZE;
 	  if (cfgSize > sizeof(u32)) // lower values are impossible
-	   {
-	   nandConfig = allocate_memory (cfgSize);
-	   ISFS_Seek (fd, 0, 0);
-	   ret = ISFS_Read(fd, nandConfig, cfgSize);
-	   }
+		{
+		nandConfig = allocate_memory (cfgSize);
+		ISFS_Seek (fd, 0, 0);
+		ret = ISFS_Read(fd, nandConfig, cfgSize);
+		}
 	  }
 	ISFS_Close(fd);
 	 
