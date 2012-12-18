@@ -903,8 +903,6 @@ static void ShowFilterMenu (void)
 
 static void ShowAppMenu (int ai)
 	{
-	if (!CheckParental()) return;
-
 	char buff[1024];
 	char b[64];
 	int item;
@@ -953,52 +951,55 @@ static void ShowAppMenu (int ai)
 		sprintf (b, "Vote this title (%d/10)##4||", games[ai].priority);
 		strcat (buff, b);
 
-		if (games[ai].hidden)
-			strcat (buff, "Remove hide flag##2|");
-		else
-			strcat (buff, "Hide this title ##3|");
-
-		if (config.gameMode == GM_WII)
+		if (CheckParental(0))
 			{
-			if (vars.neek != NEEK_NONE)
+			if (games[ai].hidden)
+				strcat (buff, "Remove hide flag##2|");
+			else
+				strcat (buff, "Hide this title ##3|");
+
+			if (config.gameMode == GM_WII)
 				{
-				strcat (buff, "NAND: "); strcat (buff, nand[gameConf.nand]); strcat (buff, "##106|");
+				if (vars.neek != NEEK_NONE)
+					{
+					strcat (buff, "NAND: "); strcat (buff, nand[gameConf.nand]); strcat (buff, "##106|");
+					}
+				else
+					{
+					strcat (buff, "IOS: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
+					strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
+					}
 				}
 			else
 				{
-				strcat (buff, "IOS: "); strcat (buff, ios[gameConf.ios]); strcat (buff, "##100|");
-				strcat (buff, "Loader: "); strcat (buff, loader[gameConf.loader]); strcat (buff, "##107|");
-				}
-			}
-		else
-			{
-			if (games[ai].slot == 0)
-				grlib_menuAddItem (buff, 7, "Remove from SD");
-				
-			if (config.dmlVersion != GCMODE_DEVO)
-				{
-				strcat (buff, "DM(L): Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
-				}
+				if (games[ai].slot == 0)
+					grlib_menuAddItem (buff, 7, "Remove from SD");
+					
+				if (config.dmlVersion != GCMODE_DEVO)
+					{
+					strcat (buff, "DM(L): Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
+					}
 
-			if (config.dmlVersion == GCMODE_DM22)
-				   {
-				   grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
-				   grlib_menuAddItem (buff, 9, "DM(L): Full NoDisc Patching (%s)", gameConf.dmlFullNoDisc ? "Yes" : "No");
-				   }
+				if (config.dmlVersion == GCMODE_DM22)
+					   {
+					   grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+					   grlib_menuAddItem (buff, 9, "DM(L): Full NoDisc Patching (%s)", gameConf.dmlFullNoDisc ? "Yes" : "No");
+					   }
 
-			if (config.dmlVersion == GCMODE_DML1x)
-				grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
+				if (config.dmlVersion == GCMODE_DML1x)
+					grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 
-			if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22)
-				{
-			   grlib_menuAddItem (buff,10, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
-			   grlib_menuAddItem (buff,11, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
-			   grlib_menuAddItem (buff,12, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
-				}
-				
-			if (config.dmlVersion == GCMODE_DEVO)
-				{
-				grlib_menuAddItem (buff,13, "DEVO: Virtual Memcard ID=%d", gameConf.memcardId );
+				if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22)
+					{
+				   grlib_menuAddItem (buff,10, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
+				   grlib_menuAddItem (buff,11, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
+				   grlib_menuAddItem (buff,12, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
+					}
+					
+				if (config.dmlVersion == GCMODE_DEVO)
+					{
+					grlib_menuAddItem (buff,13, "DEVO: Virtual Memcard ID=%d", gameConf.memcardId );
+					}
 				}
 			}
 		/*
@@ -1226,28 +1227,31 @@ start:
 	
 	buff[0] = '\0';
 	
-	if (vars.neek != NEEK_NONE)
+	if (CheckParental(0))
 		{
-		if (config.gameMode == GM_WII)
+		if (vars.neek != NEEK_NONE)
 			{
-			grlib_menuAddItem (buff, 5, "Rebuild game list (reboot)...");
-			/*
-			grlib_menuAddItem (buff, 4, "Rebuild game list (postLoader way)");
-			grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
-			*/
+			if (config.gameMode == GM_WII)
+				{
+				grlib_menuAddItem (buff, 5, "Rebuild game list (reboot)...");
+				/*
+				grlib_menuAddItem (buff, 4, "Rebuild game list (postLoader way)");
+				grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
+				*/
+				}
+			else
+				grlib_menuAddItem (buff, 6, "Rebuild game list...");
 			}
 		else
-			grlib_menuAddItem (buff, 6, "Rebuild game list...");
-		}
-	else
-		{
-		if (config.gameMode == GM_WII)
-			grlib_menuAddItem (buff, 6, "Rebuild game list (ntfs/fat)...");
-		else
-			grlib_menuAddItem (buff, 6, "Rebuild game list...");
-		}
+			{
+			if (config.gameMode == GM_WII)
+				grlib_menuAddItem (buff, 6, "Rebuild game list (ntfs/fat)...");
+			else
+				grlib_menuAddItem (buff, 6, "Rebuild game list...");
+			}
 
-	grlib_menuAddItem (buff, 1, "Download covers...");
+		grlib_menuAddItem (buff, 1, "Download covers...");
+		}
 
 	if (config.gameSort == 0)
 		grlib_menuAddItem (buff,  8, "Sort by: vote");
@@ -1260,33 +1264,36 @@ start:
 
 	grlib_menuAddSeparator (buff);
 
-	if (config.gameMode == GM_WII)
+	if (CheckParental(0))
 		{
-		if (vars.neek == NEEK_NONE) grlib_menuAddItem (buff, 2, "Set default loader...");
-		}
-	else
-		{
-		if (config.dmlVersion == GCMODE_DML0x)
-			grlib_menuAddItem (buff, 12, "GameCube mode: DML v0.x");
-		if (config.dmlVersion == GCMODE_DML1x)
-			grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
-		if (config.dmlVersion == GCMODE_DM22)
-			grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.2+ USB");
-		if (config.dmlVersion == GCMODE_DEVO)
-			grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
+		if (config.gameMode == GM_WII)
+			{
+			if (vars.neek == NEEK_NONE) grlib_menuAddItem (buff, 2, "Set default loader...");
+			}
+		else
+			{
+			if (config.dmlVersion == GCMODE_DML0x)
+				grlib_menuAddItem (buff, 12, "GameCube mode: DML v0.x");
+			if (config.dmlVersion == GCMODE_DML1x)
+				grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
+			if (config.dmlVersion == GCMODE_DM22)
+				grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.2+ USB");
+			if (config.dmlVersion == GCMODE_DEVO)
+				grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
 
-		if (config.dmlVersion != GCMODE_DEVO)
-			grlib_menuAddItem (buff, 3, "Set default videomode...");
-		}
-	
-	// note: maybe it is not the right place for this option
-	grlib_menuAddItem (buff, 7, "Reset configuration files...");
+			if (config.dmlVersion != GCMODE_DEVO)
+				grlib_menuAddItem (buff, 3, "Set default videomode...");
+			}
+		
+		// note: maybe it is not the right place for this option
+		grlib_menuAddItem (buff, 7, "Reset configuration files...");
 
-	if (showHidden)
-		grlib_menuAddItem (buff, 10, "Hide hidden games");
-	else
-		grlib_menuAddItem (buff, 11, "Show hidden games");
-				
+		if (showHidden)
+			grlib_menuAddItem (buff, 10, "Hide hidden games");
+		else
+			grlib_menuAddItem (buff, 11, "Show hidden games");
+		}
+					
 	Redraw();
 	grlib_PushScreen();
 	
@@ -1352,7 +1359,6 @@ start:
 
 	if (item == 11)
 		{
-		if(!CheckParental()) return;
 		showHidden = 1;
 		redraw = 1;
 		}

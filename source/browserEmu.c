@@ -777,8 +777,6 @@ static void ShowFilterMenu (void)
 
 static void ShowAppMenu (int ai)
 	{
-	if (!CheckParental()) return;
-	
 	char buff[512];
 	char title[256];
 	
@@ -795,9 +793,13 @@ static void ShowAppMenu (int ai)
 		buff[0] = '\0';
 
 		grlib_menuAddItem (buff,  1, "Played %d times", emus[ai].playcount);
-		grlib_menuAddSeparator (buff);
-		grlib_menuAddItem (buff,  2, "Delete this rom (and cover)");
-		grlib_menuAddItem (buff,  3, "Delete this cover");
+		
+		if (CheckParental(0))
+			{
+			grlib_menuAddSeparator (buff);
+			grlib_menuAddItem (buff,  2, "Delete this rom (and cover)");
+			grlib_menuAddItem (buff,  3, "Delete this cover");
+			}
 		
 		int item = grlib_menu (title, buff);
 		
@@ -872,12 +874,15 @@ static void ShowMainMenu (void)
 	
 	grlib_menuAddItem (buff,  3, "Select filters");
 
-	if (showHidden)
-		grlib_menuAddItem (buff,  6, "Hide hidden emus");
-	else
-		grlib_menuAddItem (buff,  7, "Show hidden emus");
-		
-	grlib_menuAddItem (buff,  1, "Import snapshots as covers");
+	if (CheckParental(0))
+		{
+		if (showHidden)
+			grlib_menuAddItem (buff,  6, "Hide hidden emus");
+		else
+			grlib_menuAddItem (buff,  7, "Show hidden emus");
+			
+		grlib_menuAddItem (buff,  1, "Import snapshots as covers");
+		}
 
 	Redraw();
 	grlib_PushScreen();
@@ -910,7 +915,6 @@ static void ShowMainMenu (void)
 
 	if (item == 7)
 		{
-		if(!CheckParental()) return;
 		showHidden = 1;
 		}
 		

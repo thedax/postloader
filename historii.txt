@@ -1,3 +1,15 @@
+postLoader 4.1.3
+
+* Added support for LULZ HBC title id
+* Added a fade in effect when showing the gui
+* Better managment of parental control. Advanced options are now hidden, not the full menu. Now only way to disable it is pressing the "config" button
+
+priibooter_gui 4.8
+
+* Added support for LULZ HBC title id
+* Added option to start postloader using the channel. This will grant that AHBPROT is disabled. Works better with plforwarder.5.1.5.wad (available in the dist package)
+* Faster fade in/out
+
 postLoader 4.1.2
 
 * Fixed a memory corruption when parsing diconfig.bin

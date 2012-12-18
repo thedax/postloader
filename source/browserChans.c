@@ -794,8 +794,6 @@ static int FindSpot (void)
 
 static void ShowAppMenu (int ai)
 	{
-	if (!CheckParental()) return;
-	
 	char buff[1024];
 	char b[64];
 	int item;
@@ -820,45 +818,51 @@ static void ShowAppMenu (int ai)
 	do
 		{
 		buff[0] = '\0';
-		strcat (buff, "Set as autoboot##1|");
-		
-		if (chans[chansSelected].hidden)
-			strcat (buff, "Remove hide flag##2|");
-		else
-			strcat (buff, "Hide this title ##3|");
+		if (CheckParental(0))		
+			{
+			strcat (buff, "Set as autoboot##1|");
+			
+			if (chans[chansSelected].hidden)
+				strcat (buff, "Remove hide flag##2|");
+			else
+				strcat (buff, "Hide this title ##3|");
+			}
 
 		sprintf (b, "Vote this title (%d/10)##4", chans[chansSelected].priority);
 		strcat (buff, b);
 		
-		strcat (buff, "||");
-
-		if (vars.neek == NEEK_NONE && config.chnBrowser.nand != NAND_REAL)
+		if (CheckParental(0))		
 			{
-			strcat (buff, "IOS: "); strcat (buff, ios[chnConf.ios]); strcat (buff, "##100|");
-			}
-			
-		strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
+			strcat (buff, "||");
 
-		if (chnConf.bootMode < 2)
-			{
-			strcat (buff, "Video: "); strcat (buff, videooptions[chnConf.vmode]); strcat (buff, "##101|");
-			strcat (buff, "Video Patch: "); strcat (buff, videopatchoptions[chnConf.vpatch]); strcat (buff, "##102|");
-			strcat (buff, "Language: "); strcat (buff, languageoptions[chnConf.language]); strcat (buff, "##103|");
-			strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[chnConf.ocarina]); strcat (buff, "##105|");
-			if (chnConf.ocarina)
+			if (vars.neek == NEEK_NONE && config.chnBrowser.nand != NAND_REAL)
 				{
-				strcat (buff, "Hook type: "); strcat (buff, hooktypeoptions[chnConf.hook]); strcat (buff, "##104|");
+				strcat (buff, "IOS: "); strcat (buff, ios[chnConf.ios]); strcat (buff, "##100|");
+				}
+				
+			strcat (buff, "Boot method: "); strcat (buff, bootmethodoptions[chnConf.bootMode]); strcat (buff, "##106|");
+
+			if (chnConf.bootMode < 2)
+				{
+				strcat (buff, "Video: "); strcat (buff, videooptions[chnConf.vmode]); strcat (buff, "##101|");
+				strcat (buff, "Video Patch: "); strcat (buff, videopatchoptions[chnConf.vpatch]); strcat (buff, "##102|");
+				strcat (buff, "Language: "); strcat (buff, languageoptions[chnConf.language]); strcat (buff, "##103|");
+				strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[chnConf.ocarina]); strcat (buff, "##105|");
+				if (chnConf.ocarina)
+					{
+					strcat (buff, "Hook type: "); strcat (buff, hooktypeoptions[chnConf.hook]); strcat (buff, "##104|");
+					}
+				else
+					strcat (buff, "Hook type: n/a##1000|");
 				}
 			else
+				{
+				strcat (buff, "Video: n/a##1000|");
+				strcat (buff, "Video Patch: n/a##1000|");
+				strcat (buff, "Language: n/a##1000|");
 				strcat (buff, "Hook type: n/a##1000|");
-			}
-		else
-			{
-			strcat (buff, "Video: n/a##1000|");
-			strcat (buff, "Video Patch: n/a##1000|");
-			strcat (buff, "Language: n/a##1000|");
-			strcat (buff, "Hook type: n/a##1000|");
-			strcat (buff, "Ocarina: n/a##1000|");
+				strcat (buff, "Ocarina: n/a##1000|");
+				}
 			}
 		
 		/*
@@ -1181,36 +1185,43 @@ static void ShowMainMenu (void)
 	
 	buff[0] = '\0';
 	
-	grlib_menuAddItem (buff,  1, "NAND Source...");
-	
-	grlib_menuAddSeparator (buff);
-	
-	grlib_menuAddItem (buff,  2, "Update title cache...");
-	grlib_menuAddItem (buff,  3, "Download covers...");
+	if (CheckParental(0))
+		{
+		grlib_menuAddItem (buff,  1, "NAND Source...");
+		
+		grlib_menuAddSeparator (buff);
+		
+		grlib_menuAddItem (buff,  2, "Update title cache...");
+		grlib_menuAddItem (buff,  3, "Download covers...");
+		}
+		
 	grlib_menuAddItem (buff,  4, "Titles filter");
 
 	grlib_menuAddSeparator (buff);
 
-	if (config.chnBrowser.nand != NAND_REAL)
+	if (CheckParental(0))
 		{
-		grlib_menuAddItem (buff,  5, "Copy SYSCONF from real nand...");
-		grlib_menuAddItem (buff,  6, "Copy MII from real nand...");
-		
-		grlib_menuAddSeparator (buff);
-		}
+		if (config.chnBrowser.nand != NAND_REAL)
+			{
+			grlib_menuAddItem (buff,  5, "Copy SYSCONF from real nand...");
+			grlib_menuAddItem (buff,  6, "Copy MII from real nand...");
+			
+			grlib_menuAddSeparator (buff);
+			}
 
-	if (showHidden)
-		grlib_menuAddItem (buff,  7, "Hide hidden titles");
-	else
-		grlib_menuAddItem (buff,  8, "Show hidden titles");
+		if (showHidden)
+			grlib_menuAddItem (buff,  7, "Hide hidden titles");
+		else
+			grlib_menuAddItem (buff,  8, "Show hidden titles");
 
-	if (vars.neek != NEEK_NONE)
-		{
-		grlib_menuAddItem (buff,  9, "UID.sys manage mode");
-		}
-	else
-		{
-		grlib_menuAddItem (buff,  10, "Change Default CIOSX");
+		if (vars.neek != NEEK_NONE)
+			{
+			grlib_menuAddItem (buff,  9, "UID.sys manage mode");
+			}
+		else
+			{
+			grlib_menuAddItem (buff,  10, "Change Default CIOSX");
+			}
 		}
 		
 	Redraw();
@@ -1256,7 +1267,6 @@ static void ShowMainMenu (void)
 
 	if (item == 8)
 		{
-		if(!CheckParental()) return;
 		showHidden = 1;
 		}
 		

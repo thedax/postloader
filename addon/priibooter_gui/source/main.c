@@ -15,7 +15,7 @@
 #include "ios.h"
 #include "../build/bin2o.h"
 
-#define USBTOUT 15
+#define USBTOUT 10
 
 #define FNTNORM 0
 #define FNTSMALL 1
@@ -29,6 +29,7 @@
 #define POSTLOADER_USBAPP "usb://apps/postloader/boot.dol"
 
 #define TITLE_ID(x,y) (((u64)(x) << 32) | (y)) // Needed for launching channels
+#define HBMAGIC_ADDR    ((u8 *) 0x93200000-8)
 
 char dev[64];
 char cfg[64];
@@ -182,10 +183,10 @@ void fadeIn (void)
 	{
 	//The following loop will take little less than 3 second to complete
 	
-	for (alphaback = 0; alphaback < 255; alphaback += 1) // Fade background image out to black screen
+	for (alphaback = 0; alphaback < 255; alphaback += 5) // Fade background image out to black screen
 		{
 		Redraw ();
-		usleep (10000); // 10msec
+		//usleep (10000); // 10msec
 		}
 	} // fadeOut
 
@@ -511,8 +512,8 @@ int ChooseNewMode (void)
 	do
 		{
 		menu[0] = '\0';
-		grlib_menuAddCheckItem (menu, 100, (pln.bootMode == PLN_BOOT_PL), "postLoader");
-		grlib_menuAddCheckItem (menu, 105, (pln.bootMode == PLN_BOOT_PLCHANNEL), "postLoader (via channel)");
+		grlib_menuAddCheckItem (menu, 100, (pln.bootMode == PLN_BOOT_PL), "postLoader (sd/usb)");
+		grlib_menuAddCheckItem (menu, 105, (pln.bootMode == PLN_BOOT_PLCHANNEL), "postLoader (channel)");
 		grlib_menuAddCheckItem (menu, 101, (pln.bootMode == PLN_BOOT_NEEK), "BOOTMII");
 		grlib_menuAddCheckItem (menu, 102, (pln.bootMode == PLN_BOOT_SM), "WII System menu");
 		grlib_menuAddCheckItem (menu, 103, (pln.bootMode == PLN_BOOT_HBC), "Homebrew Channel");
@@ -578,8 +579,22 @@ void Boot (void)
 
 	if (pln.bootMode == PLN_BOOT_PLCHANNEL)
 		{
+		bool found = FALSE;
+		
+		if (pl_sd && !found) found = LoadExecFile (POSTLOADER_SDAPP, "priibooter");
+		if (pl_usb && !found) found = LoadExecFile (POSTLOADER_USBAPP, "priibooter");
+
+		if (!found) BootToMenu ();
+
 		devices_Unmount ();
 		grlib_Exit ();
+
+		HBMAGIC_ADDR[0] = 'P';
+		HBMAGIC_ADDR[1] = 'O';
+		HBMAGIC_ADDR[2] = 'S';
+		HBMAGIC_ADDR[3] = 'T';
+		HBMAGIC_ADDR[4] = 0;
+		DCFlushRange(HBMAGIC_ADDR, 8);
 		
 		WII_Initialize(); 
 		WII_LaunchTitle(TITLE_ID(0x00010001,0x504f5354));
@@ -685,10 +700,18 @@ int main(int argc, char **argv)
 	
 	if (pl_sd == 0 && pl_usb == 0)
 		{
+		sprintf (mex2,"postLoader don't found. Booting system menu...");
+		Redraw ();
+		
+		sleep (1);
+
+		BootToMenu ();
+		/*
 		grlib_menu ("Warning: postLoader.dol not found on sd/usb", " Ok ");
 		
 		if (pln.bootMode != PLN_BOOT_NEEK)
 			keypressed = 1;
+		*/
 		}
 
 	// On the sd we should have plneek.dat... it will instruct us what to do
@@ -733,6 +756,7 @@ int main(int argc, char **argv)
 	Boot ();	
 
 	WII_Initialize();
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x4C554C5A)); // LULZ	
 	WII_LaunchTitle(TITLE_ID(0x00010001,0xAF1BF516)); // HBC v1.0.7+
 	WII_LaunchTitle(TITLE_ID(0x00010001,0x4a4f4449)); // HBC JODI
 	WII_LaunchTitle(TITLE_ID(0x00010001,0x48415858)); // HBC HAXX 

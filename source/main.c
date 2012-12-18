@@ -37,6 +37,7 @@ void BootToHBC(void)
 
 	WII_Initialize();
 
+	WII_LaunchTitle(TITLE_ID(0x00010001,0x4C554C5A)); // LULZ
 	WII_LaunchTitle(TITLE_ID(0x00010001,0xAF1BF516)); // HBC v1.0.7+
 	WII_LaunchTitle(TITLE_ID(0x00010001,0x4a4f4449)); // HBC JODI
 	WII_LaunchTitle(TITLE_ID(0x00010001,0x48415858)); // HBC HAXX
@@ -321,6 +322,11 @@ int main(int argc, char **argv)
 			}
 		}
 		
+	Video_LoadTheme (1);
+
+	if (vars.usbtime == 1)
+		for (i = 0; i < 255; i+=16) Video_Predraw (i);
+		
 	if (vars.neek && neek_IsNeek2o())
 		{
 		Debug ("neek2o detected");
@@ -390,11 +396,15 @@ int main(int argc, char **argv)
 		{
 		Debug ("Showing gui....");
 		
-		Video_LoadTheme (1);
 		CoverCache_Start ();
 		snd_Init ();
 		WiiLoad (1);
 		neek_UID_Read ();
+
+		if (vars.usbtime != 1)
+			{
+			for (i = 0; i < 255; i+=16) Video_Predraw (i);
+			}
 		
 		do
 			{
@@ -414,8 +424,8 @@ int main(int argc, char **argv)
 			else 
 				{
 				grlib_SetRedrawCallback (Redraw, NULL);
-				if (ret == INTERACTIVE_RET_SE && !CheckParental()) continue;
-				if (ret == INTERACTIVE_RET_WM && !CheckParental()) continue;
+				if (ret == INTERACTIVE_RET_SE && !CheckParental(1)) continue;
+				if (ret == INTERACTIVE_RET_WM && !CheckParental(1)) continue;
 				break;
 				}
 			}

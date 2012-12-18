@@ -523,3 +523,24 @@ void Video_DrawVersionInfo (void)
 			grlib_printf ( VILEFT, VITOP+30, GRLIB_ALIGNLEFT, 0, "%s", vars.neekName);
 		}
 	}
+
+void Video_Predraw (int transparency)
+	{
+	if (theme.ok)
+		grlib_DrawImg ( 0, 0, theme.bkg->w, theme.bkg->h, theme.bkg, 0, RGBA(255, 255, 255, transparency) ); 
+	else
+		GRRLIB_DrawImg( 0, 0, bkg[1], 0, 1, 1, RGBA (255, 255, 255, transparency) ); 
+
+	if (transparency > 128)
+		{
+		Video_SetFont(TTFNORM);
+		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader");
+		grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "please wait...");
+		Video_DrawVersionInfo ();
+		}
+
+	grlib_DrawIRCursor ();
+	grlib_Render();
+		
+	}
+	

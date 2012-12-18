@@ -326,7 +326,7 @@ int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn, int *closed)
 	return ret;
 	}
 	
-static int BOTBARITEMS = 5;
+static int BOTBARITEMS = 4;
 int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 	{
 	s_grlibobj go;
@@ -421,7 +421,11 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 			strcpy (goItems[i].text, "About.."); 	itemAbout = i++;
 			strcpy (goItems[i].text, "Config");		itemConfig = i++;
 			strcpy (goItems[i].text, "Run Disc");	itemDisc = i++;
-			strcpy (goItems[i].text, "Neek");		itemNeek = i++;
+			if (CheckParental(0))
+				{
+				strcpy (goItems[i].text, "Neek");		itemNeek = i++;
+				BOTBARITEMS ++;
+				}
 
 			if (itemSE > 0) 
 				{

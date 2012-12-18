@@ -33,6 +33,8 @@ bool LoadExecFile (char *path, char *args)
 	
 	if (size <= 0) return false;
 
+	DCFlushRange(exeBuffer, size);
+
 	struct __argv arg;
  	memset (&arg, 0, sizeof(struct __argv)); 
 	

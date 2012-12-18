@@ -1,6 +1,8 @@
 /*
 
-priiBooter is a small programm to be added to priiloader. It allow to spawn anoteher program
+forwarder dol used in postloader channel
+
+load postloader from sd/isfs/fat32.
 
 */
 
@@ -18,7 +20,7 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 #include "ios.h"
 #include "debug.h"
 
-#define VER "1.4"
+#define VER "1.5"
 
 #define EXECUTE_ADDR    ((u8 *) 0x92000000)
 #define BOOTER_ADDR     ((u8 *) 0x93000000)
@@ -26,7 +28,7 @@ priiBooter is a small programm to be added to priiloader. It allow to spawn anot
 #define CMDL_ADDR       ((u8 *) 0x93200000+sizeof(struct __argv))
 #define HBMAGIC_ADDR    ((u8 *) 0x93200000-8)
 
-#define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
+#define TITLE_ID(x,y)	(((u64)(x) << 32) | (y))
 
 #define NEEK 1
 
@@ -41,6 +43,8 @@ void *exeBuffer = (void *) EXECUTE_ADDR;
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
+
+static int disableOutput = 0;
 
 void InitVideo (void)
 	{
@@ -136,9 +140,6 @@ int main(int argc, char *argv[])
 	
 	InitVideo ();
 	
-	printf ("\n\n");
-	printf ("Loading postLoader...");
-	
 	if (
 		HBMAGIC_ADDR[0] == 'P' &&
 		HBMAGIC_ADDR[1] == 'O' &&
@@ -146,8 +147,15 @@ int main(int argc, char *argv[])
 		HBMAGIC_ADDR[3] == 'T'
 	   )
 		{
+		disableOutput = 1;
 		gprintf ("Magic world found !\n");
 		goto directstart;
+		}
+	
+	if (!disableOutput)
+		{
+		printf ("\n\n");
+		printf ("Loading postLoader...");
 		}
 	
 	gprintf ("Searching for postLoader\n");
@@ -188,7 +196,9 @@ directstart:
 	exeEntryPoint = (entrypoint) BOOTER_ADDR;
 	
 	gprintf ("booting...\n");
-	printf ("booting!");
+	
+	if  (!disableOutput)
+		printf ("booting!");
 	
 	/* cleaning up and load dol */
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);

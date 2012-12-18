@@ -316,7 +316,7 @@ void ShowNeekOptions (void)
 
 void ShowAboutMenu (void)
 	{
-	if (!CheckParental ()) return;
+	if (!CheckParental(2)) return;
 
 	int item;
 	char buff[1024];
@@ -370,6 +370,7 @@ void ShowAboutMenu (void)
 		*options = '\0';
 		
 		grlib_menuAddItem (options, 1,  "About postLoader"VER);
+
 		grlib_menuAddItem (options, 14,  "Change theme...");
 
 		grlib_menuAddSeparator (options);
@@ -566,9 +567,11 @@ int ShowExitMenu (void)
 	*options = '\0';
 	
 	grlib_menuAddItem (options, 1,  "Exit to WII Menu");
-	grlib_menuAddItem (options, 2,  "Exit to Homebrew Channel");
+	if (CheckParental(0))		
+		grlib_menuAddItem (options, 2,  "Exit to Homebrew Channel");
 	grlib_menuAddItem (options, 3,  "Shutdown my WII");
-	grlib_menuAddItem (options, 4,  "Restart postLoader");
+	if (CheckParental(0))		
+		grlib_menuAddItem (options, 4,  "Restart postLoader");
 	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, -1,  "Close");
 	
@@ -602,7 +605,7 @@ int ShowBootmiiMenu (void)
 	return -1;
 	}
 
-int CheckParental (void)
+int CheckParental (int mode) // 0 silent, 1 message, 2 ask for password
 	{
 	static bool unlocked = false;
 	char pwd[PWDMAXLEN+1] = {0};
@@ -610,8 +613,15 @@ int CheckParental (void)
 	//Debug ("pass = %s (%d)", config.pwd, strlen(config.pwd));
 	
 	if (unlocked || strlen(config.pwd) == 0) return 1;
+	if (mode == 0) return 0;
 	
 	Video_SetFont(TTFNORM);	
+	
+	if (mode == 1)
+		{
+		grlib_menu ("Parental Control is active.\nPlease disable it pressing 'Config' in the bottom bar", "   OK   ");
+		return 0;
+		}
 	
 	grlib_Keyboard ("Enter password", pwd, PWDMAXLEN);
 	

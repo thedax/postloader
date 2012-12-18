@@ -708,8 +708,6 @@ static int AppsBrowse (void)
 
 static void ShowAppMenu (int ai)
 	{
-	if (!CheckParental()) return;
-
 	int len = 64;  // Give some space
 	char *title;
 	char buff[300];
@@ -780,15 +778,18 @@ static void ShowAppMenu (int ai)
 		}
 
 	buff[0] = '\0';
-	strcat (buff, "Set as autoboot application##0|");
-	if (apps[ai].hidden)
-		strcat (buff, "Remove hide flag##1");
-	else
-		strcat (buff, "Hide this application##2");
-		
-	strcat (buff, "~");
-		
-	strcat (buff, "Remove this application##5");
+
+	if (CheckParental(0))
+		{strcat (buff, "Set as autoboot application##0|");
+		if (apps[ai].hidden)
+			strcat (buff, "Remove hide flag##1");
+		else
+			strcat (buff, "Hide this application##2");
+			
+		strcat (buff, "~");
+			
+		strcat (buff, "Remove this application##5");
+		}
 	strcat (buff, "Close##-1");
 	
 	spotSelected = -1;
@@ -840,11 +841,14 @@ static void SortDispMenu (void)
 	strcat (buff, "Enter in interactive sort mode##2|");
 	strcat (buff, "Sort application by name##3|");
 	strcat (buff, "|");
-	if (showHidden)
-		strcat (buff, "Hide hidden application##4|");
-	else
-		strcat (buff, "Show hidden application##4|");
-	strcat (buff, "|");
+	if (CheckParental(0))
+		{
+		if (showHidden)
+			strcat (buff, "Hide hidden application##4|");
+		else
+			strcat (buff, "Show hidden application##4|");
+		strcat (buff, "|");
+		}
 	strcat (buff, "Cancel##-1");
 		
 	spotSelected = -1;
@@ -852,7 +856,7 @@ static void SortDispMenu (void)
 	
 	if (item == 4)
 		{
-		if (!showHidden && !CheckParental()) return;
+		if (!showHidden) return;
 		showHidden = 1 - showHidden;
 		AppsBrowse ();
 		}
@@ -891,7 +895,7 @@ static void SortDispMenu (void)
 
 static void ShowFilterMenu (void)
 	{
-	if (!CheckParental()) return;
+	if (!CheckParental(0)) return;
 	
 	char buff[512];
 	int item;
@@ -937,12 +941,14 @@ static void ShowMainMenu (void)
 		{
 		SortDispMenu ();
 		}
-
-	if (item == 2)
+	
+	if (CheckParental(0))
 		{
-		ShowFilterMenu ();
+		if (item == 2)
+			{
+			ShowFilterMenu ();
+			}
 		}
-		
 	}
 
 static int FindSpot (void)

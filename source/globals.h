@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.1.2"
+#define VER "4.1.3"
 #define CFGVER "PLCFGV0015"
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -469,7 +469,7 @@ void ShowAboutMenu (void);
 void ShowAboutPLMenu (void);
 int ShowExitMenu (void);
 int ShowBootmiiMenu (void);
-int CheckParental (void);
+int CheckParental (int mode);
 
 // utils.c
 u32 get_msec(bool reset);
@@ -533,6 +533,7 @@ void Video_DrawWIFI (void);
 void Video_SetFont (int size);
 void Video_SetFontMenu (int size);
 void Video_DrawVersionInfo (void);
+void Video_Predraw (int transparency);
 
 // appbrowser.c
 int AppBrowser (void);
