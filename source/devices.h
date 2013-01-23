@@ -16,3 +16,4 @@ void devices_Unmount (void);
 char *devices_Get (int dev);
 int devices_PartitionInfo (int dev);
 int devices_TickUSB (void);
+bool devices_WakeUSBWrite (void);

@@ -20,7 +20,7 @@
 #define FNTNORM 0
 #define FNTSMALL 1
 
-#define VER "2.8"
+#define VER "2.9"
 
 #define BASEPATH "usb://nands"
 #define PRII_WII_MENU 0x50756E65
@@ -542,6 +542,8 @@ void Boot (void)
 	{
 	SavePLN (cfg); // Force this to store NANDS folders...
 	
+	fadeOut(); // Fade out in an orgy of awesomeness
+
 	if (keypressed)
 		{
 		grlibSettings.wiiswitch_reset = 0;
@@ -550,8 +552,6 @@ void Boot (void)
 		
 	if (grlibSettings.wiiswitch_reset)
 		pln.bootMode = PLN_BOOT_SM;
-	
-	fadeOut(); // Fade out in an orgy of awesomeness
 
 	WPAD_Shutdown();
 	PAD_Reset(0xf0000000);

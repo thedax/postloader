@@ -178,7 +178,8 @@ u8 *downloadfile (const char *url, u32 *size, http_Callback cb)
 	u8 *buff = NULL;
 	
 	memset (&http, 0, sizeof(s_http));
-	if (cb) http.cb = cb;
+
+	http.cb = cb;
 	
 	//Check if the url starts with "http://", if not it is not considered a valid url
 	if (strncmp(url, "http://", strlen("http://")) != 0)
@@ -219,12 +220,15 @@ u8 *downloadfile (const char *url, u32 *size, http_Callback cb)
 		return NULL;
 		}
 
+	Debug ("downloadfile:connecting");
 	s32 connection = server_connect(ipaddress, 80);
 
 	if(connection < 0) {
 		//printf("Error establishing connection");
 		return NULL;
 	}
+	
+	Debug ("downloadfile:success");
 
 	//Form a nice request header to send to the webserver
 	char* headerformat = "GET %s HTTP/1.0\r\nHost: %s\r\nReferer: %s\r\nUser-Agent: postLoader2\r\n\r\n";

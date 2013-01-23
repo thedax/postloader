@@ -95,7 +95,7 @@ void Shutdown(void)
 	
 	if (vars.neek != NEEK_NONE) // We are not working under neek
 		{
-		exit_uneek_fs ();
+		// exit_uneek_fs ();
 		}
 	}
 
@@ -209,10 +209,10 @@ void CheckNeek (void)
 	if (SenseSneek(true)) 
 		{
 		vars.neek = NEEK_USB;
-		vars.usbtime = 1;
+		//vars.usbtime = 1;
 		vars.ios = ios_ReloadIOS (IOS_SNEEK, &vars.ahbprot); // Let's try to reload
 		
-		init_uneek_fs (ISFS_OPEN_READ|ISFS_OPEN_WRITE);
+		//init_uneek_fs (ISFS_OPEN_READ|ISFS_OPEN_WRITE);
 		}
 	}
 	
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 	if (!((grlibSettings.wiiswitch_poweroff || grlibSettings.wiiswitch_reset)) && ret != INTERACTIVE_RET_WIIMENU && vars.interactive)
 		{
 		Debug ("Showing gui....");
-		
+		devices_WakeUSBWrite ();
 		CoverCache_Start ();
 		snd_Init ();
 		WiiLoad (1);

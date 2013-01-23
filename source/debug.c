@@ -11,6 +11,8 @@ Debug, will write debug information to sd and/or gecko.... as debug file is open
 
 */
 
+//#define DEBUGDISABLED
+
 #define DEBUG_MAXCACHE 32
 static char dbgfile[64];
 static char *cache[DEBUG_MAXCACHE];
@@ -21,6 +23,9 @@ static int geckolog = 0;
 
 s32 DebugStart (bool gecko, char *fn)
 	{
+#ifdef DEBUGDISABLED
+	return;
+#else
 	filelog = 0;
 	started = 0;
 	
@@ -43,16 +48,24 @@ s32 DebugStart (bool gecko, char *fn)
 		started = 1;
 	
 	return started;
+#endif	
 	}
 	
 void DebugStop (void)
 	{
+#ifdef DEBUGDISABLED
+	return;
+#endif
+
 	filelog = 0;
 	started = 2;
 	}
 
 void Debug (const char *text, ...)
 	{
+#ifdef DEBUGDISABLED
+	return;
+#else	
 	if (!started || text == NULL) return;
 		
 	int i;
@@ -106,6 +119,7 @@ void Debug (const char *text, ...)
 				}
 			}
 		}
+#endif		
 	}
 
 static char ascii(char s)
@@ -117,6 +131,9 @@ static char ascii(char s)
 
 void gprintf (const char *format, ...)
 {
+#ifdef DEBUGDISABLED
+	return;
+#else
 	char * tmp = NULL;
 	va_list va;
 	va_start(va, format);
@@ -129,10 +146,14 @@ void gprintf (const char *format, ...)
 
 	if(tmp)
         free(tmp);
+#endif
 }
 
 void Debug_hexdump (void *d, int len)
 {
+#ifdef DEBUGDISABLED
+	return;
+#else
     u8 *data;
     int i, off;
     data = (u8*) d;
@@ -155,9 +176,13 @@ void Debug_hexdump (void *d, int len)
             else gprintf("%c", ascii(data[off + i]));
         gprintf("\n");
     }
+#endif	
 } 
 void Debug_hexdumplog (void *d, int len)
 {
+#ifdef DEBUGDISABLED
+	return;
+#else
     u8 *data;
     int i, off;
 	char b[2048] = {0};
@@ -205,4 +230,5 @@ void Debug_hexdumplog (void *d, int len)
 		strcat(b, bb);
     }
 	Debug (b);
+#endif	
 } 

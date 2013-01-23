@@ -164,32 +164,6 @@ static void InitializeGui (void)
 		}
 	}
 
-static bool DownloadCovers_Get (char *path, char *buff)
-	{
-	u8* outbuf=NULL;
-	u32 outlen=0;
-	
-	outbuf = downloadfile (buff, &outlen, NULL);
-		
-	if (IsPngBuff (outbuf, outlen))
-		{
-		//suficientes bytes
-		FILE *f;
-		
-		f = fopen (path, "wb");
-		if (f)
-			{
-			fwrite (outbuf, outlen, 1, f);
-			fclose (f);
-			}
-		
-		free(outbuf);
-		return (TRUE);
-		}
-		
-	return (FALSE);
-	}
-
 static void MakeCoverPath (int ai, char *path)
 	{
 	char asciiId[10];
@@ -227,6 +201,35 @@ static void FeedCoverCache (void)
 	CoverCache_Pause (false);
 	}
 
+static bool DownloadCovers_Get (char *path, char *buff)
+	{
+	u8* outbuf=NULL;
+	u32 outlen=0;
+	
+	Debug ("DownloadCovers_Get: calling downloadfile");
+	outbuf = downloadfile (buff, &outlen, NULL);
+		
+	Debug ("DownloadCovers_Get: checking png");
+	if (IsPngBuff (outbuf, outlen))
+		{
+		//suficientes bytes
+		FILE *f;
+		
+		f = fopen (path, "wb");
+		if (f)
+			{
+			Debug ("DownloadCovers_Get: writing png");
+			fwrite (outbuf, outlen, 1, f);
+			fclose (f);
+			}
+		
+		free(outbuf);
+		return (TRUE);
+		}
+		
+	return (FALSE);
+	}
+
 static void DownloadCovers (void)
 	{
 	int ia, stop;
@@ -244,6 +247,7 @@ static void DownloadCovers (void)
 	FILE *f = NULL;
 	if (devices_Get(DEV_SD))
 		{
+		Debug ("DownloadCovers: opening sd:/missgames.txt");
 		sprintf (path, "%s://missgame.txt", devices_Get(DEV_SD));
 		f = fopen (path, "wb");
 		}
@@ -259,11 +263,6 @@ static void DownloadCovers (void)
 			
 			if (!ret)
 				{
-				sprintf (buff, "http://www.postloader.freehosting.com/png/%s.png", games[ia].asciiId);
-				ret = DownloadCovers_Get (path, buff);
-				}
-			if (!ret)
-				{
 				sprintf (buff, "http://art.gametdb.com/wii/cover/US/%s.png", games[ia].asciiId);
 				ret = DownloadCovers_Get (path, buff);
 				}
@@ -275,6 +274,11 @@ static void DownloadCovers (void)
 			if (!ret)
 				{
 				sprintf (buff, "http://art.gametdb.com/wii/cover/JA/%s.png", games[ia].asciiId);
+				ret = DownloadCovers_Get (path, buff);
+				}
+			if (!ret)
+				{
+				sprintf (buff, "http://www.postloader.freehosting.com/png/%s.png", games[ia].asciiId);
 				ret = DownloadCovers_Get (path, buff);
 				}
 				
@@ -1967,7 +1971,6 @@ int GameBrowser (void)
 			}
 		}
 		
-	
 	// Lets close the topbar, if needed
 	CLOSETOPBAR();
 	CLOSEBOTTOMBAR();
@@ -1984,7 +1987,7 @@ int GameBrowser (void)
 	StructFree ();
 	gui_Clean ();
 	free (games);
-	
+
 	grlib_SetRedrawCallback (NULL, NULL);
 	
 	return browserRet;

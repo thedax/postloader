@@ -1,3 +1,16 @@
+postLoader 4.1.5
+
+* usb in neek2o is now accessed via ums (thx overjoy for the info). neek2o > r86 may be required.
+
+postLoader 4.1.4
+
+* postloader will now write (something) on usb dev when starting. Some hdd (basically on wd elements usb 3) are really slow on first write after reloading ios.
+* Disabled debug output (please request debug versions if needed)
+
+priibooter_gui 4.9
+
+* Button press is checked also when fading out
+
 postLoader 4.1.3
 
 * Added support for LULZ HBC title id

@@ -240,7 +240,7 @@ void devices_Mount (int devmode, int usbTimeout, devicesCallback cb)
 		USBDevice_Init (usbTimeout, cb);
 		}
 		
-	gprintf_StoreBuff ("sd:/priibooter.log");
+	//gprintf_StoreBuff ("sd:/priibooter.log");
 	}
 
 void devices_Unmount (void)

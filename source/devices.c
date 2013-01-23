@@ -286,3 +286,31 @@ int devices_TickUSB (void)
 		
 	return ret;
 	}
+	
+// This function will make a dummy file to init write cache of devkit (I think... some hdd will hang for up a second on first write...)
+bool devices_WakeUSBWrite (void)
+	{
+	char path[300];
+	char buff[32] = {0};
+	FILE *f;
+	
+	Debug ("devices_WakeUSBWrite()");
+	
+	if (devices_Get (DEV_USB))
+		{
+		sprintf (path, "%s://POSTLDR.TMP", devices_Get (DEV_USB));
+		
+		Debug ("ConfigWrite: %s", path);
+
+		f = fopen (path, "wb");
+		if (!f) return false;
+		
+		// Let's write version
+		fwrite (buff, sizeof(buff), 1, f);
+		fclose (f);
+		
+		unlink (path);
+		}
+	
+	return true;
+	}

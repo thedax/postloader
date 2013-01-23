@@ -125,7 +125,7 @@ static void cb_remove1(void)
 	
 	if (t - lastt >= 1)
 		{
-		Video_WaitPanel (TEX_HGL, "Please wait|clearing old usb data...");
+		Video_WaitPanel (TEX_HGL, GLS("clrusbdata"));
 		lastt = t;
 		}
 	}
@@ -137,7 +137,7 @@ static void cb_remove2(void)
 	
 	if (t - lastt >= 1)
 		{
-		Video_WaitPanel (TEX_HGL, "Please wait|clearing old sd data...");
+		Video_WaitPanel (TEX_HGL, GLS("clrsddata"));
 		lastt = t;
 		}
 	}
@@ -158,26 +158,26 @@ void ShowAdvancedOptions (void)
 		*options = '\0';
 		
 		if (vars.neek == NEEK_NONE)
-			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSB, "(NO)|(YES)", "Search USB Dev. ");
+			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSB, GLS("{Yes|No}"), GLS("srcusb"));
 		else
-			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSBneek, "(NO)|(YES)", "Search USB Dev. ");
+			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSBneek, GLS("{Yes|No}"), GLS("srcusb"));
 
 		if (vars.neek == NEEK_NONE)
 			{
-			grlib_menuAddCustomCheckItem (options, 2, extConfig.use249, "(YES)|(NO)", "Use cIOSX (249) ");
+			grlib_menuAddCustomCheckItem (options, 2, extConfig.use249, GLS("{Yes|No}"), GLS("useciosx"));
 			}
 
 		if (vars.neek == NEEK_NONE)
 			{
-			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, "(YES)|(NO)", "Use pl3 channel to run homebrews ");
+			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, GLS("{Yes|No}"), GLS("usepl3ch"));
 			}
 
-		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, "(YES)|(NO)", "Use wiimotion gestures ");
+		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, GLS("{Yes|No}"), GLS("usegest"));
 			
-		grlib_menuAddItem (options, 4,  "Restart/Reboot...");
+		grlib_menuAddItem (options, 4,  GLS("rstrbt"));
 		
 		grlib_menuAddSeparator (options);
-		grlib_menuAddItem (options, -1,  "Close");
+		grlib_menuAddItem (options, -1,  GLS("close"));
 		
 		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (buff, options);
@@ -203,7 +203,7 @@ void ShowAdvancedOptions (void)
 
 		if (item == 4)
 			{
-			int ret = grlib_menu ("What do you want to do ?\n", "  Restart  ##0~Reboot##1~Cancel##-1");
+			int ret = grlib_menu (GLS("rstrbtcanc1"), GLS("rstrbtcanc2"));
 			if (ret < 0) continue;
 			
 			vars.saveExtendedConf = 1;
@@ -288,18 +288,18 @@ void ShowNeekOptions (void)
 	
 	do
 		{
-		strcpy (buff, "Neek(2o) options\n\n");
-		strcat (buff, "Important notice: for some options, neek2obooter.app must be installed");
+		strcpy (buff, GLS("n2oopt"));
+		strcat (buff, GLS("n2onotice"));
 		
 		*options = '\0';
 		
 		n2oini = n2oini_Manage (0);
 		
 		if (n2oini)
-			grlib_menuAddItem (options, 1,  "neek2obooter is configured to start postLoader");
+			grlib_menuAddItem (options, 1,  GLS("n2obooterstartpl"));
 
 		grlib_menuAddSeparator (options);
-		grlib_menuAddItem (options, -1,  "Close");
+		grlib_menuAddItem (options, -1,  GLS("Close"));
 		
 		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (buff, options);
