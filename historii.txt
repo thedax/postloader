@@ -1,3 +1,7 @@
+postLoader 4.1.6
+
+* Fixed diconfig.bin parsing with neek2o r96. This version of postLoader is NO MORE compatible with older neek2o versions.
+
 postLoader 4.1.5
 
 * usb in neek2o is now accessed via ums (thx overjoy for the info). neek2o > r86 may be required.

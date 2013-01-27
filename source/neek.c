@@ -16,14 +16,16 @@
 #define DI_GAME_NAME_OFF       0x20
 #define DI_GAME_ID_OFF  	   0x0
 
-#define CDI_CONFIG_SIZE         0x10
-#define CDI_GAMEINFO_SIZE       0x100
+//#define CDI_CONFIG_SIZE         0x10
+#define CDI_CONFIG_SIZE         0x20
+#define CDI_GAMEINFO_SIZE       0x140
 #define CDI_GAME_TYPE_NAME_OFF  0x1C
-#define CDI_GAME_NAME_OFF  		0x30
-#define CDI_GAME_ID_OFF  		0x10
+#define CDI_GAME_NAME_OFF  		0x20
+#define CDI_GAME_ID_OFF  		0x0
 
 #define SEP 0xFF
 
+/*
 typedef struct
 {
         u32             SlotID;
@@ -32,6 +34,53 @@ typedef struct
         u32             Config;
         u8              GameInfo[][CDI_GAMEINFO_SIZE];
 } CDIConfig;
+*/
+
+ typedef struct
+{
+    u32        SlotID;
+    u32        Region;
+    u32        Gamecount;
+    u32        Config;
+    u32        Config2;
+    u32        Magic;
+    u32        Padding1;
+    u32        Padding2;
+    u8        GameInfo[][CDI_GAMEINFO_SIZE];
+} CDIConfig;
+
+enum SNEEKConfig2
+{
+    DML_CHEATS                = (1<<0),
+    DML_DEBUGGER            = (1<<1),
+    DML_DEBUGWAIT            = (1<<2),
+    DML_NMM                    = (1<<3),
+    DML_NMM_DEBUG            = (1<<4),
+    DML_ACTIVITY_LED        = (1<<5),
+    DML_PADHOOK                = (1<<6),
+    DML_BOOT_DISC            = (1<<7),
+    DML_BOOT_DOL            = (1<<8),
+    DML_PROG_PATCH            = (1<<9),
+    DML_FORCE_WIDESCREEN    = (1<<10),
+};
+ 
+enum SNEEKConfig
+{
+    CONFIG_PATCH_FWRITE        = (1<<0),
+    CONFIG_PATCH_MPVIDEO    = (1<<1),
+    CONFIG_PATCH_VIDEO        = (1<<2),
+    CONFIG_DUMP_ERROR_SKIP    = (1<<3),
+    CONFIG_DEBUG_GAME        = (1<<4),
+    CONFIG_DEBUG_GAME_WAIT    = (1<<5), 
+    CONFIG_READ_ERROR_RETRY    = (1<<6),
+    CONFIG_GAME_ERROR_SKIP    = (1<<7), 
+    CONFIG_MOUNT_DISC        = (1<<8),
+    CONFIG_DI_ACT_LED        = (1<<9),
+    CONFIG_REV_ACT_LED        = (1<<10), 
+    DEBUG_CREATE_DIP_LOG    = (1<<11),
+    DEBUG_CREATE_ES_LOG        = (1<<12), 
+    CONFIG_SCROLL_TITLES    = (1<<13),
+};
 
 typedef struct
 {
