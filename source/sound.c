@@ -5,7 +5,6 @@ sound.c
 */
 
 #include <asndlib.h>
-#include <mp3player.h> 
 #include <dirent.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -15,11 +14,12 @@ sound.c
 #include "mem2.h"
 #include "devices.h"
 #include "fsop/fsop.h"
+#include "mp3player.h"
 
 #define MAXSONGS 256
+#define DATABUFFER_SIZE	(32768) // defined in mp3player.c
 
 static char *playlist[MAXSONGS];
-static FILE *mp3f = NULL;
 static int stopped = 0;
 static int songs = 0;
 static int currentSong = 0;
@@ -39,30 +39,15 @@ static void shuffle (void)
 		}
 	}
 
-static s32 reader(void *fp,void *dat, s32 size)
-	{
-	
-	s32 ret = fread(dat, 1, size, (FILE *) fp);
-	
-	return ret;
-	}
-
 void snd_Mp3Go (void)
 	{
 	if (!songs || stopped || MP3Player_IsPlaying()) return;
 	
-	if (mp3f) fclose (mp3f);
-	
 	Debug ("snd_Mp3Go: index is %d", currentSong);	
 	Debug ("snd_Mp3Go: now playing '%s'", playlist[currentSong]);
-	mp3f = fopen (playlist[currentSong], "rb");
-	if (mp3f)
-		{
-		Debug ("snd_Mp3Go: playing....");
-		
-		MP3Player_PlayFile(mp3f , reader, NULL);
-		}
-		
+	
+	MP3Player_PlayFileDirect (playlist[currentSong]);
+	
 	currentSong++;
 	if (currentSong >= songs)
 		currentSong = 0;
@@ -155,9 +140,6 @@ void snd_Stop (void)
 		}
 	ASND_End();
 
-	if (mp3f) fclose (mp3f);
-	mp3f = NULL;
-	
 	// Clear playlist
 	for (i = 0; i < songs; i++)
 		if (playlist[i])
@@ -187,8 +169,7 @@ void snd_Pause (void)
 		usleep (1000*1000);
 		Debug ("stopping...");
 		}
-	if (mp3f) fclose (mp3f);
-	mp3f = NULL;
+
 	stopped = 1;
 	}
 

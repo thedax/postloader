@@ -742,7 +742,17 @@ typedef struct global_config
 	uint32_t memcard_cluster;
 	uint32_t disc1_cluster;
 	uint32_t disc2_cluster;
+	u32 options;
 } gconfig; 
+
+// constant value for identification purposes
+#define DEVO_CONFIG_SIG                 0x3EF9DB23
+// version may change when future options are added
+#define DEVO_CONFIG_VERSION             0x0110
+// option flags
+#define DEVO_CONFIG_WIFILOG             (1<<0)
+#define DEVO_CONFIG_WIDE                (1<<1)
+#define DEVO_CONFIG_NOLED               (1<<2)
 
 u8 *loader_bin = NULL;
 static gconfig *DEVO_CONFIG = (gconfig*)0x80000020;
@@ -754,7 +764,7 @@ static bool IsGCCardAvailable (void)
 	}
 
 // path is the full path to iso image
-bool DEVO_Boot (char *path, u8 memcardId)
+bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi)
 	{       
 	//Read in loader.bin
 	char loader_path[256];
@@ -790,10 +800,18 @@ bool DEVO_Boot (char *path, u8 memcardId)
 
 	// fill out the Devolution config struct
 	memset(DEVO_CONFIG, 0, sizeof(*DEVO_CONFIG));
-	DEVO_CONFIG->signature = 0x3EF9DB23;
-	DEVO_CONFIG->version = 0x00000100;
+	DEVO_CONFIG->signature = DEVO_CONFIG_SIG;
+	DEVO_CONFIG->version = DEVO_CONFIG_VERSION;
 	DEVO_CONFIG->device_signature = st.st_dev;
 	DEVO_CONFIG->disc1_cluster = st.st_ino;
+
+      // Pergame options
+	if(wifi)
+			DEVO_CONFIG->options |= DEVO_CONFIG_WIFILOG;
+	if(widescreen)
+			DEVO_CONFIG->options |= DEVO_CONFIG_WIDE;
+	if(!activity_led)
+			DEVO_CONFIG->options |= DEVO_CONFIG_NOLED;
 
 	// make sure these directories exist, they are required for Devolution to function correctly
 	snprintf(full_path, sizeof(full_path), "%s:/apps", fsop_GetDev (path));

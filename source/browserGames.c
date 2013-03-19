@@ -1003,6 +1003,9 @@ static void ShowAppMenu (int ai)
 				if (config.dmlVersion == GCMODE_DEVO)
 					{
 					grlib_menuAddItem (buff,13, "DEVO: Virtual Memcard ID=%d", gameConf.memcardId );
+					grlib_menuAddItem (buff,14, "DEVO: widescreen (%s)", gameConf.widescreen ? "Yes" : "No" );
+					grlib_menuAddItem (buff,15, "DEVO: activity led (%s)", gameConf.activity_led ? "Yes" : "No" );
+					grlib_menuAddItem (buff,16, "DEVO: wifi debug (%s)", gameConf.wifi ? "Yes" : "No" );
 					}
 				}
 			}
@@ -1144,7 +1147,25 @@ static void ShowAppMenu (int ai)
 		if (gameConf.memcardId >= 8) gameConf.memcardId = 0;
 		goto start;
 		}
+
+	if (item == 14)
+		{
+		gameConf.widescreen = !gameConf.widescreen;
+		goto start;
+		}
 		
+	if (item == 15)
+		{
+		gameConf.activity_led = !gameConf.activity_led;
+		goto start;
+		}
+		
+	if (item == 16)
+		{
+		gameConf.wifi = !gameConf.wifi;
+		goto start;
+		}
+
 	WriteGameConfig (ai);
 	SortItems ();
 	redraw = 1;
@@ -1866,7 +1887,7 @@ int GameBrowser (void)
 								
 							case GCMODE_DEVO:
 								{
-								DEVO_Boot (games[gamesSelected].source, gameConf.memcardId);
+								DEVO_Boot (games[gamesSelected].source, gameConf.memcardId, gameConf.widescreen, gameConf.activity_led, gameConf.wifi);
 								}
 								break;
 							}

@@ -23,7 +23,6 @@
 
 s_wiiload wiiload;
 
-static char ip[16];
 static char incommingIP[20];
 static u32 uncfilesize;
 static volatile int stopNetworkThread;
@@ -605,6 +604,8 @@ static void * WiiloadThread(void *arg)
 	stopNetworkThread = 0;
 	errors = 0;
 	
+	strcpy(wiiload.ip, "<unknown>");
+	
 	printopt("Net thread running, ready !");
 	
 	while (!stopNetworkThread)
@@ -650,7 +651,7 @@ static void * WiiloadThread(void *arg)
 
 				if (hostip.s_addr)
 					{
-					strcpy(ip, inet_ntoa(hostip));
+					strcpy(wiiload.ip, inet_ntoa(hostip));
 					netReady = 1;
 					}
 				}

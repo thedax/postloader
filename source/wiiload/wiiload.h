@@ -21,6 +21,7 @@ typedef struct
 	
 	char filename[64];	// Filename sended by wiiload protocolo
 	char fullpath[256];	// full path to temp file on device
+	char ip[64];	// Filename sended by wiiload protocolo
 	
 	char *args;
 	int argl;

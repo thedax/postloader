@@ -1,3 +1,12 @@
+postLoader 4.1.8
+
+* Added a custom mp3player.c that seems to fix rare random postloader stuck
+* WII ip number is now displayed in the "about" box
+
+postLoader 4.1.7
+
+* Added support for devo r188 optional settings (thx wiiflow)
+
 postLoader 4.1.6
 
 * Fixed diconfig.bin parsing with neek2o r96. This version of postLoader is NO MORE compatible with older neek2o versions.

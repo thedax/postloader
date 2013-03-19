@@ -70,15 +70,13 @@ s32 menu_SwitchNand (void)
 	
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-void ShowAboutPLMenu (void)
+void ShowCreditsMenu (void)
 	{
 	char buff[1024];
 	
 	Video_SetFont(TTFNORM);
 	
-	strcpy (buff, 	
-	"postLoader"VER" by stfour (2011-12)\n"
-	"\n"
+	sprintf (buff, 	
 	"credits\n"
 	"\n"
 	"coding:\n"
@@ -88,8 +86,29 @@ void ShowAboutPLMenu (void)
 	"and all active testers:\n"
 	"Wever,daxtsu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
-
+	
 	grlib_menu (buff, GLS("Close"));
+	}
+
+void ShowAboutPLMenu (void)
+	{
+	char buff[1024];
+	
+	Video_SetFont(TTFNORM);
+	
+	sprintf (buff, 	
+	"postLoader"VER" by stfour (2011-12)\n\n"
+	"WII ip: %s\n\n"
+	"Official support thread on http://gbatemp.net/\n", wiiload.ip);
+
+	int ret;
+	
+	do
+		{
+		ret = grlib_menu (buff, " %s ##0~ %s ##1", GLS("Close"), "CREDITS");
+		if (ret == 1) ShowCreditsMenu();
+		}
+	while (ret);
 	}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
