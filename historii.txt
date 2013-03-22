@@ -1,3 +1,27 @@
+postLoader 4.1.9
+
+* Fixed booting wii games from real mode to neek2o.
+
+NOTE: neek2obooter.app
+----------------------
+As neek2o r96 do not support priiloader, you have to install neek2obooter.app to start games from real mode to neek2o. neek2obooter.app is available from full installation package 4.1.9.
+
+Installation:
+in (usb:/nands/pl_eu)/title/00000001/00000002/content/
+
+1) rename your system menu .app to sysmenu.app 
+2) copy neek2obooter.app and rename it as system menu
+
+example for 4.3 eu nand
+
+rename 0000009b.app to sysmenu.app
+rename neek2obooter.app to 0000009b.app
+
+!!! DO THIS ONLY IN YOUR R96 (and possibily above) NEEK2O, DO NOT TRY IN REAL NAND !!!
+
+This allow also to go back directly to real mode when you select return to menu in games.
+neek2obooter.app can also boot directly to postloader when you run your neek2o nand. Just create /title/00000001/00000002/data/n2oboot.ini (also empy) to enable this feature.
+
 postLoader 4.1.8
 
 * Added a custom mp3player.c that seems to fix rare random postloader stuck

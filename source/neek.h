@@ -21,6 +21,7 @@ typedef struct
 extern NandConfig *nandConfig;
 
 s32 neek_SelectGame( u32 SlotID );
+int neek_ReadAndSelectCDIGame(char *gameid);
 
 bool neek_WriteNandConfig (void);
 bool neek_GetNandConfig (void);

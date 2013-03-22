@@ -143,6 +143,82 @@ u32 UNEEK_GetGameCount ( void )
 	return cnt;
 } 
 
+int neek_ReadAndSelectCDIGame(char *gameid)
+	{
+	s32 ret;
+	CDIConfig *DICfg;
+	FILE *f;
+	CDIConfig DIChead ATTRIBUTE_ALIGN(32);
+	char path[ISFS_MAXPATH] ATTRIBUTE_ALIGN(32);
+	int gamefound = 0;
+	
+	Debug ("neek_ReadAndSelectCDIGames [begin]");
+		
+	sprintf (path, "usb:/sneek/diconfig.bin");
+	
+	f = fopen (path, "r+b");
+	if (!f) 
+		{
+		Debug ("neek_ReadAndSelectCDIGames [fopen '%s' failed]", path);
+		return 0;
+		}
+	
+	// Read the header
+	ret = fread (&DIChead, 1, CDI_CONFIG_SIZE, f);
+	if (ret != CDI_CONFIG_SIZE)
+		{
+		Debug ("neek_ReadAndSelectCDIGames [fread %d -> %d]", CDI_CONFIG_SIZE, ret);
+		fclose (f);
+		return 0;
+		}
+	
+	Debug ("neek_ReadAndSelectCDIGames [DICfg->Gamecount %u]", DIChead.Gamecount);
+	u32 cfgSize = (DIChead.Gamecount * CDI_GAMEINFO_SIZE) + CDI_CONFIG_SIZE;
+
+	Debug ("neek_ReadAndSelectCDIGames [buffer size %u]", cfgSize);
+	DICfg = (CDIConfig*) allocate_memory(cfgSize);
+
+	fseek (f, 0, SEEK_SET);
+	ret = fread (DICfg, 1, cfgSize, f);
+	if (ret != cfgSize)
+		{
+		Debug ("neek_ReadAndSelectCDIGames [fread %d -> %d]", cfgSize, ret);
+		fclose (f);
+		return 0;
+		}
+		
+	if (gameid) // Preselect requested game
+		{
+		char *p;
+		int i;
+		
+		for (i = 0; i < DICfg->Gamecount; i++)
+			{
+			p = (char*)&DICfg->GameInfo[i];
+			
+			if (strncmp (p, gameid, 6) == 0)
+				{
+				Debug ("Requested gameid was found (slot %d:%s)", i, gameid);
+				DICfg->SlotID = i;
+				gamefound = 1;
+				break;
+				}
+			}
+		}
+	
+	fseek (f, 0, SEEK_SET);
+	ret = fwrite (DICfg, 1, cfgSize, f);
+	if (ret != cfgSize)
+		{
+		Debug ("neek_ReadAndSelectCDIGames [fwrite %d -> %d]", cfgSize, ret);
+		fclose (f);
+		return 0;
+		}
+
+	return gamefound;	
+	}
+
+
 char* neek_GetCDIGames(void)
 	{
 	s32 ret;

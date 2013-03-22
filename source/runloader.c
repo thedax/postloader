@@ -39,8 +39,18 @@ void RunLoader(void)
 	
 	if (config.run.game.loader == 3) // NEEK2O
 		{
-		neek_CreateCDIConfig (config.run.asciiId);
-		PrepareNeek2o ();
+		//neek_CreateCDIConfig (config.run.asciiId);
+		if (neek_ReadAndSelectCDIGame (config.run.asciiId))
+			PrepareNeek2o ();
+		else
+			{
+			grlib_menu ("The game was not found in diconfig.bin.\nRun neek2o once to update gamelist and try again\npostLoader will now try to reload or reset your WII", "OK");
+			
+			ReloadPostloader ();
+			
+			Shutdown ();
+			SYS_ResetSystem(SYS_RESTART,0,0);
+			}
 		}
 		
 	if (config.run.neekSlot < 10)
