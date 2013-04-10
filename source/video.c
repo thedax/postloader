@@ -33,8 +33,6 @@ void Video_Init (void)
 	vars.tex[TEX_STAR] = GRRLIB_LoadTexturePNG (star_png);
 	vars.tex[TEX_NONE] = GRRLIB_LoadTexturePNG (noicon_png);
 	vars.tex[TEX_CHECKED] = GRRLIB_LoadTexturePNG (checked_png);
-	vars.tex[TEX_FOLDER] = GRRLIB_LoadTexturePNG (folder_png);
-	vars.tex[TEX_FOLDERUP] = GRRLIB_LoadTexturePNG (folderup_png);
 	vars.tex[TEX_GHOST] = GRRLIB_LoadTexturePNG (ghost_png);
 	
 	vars.tex[TEX_HDD] = GRRLIB_LoadTexturePNG (hdd_png);
@@ -214,8 +212,8 @@ void Video_WaitPanel (int icon, const char *text, ...)
 	int l2 = 0;
 	if (p) l2 = grlib_GetFontMetrics (mex, NULL, NULL);
 	
-	if (l1 > w - 10) w = l1 + 10;
-	if (l2 > w - 10) w = l2 + 10;
+	if (l1 > w - 25) w = l1 + 25;
+	if (l2 > w - 25) w = l2 + 25;
 
 	grlib_DrawCenteredWindow (mex, w, 133, 0, NULL);
 	
@@ -353,20 +351,20 @@ void Video_LoadTheme (int init)
 			}
 		
 		sprintf (path, "%s://ploader/theme/theme.cfg", vars.defMount);
-		s_cfg *cfg = cfg_Alloc(path, 0);
+		s_cfg *cfg = cfg_Alloc (path, 0, 0, 0);
 		if (cfg)
 			{
-			cfg_GetInt (cfg, "grlibSettings.theme.windowMagX", &grlibSettings.theme.windowMagX);
-			cfg_GetInt (cfg, "grlibSettings.theme.windowMagY", &grlibSettings.theme.windowMagY);
-			cfg_GetInt (cfg, "grlibSettings.theme.buttonMagX", &grlibSettings.theme.buttonMagX);
-			cfg_GetInt (cfg, "grlibSettings.theme.buttonMagY", &grlibSettings.theme.buttonMagY);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.windowMagX", &grlibSettings.theme.windowMagX, 0);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.windowMagY", &grlibSettings.theme.windowMagY, 0);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.buttonMagX", &grlibSettings.theme.buttonMagX, 0);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.buttonMagY", &grlibSettings.theme.buttonMagY, 0);
 			
-			cfg_GetInt (cfg, "grlibSettings.theme.buttonsTextOffsetY", &grlibSettings.theme.buttonsTextOffsetY);
-			cfg_GetInt (cfg, "grlibSettings.fontBMF_reverse", &grlibSettings.fontDef.reverse);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.buttonsTextOffsetY", &grlibSettings.theme.buttonsTextOffsetY, 0);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.fontBMF_reverse", &grlibSettings.fontDef.reverse, 0);
 
-			cfg_GetInt (cfg, "theme.line1Y", &theme.line1Y);
-			cfg_GetInt (cfg, "theme.line3Y", &theme.line3Y);
-			cfg_GetInt (cfg, "theme.line2Y", &theme.line2Y);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "theme.line1Y", &theme.line1Y, 0);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "theme.line3Y", &theme.line3Y, 0);
+			cfg_Value (cfg, CFG_READ, CFG_INT, "theme.line2Y", &theme.line2Y, 0);
 
 			Debug ("grlibSettings.theme.windowMagX = %d", grlibSettings.theme.windowMagX);
 			Debug ("grlibSettings.theme.windowMagY = %d", grlibSettings.theme.windowMagY);

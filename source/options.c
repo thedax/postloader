@@ -43,7 +43,7 @@ s32 menu_SwitchNand (void)
 	
 	if (!nandConfig)
 		{
-		grlib_menu ("No nands to select", "   OK   ");
+		grlib_menu (0, "No nands to select", "   OK   ");
 		return 0;
 		}
 	
@@ -53,7 +53,7 @@ s32 menu_SwitchNand (void)
 	grlib_menuAddSeparator (menu);
 	
 	grlib_menuAddItem (menu, -1, "Cancel");	
-	int ret = grlib_menu ("Select new neek2o nand", menu);
+	int ret = grlib_menu (0, "Select new neek2o nand", menu);
 	
 	if (ret == -1) return 0;
 	
@@ -87,25 +87,51 @@ void ShowCreditsMenu (void)
 	"Wever,daxtsu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
 	
-	grlib_menu (buff, GLS("Close"));
+	grlib_menu (0, buff, GLS("Close"));
 	}
 
 void ShowAboutPLMenu (void)
 	{
 	char buff[1024];
 	
+	char autoboot[1024];
+	
+	if (!config.autoboot.enabled)
+		sprintf (autoboot, "Autoboot: disabled");
+	else
+		{
+		if (config.autoboot.appMode == APPMODE_HBA)
+			{
+			sprintf (autoboot, "Autoboot: HB %s%s %s", config.autoboot.path, config.autoboot.filename, config.autoboot.args);
+			}
+		if (config.autoboot.appMode == APPMODE_CHAN)
+			{
+			char nand[64];
+			
+			if (config.autoboot.nand == NAND_REAL)
+				strcat (nand, "");
+			if (config.autoboot.nand == NAND_EMUSD)
+				strcat (nand, "EmuSD");
+			if (config.autoboot.nand == NAND_EMUUSB)
+				strcat (nand, "EmuUSB");
+
+			sprintf (autoboot, "Autoboot: CH %s:%s:%s", nand, config.autoboot.asciiId, config.autoboot.path);
+			}
+		}
+
 	Video_SetFont(TTFNORM);
 	
 	sprintf (buff, 	
 	"postLoader"VER" by stfour (2011-12)\n\n"
+	"%s\n"
 	"WII ip: %s\n\n"
-	"Official support thread on http://gbatemp.net/\n", wiiload.ip);
+	"Official support thread on http://gbatemp.net/\n", autoboot, wiiload.ip);
 
 	int ret;
 	
 	do
 		{
-		ret = grlib_menu (buff, " %s ##0~ %s ##1", GLS("Close"), "CREDITS");
+		ret = grlib_menu (0, buff, " %s ##0~ %s ##1", GLS("Close"), "CREDITS");
 		if (ret == 1) ShowCreditsMenu();
 		}
 	while (ret);
@@ -130,7 +156,7 @@ static void cb_filecopy (void)
 		
 		if (grlib_GetUserInput() & WPAD_BUTTON_B)
 			{
-			int ret = grlib_menu (GLS("interruptcopy"), GLS("YesNo"));
+			int ret = grlib_menu (0, GLS("interruptcopy"), GLS("YesNo"));
 			if (ret == 0) fsop.breakop = 1;
 			}
 		snd_Mp3Go ();
@@ -199,7 +225,7 @@ void ShowAdvancedOptions (void)
 		grlib_menuAddItem (options, -1,  GLS("close"));
 		
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (buff, options);
+		item = grlib_menu (0, buff, options);
 		Video_SetFontMenu(TTFNORM);
 		
 		if (item == 1)
@@ -222,7 +248,7 @@ void ShowAdvancedOptions (void)
 
 		if (item == 4)
 			{
-			int ret = grlib_menu (GLS("rstrbtcanc1"), GLS("rstrbtcanc2"));
+			int ret = grlib_menu (0, GLS("rstrbtcanc1"), GLS("rstrbtcanc2"));
 			if (ret < 0) continue;
 			
 			vars.saveExtendedConf = 1;
@@ -276,7 +302,7 @@ static int n2oini_Manage(int mode) // 0 = check, 1 = write, 2 = remove
 
 	if (mode == 1)
 		{
-		char buff[256] ATTRIBUTE_ALIGN(32);
+		char buff[32] ATTRIBUTE_ALIGN(32);
 		
 		memset (buff, 0, sizeof(buff));
 		
@@ -289,6 +315,11 @@ static int n2oini_Manage(int mode) // 0 = check, 1 = write, 2 = remove
 			ret = 1;
 			goto exit;
 			}
+		}
+
+	if (mode == 2)
+		{
+		ret = ISFS_Delete (path);
 		}
 
 exit:
@@ -316,83 +347,77 @@ void ShowNeekOptions (void)
 		
 		if (n2oini)
 			grlib_menuAddItem (options, 1,  GLS("n2obooterstartpl"));
+		else
+			grlib_menuAddItem (options, 1,  GLS("n2obooternostartpl"));
 
 		grlib_menuAddSeparator (options);
 		grlib_menuAddItem (options, -1,  GLS("Close"));
 		
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (buff, options);
+		item = grlib_menu (0, buff, options);
 		Video_SetFontMenu(TTFNORM);
 		
-		if (item == 1)
+		if (item == 1 && n2oini)
 			{
+			n2oini_Manage (2); // remove
+			}
+		
+		if (item == 1 && !n2oini)
+			{
+			n2oini_Manage (1); // create
 			}
 
 		}
 	while (item != -1);
 	}
 
+void SetVolume (void)
+	{
+	int item;
+	char buff[512];
+	
+	Video_SetFont(TTFSMALL);
+	
+	do
+		{
+		*buff = '\0';
+		grlib_menuAddCheckItem (buff, 1, config.volume == 1, "1 (low)");
+		grlib_menuAddCheckItem (buff, 2, config.volume == 2, "2");
+		grlib_menuAddCheckItem (buff, 3, config.volume == 3, "3 (medium)");
+		grlib_menuAddCheckItem (buff, 4, config.volume == 4, "4");
+		grlib_menuAddCheckItem (buff, 5, config.volume == 5, "5 (hi)");
+		grlib_menuAddSeparator (buff);
+		grlib_menuAddItem (buff, -1, "Close");
+
+		item = grlib_menu (0, "Select volume", buff);
+		
+		if (item > 0)
+			{
+			config.volume = item;
+			snd_Volume();
+			}
+		}
+	while (item > 0);
+	
+	Video_SetFont(TTFNORM);
+	}
 
 void ShowAboutMenu (void)
 	{
 	if (!CheckParental(2)) return;
 
 	int item;
-	char buff[1024];
 	char options[300];
 	
 	Video_SetFont(TTFNORM);
 	
 	do
 		{
-		strcpy (buff, "Options:\n");
-		strcat (buff, "-------------------------\n");
-		strcat (buff, "Current autoboot setting:\n");
-		if (!config.autoboot.enabled)
-			strcat (buff, "* Autoboot is disabled");
-		else
-			{
-			if (config.autoboot.appMode == APPMODE_HBA)
-				{
-				strcat (buff, "* Homebrew application:\n");
-				strcat (buff, "* PATH: ");
-				strcat (buff, config.autoboot.path);
-				strcat (buff, "\n");
-				strcat (buff, "* FILE: ");
-				strcat (buff, config.autoboot.filename);
-				strcat (buff, "\n");
-				strcat (buff, "* ARGS: ");
-				strcat (buff, config.autoboot.args);
-				}
-			if (config.autoboot.appMode == APPMODE_CHAN)
-				{
-				strcat (buff, "* Channel application:\n");
-				strcat (buff, "* NAND: ");
-				if (config.autoboot.nand == NAND_REAL)
-					strcat (buff, "Real NAND");
-				if (config.autoboot.nand == NAND_EMUSD)
-					strcat (buff, "Emulated on SD");
-				if (config.autoboot.nand == NAND_EMUUSB)
-					strcat (buff, "Emulated on USB");
-				
-				strcat (buff, "\n");
-
-				strcat (buff, "* TITLE: ");
-				strcat (buff, config.autoboot.asciiId);
-				strcat (buff, "\n");
-
-				strcat (buff, "* NAME: ");
-				strcat (buff, config.autoboot.path);
-				}
-			}
-		
 		*options = '\0';
 		
 		grlib_menuAddItem (options, 1,  "About postLoader"VER);
 
 		grlib_menuAddItem (options, 14,  "Change theme...");
-
-		grlib_menuAddSeparator (options);
 
 		if (vars.neek == NEEK_2o)
 			menu_SwitchNandAddOption (options);
@@ -407,9 +432,7 @@ void ShowAboutMenu (void)
 		grlib_menuAddItem (options, 7,  "Advanced options...");
 		
 		if (vars.neek != NEEK_NONE)
-			{
-			//grlib_menuAddItem (options, 8,  "neek options...");
-			}
+			grlib_menuAddItem (options, 8,  "neek options...");
 			
 		if (vars.neek == NEEK_2o && devices_Get (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 			grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");
@@ -418,8 +441,9 @@ void ShowAboutMenu (void)
 			grlib_menuAddItem (options, 15,  "Move postLoader cfg folder to USB");
 			
 		grlib_menuAddItem (options, 16,  "Set parental control (password)");
+		grlib_menuAddItem (options, 17,  "Set volume (%d)", config.volume);
 
-		item = grlib_menu (buff, options);
+		item = grlib_menu (0, "Options:", options);
 		
 		if (item == 1)
 			{
@@ -438,7 +462,7 @@ void ShowAboutMenu (void)
 
 		if (item == 8)
 			{
-			//ShowNeekOptions ();
+			ShowNeekOptions ();
 			}
 
 		if (item == 10)
@@ -446,17 +470,12 @@ void ShowAboutMenu (void)
 			plneek_ShowMenu ();
 			}
 
-		if (item == 12)
-			{
-			CleanTitleConfiguration();
-			}
-
 		if (item == 13)
 			{
 			if (InstallNeekbooter())
-				grlib_menu ("Succesfully installed", "OK");
+				grlib_menu (0, "Succesfully installed", "OK");
 			else
-				grlib_menu ("Something gone wrong. Is priiloader installed in nand ?", "OK");
+				grlib_menu (0, "Something gone wrong. Is priiloader installed in nand ?", "OK");
 			}
 
 		if (item == 14)
@@ -471,7 +490,7 @@ void ShowAboutMenu (void)
 			
 			if (!fsop.breakop)
 				{
-				grlib_menu ("Your Wii will now rebooot", "  OK  ");
+				grlib_menu (0, "Your Wii will now rebooot", "  OK  ");
 
 				fsop_KillFolderTree ("sd://ploader", cb_remove2);
 				Shutdown ();
@@ -485,6 +504,11 @@ void ShowAboutMenu (void)
 			grlib_Keyboard ("Change password", config.pwd, PWDMAXLEN);
 			}
 			
+		if (item == 17)
+			{
+			SetVolume ();
+			}
+			
 		if (item == MENU_CHANGENEEK2o)
 			{
 			menu_SwitchNand();
@@ -492,7 +516,8 @@ void ShowAboutMenu (void)
 
 		if (item == 6)
 			{
-			int item = grlib_menu ("Please confirm:\n\n"
+			int item = grlib_menu (0,
+									"Please confirm:\n\n"
 									"You are about to clear autorun application/channel\n"
 									"Continue ?\n",
 									"OK|Cancel");
@@ -594,7 +619,7 @@ int ShowExitMenu (void)
 	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, -1,  "Close");
 	
-	item = grlib_menu ("Exit: Select an option", options);
+	item = grlib_menu (0, "Exit: Select an option", options);
 	
 	if (item == 1) return INTERACTIVE_RET_WIIMENU;
 	if (item == 2) return INTERACTIVE_RET_HBC;
@@ -616,7 +641,7 @@ int ShowBootmiiMenu (void)
 	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, -1,  "Close");
 	
-	item = grlib_menu ("NEEK/BOOTMII: Select an option", options);
+	item = grlib_menu (0, "NEEK/BOOTMII: Select an option", options);
 	
 	if (item == 1) return INTERACTIVE_RET_NEEK2O;
 	if (item == 2) return INTERACTIVE_RET_BOOTMII;
@@ -630,6 +655,11 @@ int CheckParental (int mode) // 0 silent, 1 message, 2 ask for password
 	char pwd[PWDMAXLEN+1] = {0};
 	
 	//Debug ("pass = %s (%d)", config.pwd, strlen(config.pwd));
+
+#ifdef DOLPHINE
+	return 1;
+#endif
+	
 	
 	if (unlocked || strlen(config.pwd) == 0) return 1;
 	if (mode == 0) return 0;
@@ -638,7 +668,7 @@ int CheckParental (int mode) // 0 silent, 1 message, 2 ask for password
 	
 	if (mode == 1)
 		{
-		grlib_menu ("Parental Control is active.\nPlease disable it pressing 'Config' in the bottom bar", "   OK   ");
+		grlib_menu (0, "Parental Control is active.\nPlease disable it pressing 'Config' in the bottom bar", "   OK   ");
 		return 0;
 		}
 	
@@ -646,11 +676,11 @@ int CheckParental (int mode) // 0 silent, 1 message, 2 ask for password
 	
 	if (strcmp (config.pwd, pwd) == 0)
 		{
-		grlib_menu ("postLoader advanced options are now unlocked", "   OK   ");
+		grlib_menu (0, "postLoader advanced options are now unlocked", "   OK   ");
 		unlocked = true;
 		return 1;
 		}
 		
-	if (strlen (pwd)) grlib_menu ("Wrong password !", "   OK   ");
+	if (strlen (pwd)) grlib_menu (0, "Wrong password !", "   OK   ");
 	return 0;
 	}

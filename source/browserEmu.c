@@ -133,9 +133,10 @@ static void Conf (bool open)
 	char cfgpath[64];
 	sprintf (cfgpath, "%s://ploader/emus.conf", vars.defMount);
 
+	cfg_Section (NULL);
 	if (open)
 		{
-		cfg = cfg_Alloc (cfgpath, 0);
+		cfg = cfg_Alloc (cfgpath, 16384, 0, 0);
 		}
 	else
 		{
@@ -202,17 +203,14 @@ static char *Plugins_Get (int idx, int type)
 	{
 	static char name[128];
 	char *p;
-	s_cfg *item;
 	
-	item = cfg_GetItemFromIndex (plugins, idx);
-	
-	if (!item || !item->value)
+	if (!plugins->items[idx])
 		{
 		return NULL;
 		}
 		
 	*name = '\0';
-	p = ms_GetDelimitedString (item->value, ';', type);
+	p = ms_GetDelimitedString (plugins->items[idx], ';', type);
 	if (p)
 		{
 		strcpy (name, p);
@@ -224,16 +222,12 @@ static char *Plugins_Get (int idx, int type)
 	
 static int Plugins_GetId (int idx)
 	{
-	s_cfg *item;
-	
-	item = cfg_GetItemFromIndex (plugins, idx);
-	
-	if (!item || !item->value)
+	if (!plugins->items[idx])
 		{
 		return 0;
 		}
 	
-	return atoi(item->tag);
+	return atoi(plugins->tags[idx]);
 	}
 	
 static void Plugins (bool open)
@@ -246,15 +240,12 @@ static void Plugins (bool open)
 
 	if (open)
 		{
-		plugins = cfg_Alloc (cfgpath, 0);
+		plugins = cfg_Alloc (cfgpath, 64, 0, 1);
 		
-		pluginsCnt = 0;
-		s_cfg *item;
-		while ((item = cfg_GetItemFromIndex (plugins, pluginsCnt)))
-			{
-			Debug ("Plugins: %d -> %s", pluginsCnt, item->value);
-			pluginsCnt++;
-			}
+		pluginsCnt = plugins->count;
+		// just for debug
+		for (i = 0; i < plugins->count; i++)
+			Debug ("Plugins: %d:%d -> %s", i, pluginsCnt, plugins->items[i]);
 			
 		if (pluginsCnt > CATMAX)
 			pluginsCnt = CATMAX;
@@ -463,11 +454,20 @@ static int bsort_filter (const void * a, const void * b)
 	return 0;
 	}
 	
+static int bsort_hidden (const void * a, const void * b)
+	{
+	s_emu *aa = (s_emu*) a;
+	s_emu *bb = (s_emu*) b;
+
+	if (aa->filtered > bb->filtered) return 1;
+	
+	return 0;
+	}
+	
 static void SortItems (void)
 	{
-	Debug ("SortItems: begin");
-	
 	int i;
+	int filtered = 0;
 	
 	// Apply filters
 	emus2Disp = 0;
@@ -475,10 +475,14 @@ static void SortItems (void)
 		{
 		emus[i].filtered = IsFiltered (i);
 		if (emus[i].filtered && (!emus[i].hidden || showHidden)) emus2Disp++;
+		if (emus[i].filtered) filtered++;
 		}
 	
 	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
 	bsort (emus, emusCnt, sizeof(s_emu), bsort_filter);
+
+	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
+	bsort (emus, filtered, sizeof(s_emu), bsort_hidden);
 
 	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
@@ -486,8 +490,6 @@ static void SortItems (void)
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
 	
 	FeedCoverCache ();
-	
-	Debug ("SortItems: end");
 	}
 	
 // This will check if cover is available
@@ -695,27 +697,19 @@ static int FindSpot (void)
 	
 static bool IsFiltered (int ai)
 	{
-	int i,j;
+	int i;
 	bool ret = false;
-	char f[128];
-	//char name[256];
-	
+
 	if (config.emuFilter == 0) return true;
 	
-	memset (f, 0, sizeof(f));
-
-	j = 0;
 	for (i = 0; i < CATMAX; i++)
 		{
-		f[j++] = (config.emuFilter & (1 << i)) ? '1':'0';
-		
 		if ((config.emuFilter & (1 << i)) && (emus[ai].type == i))
 			{
 			ret = true;
 			}
 		}
-	f[j++] = 0x0;
-		
+
 	return ret;
 	}
 	
@@ -747,7 +741,7 @@ static void ShowFilterMenu (void)
 			}
 		
 		Video_SetFontMenu(TTFVERYSMALL);
-		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
+		item = grlib_menu (0, "Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
@@ -801,13 +795,13 @@ static void ShowAppMenu (int ai)
 			grlib_menuAddItem (buff,  3, "Delete this cover");
 			}
 		
-		int item = grlib_menu (title, buff);
+		int item = grlib_menu (0, title, buff);
 		
 		if (item < 0) break;
 		
 		if (item == 1)
 			{
-			int item = grlib_menu ("Reset play count ?", "Yes~No");
+			int item = grlib_menu (-60, "Reset play count ?", "Yes~No");
 			
 			if (item == 0)
 				emus[ai].playcount = 0;
@@ -816,7 +810,7 @@ static void ShowAppMenu (int ai)
 		if (item == 2)
 			{
 			sprintf (buff, "Are you sure you want to delete this ROM and it's cover ?\n\n%s", title);
-			int item = grlib_menu (buff, "Yes~No");
+			int item = grlib_menu (-60, buff, "Yes~No");
 			
 			if (item == 0)
 				{
@@ -835,7 +829,7 @@ static void ShowAppMenu (int ai)
 		if (item == 3)
 			{
 			sprintf (buff, "Are you sure you want to delete this ROM's cover ?\n\n%s", title);
-			int item = grlib_menu (buff, "Yes~No");
+			int item = grlib_menu (-60, buff, "Yes~No");
 			
 			if (item == 0)
 				{
@@ -887,7 +881,7 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Emulators menu", buff);
+	int item = grlib_menu (0, "Emulators menu", buff);
 	
 	if (item == 1)
 		{
@@ -953,10 +947,10 @@ static void RedrawIcons (int xoff, int yoff)
 			if (!gui.spots[gui.spotsIdx].ico.icon)
 				{
 				gui.spots[gui.spotsIdx].ico.icon = emuicons[emus[ai].type];
-				
+
 				char title[256];
 				strcpy (title, fsop_GetFilename(emus[ai].name, true));
-				title[48] = 0;
+				title[16] = 0;
 				strcpy (gui.spots[gui.spotsIdx].ico.title, title);
 				}
 			else
@@ -1226,7 +1220,7 @@ static void StartEmu (int type, char *fullpath)
 		}
 	else
 		{
-		grlib_menu ("Attention!", "Requested plugin not found\n\n'%s'", dol);
+		grlib_menu (0, "Attention!", "Requested plugin not found\n\n'%s'", dol);
 		}
 	}
 			

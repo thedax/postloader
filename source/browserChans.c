@@ -116,7 +116,32 @@ static void InitializeGui (void)
 			}
 		}
 	}
+	
+static void Conf (bool open)
+	{
+	char cfgpath[64];
+	
+	Debug ("Conf %d", open);
+	
+	if (vars.neek != NEEK_NONE)
+		sprintf (cfgpath, "%s://ploader/chneek.conf", vars.defMount);
+	else if (config.chnBrowser.nand == NAND_REAL)
+		sprintf (cfgpath, "%s://ploader/chreal.conf", vars.defMount);
+	else
+		sprintf (cfgpath, "%s://ploader/chemul.conf", vars.defMount);
 
+	cfg_Section (NULL);
+	if (open)
+		{
+		cfg = cfg_Alloc (cfgpath, CHNMAX, 0, 0);
+		}
+	else
+		{
+		cfg_Store (cfg, cfgpath);
+		cfg_Free (cfg);
+		}
+	}
+	
 static bool DownloadCovers_Get (char *path, char *buff)
 	{
 	u8* outbuf=NULL;
@@ -240,56 +265,74 @@ static void DownloadCovers (void)
 	
 static void WriteTitleConfig (int ia)
 	{
-	if (ia < 0) return;
+	if (ia >= 0)
+		{
+		chnConf.titleId = chans[ia].titleId;
+		chnConf.hidden = chans[ia].hidden;
+		chnConf.priority = chans[ia].priority;
+		strcpy (chnConf.asciiId, chans[ia].asciiId);
+		}
 	
-	chnConf.titleId = chans[ia].titleId;
-	chnConf.hidden = chans[ia].hidden;
-	chnConf.priority = chans[ia].priority;
+	char buff[2048];
+	int index = 0;
+	*buff = '\0';
 	
-	char *buff = Bin2HexAscii (&chnConf, sizeof (s_channelConfig), 0);
-	cfg_SetString (cfg, chans[ia].asciiId, buff);
-	free (buff);
+	cfg_Section (NULL);
+	u32 th = TITLE_UPPER(chnConf.titleId);
+	u32 tl = TITLE_LOWER(chnConf.titleId);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U32, &th, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U32, &tl, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_INT, &chnConf.priority, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.hidden, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.ios, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.vmode, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_S8,  &chnConf.language, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.vpatch, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.hook, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.ocarina, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,  &chnConf.bootMode, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U16, &chnConf.playcount, index++);
+
+	cfg_SetString (cfg, chnConf.asciiId, buff);
 	}
 
-static void ReadTitleConfig (int ia)
+static bool ReadTitleConfig (int ia)
 	{
-	char buff[1024];
+	char buff[2048];
 	bool valid;
 	
-	valid = cfg_GetString (cfg, chans[ia].asciiId, buff);
-	
+	valid = (cfg_GetString (cfg, chans[ia].asciiId, buff) != -1 && cfg_CountSepString (buff) >= 12);
+
 	if (valid)
 		{
-		if (HexAscii2Bin (buff, &chnConf) != sizeof (s_channelConfig))
-			{
-			Debug ("ReadTitleConfig: Error -> size fails");
-			valid = false;
-			}
+		int index = 0;
+		cfg_Section (NULL);
+		u32 th, tl;
+		cfg_FmtString (buff, CFG_READ, CFG_U32, &th, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U32, &tl, index++);
+		chnConf.titleId = TITLE_ID(th, tl);
+		cfg_FmtString (buff, CFG_READ, CFG_INT, &chnConf.priority, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.hidden, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.ios, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.vmode, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_S8,  &chnConf.language, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.vpatch, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.hook, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.ocarina, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,  &chnConf.bootMode, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U16, &chnConf.playcount, index++);
+
+		chans[ia].titleId = chnConf.titleId;
+		chans[ia].hidden = chnConf.hidden;
+		chans[ia].priority = chnConf.priority;
+
+		/*
+		if (chans[ia].name) free (chans[ia].name);
+		chans[ia].name = ms_AllocCopy (chnConf.name, 0);
+		*/
 		}
 	
-	if (!valid)
-		{
-		chnConf.priority = 5;
-		chnConf.hidden = 0;
-		chnConf.titleId = chans[ia].titleId;
-		chnConf.ios = 0;
-		chnConf.vmode = 0;
-		chnConf.language = -1;
-		chnConf.vpatch = 0;
-		chnConf.ocarina = 0;
-		chnConf.hook = 0;
-		
-		if (vars.neek != NEEK_NONE || config.chnBrowser.nand == NAND_REAL)
-			chnConf.bootMode = 2; // Compatible
-		else 
-			chnConf.bootMode = 0; // normal
-			
-		chnConf.playcount = 0;
-		}
-
-	chans[ia].titleId = chnConf.titleId;
-	chans[ia].hidden = chnConf.hidden;
-	chans[ia].priority = chnConf.priority;
+	return valid;
 	}
 
 static void ChansFree (void)
@@ -310,25 +353,6 @@ static void ChansFree (void)
 	chansCnt = 0;
 	}
 	
-static void SaveTitlesCache (void)
-	{
-	FILE* f = NULL;
-	char cfg[256];
-	char buff[256];
-	int i;
-	
-	sprintf (cfg, "%s://ploader/channels.txt", vars.defMount);
-	f = fopen(cfg, "wb");
-	if (!f) return;
-	
-	for (i = 0; i < chansCnt; i++)
-		{
-		sprintf (buff, "%s:%s\n", chans[i].asciiId, chans[i].name);
-		fwrite (buff, 1, strlen(buff), f );
-		}
-	fclose(f);
-	}
-
 static bool CheckFilter (int ai)
 	{
 	int i;
@@ -395,6 +419,7 @@ static int bsort_priority (const void * a, const void * b)
 static void SortItems (void)
 	{
 	int i;
+	int filtered = 0;
 	
 	// Apply filters
 	if (manageUID)
@@ -408,11 +433,12 @@ static void SortItems (void)
 			{
 			chans[i].filtered = CheckFilter(i);
 			if (chans[i].filtered && (!chans[i].hidden || showHidden)) chans2Disp++;
+			if (chans[i].filtered) filtered++;
 			}
 		}
 	
 	bsort (chans, chansCnt, sizeof(s_channel), bsort_filtered);
-	bsort (chans, chansCnt, sizeof(s_channel), bsort_hidden);
+	bsort (chans, filtered, sizeof(s_channel), bsort_hidden);
 	qsort (chans, chans2Disp, sizeof(s_channel), qsort_name);
 	bsort (chans, chans2Disp, sizeof(s_channel), bsort_priority);
 
@@ -453,6 +479,38 @@ static void GetCacheFileName (char *path)
 	Debug ("GetCacheFileName %s", path);
 	}
 
+// This will check if cover is available
+static void CheckForCovers (void)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+
+	char path[256];
+	int i;
+	
+	// Cleanup cover flag
+	for (i = 0; i < chansCnt; i++)
+		chans[i].hasCover = 0;
+		
+	sprintf (path, "%s://ploader/covers", vars.defMount);
+	pdir=opendir(path);
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{
+		// Skip it
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || ms_strstr (pent->d_name, ".png") == NULL)
+			continue;
+			
+		for (i = 0; i < chansCnt; i++)
+			{
+			if (!chans[i].hasCover && ms_strstr (pent->d_name, chans[i].asciiId))
+				chans[i].hasCover = 1;
+			}
+		}
+	closedir(pdir);
+	}
+
+
 /*
 To have the maximum speed, titles are now stored in cache file. Cache file must be rebuilded 
 */
@@ -488,7 +546,7 @@ static int RebuildCacheFile (void)
 			IOSPATCH_Apply ();
 			if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
 				{
-				grlib_menu ("postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+				grlib_menu (0, "postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
 				Debug ("postLoader was unable to patch ISFS permission. Cannot continue");
 				return -1;
 				}
@@ -499,7 +557,7 @@ static int RebuildCacheFile (void)
 			}
 		else
 			{
-			grlib_menu ("Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
+			grlib_menu (0, "Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
 			return -1;
 			}
 		}
@@ -519,6 +577,8 @@ static int RebuildCacheFile (void)
 		Video_WaitPanel (TEX_CHIP, "Please wait...");
 		}
 
+	LoadTitlesTxt ();
+	
 	cnt = 0;
 	for (id = 0; id < 2; id++)
 		{
@@ -539,8 +599,21 @@ static int RebuildCacheFile (void)
 				// Search title in cache
 				names[cnt] = get_name(TitleIds[i], path);
 				
+				char asciiId[6];
+				memset(asciiId, 0, 6);
+				memcpy(asciiId, (char *)(&lower[cnt]), 4);
+				
+				char *title = cfg_FindInBuffer (vars.titlestxt, asciiId);
+				
+				//Debug ("RebuildCacheFile: found '%s'", names[cnt]);
+				//Debug ("%s -> %s (%s)", asciiId, title == NULL ? "(null)" : title, names[cnt]);
+				if (title)
+					{
+					free (names[cnt]);
+					names[cnt] = ms_utf8_to_ascii (title);
+					}
+				
 				Video_WaitPanel (TEX_HGL, "Searching for channels: %d found...", cnt);
-				Debug ("RebuildCacheFile: found '%s'", names[cnt]);
 				
 				cnt++;
 				}
@@ -548,6 +621,9 @@ static int RebuildCacheFile (void)
 			free (TitleIds);
 			}
 		}
+		
+	free (vars.titlestxt);
+	vars.titlestxt = NULL;
 
 	if (config.chnBrowser.nand == NAND_REAL) ISFS_Deinitialize();
 
@@ -577,57 +653,6 @@ static int RebuildCacheFile (void)
 	Debug ("RebuildCacheFile: done !");
 	
 	return cnt;
-	}
-
-static void UpdateTitlesFromTxt (void)
-	{
-	LoadTitlesTxt ();
-	if (vars.titlestxt == NULL) return;
-	
-	int i;
-	char buff[1024];
-	for (i = 0; i < chansCnt; i++)
-		{
-		if (cfg_GetString (vars.titlestxt, chans[i].asciiId, buff))
-			{
-			//Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", chans[i].name, buff);
-			free (chans[i].name);
-			chans[i].name = ms_utf8_to_ascii (buff);
-			}
-		
-		if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Parsing...");
-		}
-	}
-
-// This will check if cover is available
-static void CheckForCovers (void)
-	{
-	DIR *pdir;
-	struct dirent *pent;
-
-	char path[256];
-	int i;
-	
-	// Cleanup cover flag
-	for (i = 0; i < chansCnt; i++)
-		chans[i].hasCover = 0;
-		
-	sprintf (path, "%s://ploader/covers", vars.defMount);
-	pdir=opendir(path);
-	
-	while ((pent=readdir(pdir)) != NULL) 
-		{
-		// Skip it
-		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || ms_strstr (pent->d_name, ".png") == NULL)
-			continue;
-			
-		for (i = 0; i < chansCnt; i++)
-			{
-			if (!chans[i].hasCover && ms_strstr (pent->d_name, chans[i].asciiId))
-				chans[i].hasCover = 1;
-			}
-		}
-	closedir(pdir);
 	}
 
 static int ChnBrowse (void)
@@ -689,8 +714,6 @@ static int ChnBrowse (void)
 			}
 		p++;
 		
-		//grlib_dosm ("%d %d %d: %s", size, chansCnt, p - titles, name);
-			
 		if (upper > 0 && lower > 0 && strlen (name) >= 4)
 			{
 			chans[chansCnt].titleId = TITLE_ID (upper, lower);
@@ -702,12 +725,33 @@ static int ChnBrowse (void)
 			if (chans[chansCnt].name)
 				strcpy (chans[chansCnt].name, name);
 
+			chans[chansCnt].png = NULL;
 			// Update configuration
-			ReadTitleConfig (chansCnt);
+			if (!ReadTitleConfig (chansCnt))
+				{
+				sprintf (chnConf.asciiId, chans[chansCnt].asciiId);
+				chnConf.priority = 5;
+				chnConf.hidden = 0;
+				chnConf.titleId = chans[chansCnt].titleId;
+				chnConf.ios = 0;
+				chnConf.vmode = 0;
+				chnConf.language = -1;
+				chnConf.vpatch = 0;
+				chnConf.ocarina = 0;
+				chnConf.hook = 0;
+				
+				if (vars.neek != NEEK_NONE || config.chnBrowser.nand == NAND_REAL)
+					chnConf.bootMode = 2; // Compatible
+				else 
+					chnConf.bootMode = 0; // normal
+					
+				chnConf.playcount = 0;
+				
+				WriteTitleConfig (-1);
+				}
 			
 			if (chansCnt % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading channels configuration");
 
-			chans[chansCnt].png = NULL;
 			chansCnt++;
 			}
 		}
@@ -716,7 +760,6 @@ static int ChnBrowse (void)
 	
 	free (titles);
 	
-	UpdateTitlesFromTxt ();
 	CheckForCovers ();
 	SortItems ();
 	
@@ -874,7 +917,7 @@ static void ShowAppMenu (int ai)
 		*/
 		
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (chans[ai].name, buff);
+		item = grlib_menu (0, chans[ai].name, buff);
 		Video_SetFontMenu(TTFNORM);
 		
 		if (item < 100) break;
@@ -920,7 +963,7 @@ static void ShowAppMenu (int ai)
 	if (item == 4)
 		{
 		int item;
-		item = grlib_menu ("Vote Title", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
+		item = grlib_menu (0, "Vote Title", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
 		if (item >= 0)
 			chans[chansSelected].priority = 10-item;
 		}
@@ -953,7 +996,7 @@ static void ShowFilterMenu (void)
 			grlib_menuAddCheckItem (buff, 100 + item, f[item], &CHANNELS_NAMES[item][1]);
 			}
 		
-		item = grlib_menu ("Filter menu:\nPress (B) to close, (+) Select all, (-) Deselect all", buff);
+		item = grlib_menu (0, "Filter menu:\nPress (B) to close, (+) Select all, (-) Deselect all", buff);
 
 		if (item == MNUBTN_PLUS)
 			{
@@ -1023,7 +1066,8 @@ static void ShowNandMenu (void)
 
 	
 	//MountDevices (true);
-	
+	Conf (0);
+
 	buff[0] = '\0';
 	
 	strcat (buff, "Use Real NAND##100|");
@@ -1050,7 +1094,7 @@ static void ShowNandMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Select NAND Source", buff);
+	int item = grlib_menu (0, "Select NAND Source", buff);
 
 	if (item > 0)
 		config.chnBrowser.nandPath[0] = '\0';
@@ -1097,6 +1141,8 @@ static void ShowNandMenu (void)
 		}
 	
 	int i; for (i = 0; i < nandFodersCnt; i++) free (nandFolders[i]);
+	
+	Conf (1);
 	}
 
 static void SyncNandFile (char *sourcepath, char *sourcefn)
@@ -1120,7 +1166,7 @@ static void SyncNandFile (char *sourcepath, char *sourcefn)
 	if (!buffer)
 		{
 		// Add message here
-		grlib_menu ("Cannot open source file!", " OK ");
+		grlib_menu (0, "Cannot open source file!", " OK ");
 		return;
 		}
 		
@@ -1136,7 +1182,7 @@ static void SyncNandFile (char *sourcepath, char *sourcefn)
 	Debug ("SyncNandFile: target is '%s'", target);
 	if (fsop_WriteFile (target, buffer, readed))
 		{
-		grlib_menu ("Operation completed succesfully!", " OK ");
+		grlib_menu (0, "Operation completed succesfully!", " OK ");
 		}
 		
 	free (buffer);
@@ -1157,7 +1203,7 @@ static void ChangeDefaultIOS (void)
 	grlib_menuAddItem (buff, 2, "251");
 	grlib_menuAddItem (buff, 3, "252");
 	
-	int item = grlib_menu ("Select your default CIOS slot", buff);
+	int item = grlib_menu (0, "Select your default CIOS slot", buff);
 	if (item < 0) return;
 		
 	Redraw();
@@ -1188,16 +1234,11 @@ static void ShowMainMenu (void)
 	if (CheckParental(0))
 		{
 		grlib_menuAddItem (buff,  1, "NAND Source...");
-		
-		grlib_menuAddSeparator (buff);
-		
-		grlib_menuAddItem (buff,  2, "Update title cache...");
+		grlib_menuAddItem (buff,  2, "Refresh cache...");
 		grlib_menuAddItem (buff,  3, "Download covers...");
 		}
 		
 	grlib_menuAddItem (buff,  4, "Titles filter");
-
-	grlib_menuAddSeparator (buff);
 
 	if (CheckParental(0))
 		{
@@ -1205,8 +1246,6 @@ static void ShowMainMenu (void)
 			{
 			grlib_menuAddItem (buff,  5, "Copy SYSCONF from real nand...");
 			grlib_menuAddItem (buff,  6, "Copy MII from real nand...");
-			
-			grlib_menuAddSeparator (buff);
 			}
 
 		if (showHidden)
@@ -1216,7 +1255,7 @@ static void ShowMainMenu (void)
 
 		if (vars.neek != NEEK_NONE)
 			{
-			grlib_menuAddItem (buff,  9, "UID.sys manage mode");
+			grlib_menuAddItem (buff,  9, "Manage UID.sys");
 			}
 		else
 			{
@@ -1227,7 +1266,7 @@ static void ShowMainMenu (void)
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Channel menu", buff);
+	int item = grlib_menu (0, "Channel menu", buff);
 			
 	if (item == 1)
 		{
@@ -1273,7 +1312,7 @@ static void ShowMainMenu (void)
 	if (item == 9)
 		{
 		manageUID = 1;
-		grlib_menu ("Manage UID.sys\n\nPress (A) to hide/show title\nPress (B) to exit from editing mode\nPress (1) add/remove item from uid.sys\nPress (2) to show/hide ALLL entries from uid.sys", "  OK  ");
+		grlib_menu (0, "Manage UID.sys\n\nPress (A) to hide/show title\nPress (B) to exit from editing mode\nPress (1) add/remove item from uid.sys\nPress (2) to show/hide ALLL entries from uid.sys", "  OK  ");
 		}
 
 	if (item == 10)
@@ -1590,30 +1629,6 @@ static bool QuerySelection (int ai)
 	return true;
 	}
 
-static void Conf (bool open)
-	{
-	char cfgpath[64];
-	
-	Debug ("Conf %d", open);
-	
-	if (vars.neek != NEEK_NONE)
-		sprintf (cfgpath, "%s://ploader/channels.neek", vars.defMount);
-	else if (config.chnBrowser.nand == NAND_REAL)
-		sprintf (cfgpath, "%s://ploader/channels.real", vars.defMount);
-	else
-		sprintf (cfgpath, "%s://ploader/channels.emul", vars.defMount);
-
-	if (open)
-		{
-		cfg = cfg_Alloc (cfgpath, 0);
-		}
-	else
-		{
-		cfg_Store (cfg, cfgpath);
-		cfg_Free (cfg);
-		}
-	}
-	
 int ChnBrowser (void)
 	{
 	u32 btn;
@@ -1712,7 +1727,7 @@ int ChnBrowser (void)
 			if (btn & WPAD_BUTTON_B && manageUID)
 				{
 				manageUID = 0;
-				int ret = grlib_menu ("Manage UID.sys\n\nOperation completed. Do you want to save the new UID.sys ?", "  YES  ##1~  NO  ##0");
+				int ret = grlib_menu (0, "Manage UID.sys\n\nOperation completed. Do you want to save the new UID.sys ?", "  YES  ##1~  NO  ##0");
 				if (ret == 1)
 					{
 					neek_UID_Write ();
@@ -1828,8 +1843,6 @@ int ChnBrowser (void)
 
 	// save current page
 	config.chnPage = page;
-
-	SaveTitlesCache ();
 
 	Conf (false);
 	

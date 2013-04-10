@@ -44,7 +44,7 @@ void RunLoader(void)
 			PrepareNeek2o ();
 		else
 			{
-			grlib_menu ("The game was not found in diconfig.bin.\nRun neek2o once to update gamelist and try again\npostLoader will now try to reload or reset your WII", "OK");
+			grlib_menu (0, "The game was not found in diconfig.bin.\nRun neek2o once to update gamelist and try again\npostLoader will now try to reload or reset your WII", "OK");
 			
 			ReloadPostloader ();
 			
@@ -91,7 +91,7 @@ void RunLoader(void)
 		DirectDolBoot ("usb://apps/wiiflow/boot.dol", argb, 0);
 		}
 		
-	grlib_menu ("The selected loader wasn't found.\npostLoader will now try to reload or reset your WII", "OK");
+	grlib_menu (0, "The selected loader wasn't found.\npostLoader will now try to reload or reset your WII", "OK");
 	
 	ReloadPostloader ();
 	

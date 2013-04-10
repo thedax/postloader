@@ -129,7 +129,7 @@ int Menu_SelectBrowsingMode (void)
 	strcat (buff, "|");
 	strcat (buff, "Close##-1");
 	
-	int ret = grlib_menu ("Select browsing mode...", buff);
+	int ret = grlib_menu (0, "Select browsing mode...", buff);
 	
 	if (ret == 100) return INTERACTIVE_RET_TOHOMEBREW;
 	if (ret == 101) return INTERACTIVE_RET_TOCHANNELS;
@@ -182,7 +182,7 @@ int GoToPage (int page, int pageMax)
 		
 		if (col < cols -1) grlib_menuAddColumn (buff);
 		}
-	int item = grlib_menu ("Go to page", buff);
+	int item = grlib_menu (0, "Go to page", buff);
 	if (item >= 0) page = item;
 	
 	return page;

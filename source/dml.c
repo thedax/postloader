@@ -693,7 +693,7 @@ int DMLInstall (char *gamename, size_t reqKb)
 		sprintf (title, "You must free %u Mb to install %s\nClick on game to remove it from SD, game size is %u Mb), Press (B) to close", 
 			(reqKb - devKb) / 1000, gamename, reqKb / 1000);
 
-		ret = grlib_menu (title, menu);
+		ret = grlib_menu (0, title, menu);
 		if (ret == -1)
 			{
 			Debug ("DMLInstall (%s): aborted by user", gamename);

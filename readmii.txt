@@ -1,35 +1,24 @@
-postLoader4 (readmii.txt 1.8)
-
-========================================
-Differences from postLoader3:
-========================================
-* Added upper and bottom toolbars with icons for accessing common command
-* Added emulator frontend page
-* Added uid.sys managment for neek (neek2o)
-* Added TTF support
-* Added direct shortcut for SettingEditor GUI and WiiMod
-* Redesigned menu interface
-* Greatly improved the stability and reliability
-
-postLoader3 (readmii.txt 1.7)
+postLoader 4.2 (readmii.txt 1.9)
 
 ========================================
 What postLoader is:
 ========================================
 * HomeBrew Browser with subfolder and xml support
 * Channel/Title Browser with filters and cover
+* Emulator frontend page with plugin system (plugin .dol from WiiFlow)
 * neek2o & Uneek+DI game browser with cover support
 * game loaders forwarder (for CFG, GX and WiiFlow) with cover and filters support
 * DML gamecube browser with USB to SD copy feature
 * Themable user interface
 * Wiiload server
+* Designed for stability and performance
 
 ========================================
 Features:
 ========================================
 
 General:
-* If started from priiloader it gains AHPBROT and spawn full hardware rights to homebrew applications
+* If started from priiloader it gains AHPBROT and spawn full hardware rights to homebrew applications (with system menu 4.3 it seems that priiloader can't pass AHBPROT. Use the forwarder channel)
 * Autoboot your default application/channel: If you don't press (A) in time to enter in interactive mode, postLoader will launch the predefined app (if enabled)
 * Direct access to BOOTMII
 * Support costom splash screen (only from SD device)
@@ -37,11 +26,14 @@ General:
 * Support for Wiimote and GC controllers
 * Intergrated UNEEK nand switcher
 * wiiload update: If you send postLoader.dol via wiiload, postloader installation will be updated (after confirmation).
+* Direct shortcut for SettingEditor GUI and WiiMod
+* Upper and bottom toolbars with icons for accessing common command
 
 oneek2o advanced support
 * USB Access for HOMEBREW (see historii.txt for important notices)
 * Multiple nand support for different region games
 * Built in game cache rebuilder (partially implemented, see historii.txt)
+* uid.sys managment for neek (neek2o)
 
 Uneek+DI game browser (see historii.txt)
 * Support covers
@@ -53,7 +45,7 @@ USB Loaders forwarder
 * Support title vote
 * Support ios selection
 
-DML gamecube games
+DM(L) gamecube games
 * Support covers
 * Support title vote
 * Support ios selection
@@ -63,7 +55,7 @@ Homebrew:
 * HB Channel replacement: It can be used to browse homebrew application, with it own interface. 
 * Dangerous homebrews can be hidden
 * Full support for meta.xml arguments and all other tags.
-* It support subfolders (see notes)
+* up to 8 category can be assigned for each homebrew. Five category are assigned by default: Games/Utility/Emulators/Backup loaders/Hacking tools, and them can be changed in runtime
 * Can browse SD and USB device (FAT32 on first/active partition)
 * WiiLoad support (straight, compressed dol, zip archieve)
 
@@ -154,67 +146,46 @@ Themes tipically contains and install their own splash screen.
 Copy your png named "ploader.png" on the root of SD card. 640x480 is suggested.
 Using a custom splash screen will slow a bit postLoader startup.
 
-
-========================================
-SUBFOLDER:
-========================================
-Since version 1.0b2, subfolders are supported. About any depth can be used, but keep in mind that actually postLoader support filenames long up to 255 chars.
-To enable subfolder, only meta.xml MUST be present on parent folder. In meta.xml you can (should) edit <name></name> tag to give a description to that folder. An icon.png can be present, otherwise a standard folder icon is shown.
-
-example:
-
-APPS
-  |
-  |-- HB1 (folder)
-  |   |-- boot.dol
-  |   |-- meta.xml
-  |   |-- icon.xml
-  |
-  |---- HB2 (folder)
-  |   |-- boot.dol
-  |   |-- meta.xml
-  |   |-- icon.xml
-  |
-  |---- FOLDER	
-        |
-        |-- meta.xml (MUST EXIST)
-        |-- icon.png (optional)
-        |
-        |-- HB3
-        |   |-- boot.dol
-        |   |-- meta.xml
-        |   |-- icon.xml
-        |
-        |-- HB4
-            |-- boot.dol
-            |-- meta.xml
-            |-- icon.xml
-		
-
-========================================
-NOTES:
-========================================
-
-* Screenshots are from dolphin... 
-* b after the version is the build number :P
-
 ========================================
 Additiona applications:
 ========================================
 
-priibooterGUI.dol:
+priibooterGUI.dol
+-------------------------
 
 priibooter is a little gui application intended to be installed under priiloader. It allow to
 * Boot (remembering last operation [sd needed])
   > postloader from sd://apps/postloader/boot.dol or usb://apps/postloader/boot.dol
+  > postloader via POST forwarder channel
   > HBC
   > system menu
   > neek (bootmii)
 * Enable postloader uneek nand folder switching functionality
 
-neekbooter.dol:
+neek2obooter.app
+-------------------------
 
-To be installed in priiloader under neek. It will run postloader from sd://apps/postloader/boot.dol or ISFS://apps/postloader/boot.dol
+As neek2o r96 do not support priiloader, you have to install neek2obooter.app to start games from real mode to neek2o. neek2obooter.app is available from full installation package 4.1.9.
+
+Installation:
+in (usb:/nands/pl_eu)/title/00000001/00000002/content/
+
+1) rename your system menu .app to sysmenu.app 
+2) copy neek2obooter.app and rename it as system menu
+
+example for 4.3 eu nand
+
+rename 0000009b.app to sysmenu.app
+rename neek2obooter.app to 0000009b.app
+
+!!! DO THIS ONLY IN YOUR R96 (and possibily above) NEEK2O, DO NOT TRY IN REAL NAND !!!
+
+This allow also to go back directly to real mode when you select return to menu in games.
+neek2obooter.app can also boot directly to postloader when you run your neek2o nand. Just create /title/00000001/00000002/data/n2oboot.ini (also empy) to enable this feature.
+
+neekbooter.dol
+-------------------------
+(OBSOLETE neek2o > r96 bypass priiloader): To be installed in priiloader under neek. It will run postloader from sd://apps/postloader/boot.dol or ISFS://apps/postloader/boot.dol
 
 NAND Folders:
 
@@ -272,7 +243,7 @@ UNEEK Nand switcher notes:
 ========================================
 
 Requirements:
-* Newest priibooter.dol (dist. from b34 or above) installed in priiloader
+* Newest neek2obooter.app should be configured (OBSOLETE: priibooter.dol (dist. from b34 or above) installed in priiloader)
 * an sd inside the wii with uneek configured
 * the folder usb://nands containing up to 16 uneek nand subfolders
 
@@ -323,9 +294,10 @@ it is really much faster then neek2o. Reboot seems to be required.
 Running vc/wiiware from realnand via neek2o
 ========================================
 
-* Use modmii to create a fresh nand. Install only priiloader (required) and if you wish postloader channel. Do not add anything more if you want a fast to boot nand
+* Use modmii to create a fresh nand.
 * name this nand pln2o and put in usb://Nand/pln2o
-* Start that nand, configure it (also the network). Install the new neekbooter (required) in priiloader and make priiloader autoboot it (you can use postloader to do that [home]->System options->Install neekbooter.dol in priiloader, when you running in neek2o/pln2o nand)
+* Start that nand, configure it (also the network).
+* Install neek2obooter.app
 * postLoader will automatically copy (only one time) your vc/wiiware to pln2o nand and execute it.
 * This is a great workaround for WFC games and games that doens't work in d2x emulation
 
@@ -347,10 +319,3 @@ CREDITS:
 * GBATemp community
 * davebaol for d2x and path code for ahbprot
 * FIX94 video init code
-
-SOURCEs:
-----------------------------------------
-
-Last pubblic sources can be downloaded from 
-
-http://alturl.com/ux9vg

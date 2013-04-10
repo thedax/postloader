@@ -254,7 +254,7 @@ void SelectDol(char *dol, char *target)
 	grlib_menuAddSeparator (menu);
 	grlib_menuAddItem (menu, 0, "Cancel");
 	
-	int ret = grlib_menu ("Select dol/elf to run", menu);
+	int ret = grlib_menu (0, "Select dol/elf to run", menu);
 	
 	if (ret <= 0) return;
 	
@@ -289,7 +289,7 @@ void WiiloadZipMenu (void)
 	
 	if (type == DU_NONE)
 		{
-		grlib_menu ("Attention\n\nThe zip file doesn't contain any dol. This is unsupported", "Close");
+		grlib_menu (0, "Attention\n\nThe zip file doesn't contain any dol. This is unsupported", "Close");
 		return;
 		}
 		
@@ -305,7 +305,7 @@ void WiiloadZipMenu (void)
 		grlib_menuAddItem (menu, 0, "Cancel");
 
 		sprintf (title, "Installable ZIP package received\n\nPlease select where your package should be installed.");
-		int ret = grlib_menu (title, menu);
+		int ret = grlib_menu (0, title, menu);
 
 		char target[300];
 		if (ret == 10)
@@ -347,7 +347,7 @@ void WiiloadZipMenu (void)
 		grlib_menuAddItem (menu, 0, "Cancel");
 
 		sprintf (title, "Installable ZIP package received\n\nPlease select where your package should be installed.");
-		int ret = grlib_menu (title, menu);
+		int ret = grlib_menu (0, title, menu);
 
 		char target[300];
 		if (ret == 10)
@@ -390,7 +390,7 @@ bool WiiloadCheck (void)
 
 	if (stricmp (wiiload.filename, "postloader.dol") == 0)
 		{
-		int ret = grlib_menu ("wiiload: postLoader.dol received", "Update postLoader installation##1|Boot it without updating##2|Cancel##-1");
+		int ret = grlib_menu (0, "wiiload: postLoader.dol received", "Update postLoader installation##1|Boot it without updating##2|Cancel##-1");
 		
 		if (ret <= 0)
 			{
@@ -421,7 +421,7 @@ bool WiiloadCheck (void)
 
 	if (stricmp (wiiload.filename, "neekbooter.dol") == 0)
 		{
-		grlib_menu ("wiiload: neekbooter.dol updated", "  OK  ");
+		grlib_menu (0, "wiiload: neekbooter.dol updated", "  OK  ");
 
 		int i;
 		for (i = 0; i < DEV_MAX; i++)
@@ -457,7 +457,7 @@ bool WiiloadCheck (void)
 					char title[256];
 					
 					sprintf (title, "wiiload: your wad has been copied to\n'%s'", path);
-					grlib_menu (title, "  OK  ");
+					grlib_menu (0, title, "  OK  ");
 					break;
 					}
 				else
@@ -465,7 +465,7 @@ bool WiiloadCheck (void)
 					char title[256];
 					
 					sprintf (title, "wiiload: there was an error copying\n'%s'\nPlese check free space on device", path);
-					grlib_menu (title, "  OK  ");
+					grlib_menu (0, title, "  OK  ");
 					}
 				}
 			}

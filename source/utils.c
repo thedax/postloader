@@ -51,33 +51,6 @@ void convertToUpperCase(char *sPtr)
 		}
     }
 	
-void CleanTitleConfiguration(void)
-	{
-	DIR *pdir;
-	struct dirent *pent;
-	char path[300], fn[300];
-	
-	int item = grlib_menu ("Are you sure to clean channels/games configuration ?\n\n(Yes, it is a safe operation)", "Yes##1|No##-1");
-	if (item < 0) return;
-	
-	sprintf (path, "%s://ploader/config", vars.defMount);
-	
-	pdir=opendir(path);
-	
-	while ((pent=readdir(pdir)) != NULL) 
-		{
-		if (strstr (pent->d_name, ".cfg"))
-			{
-			Video_WaitPanel (TEX_HGL, "Cleaning %s", pent->d_name);
-
-			sprintf (fn, "%s://ploader/config/%s", vars.defMount, pent->d_name);
-			unlink (fn);
-			}
-		}
-	
-	closedir(pdir);
-	}
-
 // Convert passed buffer to ascii
 char* Bin2HexAscii (void* buff, size_t insize, size_t*outsize)
 	{
@@ -154,22 +127,12 @@ bool IsPngBuff (u8 *buff, int size)
 	
 void LoadTitlesTxt (void)
 	{
-	static bool alreadyDone = false;
-	
-	if (alreadyDone) return;
-	alreadyDone = true;
-	
 	char txtpath[64];
 	sprintf (txtpath, "%s://ploader/titles.txt", vars.defMount);
 
 	Video_WaitPanel (TEX_HGL, "Please wait...|Loading titles.txt");
 	
-	vars.titlestxt = cfg_Alloc (txtpath, 0);
-	if (vars.titlestxt->tag == NULL)
-		{
-		cfg_Free (vars.titlestxt);
-		vars.titlestxt = NULL;
-		}
+	vars.titlestxt = (char*)fsop_ReadFile (txtpath, 0, NULL);
 	}
 	
 	
@@ -328,7 +291,7 @@ s32 CheckDisk(void *id)
 
 	if (ret != 1)
 		{
-		grlib_menu ("Sorry, no disc is detected in your WII", " OK ");
+		grlib_menu (0, "Sorry, no disc is detected in your WII", " OK ");
 		}
 	return ret;
 	}

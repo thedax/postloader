@@ -8,6 +8,16 @@
 
 /* not case sensible functions */
 
+char *ms_AllocCopy (char *source, int addbytes) // basically remove/add \n\r, source buffer must contain enought space
+	{
+	char *p;
+	int l = strlen (source);
+	
+	p = malloc (l + 1 + addbytes);
+	strcpy (p, source);
+	return p;
+	}
+
 void ms_strtoupper(char *str1)
 	{
 	if (!str1) return;

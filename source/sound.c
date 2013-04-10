@@ -16,6 +16,7 @@ sound.c
 #include "fsop/fsop.h"
 #include "mp3player.h"
 
+#define VOLUME 80
 #define MAXSONGS 256
 #define DATABUFFER_SIZE	(32768) // defined in mp3player.c
 
@@ -23,6 +24,7 @@ static char *playlist[MAXSONGS];
 static int stopped = 0;
 static int songs = 0;
 static int currentSong = 0;
+static int currentVolume = 0;
 
 static void shuffle (void)
 	{
@@ -79,6 +81,19 @@ static void ScanForMp3 (char *path)
 	closedir (pdir);
 	}
 
+void snd_Volume (void)
+	{
+	if (config.volume < 1 || config.volume > 5) config.volume = 3;
+	
+	if (config.volume == 1) currentVolume = 25;
+	if (config.volume == 2) currentVolume = 50;
+	if (config.volume == 3) currentVolume = 75;
+	if (config.volume == 4) currentVolume = 100;
+	if (config.volume == 5) currentVolume = 125;
+	
+	MP3Player_Volume (currentVolume);
+	}
+
 /*
 this function must be inited after io subsystem
 */
@@ -116,6 +131,7 @@ void snd_Init (void)
 			
 	stopped = 0;
 	currentSong = 0;
+	snd_Volume ();
 	snd_Mp3Go ();
 
 	}
@@ -125,7 +141,7 @@ void snd_Stop (void)
 	Debug ("snd_Stop");
 	
 	u32 i;
-	for (i = 125; i > 0; i-=5)
+	for (i = currentVolume; i > 0; i-=5)
 			{
 			MP3Player_Volume(i);
 			usleep (20*1000);
@@ -157,7 +173,7 @@ void snd_Pause (void)
 	Debug ("snd_Pause");
 	
 	u32 i;
-	for (i = 125; i > 0; i-=5)
+	for (i = currentVolume; i > 0; i-=5)
 			{
 			MP3Player_Volume(i);
 			usleep (20*1000);

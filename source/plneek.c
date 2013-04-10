@@ -72,7 +72,7 @@ bool plneek_ShowMenu (void)
 			"Cannot open "PLNEEK_SDDIR"\n\nUNEEK nands folder must be\nin usb://nands\n\nOr plneek.dol isn't in sd root\nor priibooter.dol isn't updated (%d,%d)",
 			gnd, pln->nandsCnt);
 			
-		grlib_menu (title, menu);
+		grlib_menu (0, title, menu);
 		
 		free (menu);
 		free (pln);
@@ -98,7 +98,7 @@ bool plneek_ShowMenu (void)
 
 	grlib_menuAddItem (menu, 0, "Cancel");
 	
-	ret = grlib_menu ("Please select your folder", menu);
+	ret = grlib_menu (0, "Please select your folder", menu);
 	
 	*path = '\0';
 	if (ret >= 100)
@@ -109,14 +109,14 @@ bool plneek_ShowMenu (void)
 			char buff[300];
 			
 			sprintf (buff, "Your new NAND is selected\n\nWII Will now reboot\nNAND: %s", path);
-			grlib_menu (buff, "OK");
+			grlib_menu (0, buff, "OK");
 
 			Shutdown ();
 			SYS_ResetSystem(SYS_RESTART,0,0);
 			}
 		else
 			{
-			grlib_menu ("There was an error updating "PLNEEK_SDDAT, "OK");
+			grlib_menu (0, "There was an error updating "PLNEEK_SDDAT, "OK");
 			}
 		}
 	

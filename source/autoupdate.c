@@ -73,7 +73,7 @@ static int ShowInfo (char *buff, char *ver)
 	title[j] = 0;
 
 	Video_SetFontMenu(TTFSMALL);
-	int item = grlib_menu (title, "Update to %s~Skip", ver);
+	int item = grlib_menu (0, title, "Update to %s~Skip", ver);
 	Video_SetFontMenu(TTFNORM);
 	
 	free (title);
@@ -138,7 +138,7 @@ int AutoUpdate (void)
 		if (fail)		
 			{
 			if (outbuf) free (outbuf);
-			grlib_menu ("The update file doesn't exist. Please retry later", "   OK   ");
+			grlib_menu (0, "The update file doesn't exist. Please retry later", "   OK   ");
 			return 0;
 			}
 		
@@ -148,7 +148,7 @@ int AutoUpdate (void)
 		fclose (f);
 		if (outlen != http.size) 
 			{
-			grlib_menu ("An error is occured while writing to device", "   OK   ");
+			grlib_menu (0, "An error is occured while writing to device", "   OK   ");
 			unlink (buff);
 			return 0;
 			}
@@ -164,7 +164,7 @@ int AutoUpdate (void)
 		if (errcnt)
 			{
 			sprintf (buff, "An error is occured during unpacking of updatefile (%d)", errcnt);
-			grlib_menu (buff, "   OK   ");
+			grlib_menu (0, buff, "   OK   ");
 			free (outbuf);
 			return 0;
 			}
@@ -196,7 +196,7 @@ int AutoUpdate (void)
 				}
 			}
 		
-		if (grlib_menu ("postLoader should be restarted now, proceed ?", "   Yes   ##1~No, after##-1") == 1)
+		if (grlib_menu (0, "postLoader should be restarted now, proceed ?", "   Yes   ##1~No, after##-1") == 1)
 			ReloadPostloader();
 		
 		}

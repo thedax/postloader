@@ -8,8 +8,8 @@ This is the default english file
 {advopt1}Advanced Options!!!\n\n
 {advopt2}Important notice: postLoader forwarder channel V4 must be installed to use\nIOS249 option and keep the ability to run homebrews with ahbprot.
 
-{pwcopying}Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)
-{interruptcopy}This will interrupt the copy process... Are you sure
+{pwcopying}Please wait: %u%% done|Copying %u of %u Mb (%u kb/sec)
+{interruptcopy}This will interrupt the copy process... Are you sure ?
 
 {clrusbdata}Please wait|clearing old usb data...
 {clrsddata}Please wait|clearing old sd data...
@@ -26,3 +26,4 @@ This is the default english file
 {n2oopt}Neek(2o) options\n\n
 {n2onotice}Important notice: for some options, neek2obooter.app must be installed
 {n2obooterstartpl}neek2obooter is configured to start postLoader
+{n2obooternostartpl}neek2obooter is configured to start System Menu

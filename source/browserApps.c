@@ -9,6 +9,7 @@
 #include "mystring.h"
 #include "devices.h"
 #include "browser.h"
+#include "mystring.h"
 
 // 192x112
 // 128x48
@@ -21,10 +22,6 @@
 #define INC_X ICONW+22
 #define INC_Y ICONH+25
 
-#define AT_HBA 1
-#define AT_FOLDER 2
-#define AT_FOLDERUP 3 // This is to clear subfolder...
-
 /*
 
 This allow to browse for applications in apps folder of mounted drive
@@ -35,7 +32,9 @@ extern s_grlibSettings grlibSettings;
 
 #define APPSMAX 256
 
-static s_app *apps;
+static s_cfg *cfg;
+static s_app *apps;	// cointains the current available items on filesistem.
+
 static int appsCnt;
 static int apps2Disp;
 static int page; // Page to be displayed
@@ -47,19 +46,17 @@ static int spotSelectedLast = -1;
 static u8 redraw = 1;
 static bool redrawIcons = true;
 
-static char subpath[64];
-static char submount[6];
-
 static u16 sortMode = 0;
 
 static int browserRet = 0;
 static int showHidden = 0;
+static int needToSave = 0;
 static int disableSpots;
 
 static s_grlib_iconSetting is;
 
 static void Redraw (void);
-static int AppsManageCfgFile (int ia, int write);
+
 
 static void InitializeGui (void)
 	{
@@ -132,7 +129,7 @@ static void FeedCoverCache (void)
 		
 		if (ai >= 0 && ai < appsCnt)
 			{
-			sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, subpath, apps[ai].path);
+			sprintf (path, "%s://apps/%s/icon.png", apps[ai].mount, apps[ai].path);
 			CoverCache_Add (path,  (i >= 0 && i < gui.spotsXpage) ? true:false );
 			}
 		}
@@ -183,60 +180,21 @@ static void AppsFree (void)
 	appsCnt = 0;
 	}
 
-static void SaveSettings (void)
+static void ParseXML (int ai)
 	{
-	int i;
+	char cfg[256];
+	char *buff;
 
-	for (i = 0; i < appsCnt; i++)
-		{
-		if (apps[i].needUpdate)
-			{
-			AppsManageCfgFile (i, 1);
-			}
-		}
-	}
+	sprintf (cfg, "%s://apps/%s/meta.xml", apps[ai].mount, apps[ai].path);
+	buff = (char*)fsop_ReadFile (cfg, 0, NULL);
 
-static char * MallocReadMetaXML (char *fn, int morebytes)
-	{
-	char *buff = NULL;
-	int size;
-	FILE* f = NULL;
+	if (!buff || strlen(buff) == 0) return;
 	
-	f = fopen(fn, "rb");
-	if (!f) return NULL;
-
-	//Get file size
-	fseek( f, 0, SEEK_END);
-	size = ftell(f);
-	
-	if (size <= 0)
-		{
-		fclose (f);
-		return NULL;
-		}
-	fseek( f, 0, SEEK_SET);
-	
-	buff = calloc (size+morebytes+1, 1);
-	if (!buff)
-		{
-		fclose (f);
-		return NULL;
-		}
-	fread (buff, size, 1, f);
-	fclose (f);
-	
-	return buff;
-	}
-
-static void ParseXML (char * buff, int ai)
-	{
-	if (strlen(buff) == 0) return;
-	
+	int l;
 	int found;
 	char *p1,*p2;
 	char token[256];
 	char args[1024];
-	char folder[] = "(folder)";
 
 	/////////////////////////////////////////////////
 	// Now remove all comments from the buffer
@@ -285,8 +243,10 @@ static void ParseXML (char * buff, int ai)
 			if (p2 > p1)
 				{
 				// we have the name
-				apps[ai].version = calloc (p2-p1+1,1);
-				strncpy (apps[ai].version, p1, p2-p1);
+				l = p2-p1;
+				apps[ai].version = malloc (l+1);
+				strncpy (apps[ai].version, p1, l);
+				apps[ai].version[l] = 0;
 				}
 			}
 		}
@@ -306,9 +266,11 @@ static void ParseXML (char * buff, int ai)
 			if (p2 > p1)
 				{
 				// we have the name, check if start with space or lower chars
-				while (*p1 <= 32) p1++;
-				apps[ai].name = calloc (p2-p1+1, 1);
-				strncpy (apps[ai].name, p1, p2-p1);
+				while (*p1 <= 32 && p1 < p2) p1++;
+				l = p2-p1;
+				apps[ai].name = malloc (l+1);
+				strncpy (apps[ai].name, p1, l);
+				apps[ai].name[l] = 0;
 				}
 			}
 		}
@@ -328,25 +290,16 @@ static void ParseXML (char * buff, int ai)
 			if (p2 > p1)
 				{
 				// we have the name
-				apps[ai].desc = calloc (p2-p1 + strlen(folder) + 2, 1);
-				
-				if (apps[ai].type == AT_FOLDER)
-					{
-					strcpy (apps[ai].desc, folder);
-					strcat (apps[ai].desc, " ");
-					strncat (apps[ai].desc, p1, p2-p1);	
-					}
-				else
-					strncpy (apps[ai].desc, p1, p2-p1);	
+				while (*p1 <= 32 && p1 < p2) p1++;
+				l = p2-p1;
+				if (l > 2048) l = 2048;
+				apps[ai].desc = malloc (l + 64); // more space for cr/lf encoding
+				strncpy (apps[ai].desc, p1, l);	
+				apps[ai].desc[l] = 0;
 				}
 			}
 		}
-	if (!apps[ai].desc && apps[ai].type == AT_FOLDER)
-		{
-		apps[ai].desc = calloc (strlen(folder) + 1,1);
-		strcpy (apps[ai].desc, folder);
-		}
-	
+
 	/////////////////////////////////////////////////
 	// scan for application name
 	p1 = buff;
@@ -362,8 +315,12 @@ static void ParseXML (char * buff, int ai)
 			if (p2 > p1)
 				{
 				// we have the name
-				apps[ai].longdesc = calloc (p2-p1+1,1);
-				strncpy (apps[ai].longdesc, p1, p2-p1);
+				while (*p1 <= 32 && p1 < p2) p1++;
+				l = p2-p1;
+				if (l > 2048) l = 2048;
+				apps[ai].longdesc = malloc (l + 64);  // more space for cr/lf encoding
+				strncpy (apps[ai].longdesc, p1, l);
+				apps[ai].longdesc[l] = 0;
 				}
 			}
 		}
@@ -400,122 +357,42 @@ static void ParseXML (char * buff, int ai)
 		apps[ai].args = malloc (strlen(args)+1);
 		strcpy (apps[ai].args, args);
 		}
+		
+	if (apps[ai].name == NULL)
+		{
+		apps[ai].name = calloc (1, strlen(apps[ai].path)+1);
+		strcpy (apps[ai].name, apps[ai].path);
+		}
+		
+	free (buff);
 	return;
 	}
 
-static int AppsManageCfgFile (int ia, int write)
-	{
-	int ret = 0;
-	char cfg[256];
-	char token[256];
-	char *buff;
-	char *p;
-	FILE* f = NULL;
-	
-	sprintf (cfg, "%s://apps/%s%s/meta.xml", apps[ia].mount, subpath, apps[ia].path);
-	
-	buff = MallocReadMetaXML (cfg, 256);
-	
-	if (buff == NULL) // Maybe meta is not present, anyway allocate it, as we need to store postloader cfg
-		buff = calloc (256, 1);
-	
-	if (write)
-		{
-		f = fopen(cfg, "wb");
-		if (!f) return 0;
-		
-		// remove old setting
-		strcpy (token, "</app>");
-		p = strstr (buff, token);
-		
-		if (p != NULL)
-			{
-			p += strlen(token);
-			*p = 0;
-			}
-			
-		sprintf (token, "\n<ploader>%d;%d</ploader>", apps[ia].priority, apps[ia].hidden);
-		strcat (buff, token);
-
-		ret = fwrite(buff, 1, strlen(buff), f );
-		fclose(f);
-		}
-	else
-		{
-		int err = 0;
-		
-		ParseXML (buff, appsCnt);
-		
-		if (apps[ia].name == NULL)
-			{
-			apps[ia].name = calloc (1, strlen(apps[ia].path)+1);
-			strcpy (apps[ia].name, apps[ia].path);
-			}
-
-		// Search for config
-		strcpy (token, "<ploader>");
-		p = strstr (buff, token);
-		
-		if (p)
-			{
-			p += strlen(token);
-			apps[ia].priority = atoi(p);
-			}
-		else
-			err = 1;
-
-		if (p)
-			{
-			p = strstr (p, ";");
-			if (p)
-				{
-				p++;
-				apps[ia].hidden = atoi(p);
-				}
-			else
-				err = 1;
-			}
-			
-		if (err)
-			{
-			apps[ia].priority = 1;
-			apps[ia].hidden = 0;
-			}
-		}
-	
-	free (buff);
-
-	apps[ia].needUpdate = FALSE;
-
-		
-	return ret;
-	}
-
-static int AppsSetDefault (int ia)
+static int AppsSetDefault (int ai)
 	{
 	config.autoboot.enabled = TRUE;
 	config.autoboot.appMode = APPMODE_HBA;
 
-	sprintf (config.autoboot.path,"%s:/apps/%s%s/", apps[ia].mount, subpath, apps[ia].path);
-	sprintf (config.autoboot.filename, "%s", apps[ia].filename);
+	sprintf (config.autoboot.path,"%s:/apps/%s/", apps[ai].mount, apps[ai].path);
+	sprintf (config.autoboot.filename, "%s", apps[ai].filename);
 	
-	if (apps[ia].args)
-		strcpy (config.autoboot.args, apps[ia].args);
+	if (apps[ai].args)
+		strcpy (config.autoboot.args, apps[ai].args);
 	else
 		strcpy (config.autoboot.args, "");
 		
 	return 1;
 	}
 
-static int AppsSetRun (int ia)
+static int AppsSetRun (int ai)
 	{
 	config.run.appMode = APPMODE_HBA;
 	
-	sprintf (config.run.path,"%s:/apps/%s%s/", apps[ia].mount, subpath, apps[ia].path);
-	sprintf (config.run.filename,"%s", apps[ia].filename);
+	sprintf (config.run.path,"%s:/apps/%s/", apps[ai].mount, apps[ai].path);
+	sprintf (config.run.filename,"%s", apps[ai].filename);
 	
-	if (apps[ia].args)
-		strcpy (config.run.args, apps[ia].args);
+	if (apps[ai].args)
+		strcpy (config.run.args, apps[ai].args);
 	else
 		strcpy (config.run.args, "");
 		
@@ -527,15 +404,12 @@ static int AppsSetRun (int ia)
 static int AppExist (const char *mount, char *path, char *filename)
 	{
 	char fn[256];
-	bool xml, dol, elf;
+	bool dol, elf;
 	
-	sprintf (fn, "%s://apps/%s%s/boot.elf", mount, subpath, path);
+	sprintf (fn, "%s://apps/%s/boot.elf", mount, path);
 	elf = fsop_FileExist (fn);
 	
-	sprintf (fn, "%s://apps/%s%s/meta.xml", mount, subpath, path);
-	xml = fsop_FileExist (fn);
-	
-	sprintf (fn, "%s://apps/%s%s/boot.dol", mount, subpath, path);
+	sprintf (fn, "%s://apps/%s/boot.dol", mount, path);
 	dol = fsop_FileExist (fn);
 	
 	if (elf)
@@ -545,12 +419,27 @@ static int AppExist (const char *mount, char *path, char *filename)
 		strcpy (filename, "boot.dol");
 	
 	// Ok, we have classic hbapp
-	if (dol || elf) return AT_HBA;
-	
-	// Ok, it seems to be a folder
-	if (xml & !dol) return AT_FOLDER;
+	if (dol || elf) return 1;
 
 	return 0;
+	}
+
+static bool IsFiltered (int ai)
+	{
+	int i;
+	bool ret = false;
+	
+	if (config.appFilter == 0x0) return true;
+	
+	for (i = 0; i < APPCATS_MAX; i++)
+		{
+		if ((config.appFilter & (1 << i)) && (apps[ai].category & (1 << i)))
+			{
+			ret = true;
+			}
+		}
+		
+	return ret;
 	}
 
 static int bsort_name (const void * a, const void * b)
@@ -558,7 +447,6 @@ static int bsort_name (const void * a, const void * b)
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
 	
-	if (aa->type == AT_FOLDERUP) return 0;
 	if (!aa->name || !bb->name) return 0;
 
 	return (ms_strcmp (bb->name, aa->name) < 0 ? 1:0);
@@ -569,9 +457,17 @@ static int bsort_hidden (const void * a, const void * b)
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
 	
-	if (aa->type == AT_FOLDERUP) return 0;
-
 	if (aa->hidden > bb->hidden) return 1;
+
+	return 0;
+	}
+
+static int bsort_filtered (const void * a, const void * b)
+	{
+	s_app *aa = (s_app*) a;
+	s_app *bb = (s_app*) b;
+	
+	if (aa->filtered < bb->filtered) return 1;
 
 	return 0;
 	}
@@ -581,8 +477,6 @@ static int bsort_priority (const void * a, const void * b)
 	s_app *aa = (s_app*) a;
 	s_app *bb = (s_app*) b;
 	
-	if (aa->type == AT_FOLDERUP) return 0;
-	
 	if (aa->priority < bb->priority) return 1;
 	
 	return 0;
@@ -591,6 +485,7 @@ static int bsort_priority (const void * a, const void * b)
 static void SortItems (void)
 	{
 	int i;
+	int filtered = 0;
 	
 	Debug ("AppSort (begin)");
 
@@ -598,10 +493,13 @@ static void SortItems (void)
 	apps2Disp = 0;
 	for (i = 0; i < appsCnt; i++)
 		{
-		if ((!apps[i].hidden || showHidden)) apps2Disp++;
+		apps[i].filtered = IsFiltered (i);
+		if (apps[i].filtered && (!apps[i].hidden || showHidden)) apps2Disp++;
+		if (apps[i].filtered) filtered++;
 		}
 	
-	bsort (apps, appsCnt, sizeof(s_app), bsort_hidden);
+	bsort (apps, appsCnt, sizeof(s_app), bsort_filtered);
+	bsort (apps, filtered, sizeof(s_app), bsort_hidden);
 	bsort (apps, apps2Disp, sizeof(s_app), bsort_name);
 	bsort (apps, apps2Disp, sizeof(s_app), bsort_priority);
 
@@ -612,15 +510,16 @@ static void SortItems (void)
 	Debug ("AppSort (end)");
 	}
 
-static int ScanApps (const char *mount)
+static int ScanApps (const char *mount, int refresh)
 	{
 	DIR *pdir;
 	struct dirent *pent;
 	char path[PATHMAX];
 	char filename[32];
-	int apptype;
+	char buff[1024];		// uhhh large buffer
+	char temp[4096];		// uhhh large buffer
 
-	sprintf (path, "%s://apps/%s", mount, subpath);
+	sprintf (path, "%s://apps", mount);
 	Debug ("ScanApps: searching '%s'", path);
 	
 	pdir=opendir(path);
@@ -630,36 +529,55 @@ static int ScanApps (const char *mount)
 		if(strcmp(".", pent->d_name) == 0 || strcmp("..", pent->d_name) == 0)
 	        continue;
 			
-		//Debug ("ScanApps: checking '%s%s'", path, pent->d_name);
-		
-		apptype = AppExist(mount, pent->d_name, filename);	    
-		if (apptype)
+		if (AppExist(mount, pent->d_name, filename))
 			{
-			//Debug ("    > added");
 			strcpy (apps[appsCnt].mount, mount); // Save the mount point
 			
-			apps[appsCnt].type = apptype;
 			apps[appsCnt].path = malloc (strlen (pent->d_name) + 1);
-			
 			strcpy (apps[appsCnt].path, pent->d_name);
 			
 			// Store the right filename
-			if (apptype == AT_HBA)
-				strcpy (apps[appsCnt].filename, filename);
+			strcpy (apps[appsCnt].filename, filename);
 			
-			AppsManageCfgFile (appsCnt, 0);
+			sprintf (path, "%s.%s", apps[appsCnt].mount, apps[appsCnt].path);
+			cfg_Section (path);
+			
+			cfg_Value (cfg, CFG_READ, CFG_ENCSTRING, "attrib", buff, -1);
+			if (*buff && !refresh) // get from cache
+				{
+				cfg_FmtString (buff, CFG_READ, CFG_STRING, temp, 0);
+				apps[appsCnt].name = ms_AllocCopy (temp, 0);
+				cfg_FmtString (buff, CFG_READ, CFG_STRING, temp, 1);
+				apps[appsCnt].version = ms_AllocCopy (temp, 0);
+				cfg_FmtString (buff, CFG_READ, CFG_STRING, temp, 2);
+				apps[appsCnt].args = ms_AllocCopy (temp, 0);
+				cfg_FmtString (buff, CFG_READ, CFG_INT, &apps[appsCnt].priority, 3);
+				cfg_FmtString (buff, CFG_READ, CFG_INT, &apps[appsCnt].iosReload, 4);
+				cfg_FmtString (buff, CFG_READ, CFG_INT, &apps[appsCnt].hidden, 5);
+				cfg_FmtString (buff, CFG_READ, CFG_U32, &apps[appsCnt].category, 6);
+				
+				cfg_Value (cfg, CFG_READ, CFG_ENCSTRING, "desc", temp, -1);
+				apps[appsCnt].desc = ms_AllocCopy (temp, 64);
+				cfg_Value (cfg, CFG_READ, CFG_ENCSTRING, "longdesc", temp, -1);
+				apps[appsCnt].longdesc = ms_AllocCopy (temp, 64);
+				}
+			else
+				{
+				ParseXML (appsCnt);
+
+				Video_WaitPanel (TEX_HGL, "Please wait...|Searching for applications");
+				needToSave = 1;
+				}
 
 			appsCnt++;
 			if (appsCnt >= APPSMAX) break; // No more space
-
-			Video_WaitPanel (TEX_HGL, "Please wait...|Searching for applications");
 
 			//grlib_PopScreen ();
 			//Video_DrawIcon (TEX_HGL, 320, 430);
 			//grlib_Render ();
 			}
 		else
-			Debug ("    > fails");
+			Debug ("    > fails '%s'", pent->d_name);
 		}
 
 	closedir(pdir);
@@ -669,41 +587,267 @@ static int ScanApps (const char *mount)
 	return 0;
 	}
 
-static int AppsBrowse (void)
+static void UpdateAllSettings (s_cfg *cfg)
+	{
+	int i;
+	char section[256];
+	char buff[1024];		// uhhh large buffer
+	
+	Debug ("UpdateAllSettings: %d (0x%X)", appsCnt, cfg);
+
+	for (i = 0; i < appsCnt; i++)
+		{
+		sprintf (section, "%s.%s", apps[i].mount, apps[i].path);
+		cfg_Section (section);
+
+		*buff = '\0';
+		cfg_FmtString (buff, CFG_WRITE, CFG_STRING, apps[i].name, 0);
+		cfg_FmtString (buff, CFG_WRITE, CFG_STRING, apps[i].version, 1);
+		cfg_FmtString (buff, CFG_WRITE, CFG_STRING, apps[i].args, 2);
+		cfg_FmtString (buff, CFG_WRITE, CFG_INT, &apps[i].priority, 3);
+		cfg_FmtString (buff, CFG_WRITE, CFG_INT, &apps[i].iosReload, 4);
+		cfg_FmtString (buff, CFG_WRITE, CFG_INT, &apps[i].hidden, 5);
+		cfg_FmtString (buff, CFG_WRITE, CFG_U32, &apps[i].category, 6);
+		cfg_Value (cfg, CFG_WRITE, CFG_ENCSTRING, "attrib", buff, -1);
+		
+		cfg_Value (cfg, CFG_WRITE, CFG_ENCSTRING, "desc", apps[i].desc, -1);
+		cfg_Value (cfg, CFG_WRITE, CFG_ENCSTRING, "longdesc", apps[i].longdesc, -1);
+		}
+	}
+	
+static void SaveSettings (void)
+	{
+	if (!needToSave) return;
+
+	char path[PATHMAX];
+	
+	Video_WaitPanel (TEX_HGL, "Saving...");
+	
+	sprintf (path, "%s://ploader/homebrew.conf", vars.defMount);
+	cfg = cfg_Alloc(path, APPSMAX, 0, 1);
+	
+	UpdateAllSettings (cfg);
+
+	cfg_Store(cfg , path);
+	cfg_Free(cfg );
+	
+	needToSave = 0;
+	}
+
+static int AppsBrowse (int refresh)
 	{
 	gui.spotsIdx = 0;
-	AppsFree ();
+
+	Video_WaitPanel (TEX_HGL, "Please wait...");
 	
+	char path[PATHMAX];
+	sprintf (path, "%s://ploader/homebrew.conf", vars.defMount);
+	
+	cfg = cfg_Alloc(path, APPSMAX, 0, 1);
+	
+	if (needToSave)
+		UpdateAllSettings (cfg);
+	
+	AppsFree ();
 	gui_Clean();
 	
-	//Video_WaitPanel (TEX_HGL, "Updating homebrew...", appsCnt);
+	if ((config.appDev == 0 || config.appDev == 1) && devices_Get(DEV_SD))
+		ScanApps (devices_Get(DEV_SD), refresh);
 
-	// We are in a subfolder... so add folderup icon
-	if (strlen(subpath) > 0)
-		{
-		apps[appsCnt].type = AT_FOLDERUP;
-		apps[appsCnt].name = malloc (32);
-		strcpy (apps[appsCnt].name, "Up to previous folder..."); 
-		appsCnt++;
+	if ((config.appDev == 0 || config.appDev == 2) && devices_Get(DEV_USB))
+		ScanApps (devices_Get(DEV_USB), refresh);
 		
-		// scan only selected folder (on sd or usb... its depend... :P)
-		ScanApps (submount);
-		}
-	else
+	if (needToSave)
 		{
-		if ((config.appDev == 0 || config.appDev == 1) && devices_Get(DEV_SD))
-			ScanApps (devices_Get(DEV_SD));
-
-		if ((config.appDev == 0 || config.appDev == 2) && devices_Get(DEV_USB))
-			ScanApps (devices_Get(DEV_USB));
+		UpdateAllSettings (cfg);
+		cfg_Store(cfg , path);
 		}
 		
-	
+	cfg_Free (cfg);
+		
 	page = 0;
+	needToSave = 0;
 	
 	SortItems ();
 	
 	return appsCnt;
+	}
+
+static char *GetFilterString (int maxwidth)
+	{
+	static u32 lastfilter = 0;
+	static char string[256] = {0};
+	int i;
+	
+	if (lastfilter == config.appFilter) // nothing changed
+		return string;
+		
+	lastfilter = config.appFilter;
+	
+	*string = '\0';
+	if (config.appFilter == 0x0 || config.appFilter == 0xFF)
+		return string;
+	
+	for (i = 0; i < APPCATS_MAX; i++)
+		if (config.appFilter & (1 << i))
+			{
+			strcat (string, config.appCats[i]);
+			strcat (string, "/");
+			}
+			
+	string[strlen(string)-1] = 0;
+	
+	// now limit width
+	int cutted = 0;
+	while (strlen(string) > 0 && grlib_GetFontMetrics(string, NULL, NULL) > maxwidth)
+		{
+		string[strlen(string)-1] = 0;
+		cutted = 1;
+		}
+	if (cutted) strcat (string, "...");
+	
+	return string;
+	}
+
+static void ShowFilterMenu (void)
+	{
+	if (!CheckParental(0)) return;
+	
+	char buff[512];
+	u8 f[APPCATS_MAX];
+	int item;
+	int i;
+	
+	spotSelected = -1;
+	
+	for (i = 0; i < APPCATS_MAX; i++)
+		f[i] = (config.appFilter & (1 << i)) ? 1:0;
+
+	do
+		{
+		*buff = '\0';
+
+		for (i = 0; i < APPCATS_MAX; i++)
+			{
+			grlib_menuAddCheckItem (buff, 200+i, f[i], config.appCats[i]);
+			}
+
+		grlib_menuAddColumn (buff);
+
+		grlib_menuAddCheckItem (buff, 100, config.appDev == 1 ? 1:0, "SD Device");
+		grlib_menuAddCheckItem (buff, 101, config.appDev == 2 ? 1:0, "USB Device");
+		grlib_menuAddCheckItem (buff, 102, config.appDev == 0 ? 1:0, "Both");
+		
+		item = grlib_menu (0, "Select filters and device(s):\nPress (B) to close. (+)/(-) Set/Clear all flags", buff);
+		
+		if (item == 100) config.appDev = 1;
+		if (item == 101) config.appDev = 2;
+		if (item == 102) config.appDev = 0;
+		
+		if (item == MNUBTN_PLUS)
+			{
+			for (i = 0; i < APPCATS_MAX; i++)
+				f[i] = 1;
+				
+			needToSave = 1;
+			}
+			
+		if (item == MNUBTN_MINUS)
+			{
+			for (i = 0; i < APPCATS_MAX; i++)
+				f[i] = 0;
+			
+			needToSave = 1;
+			}
+			
+		if (item >= 200)
+			{
+			int i = item - 200;
+			f[i] = !f[i];
+			
+			needToSave = 1;
+			}
+		
+		}
+	while (item != MNUBTN_B);
+	
+	config.appFilter = 0;
+	for (i = 0; i < APPCATS_MAX; i++)
+		if (f[i]) config.appFilter |= (1 << i);
+	
+	if (needToSave) AppsBrowse (0);
+	}
+
+static void ShowRenameCatMenu (void)
+	{
+	if (!CheckParental(0)) return;
+	
+	int i, item;
+	char buff[512];
+	
+	spotSelected = -1;
+	
+	do
+		{
+		*buff = '\0';
+
+		for (i = 0; i < APPCATS_MAX; i++)
+			{
+			if (*config.appCats[i] == '\0') strcpy (config.appCats[i], "n/a");
+			grlib_menuAddItem (buff, 200+i, config.appCats[i]);
+			}
+
+		item = grlib_menu (-200, "Rename categories\nPress (B) to close", buff);
+		
+		if (item >= 200)
+			{
+			int i = item - 200;
+			grlib_Keyboard ("Enter new category name", config.appCats[i], 31);
+			}
+		
+		}
+	while (item >= 0);
+	}
+
+static void ShowChangeCatMenu (int ai)
+	{
+	if (!CheckParental(0)) return;
+	
+	char title[128];
+	char buff[512];
+	u8 f[APPCATS_MAX];
+	int item;
+	int i;
+	
+	for (i = 0; i < APPCATS_MAX; i++)
+		f[i] = (apps[ai].category & (1 << i)) ? 1:0;
+
+	do
+		{
+		*buff = '\0';
+
+		for (i = 0; i < APPCATS_MAX; i++)
+			{
+			grlib_menuAddCheckItem (buff, 200+i, f[i], config.appCats[i]);
+			}
+
+		sprintf (title, "%s category(s):\nPress (B) to close", apps[ai].name);
+		item = grlib_menu (0, title, buff);
+
+		if (item >= 200)
+			{
+			int i = item - 200;
+			f[i] = !f[i];
+			}
+		
+		}
+	while (item >= 0);
+	
+	apps[ai].category = 0;
+	for (i = 0; i < APPCATS_MAX; i++)
+		if (f[i]) apps[ai].category |= (1 << i);
+	
+	Debug ("%s -> %u", apps[ai].name, apps[ai].category);
 	}
 
 static void ShowAppMenu (int ai)
@@ -777,10 +921,11 @@ static void ShowAppMenu (int ai)
 		title[j] = 0;
 		}
 
-	buff[0] = '\0';
+	*buff = '\0';
 
 	if (CheckParental(0))
-		{strcat (buff, "Set as autoboot application##0|");
+		{
+		strcat (buff, "Set as autoboot application##0|");
 		if (apps[ai].hidden)
 			strcat (buff, "Remove hide flag##1");
 		else
@@ -788,14 +933,15 @@ static void ShowAppMenu (int ai)
 			
 		strcat (buff, "~");
 			
-		strcat (buff, "Remove this application##5");
+		strcat (buff, "Remove this application##5|");
+		strcat (buff, "Change category##6");
 		}
 	strcat (buff, "Close##-1");
 	
 	spotSelected = -1;
 	
 	Video_SetFontMenu(TTFSMALL);
-	int item = grlib_menu (title, buff);
+	int item = grlib_menu (0, title, buff);
 	Video_SetFontMenu(TTFNORM);
 	
 	if (item == 0) AppsSetDefault (ai);
@@ -808,28 +954,30 @@ static void ShowAppMenu (int ai)
 
 	if (item == 5)
 		{
-		//xxxxxx
 		char title[300];
 		char buff[256];
 		
-		sprintf (buff,"%s:/apps/%s%s/", apps[ai].mount, subpath, apps[ai].path);
+		sprintf (buff,"%s:/apps/%s/", apps[ai].mount, apps[ai].path);
 		sprintf (title, "Are you sure to kill this application ?\n\n%s", buff);
-		if (grlib_menu (title, "Yes##1|No##0") == 1)
+		if (grlib_menu (0, title, "Yes##1|No##0") == 1)
 			{
 			fsop_KillFolderTree (buff, NULL);
 			}
-		SaveSettings ();
-		AppsBrowse ();	
+		AppsBrowse (0);	
 		item = -1;
+		}
+		
+	if (item == 6)
+		{
+		ShowChangeCatMenu (ai);
 		}
 		
 	free (title);
 	
 	if (item != -1) 
 		{
-		apps[ai].needUpdate = TRUE;
-		SaveSettings ();
-		AppsBrowse ();	
+		needToSave = 1;
+		AppsBrowse (0);	
 		}
 	}
 
@@ -837,34 +985,52 @@ static void SortDispMenu (void)
 	{
 	char buff[300];
 	
-	strcpy (buff, "");
-	strcat (buff, "Enter in interactive sort mode##2|");
-	strcat (buff, "Sort application by name##3|");
-	strcat (buff, "|");
+	*buff = '\0';
+	
+	grlib_menuAddItem (buff, 2, "Enter in interactive sort mode");
+	grlib_menuAddItem (buff, 3, "Sort application by name");
+	grlib_menuAddSeparator (buff);
+	
 	if (CheckParental(0))
 		{
 		if (showHidden)
-			strcat (buff, "Hide hidden application##4|");
+			grlib_menuAddItem (buff, 4, "Hide hidden application");
 		else
-			strcat (buff, "Show hidden application##4|");
-		strcat (buff, "|");
+			grlib_menuAddItem (buff, 5, "Show hidden application");
+		
+		grlib_menuAddSeparator (buff);
+		
+		grlib_menuAddItem (buff, 6, "Rename categories");
+
+		grlib_menuAddSeparator (buff);
 		}
-	strcat (buff, "Cancel##-1");
+	strcat (buff, "Close##-1");
 		
 	spotSelected = -1;
-	int item = grlib_menu ("Sort and display options...", buff);
+	int item = grlib_menu (0, "Sort and display options...", buff);
 	
+	if (item == 6)
+		{
+		ShowRenameCatMenu ();
+		}
+
 	if (item == 4)
 		{
-		if (!showHidden) return;
-		showHidden = 1 - showHidden;
-		AppsBrowse ();
+		showHidden = 0;
+		AppsBrowse (0);
+		}
+		
+	if (item == 5)
+		{
+		showHidden = 1;
+		AppsBrowse (0);
 		}
 		
 	if (item == 2)
 		{
 		spotSelected = -1;
-		int item = grlib_menu ("Sort mode:\n\n"
+		int item = grlib_menu (0,
+								"Sort mode:\n\n"
 								"Plese click (A) on every application in the order\n"
 								"you want them to be displayed.\n"
 								"Click (B) to exit sort mode", 
@@ -875,7 +1041,8 @@ static void SortDispMenu (void)
 	if (item == 3)
 		{
 		spotSelected = -1;
-		int item = grlib_menu ("Sort application by name:\n\n"
+		int item = grlib_menu (0,
+								"Sort application by name:\n\n"
 								"If you press OK, applications will\n"
 								"be sorted by name",
 								"OK|Cancel");
@@ -884,7 +1051,7 @@ static void SortDispMenu (void)
 			int i;
 			for (i = 0; i < appsCnt; i++)
 				{
-				apps[i].needUpdate = TRUE;
+				needToSave = 1;
 				apps[i].priority = 1;
 				}
 			
@@ -893,62 +1060,49 @@ static void SortDispMenu (void)
 		}
 	}
 
-static void ShowFilterMenu (void)
-	{
-	if (!CheckParental(0)) return;
-	
-	char buff[512];
-	int item;
-	
-	*buff = '\0';
-	
-	grlib_menuAddItem (buff, 100, "SD Device");
-	grlib_menuAddItem (buff, 101, "USB Device");
-	grlib_menuAddItem (buff, 102, "Both");
-	
-	spotSelected = -1;
-	item = grlib_menu ("Select device(s):\nPress (B) to close", buff);
-	
-	if (item == 100) config.appDev = 1;
-	if (item == 101) config.appDev = 2;
-	if (item == 102) config.appDev = 0;
-
-	AppsBrowse ();
-	}
-
 static void ShowMainMenu (void)
 	{
+	int item;
 	char buff[512];
 	
 	spotSelected = -1;
 	
-	buff[0] = '\0';
-	
-	grlib_menuAddItem (buff,  0, "Rescan devices");
-	grlib_menuAddItem (buff,  1, "View options...");
-	grlib_menuAddItem (buff,  2, "Select device(s)...");
-		
-	int item = grlib_menu ("Homebrew menu", buff);
-		
-	if (item == 0)
+	do
 		{
-		MasterInterface (1, 0, 2, "Please wait...");
-		MountDevices(0);
-		AppsBrowse ();
-		}
-
-	if (item == 1)
-		{
-		SortDispMenu ();
-		}
-	
-	if (CheckParental(0))
-		{
-		if (item == 2)
+		buff[0] = '\0';
+		grlib_menuAddItem (buff,  0, "Rescan devices");
+		grlib_menuAddItem (buff,  1, "View options...");
+		grlib_menuAddItem (buff,  2, "Select device(s)...");
+		grlib_menuAddItem (buff,  3, "Refresh cache...");
+			
+		item = grlib_menu (0, "Homebrew menu", buff);
+			
+		if (item == 0)
 			{
-			ShowFilterMenu ();
+			MasterInterface (1, 0, 2, "Please wait...");
+			MountDevices(0);
+			AppsBrowse (0);
+			}
+
+		if (item == 1)
+			{
+			SortDispMenu ();
+			}
+		
+		if (item == 3)
+			{
+			AppsBrowse (1); // let's refresh cache
+			}
+		
+		if (CheckParental(0))
+			{
+			if (item == 2)
+				{
+				ShowFilterMenu ();
+				}
 			}
 		}
+	while (item >= 0);
 	}
 
 static int FindSpot (void)
@@ -991,39 +1145,31 @@ void DrawInfo (void)
 
 		Video_SetFont(TTFNORM);
 		
-		if (apps[appsSelected].version)
+		if (apps[appsSelected].version && *apps[appsSelected].version != '\0')
 			sprintf (name, "%s (%s)", apps[appsSelected].name, apps[appsSelected].version);
 		else
 			sprintf (name, "%s", apps[appsSelected].name);
 		
-		if (apps[appsSelected].desc)
-			{
-			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
-			
-			Video_SetFont(TTFSMALL);
-			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
-			}
-		else
-			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
+		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
 
 		Video_SetFont(TTFSMALL);
-		
-		if (apps[appsSelected].type != AT_FOLDERUP)
+
+		if (apps[appsSelected].desc)
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, apps[appsSelected].desc);
+
+		if (theme.line3Y > 0)
 			{
-			if (theme.line3Y > 0)
-				{
-				char rld[32];
-				
-				if (apps[appsSelected].iosReload)
-					strcpy (rld, "");
-				else
-					strcpy (rld, " <no_ios_reload/>");
-				
-				if (apps[appsSelected].args != NULL)
-					grlib_printf (XMIDLEINFO, theme.line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s (%s)%s",subpath, apps[appsSelected].path, apps[appsSelected].args, rld);
-				else
-					grlib_printf (XMIDLEINFO, theme.line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s%s",subpath, apps[appsSelected].path, rld);
-				}
+			char rld[32];
+			
+			if (apps[appsSelected].iosReload)
+				strcpy (rld, "");
+			else
+				strcpy (rld, " <no_ios_reload/>");
+			
+			if (apps[appsSelected].args != NULL && *apps[appsSelected].args != '\0')
+				grlib_printf (XMIDLEINFO, theme.line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s (%s)%s", apps[appsSelected].path, apps[appsSelected].args, rld);
+			else
+				grlib_printf (XMIDLEINFO, theme.line3Y, GRLIB_ALIGNCENTER, 0, "/apps/%s%s", apps[appsSelected].path, rld);
 			}
 		}
 	
@@ -1070,25 +1216,16 @@ static void RedrawIcons (int xoff, int yoff)
 		
 		if (ai < appsCnt && ai < apps2Disp && gui.spotsIdx < SPOTSMAX)
 			{
-			sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, subpath, apps[ai].path);
+			sprintf (path, "%s://apps/%s/icon.png", apps[ai].mount, apps[ai].path);
 			gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 
-			if (apps[ai].type != AT_FOLDERUP)
-				{
-				gui.spots[gui.spotsIdx].ico.alticon = NULL;
-				}
-
-			if (apps[ai].type == AT_FOLDERUP) 
-				gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDERUP];
-
-			if (apps[ai].type == AT_FOLDER) 
-				gui.spots[gui.spotsIdx].ico.alticon = vars.tex[TEX_FOLDER];
+			gui.spots[gui.spotsIdx].ico.alticon = NULL;
 
 			// Check if it is autoboot app
 			if (config.autoboot.enabled && config.autoboot.appMode == APPMODE_HBA)
 				{
 				char path[300];
-				sprintf (path,"%s:/apps/%s%s/", apps[ai].mount, subpath, apps[ai].path);
+				sprintf (path,"%s:/apps/%s/", apps[ai].mount, apps[ai].path);
 				if (strcmp (config.autoboot.path, path) == 0)
 					gui.spots[gui.spotsIdx].ico.iconOverlay[0] = vars.tex[TEX_STAR];
 				}
@@ -1155,38 +1292,37 @@ static void Redraw (void)
 	
 	Video_DrawBackgroud (1);
 
-	if (!subpath[0])
+	strcpy (sdev, "");
+	
+	if ((config.appDev == 0 || config.appDev == 1) && devices_Get(DEV_SD))
 		{
-		strcpy (sdev, "");
-		
-		if ((config.appDev == 0 || config.appDev == 1) && devices_Get(DEV_SD))
-			{
-			strcat (sdev, "[");
-			strcat (sdev, devices_Get(DEV_SD));
-			strcat (sdev, "] ");
-			}
-
-		if ((config.appDev == 0 || config.appDev == 2) && devices_Get(DEV_USB))
-			{
-			strcat (sdev, "[");
-			strcat (sdev, devices_Get(DEV_USB));
-			strcat (sdev, "] ");
-			}
-			
-		if (strlen (sdev) == 0)
-			{
-			strcpy (sdev, "Invalid dev !!!");
-			}
+		strcat (sdev, "[");
+		strcat (sdev, devices_Get(DEV_SD));
+		strcat (sdev, "] ");
 		}
-	else
+
+	if ((config.appDev == 0 || config.appDev == 2) && devices_Get(DEV_USB))
 		{
-		sprintf (sdev, "%s://apps/%s", submount, subpath);
+		strcat (sdev, "[");
+		strcat (sdev, devices_Get(DEV_USB));
+		strcat (sdev, "] ");
+		}
+		
+	if (strlen (sdev) == 0)
+		{
+		strcpy (sdev, "Invalid dev !!!");
 		}
 		
 	Video_SetFont(TTFNORM);
-	grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::HomeBrews - %s", sdev);
-	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
+	int w1 = grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::HomeBrews - %s", sdev);
+	int w2 = grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
 	
+	w1 = w1 + 25;
+	w2 = 615 - w2;
+	
+	Video_SetFont(TTFVERYSMALL);
+	grlib_printf ( w1 + (w2 - w1) / 2, 27, GRLIB_ALIGNCENTER, 0, GetFilterString((w2 - w1) - 30), sdev);
+
 	if (redrawIcons) RedrawIcons (0,0);
 	
 	Video_DrawVersionInfo ();
@@ -1378,11 +1514,8 @@ int AppBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	//memset (&apps, 0, sizeof (apps));
 	apps = calloc (APPSMAX, sizeof(s_app));
 	
-	subpath[0] = '\0';
-	submount[0] = '\0';
 	config.run.enabled = 0;
 	
 	// Immediately draw the screen...
@@ -1394,7 +1527,7 @@ int AppBrowser (void)
 	grlib_PushScreen ();
 	grlib_PopScreen ();
 	grlib_Render();  // Render the frame buffer to the TV
-	AppsBrowse ();
+	AppsBrowse (0);
 	
 	if (config.appPage >= 0 && config.appPage <= pageMax)
 		page = config.appPage;
@@ -1431,39 +1564,13 @@ int AppBrowser (void)
 				}
 			if (btn & WPAD_BUTTON_A && appsSelected != -1 && sortMode == 0) 
 				{
-				if (apps[appsSelected].type == AT_HBA)
+				if (!QuerySelection (appsSelected))
 					{
-					if (!QuerySelection (appsSelected))
-						{
-						redraw = 1;
-						continue;
-						}
-					AppsSetRun (appsSelected);
-					browserRet = INTERACTIVE_RET_HBSEL;
-					break;
-					}
-				else if (apps[appsSelected].type == AT_FOLDER) // This is a folder ! Jump inside
-					{	
-					sprintf (subpath, "%s/", apps[appsSelected].path);
-					sprintf (submount, "%s", apps[appsSelected].mount);
-					
-					AppsBrowse ();
 					redraw = 1;
+					continue;
 					}
-				else if (apps[appsSelected].type == AT_FOLDERUP) // This is a folder ! Jump inside
-					{	
-					int i = strlen(subpath);
-					
-					if (i > 0) i--;
-					if (i > 0) i--;
-					
-					while (i >= 0 && subpath[i] != '/')
-						subpath[i--] = 0;
-					
-					gui.spotsIdx = 0;
-					AppsBrowse ();
-					redraw = 1;
-					}
+				AppsSetRun (appsSelected);
+				browserRet = INTERACTIVE_RET_HBSEL;
 				}
 
 			/////////////////////////////////////////////////////////////////////////////////////////////
@@ -1500,19 +1607,16 @@ int AppBrowser (void)
 				for (i = 0; i < appsCnt; i++)
 					{
 					apps[i].priority = appsCnt - i;
-					apps[i].needUpdate = TRUE;
 					apps[i].checked = FALSE;
 					}
 				sortMode = 0;
-				
-				SaveSettings ();
-				
+				needToSave = 1;
 				redraw = 1;
 				}
 
 			if (btn & WPAD_BUTTON_HOME && sortMode > 0)
 				{
-				grlib_menu ("You are in sort mode.\n", "Close");
+				grlib_menu (0, "You are in sort mode.\n", "Close");
 				redraw = 1;
 				}
 
@@ -1534,7 +1638,6 @@ int AppBrowser (void)
 
 		if (CoverCache_IsUpdated ()) 
 			{
-			//Debug ("cache updated");
 			redraw = 1;
 			}
 		
@@ -1562,7 +1665,7 @@ int AppBrowser (void)
 		if (wiiload.status == WIILOAD_HBZREADY)
 			{
 			WiiloadZipMenu ();
-			AppsBrowse ();
+			AppsBrowse (0);
 			redraw = 1;
 			}
 			

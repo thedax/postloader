@@ -193,8 +193,8 @@ void grlib_SetFontBMF2 (GRRLIB_bytemapFont *bmf);
 void grlib_SetFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY);
 void grlib_SetMenuFontTTF (GRRLIB_ttfFont *ttf, int fontSize, int fontOffsetY, int fontSizeOffsetY); // This fill menu struct
 int grlib_GetFontMetrics (const char *text, int *width, int *height);
-void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text);
-void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...);
+int grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text);
+int grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...);
 
 bool grlib_IsObjectVisible ( s_grlibobj *b );
 void grlib_DrawSquare ( s_grlibobj *b );
@@ -220,7 +220,7 @@ int grlib_menuAddSeparator (char *menu);
 int grlib_menuAddColumn (char *menu);
 int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstring, ...);
 int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *yesno, const char *itemsstring, ...);
-int grlib_menu (char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
+int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...); // item1|item2|item3... etc,
 int grlib_Keyboard (char *title, char *string, int max);
 
 void grlib_Message (const char *text, ...);

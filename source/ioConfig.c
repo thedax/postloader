@@ -42,6 +42,18 @@ bool ConfigWrite (void)
 	return true;
 	}
 	
+static void InitConfigCats (void)
+	{
+	strcpy (config.appCats[0], "Games");
+	strcpy (config.appCats[1], "Utility");
+	strcpy (config.appCats[2], "Emulators");
+	strcpy (config.appCats[3], "Backup loaders");
+	strcpy (config.appCats[4], "Hacking tools");
+	strcpy (config.appCats[5], "n/a");
+	strcpy (config.appCats[6], "n/a");
+	strcpy (config.appCats[7], "n/a");
+	}
+
 bool ConfigRead (void)
 	{
 	char path[PATHMAX];
@@ -58,10 +70,11 @@ bool ConfigRead (void)
 		sprintf (path, "%s://ploader/pldneek.cfg", vars.defMount);
 		
 	size_t config_size;
-	
 	if (fsop_GetFileSizeBytes (path, &config_size) && config_size != (sizeof(config) + sizeof(ver)))
 		{
 		gprintf ("ConfigRead: %s, filesize mismatch, resetting settins\n", path);
+		
+		InitConfigCats ();
 		return true;
 		}
 	
@@ -71,6 +84,7 @@ bool ConfigRead (void)
 	if (!f) 
 		{
 		gprintf ("unable to open configuration file\n", path);
+		InitConfigCats ();
 		return false;
 		}
 	
@@ -80,7 +94,7 @@ bool ConfigRead (void)
 	
 	if (strcmp (ver, CFGVER) == 0)
 		fread (&config, sizeof(config), 1, f);
-		
+
 	fclose (f);
 	
 	return true;

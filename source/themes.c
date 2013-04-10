@@ -65,11 +65,11 @@ int ThemeSelect (void)
 
 	if (i == 0)
 		{
-		grlib_menu ("No themes found in ploader/themes folder", "OK");
+		grlib_menu (0, "No themes found in ploader/themes folder", "OK");
 		return 0;
 		}
 	
-	int ret = grlib_menu ("Please select a theme file\n\nPress (B) to close", menu);
+	int ret = grlib_menu (0, "Please select a theme file\n\nPress (B) to close", menu);
 	Debug ("themes = %d (%s)", ret, files[ret]);
 	if (ret < 0) return 0;
 		
@@ -87,14 +87,14 @@ int ThemeSelect (void)
 	sprintf (targpath, "%s://ploader/theme/ploader.png", vars.defMount);
 	if (fsop_FileExist (targpath) && devices_Get (DEV_SD))
 		{
-		i = grlib_menu ("This theme contain a splash screen\n\nDo you want to install it ?", "Yes##1~No##-1~Remove##0");
+		i = grlib_menu (0, "This theme contain a splash screen\n\nDo you want to install it ?", "Yes##1~No##-1~Remove##0");
 		if (i != -1)
 			unlink ("sd://ploader.png");
 		if (i == 1)
 			{
 			if (!fsop_CopyFile (targpath, "sd://ploader.png", NULL))
 				{
-				grlib_menu ("An error occured copying the splash...", "   OK   ");
+				grlib_menu (0, "An error occured copying the splash...", "   OK   ");
 				}
 			}
 		}

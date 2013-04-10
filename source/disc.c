@@ -173,7 +173,7 @@ void Disc(void)
 		if (ni >= 0)
 			SetupPriiloader (ni);
 		else
-			grlib_menu ("Error occurred\n\npostLoader wasn't unable to select required nand", "   OK   ");
+			grlib_menu (0, "Error occurred\n\npostLoader wasn't unable to select required nand", "   OK   ");
 		
 		Shutdown ();
 		

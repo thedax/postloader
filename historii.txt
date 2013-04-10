@@ -1,3 +1,35 @@
+postLoader 4.2.0
+
+* AppBrowser: changed category managment system
+* AppBrowser: Fixed hidden applications
+* AppBrowser: better and faster xml parsing
+* AppBrowser: added a caching system. Now it is almost instant. New hb are automatically added to cache. Changes of actual xml may require a manual refresh ([home]->refresh cache)
+* AppBrowser: postloader setting are moved from application xml to cache system.
+* GameBrowser: changed configuration file layout. (speedup, less memory used)
+* GameBrowser: titles.txt is now applied only when refreshing cache. (speedup)
+* GameBrowser: removed "Clean Title Configuration" menu item (obsolete)
+* ChannelBrowser: changed configuration file layout. (speedup, less memory used)
+* ChannelBrowser: titles.txt is now applied only when refreshing cache. (speedup)
+* EmuBrowser: great speedup when scrolling a large amout of rom
+* Added an option in configuration to change mp3 playback volume
+* Reduced memory allocation: titles.txt is loaded only when needed
+* On screen keyboard can now enter lowercase text
+* Fixed some filtering issues
+* Various code cleanup and fix
+* enhancements in grlib library (menu button width selectable,keyboard etc.etc)
+* new faster cfg library
+* moved autoboot informations from options menu to "about postloader" menu
+* n2oboot.ini che be configured in option menu (available only when executed in neek2o)
+* updated readmii.txt (v1.9). Not yet complete but better then the old one.
+
+NOTE: AppBrowser category
+----------------------
+Starting from this release, postLoader does support no more subfolders as category. Now up to 8 category can be assigned for each homebrew. This make everything fully compatible with standard layout of HBC. Five category are assigned by default: Games/Utility/Emulators/Backup loaders/Hacking tools, and them can be changed in runtime
+(A)->View options...->Rename categories
+(B)->Change category
+(2)->Filter menu, with also sd/usb selection
+(home)->refresh cache
+
 postLoader 4.1.9
 
 * Fixed booting wii games from real mode to neek2o.

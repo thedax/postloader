@@ -69,9 +69,9 @@ int grlib_menuAddCheckItem (char *menu, int id, bool check, const char *itemsstr
 		}
 		
 	if (check)
-		strcat (menu, "^+");
+		strcat (menu, "§+");
 	else
-		strcat (menu, "^-");
+		strcat (menu, "§-");
 		
 	strcat (menu, buff);
 	sprintf (sid, "##%d|", id);
@@ -113,7 +113,7 @@ int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *ye
 	return 1;
 	}
 
-int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3... etc,
+int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) // item1|item2|item3... etc,
 	{
 	int i,j;
 	int item = 0;
@@ -237,7 +237,7 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 				retcodes[itemsCnt] = atoi(p);
 				}
 			
-			if (goItems[itemsCnt].text[0] == '^')
+			if (goItems[itemsCnt].text[0] == '§')
 				{
 				char buff[256];
 				
@@ -281,7 +281,14 @@ int grlib_menu (char *title, const char *itemsstring, ...) // item1|item2|item3.
 	for (i = 0; i < columns; i++)
 		itemsCntFake[i]--;
 		
-	//if (itemsCntFake < 0) itemsCntFake = 0;
+	if (fixButtonWidth > 0)
+		{
+		itemw = fixButtonWidth;
+		}
+	if (fixButtonWidth < 0)
+		{
+		if (itemw < abs(fixButtonWidth)) itemw = abs(fixButtonWidth);
+		}
 	
 	titleh = ((titleLines+1) * (lineh + 5));
 	
@@ -465,7 +472,8 @@ int grlib_Keyboard (char *title, char *string, int max)
 	{
 	char t[256];
 	char buff[2048];
-	int item;
+	int i, item;
+	int tolower = 1;
 	
 	do
 		{
@@ -514,15 +522,24 @@ int grlib_Keyboard (char *title, char *string, int max)
 		grlib_menuAddItem (buff, '9', "9");
 		grlib_menuAddItem (buff, 'I', "I");
 		grlib_menuAddItem (buff, 'S', "S");
-		grlib_menuAddItem (buff,   0, "DEL");
+		grlib_menuAddItem (buff,   0, "^");
 		grlib_menuAddColumn (buff);
 		grlib_menuAddItem (buff, '0', "0");
 		grlib_menuAddItem (buff, 'J', "J");
 		grlib_menuAddItem (buff, 'T', "T");
 		grlib_menuAddItem (buff,   1, "OK");
 		
+		if (tolower)
+			{
+			for (i = 0; i < strlen(buff); i++)
+				{
+				if (buff[i] >= 65 && buff[i] <= 90)
+					buff[i] += 32;
+				}
+			}
+		
 		sprintf (t, "%s: %s|", title, string);
-		item = grlib_menu (t, buff);
+		item = grlib_menu (20, t, buff);
 		
 		if (item == 2)
 			{
@@ -532,17 +549,18 @@ int grlib_Keyboard (char *title, char *string, int max)
 			}
 		else if (item == 0)
 			{
+			tolower = 1-tolower;
 			}
 		else if (item > 2)
 			{
 			int l = strlen (string);
 			if (l >= max) continue;
 			
-			string[l++] = (char)item;
+			string[l++] = tolower ? (char)item+32 : (char)item;
 			string[l++] = 0;
 			}
 		}
-	while (item > 1);
+	while (item != 1 && item != -1);
 	
 	return item;
 	}

@@ -309,37 +309,84 @@ static void DownloadCovers (void)
 static void WriteGameConfig (int ia)
 	{
 	if (ia < 0) return;
-	
+
+	strcpy (gameConf.name, games[ia].name);
 	strcpy (gameConf.asciiId, games[ia].asciiId);
 	gameConf.hidden = games[ia].hidden;
 	gameConf.priority = games[ia].priority;
 	gameConf.category = games[ia].category;
 	gameConf.playcount = games[ia].playcount;
 	
-	char *buff = Bin2HexAscii (&gameConf, sizeof (s_gameConfig), 0);
+	char buff[2048];
+	int index = 0;
+	*buff = '\0';
+	
+	cfg_Section (NULL);
+	cfg_FmtString (buff, CFG_WRITE, CFG_STRING,		gameConf.name, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_INT, 		&gameConf.priority, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.hidden, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.ios, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.vmode, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_S8, 		&gameConf.language, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_S8, 		&gameConf.vpatch, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.hook, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.ocarina, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.nand, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.loader, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U16, 		&gameConf.playcount, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.category, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.minPlayerAge, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlVideoMode, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlNoDisc, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlFullNoDisc, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlPadHook, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlNMM, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.memcardId, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.widescreen, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.wifi, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.activity_led, index++);
+
 	cfg_SetString (cfg, games[ia].asciiId, buff);
-	free (buff);
 	}
 
 static int ReadGameConfig (int ia)
 	{
-	char buff[1024];
+	char buff[2048];
 	bool valid;
-	
-	//ReadGameConfig (
-	
-	valid = cfg_GetString (cfg, games[ia].asciiId, buff);
+
+	valid = (cfg_GetString (cfg, games[ia].asciiId, buff) != -1 && cfg_CountSepString (buff) >= 23);
 	
 	if (valid)
 		{
-		if (HexAscii2Bin (buff, &gameConf) > sizeof (s_gameConfig))
-			{
-			valid = false;
-			}
+		int index = 0;
+		cfg_FmtString (buff, CFG_READ, CFG_STRING,	gameConf.name, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_INT, 	&gameConf.priority, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.hidden, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.ios, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.vmode, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_S8, 		&gameConf.language, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.hook, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.ocarina, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.nand, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.loader, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U16, 	&gameConf.playcount, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.category, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.minPlayerAge, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlVideoMode, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlNoDisc, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlFullNoDisc, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlPadHook, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlNMM, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.memcardId, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.widescreen, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.wifi, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.activity_led, index++);
 		}
 	
 	if (!valid)
 		{
+		strcpy (gameConf.name, games[ia].name);
+		
 		gameConf.priority = 5;
 		gameConf.hidden = 0;
 		gameConf.playcount = 0;
@@ -360,6 +407,9 @@ static int ReadGameConfig (int ia)
 			gameConf.dmlVideoMode = DMLVIDEOMODE_PAL;
 		}
 
+	if (games[ia].name) free (games[ia].name);
+	games[ia].name = ms_AllocCopy (gameConf.name, 0);
+	
 	games[ia].category = gameConf.category;
 	games[ia].hidden = gameConf.hidden;
 	games[ia].priority = gameConf.priority;
@@ -448,9 +498,8 @@ static int bsort_slot (const void * a, const void * b)
 
 static void SortItems (void)
 	{
-	Debug ("Sort: begin");
-	
 	int i;
+	int filtered = 0;
 
 	// Apply filters
 	games2Disp = 0;
@@ -458,10 +507,11 @@ static void SortItems (void)
 		{
 		games[i].filtered = IsFiltered (i);
 		if (games[i].filtered && (!games[i].hidden || showHidden)) games2Disp++;
+		if (games[i].filtered) filtered++;
 		}
 	
 	bsort (games, gamesCnt, sizeof(s_game), bsort_filtered);
-	bsort (games, gamesCnt, sizeof(s_game), bsort_hidden);
+	bsort (games, filtered, sizeof(s_game), bsort_hidden);
 	qsort (games, games2Disp, sizeof(s_game), qsort_name);
 
 	if (config.gameSort == 0)
@@ -476,29 +526,35 @@ static void SortItems (void)
 	pageMax = (games2Disp-1) / gui.spotsXpage;
 	
 	FeedCoverCache ();
-	
-	Debug ("Sort: end");
 	}
 	
 static void UpdateTitlesFromTxt (void)
 	{
 	Debug ("UpdateTitlesFromTxt: begin");
 	LoadTitlesTxt ();
-	if (vars.titlestxt == NULL) return;
+	if (vars.titlestxt == NULL)
+		{
+		Debug ("Invalid titlestxt");
+		return;
+		}
 
 	int i;
-	char buff[1024];
+	char *title;
 	for (i = 0; i < gamesCnt; i++)
 		{
-		if (cfg_GetString (vars.titlestxt, games[i].asciiId, buff))
+		title = cfg_FindInBuffer (vars.titlestxt, games[i].asciiId);
+		if (title)
 			{
-			//Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, buff);
+			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, title);
 			free (games[i].name);
-			games[i].name = ms_utf8_to_ascii (buff);
+			games[i].name = ms_utf8_to_ascii (title);
 			}
 		
 		if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Parsing...");
 		}
+		
+	free (vars.titlestxt);
+	vars.titlestxt = NULL;
 	Debug ("UpdateTitlesFromTxt: end");
 	}
 	
@@ -544,13 +600,14 @@ static int GameBrowse (int forcescan)
 	StructFree ();
 
 	int i;
-	char *titles;
+	char *titles = NULL;
 	char *p;
 	
 	Video_WaitPanel (TEX_HGL, "Please wait...");
 	
 	CoverCache_Pause (true);
-	
+
+#ifndef DOLPHINE	
 	if (config.gameMode == GM_WII)
 		{
 		if (vars.neek != NEEK_NONE) // use neek interface to build up game listing
@@ -562,6 +619,16 @@ static int GameBrowse (int forcescan)
 		{
 		titles = DMLScanner (forcescan);
 		}
+#else
+	if (config.gameMode == GM_WII)
+		{
+		titles = WBFSSCanner (forcescan);
+		}
+	else
+		{
+		titles = DMLScanner (forcescan);
+		}
+#endif
 	
 	CoverCache_Pause (false);	
 	if (!titles) 
@@ -614,7 +681,7 @@ static int GameBrowse (int forcescan)
 				p += (strlen(p) + 1);
 				}
 			
-			Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
+			//Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
 
 			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
 			
@@ -624,7 +691,7 @@ static int GameBrowse (int forcescan)
 				}
 			else if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DEVO && (games[i].slot == 0 || strstr (games[i].source, "usb:")))
 				{
-				// with devolution, games from sd and first usb partition (opefully FAT/FAT32) can be used
+				// with devolution, games from sd and first usb partition (hopefully FAT/FAT32) can be used
 				
 				ReadGameConfig (i);
 				i ++;
@@ -650,7 +717,8 @@ static int GameBrowse (int forcescan)
 
 	Debug ("end GameBrowse");
 
-	UpdateTitlesFromTxt ();
+	if (forcescan) UpdateTitlesFromTxt ();
+	
 	SortItems ();
 
 	return gamesCnt;
@@ -773,7 +841,7 @@ static void ShowGameFilterMenu (int idx)
 		sprintf (title, "Category: %s\nPress (B) to close, (+) Select all, (-) Deselect all", games[idx].name);
 
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (title, buff);
+		item = grlib_menu (0, title, buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
@@ -801,21 +869,13 @@ static void ShowGameFilterMenu (int idx)
 
 static bool IsFiltered (int ai)
 	{
-	int i,j;
+	int i;
 	bool ret = false;
-	char f[128];
-	
+
 	if (config.gameFilter == 0) return true;
 	
-	memset (f, 0, sizeof(f));
-
-	j = 0;
 	for (i = 0; i < CATMAX-1; i++)
 		{
-		f[j++] = (config.gameFilter & (1 << i)) ? '1':'0';
-		f[j++] = (games[ai].category & (1 << i)) ? '1':'0';
-		f[j++] = ' ';
-		
 		if ((config.gameFilter & (1 << i)) && (games[ai].category & (1 << i)))
 			{
 			ret = true;
@@ -867,7 +927,7 @@ static void ShowFilterMenu (void)
 			}
 
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu ("Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
+		item = grlib_menu (0, "Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
@@ -1041,7 +1101,7 @@ static void ShowAppMenu (int ai)
 		*/
 		
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (games[ai].name, buff);
+		item = grlib_menu (0, games[ai].name, buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item >= 100)
@@ -1077,7 +1137,7 @@ static void ShowAppMenu (int ai)
 	if (item == 4)
 		{
 		int item;
-		item = grlib_menu ("Vote Game", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
+		item = grlib_menu (0, "Vote Game", "10 (Best)|9|8|7|6|5 (Average)|4|3|2|1 (Bad)");
 		
 		if (item >= 0)
 			games[ai].priority = 10-item;
@@ -1092,7 +1152,7 @@ static void ShowAppMenu (int ai)
 	if (item == 6)
 		{
 		int item;
-		item = grlib_menu ("Reset play count ?", "Yes~No");
+		item = grlib_menu (-60, "Reset play count ?", "Yes~No");
 		
 		if (item == 0)
 			games[ai].playcount = 0;
@@ -1102,7 +1162,7 @@ static void ShowAppMenu (int ai)
 
 	if (item == 7)
 		{
-		int ret = grlib_menu ("Are you sure you want to delete this game ? ", "   YES   ~NO");
+		int ret = grlib_menu (0, "Are you sure you want to delete this game ? ", "   YES   ~NO");
 		if (ret == 0)
 			{
 			Debug ("Deleting folder '%s'", games[ai].source);
@@ -1184,7 +1244,7 @@ static void ChangeDefaultLoader (void)
 	grlib_menuAddItem (buff, 2, "WiiFlow");
 	grlib_menuAddItem (buff, 3, "neek2o (FAT32)");
 	
-	int item = grlib_menu ("Select your default loader", buff);
+	int item = grlib_menu (0, "Select your default loader", buff);
 	if (item >= 0)
 		config.gameDefaultLoader = item;
 		
@@ -1218,7 +1278,7 @@ static void ChangeDefaultDMLMode (void)
 	grlib_menuAddItem (buff, 2, "Force NTSC");
 	grlib_menuAddItem (buff, 3, "Force PAL");
 	
-	int item = grlib_menu ("Select your default DML Video mode", buff);
+	int item = grlib_menu (0, "Select your default DML Video mode", buff);
 	if (item >= 0)
 		{
 		config.gameDefaultLoader = item;
@@ -1257,22 +1317,13 @@ start:
 		if (vars.neek != NEEK_NONE)
 			{
 			if (config.gameMode == GM_WII)
-				{
-				grlib_menuAddItem (buff, 5, "Rebuild game list (reboot)...");
-				/*
-				grlib_menuAddItem (buff, 4, "Rebuild game list (postLoader way)");
-				grlib_menuAddItem (buff, 5, "Rebuild game list (neek2o way)");
-				*/
-				}
+				grlib_menuAddItem (buff, 5, "Refresh game cache (reboot)...");
 			else
-				grlib_menuAddItem (buff, 6, "Rebuild game list...");
+				grlib_menuAddItem (buff, 6, "Refresh game cache...");
 			}
 		else
 			{
-			if (config.gameMode == GM_WII)
-				grlib_menuAddItem (buff, 6, "Rebuild game list (ntfs/fat)...");
-			else
-				grlib_menuAddItem (buff, 6, "Rebuild game list...");
+			grlib_menuAddItem (buff, 6, "Refresh game cache...");
 			}
 
 		grlib_menuAddItem (buff, 1, "Download covers...");
@@ -1286,8 +1337,6 @@ start:
 		grlib_menuAddItem (buff,  8, "Sort by: play count");
 	
 	grlib_menuAddItem (buff,  9, "Select filters");
-
-	grlib_menuAddSeparator (buff);
 
 	if (CheckParental(0))
 		{
@@ -1310,9 +1359,6 @@ start:
 				grlib_menuAddItem (buff, 3, "Set default videomode...");
 			}
 		
-		// note: maybe it is not the right place for this option
-		grlib_menuAddItem (buff, 7, "Reset configuration files...");
-
 		if (showHidden)
 			grlib_menuAddItem (buff, 10, "Hide hidden games");
 		else
@@ -1322,7 +1368,7 @@ start:
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu ("Games menu", buff);
+	int item = grlib_menu (0, "Games menu", buff);
 	
 	if (item == 1)
 		{
@@ -1358,11 +1404,6 @@ start:
 		GameBrowse (1);
 		}
 		
-	if (item == 7)
-		{
-		CleanTitleConfiguration();
-		}
-	
 	if (item == 8)
 		{
 		config.gameSort ++;
@@ -1598,7 +1639,7 @@ static void cb_filecopy (void)
 	
 	if (grlib_GetUserInput() & WPAD_BUTTON_B)
 		{
-		int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "   Yes   ##0~No##-1");
+		int ret = grlib_menu (0, "This will interrupt the copy process... Are you sure", "   Yes   ##0~No##-1");
 		if (ret == 0) fsop.breakop = 1;
 		}
 	}
@@ -1742,10 +1783,12 @@ static void Conf (bool open)
 	{
 	char cfgpath[64];
 	sprintf (cfgpath, "%s://ploader/games.conf", vars.defMount);
-
+	
+	cfg_Section (NULL);
+	
 	if (open)
 		{
-		cfg = cfg_Alloc (cfgpath, 0);
+		cfg = cfg_Alloc (cfgpath, GAMEMAX, 0, 0);
 		}
 	else
 		{
@@ -1763,6 +1806,7 @@ int GameBrowser (void)
 	
 	Conf (true);
 
+	page = 0;
 	scanned = 0;
 	browserRet = -1;
 
@@ -1893,7 +1937,7 @@ int GameBrowser (void)
 							}
 						
 						Video_SetFont(TTFNORM);
-						grlib_menu ("There was a problem executing DML.\n\nPlease check if 'GameCube mode' is the right one. Press [home]", "   OK   ");
+						grlib_menu (0, "There was a problem executing DML.\n\nPlease check if 'GameCube mode' is the right one. Press [home]", "   OK   ");
 						Conf (true);	// Store configuration on disc
 						}
 					

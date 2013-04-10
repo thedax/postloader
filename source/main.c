@@ -85,7 +85,7 @@ void Shutdown(void)
 	Debug ("Shutdown !");
 	
 	snd_Stop ();
-	cfg_Free (vars.titlestxt);
+	free (vars.titlestxt);
 
 	// Load proper stub
 	StubLoad ();
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 						"be selected to store postLoader data\n"
 						"IOS = %d", vars.ios);
 		
-		int item = grlib_menu ( mex, buff);
+		int item = grlib_menu (0, mex, buff);
 		
 		if (item <= 0)
 			*vars.defMount = '\0';								
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 		
 			if (ConfigWrite())
 				{
-				grlib_menu ("Configuration file created succesfully", "OK");
+				grlib_menu (0, "Configuration file created succesfully", "OK");
 				}
 			}
 		}

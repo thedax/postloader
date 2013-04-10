@@ -184,9 +184,10 @@ void inline grlib_Render (void)
 	GRRLIB_Render ();
 	} 
 
-void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
+int grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 	{
     uint  i;
+	int  width;
     u8    *pdata;
     u8    x, y;
 	u8 	  r,g,b,a;
@@ -196,12 +197,13 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
     const GRRLIB_bytemapChar *pchar;
 	
 	ypos --;
-
+	
+	width = grlib_GetFontMetrics (text, NULL, NULL);
 	if (align == GRLIB_ALIGNCENTER)
-	    xoff -= grlib_GetFontMetrics (text, NULL, NULL) / 2;
+	    xoff -= width / 2;
 
 	if (align == GRLIB_ALIGNRIGHT)
-	    xoff -= grlib_GetFontMetrics (text, NULL, NULL);
+	    xoff -= width;
 		
 	if (grlibSettings.fontMode == GRLIB_FONTMODE_TTF) 
 		{
@@ -209,7 +211,8 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
 			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontDef.offsetY, grlibSettings.font, text, grlibSettings.fontDef.size, 0x0 | 0xFF);
 		else
 			GRRLIB_PrintfTTF(xoff, ypos + grlibSettings.fontDef.offsetY, grlibSettings.font, text, grlibSettings.fontDef.size, 0xFFFFFFFF | 0xFF);
-		return;
+		
+		return width;
 		}
 
 	for (i=0; i < strlen (text); i++) 
@@ -275,18 +278,21 @@ void grlib_Text (f32 xpos, f32 ypos, u8 align, u32 color, char *text)
         
 		xoff += pchar->kerning + grlibSettings.fontBMF->tracking;
 		}
+		
+	return width;
 	}
 
-void grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...)
+// it return the width of text...
+int grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 color, const char *text, ...)
 	{
-    char  tmp[1024];
+    char tmp[1024];
 
     va_list argp;
     va_start(argp, text);
     vsprintf(tmp, text, argp);
     va_end(argp);
 	
-	grlib_Text (xpos, ypos, align, color, tmp);
+	return grlib_Text (xpos, ypos, align, color, tmp);
 	}
 
 // grlib_IsObjectVisible: just check if an object is visible on the screen. Using this may greatly speedup rendering 

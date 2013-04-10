@@ -81,7 +81,7 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 	char text[64];
 	int toggle = -1;
 	
-	if (b->text[0] == '^')
+	if (b->text[0] == '§')
 		{
 		if (b->text[1] == '+') toggle = 1;
 		if (b->text[1] == '-') toggle = 0;
@@ -144,7 +144,7 @@ void grlib_Message (const char *text, ...) // ab > 0 show and wait ab second, ot
 		va_end(argp);
 		}
 	
-	grlib_menu	(mex, "OK");
+	grlib_menu	(50, mex, "OK");
 	
 	free (mex);
 	}

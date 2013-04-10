@@ -12,8 +12,8 @@
 
 //#define DOLPHINE
 
-#define VER "4.1.9"
-#define CFGVER "PLCFGV0015"
+#define VER "4.2.0"
+#define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
 #define IOS_SNEEK 56
@@ -44,6 +44,8 @@
 
 #define GM_WII 0
 #define GM_DML 1
+
+#define APPCATS_MAX 8
 
 #define TITLE_UPPER(x)		((u32)((x) >> 32))
 #define TITLE_LOWER(x)		((u32)(x))
@@ -85,6 +87,8 @@ enum {
 #define ARGSMAX 300
 
 typedef void (*entrypoint) (void); 
+
+#define CATAPPMAX 8			// number of category for applications
 
 #define APPMODE_NONE 0  	// Homebrew application
 #define APPMODE_HBA 1  	 	// Homebrew application
@@ -139,8 +143,6 @@ enum {
 	TEX_STAR,
 	TEX_NONE,
 	TEX_CHECKED,
-	TEX_FOLDER,
-	TEX_FOLDERUP,
 	TEX_GHOST,
 	TEX_EXCL,
 	TEX_USB,
@@ -175,10 +177,11 @@ typedef void (*voidCallback)(void);
 
 typedef struct
 	{
+	char asciiId[6];// id in ascii format
+	u64 titleId; 	// title id
 	u32 priority;	// Vote !
 	bool hidden;	// if 1, this app will be not listed
 	
-	u64 titleId; 	// title id
 	u8 ios;		 	// ios to reload
 	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
 	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
@@ -186,7 +189,7 @@ typedef struct
 	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
 	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
 	u8 bootMode;	// 0 Normal boot method	1 Load apploader
-	int playcount;	// how many time this title has bin executed
+	u16 playcount;	// how many time this title has bin executed
 	}
 s_channelConfig;
 
@@ -214,9 +217,10 @@ s_channel;
 typedef struct
 	{
 	int priority;	// Vote !
-	bool hidden;	// if 1, this app will be not listed
+	u8 hidden;	// if 1, this app will be not listed
 	
 	char asciiId[8];// id in ascii format (6 needed)
+	char name[128];// id in ascii format (6 needed)
 	u8 ios;		 	// ios to reload
 	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
 	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
@@ -238,7 +242,7 @@ typedef struct
 
 	u8 memcardId;		// this is for devolution, and maybe dm(l) in future... postloader support creation/managment of up 8 card images, selecatable x game
 	u8 widescreen;		// this should be for devolution, will force 16/9 mode
-	u8 wifi;		// this should be for devolution, will force 16/9 mode
+	u8 wifi;			// this should be for devolution, will force 16/9 mode
 	u8 activity_led;
 	}
 s_gameConfig;
@@ -306,14 +310,14 @@ typedef struct
 	char *path;
 	char *args;
 	char *version;
-	char filename[32];	// boot.dol... boot.elf...
+	char filename[32];	// boot.dol... boot.elf...blablabl
 	char mount[5];		// keep track of where is located the homebrew, as we mix sd and usb...
 	int priority; 		// if true is listed before others
-	int type;			// 1 hb, 2 folder
 	int iosReload;
-	bool hidden;		// if 1, this app will be not listed
-	bool needUpdate;
+	int hidden;			// if 1, this app will be not listed
+	u32 category;
 	bool checked;
+	bool filtered;		// if 1, this app match the filter
 	}
 s_app;
 
@@ -339,7 +343,7 @@ typedef struct
 	char sePath[256];				// setting editor
 	char wmPath[256];				// wiimod
 	
-	s_cfg *titlestxt;				// this will keep titles.txt file
+	char *titlestxt;				// this will keep titles.txt file
 	}
 s_vars;
 
@@ -427,6 +431,9 @@ typedef struct
 	bool runHBwithForwarder;
 	
 	u32 emuFilter;			// 
+	u32 appFilter;
+	char appCats[APPCATS_MAX][32];	// Application ca
+	u8 volume;
 	}
 s_config;
 
@@ -476,7 +483,6 @@ int CheckParental (int mode);
 
 // utils.c
 u32 get_msec(bool reset);
-void CleanTitleConfiguration(void);
 bool FileExist (char *fn);
 bool DirExist (char *path);
 bool NandExits (int dev);
@@ -580,6 +586,7 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 bool LiveCheck (int reset);
 
 // sound.c
+void snd_Volume (void);
 void snd_Init (void);
 void snd_Stop (void);
 void snd_Mp3Go (void);

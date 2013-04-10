@@ -382,11 +382,11 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 	u8 *buffer;
 	size_t readed;
 	
-	Debug ("read_name_from_banner_app '%s'", nandmountpoint);
+	// Debug ("read_name_from_banner_app '%s'", nandmountpoint);
 
 	if (!nandmountpoint || (nandmountpoint && strlen (nandmountpoint) == 0))
 		{
-		Debug ("read_name_from_banner_app: nandmode");
+		// Debug ("read_name_from_banner_app: nandmode");
 		u32 num;
 		s32 ret;
 		dirent_t *list = NULL;
@@ -407,7 +407,7 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 	  
 				buffer = isfs_ReadFile (path, &err, 368, &readed);
 				
-				Debug ("read_name_from_banner_app: '%s'->0x%X [%d]", path, buffer, err);
+				// Debug ("read_name_from_banner_app: '%s'->0x%X [%d]", path, buffer, err);
 				
 				if (!buffer) continue;
 				
@@ -425,7 +425,7 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 		}
 	else
 		{
-		Debug ("read_name_from_banner_app: fsmode");
+		// Debug ("read_name_from_banner_app: fsmode");
 		
 		DIR *pdir;
 		struct dirent *pent;
@@ -442,7 +442,7 @@ char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)
 			sprintf (fnpath, "%s/%s", path, pent->d_name);
 			buffer = fsop_ReadFile (fnpath, 368, &readed);
 			
-			Debug ("read_name_from_banner_app: '%s'->0x%X", fnpath, buffer);
+			// Debug ("read_name_from_banner_app: '%s'->0x%X", fnpath, buffer);
 			
 			if (!buffer) continue;
 
@@ -497,7 +497,7 @@ static char *read_name_from_banner_bin(u64 titleid, char *nandmountpoint)
 
 char *get_name(u64 titleid, char *nandmountpoint)
 {
-	Debug ("get_name (%llu, %s)", titleid, nandmountpoint);
+	// Debug ("get_name (%llu, %s)", titleid, nandmountpoint);
 	
 	char *temp = NULL;
 	u32 low;
@@ -602,7 +602,7 @@ s32 get_game_list(u64 **TitleIds, u32 *num, u8 id) // id = 0:00010001, id = 1:00
 			sprintf (path, "%s/%s/content", folder, list[i].name);
 			ret = getdircount(path, &number);
 			
-			Debug ("get_game_listEmu: getdircount '%s', %d", path, ret);
+			// Debug ("get_game_listEmu: getdircount '%s', %d", path, ret);
 			
 			if (ret >= 0 && number > 1) // 1 == tmd only
 				{
@@ -632,10 +632,10 @@ s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint) // i
 		strcpy (type, "00010002");
 		
 	sprintf (path, "%s/title/%s", nandmountpoint, type);
-	Debug ("get_game_listEmu: '%s'", path);
+	// Debug ("get_game_listEmu: '%s'", path);
 	
 	int items = fsop_CountDirItems (path);
-	Debug ("get_game_listEmu: items = %d", items);
+	// Debug ("get_game_listEmu: items = %d", items);
 	if (items == 0) return -1;
 
 	u64 *temp = malloc (sizeof(u64) * items);
@@ -656,7 +656,7 @@ s32 get_game_listEmu(u64 **TitleIds, u32 *num, u8 id, char *nandmountpoint) // i
 		sprintf (subpath, "%s/%s/content", path, pent->d_name);
 
 		int count = fsop_CountDirItems (subpath);
-		Debug ("get_game_listEmu: subpath '%s', %d", subpath, items);
+		// Debug ("get_game_listEmu: subpath '%s', %d", subpath, items);
 		
 		if (count > 1) // 1 == tmd only
 			{
@@ -676,7 +676,6 @@ bool SetupNeek2o (void)
 	char path[256];
 	char pathBak[256];
 
-	s32 ret;
 	size_t loaderIniSize = 0;
 	u8 * loaderIniBuff = NULL;
 	
@@ -687,10 +686,10 @@ bool SetupNeek2o (void)
 
 	if (!loaderIniBuff) return false;
 	
-	ret = unlink (pathBak);
-	Debug ("SetupNeek2o: unlink %s (%d)", pathBak, ret);
-	ret = rename (path, pathBak);
-	Debug ("SetupNeek2o: rename %s %s (%d)", path, pathBak, ret);
+	unlink (pathBak);
+	// Debug ("SetupNeek2o: unlink %s (%d)", pathBak, ret);
+	rename (path, pathBak);
+	// Debug ("SetupNeek2o: rename %s %s (%d)", path, pathBak, ret);
 
 	CreatePriiloaderSettingsFS (NEEK2O_NAND, loaderIniBuff, loaderIniSize);
 	free (loaderIniBuff);
@@ -719,7 +718,7 @@ static void cb_filecopy (void)
 		
 		if (grlib_GetUserInput() & WPAD_BUTTON_B)
 			{
-			int ret = grlib_menu ("This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
+			int ret = grlib_menu (0, "This will interrupt the copy process... Are you sure", "Yes##0|No##-1");
 			if (ret == 0) fsop.breakop = 1;
 			}
 		}
@@ -740,10 +739,10 @@ bool RunChannelNeek2o (s_run *run)
 	sprintf(source, "%s/title/%08x/%08x", np, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
 	sprintf(target, "%s/title/%08x/%08x", NEEK2O_NAND, TITLE_UPPER(run->channel.titleId), TITLE_LOWER(run->channel.titleId));
 	
-	Debug ("=======================================================");
+	// Debug ("=======================================================");
 	u32 sourceSize = (u32) fsop_GetFolderBytes (source, NULL);
 	u32 targetSize = (u32) fsop_GetFolderBytes (target, NULL);
-	Debug ("=======================================================");
+	// Debug ("=======================================================");
 
 	if (sourceSize > targetSize)
 		{

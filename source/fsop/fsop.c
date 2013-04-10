@@ -125,9 +125,11 @@ u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded)
 	if (bytes2read > 0 && bytes2read < size)
 		size = bytes2read;
 	
-	u8 *buff = malloc (size);
+	u8 *buff = malloc (size+1);
 	size = fread (buff, 1, size, f);
 	fclose (f);
+	
+	buff[size] = 0; // maybe we have readed a ascii file, let's 0 terminate it...
 	
 	if (bytesReaded) *bytesReaded = size;
 
