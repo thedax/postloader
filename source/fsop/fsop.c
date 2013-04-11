@@ -4,7 +4,7 @@ fsop contains coomprensive set of function for file and folder handling
 
 en exposed s_fsop fsop structure can be used by callback to update operation status
 
-(c) 2012 stfour
+(c) 2013 stfour
 
 ////////////////////////////////////////////////////////////////////////////////////////*/
 

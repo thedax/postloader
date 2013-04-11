@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.2.0"
+#define VER "4.2.1"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -143,6 +143,8 @@ enum {
 	TEX_STAR,
 	TEX_NONE,
 	TEX_CHECKED,
+	TEX_FOLDER,
+	TEX_FOLDERUP, 
 	TEX_GHOST,
 	TEX_EXCL,
 	TEX_USB,
@@ -312,6 +314,7 @@ typedef struct
 	char *version;
 	char filename[32];	// boot.dol... boot.elf...blablabl
 	char mount[5];		// keep track of where is located the homebrew, as we mix sd and usb...
+	int type;			// 1 hb, 2 folder 
 	int priority; 		// if true is listed before others
 	int iosReload;
 	int hidden;			// if 1, this app will be not listed
@@ -537,6 +540,7 @@ void Video_DrawBackgroud (int type);
 void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy);
 void Video_DrawIcon (int icon, int x, int y);
 void Video_WaitPanel (int icon, const char *text, ...); // Draw a panel with a wait screen
+void Video_WaitIcon (int icon);
 void Video_LoadTheme (int init);
 void Video_DrawWIFI (void);
 void Video_SetFont (int size);

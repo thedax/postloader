@@ -1,3 +1,10 @@
+postLoader 4.2.1
+
+* AppBrowser: as requested subfolder support is back.
+* nandBooter v2.5: fixed crash
+* changed wait panel for most i/o operation
+* switching browsing mode is more smoother
+
 postLoader 4.2.0
 
 * AppBrowser: changed category managment system

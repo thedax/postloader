@@ -133,7 +133,7 @@ static void Redraw (void)
 	{
 	Video_DrawBackgroud (0);
 	Video_SetFont(TTFNORM);
-	grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (c) 2011-12 by stfour");
+	grlib_printf (320, 440, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (c) 2011-13 by stfour");
 	}
 	
 int MasterInterface (int full, int showCursor, int icon, const char *text, ...)

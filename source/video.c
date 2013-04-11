@@ -33,6 +33,8 @@ void Video_Init (void)
 	vars.tex[TEX_STAR] = GRRLIB_LoadTexturePNG (star_png);
 	vars.tex[TEX_NONE] = GRRLIB_LoadTexturePNG (noicon_png);
 	vars.tex[TEX_CHECKED] = GRRLIB_LoadTexturePNG (checked_png);
+	vars.tex[TEX_FOLDER] = GRRLIB_LoadTexturePNG (folder_png);
+	vars.tex[TEX_FOLDERUP] = GRRLIB_LoadTexturePNG (folderup_png);
 	vars.tex[TEX_GHOST] = GRRLIB_LoadTexturePNG (ghost_png);
 	
 	vars.tex[TEX_HDD] = GRRLIB_LoadTexturePNG (hdd_png);
@@ -226,6 +228,15 @@ void Video_WaitPanel (int icon, const char *text, ...)
 		{
 		Video_DrawIcon (icon, 320, 240);
 		}
+	
+	grlib_Render ();
+	}
+
+void Video_WaitIcon (int icon)
+	{
+	grlib_PopScreen() ;
+	grlib_DrawCenteredWindow ("", 50, 40, 0, NULL);
+	Video_DrawIcon (icon, 320, 240);
 	
 	grlib_Render ();
 	}
@@ -538,6 +549,8 @@ void Video_Predraw (int transparency)
 		}
 
 	grlib_DrawIRCursor ();
+	grlib_PushScreen ();
+	grlib_PopScreen ();
 	grlib_Render();
 		
 	}

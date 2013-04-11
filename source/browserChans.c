@@ -302,7 +302,7 @@ static bool ReadTitleConfig (int ia)
 	bool valid;
 	
 	valid = (cfg_GetString (cfg, chans[ia].asciiId, buff) != -1 && cfg_CountSepString (buff) >= 12);
-
+	
 	if (valid)
 		{
 		int index = 0;
@@ -325,11 +325,6 @@ static bool ReadTitleConfig (int ia)
 		chans[ia].titleId = chnConf.titleId;
 		chans[ia].hidden = chnConf.hidden;
 		chans[ia].priority = chnConf.priority;
-
-		/*
-		if (chans[ia].name) free (chans[ia].name);
-		chans[ia].name = ms_AllocCopy (chnConf.name, 0);
-		*/
 		}
 	
 	return valid;
@@ -750,7 +745,7 @@ static int ChnBrowse (void)
 				WriteTitleConfig (-1);
 				}
 			
-			if (chansCnt % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading channels configuration");
+			if (chansCnt % 20 == 0) Video_WaitIcon (TEX_HGL);
 
 			chansCnt++;
 			}
@@ -917,7 +912,7 @@ static void ShowAppMenu (int ai)
 		*/
 		
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (0, chans[ai].name, buff);
+		item = grlib_menu (300, chans[ai].name, buff);
 		Video_SetFontMenu(TTFNORM);
 		
 		if (item < 100) break;
@@ -1653,10 +1648,14 @@ int ChnBrowser (void)
 	// Immediately draw the screen...
 	ChansFree ();
 	InitializeGui ();
+	
+	/*
 	Redraw ();
 	grlib_PushScreen ();
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
+	*/
+	
 	CheckFilters ();
 	
 	page = config.chnPage;

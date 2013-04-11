@@ -276,6 +276,8 @@ void do_codes(u64 titleid)
 	s32 ret = 0;
 	char gameidbuffer[8];
 	
+	debug("do_codes...");
+	
 	memset(gameidbuffer, 0, 8);
 	
 	gameidbuffer[0] = (titleid & 0xff000000) >> 24;
@@ -309,6 +311,8 @@ void do_codes(u64 titleid)
 
 	DCFlushRange((void*)0x80000000, 0x3f00);
 	ICInvalidateRange((void*)0x80000000, 0x3f00);
+	
+	debug("done\n");
 	}
 
 void preload_codes (u64 titleid)

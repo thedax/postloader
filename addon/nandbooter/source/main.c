@@ -42,10 +42,11 @@
 // This must reflect postloader ---------------------------------------------------------------
 typedef struct
 	{
-	int priority;	// Vote !
+	char asciiId[6];// id in ascii format
+	u64 titleId; 	// title id
+	u32 priority;	// Vote !
 	bool hidden;	// if 1, this app will be not listed
 	
-	u64 titleId; 	// title id
 	u8 ios;		 	// ios to reload
 	u8 vmode;	 	// 0 Default Video Mode	1 NTSC480i	2 NTSC480p	3 PAL480i	4 PAL480p	5 PAL576i	6 MPAL480i	7 MPAL480p
 	s8 language; 	//	-1 Default Language	0 Japanese	1 English	2 German	3 French	4 Spanish	5 Italian	6 Dutch	7 S. Chinese	8 T. Chinese	9 Korean
@@ -53,6 +54,7 @@ typedef struct
 	u8 hook;	 	// 0 No Ocarina&debugger	1 Hooktype: VBI	2 Hooktype: KPAD	3 Hooktype: Joypad	4 Hooktype: GXDraw	5 Hooktype: GXFlush	6 Hooktype: OSSleepThread	7 Hooktype: AXNextFrame
 	u8 ocarina; 	// 0 No Ocarina	1 Ocarina from NAND 	2 Ocarina from SD	3 Ocarina from USB"
 	u8 bootMode;	// 0 Normal boot method	1 Load apploader
+	u16 playcount;	// how many time this title has bin executed
 	}
 s_channelConfig;
 
@@ -255,38 +257,51 @@ void patch_dol(bool bootcontent)
 	int i;
 	bool hookpatched = false;
 	
+	debug("patch_dol...");
+	
 	for (i=0;i < dolchunkcount;i++)
 	{		
-		if (!bootcontent)
+		if (!bootcontent && dolchunkoffset[i] && dolchunksize[i])
 		{
 			if (languageoption != -1)
 			{
+				debug ("[");
 				ret = patch_language(dolchunkoffset[i], dolchunksize[i], languageoption);
-				
+				debug ("]");
 				// just to make the compiler happy
 				if (ret);
 			}
 			
 			if (videopatchoption != 0)
 			{
+				debug ("(");
 				search_video_modes(dolchunkoffset[i], dolchunksize[i]);
+				debug (")");
+				
+				debug ("[");
 				patch_video_modes_to(rmode, videopatchoption);
+				debug ("]");
 			}
 		}
 
 		if (hooktypeoption != 0)
 		{
 			// Before this can be done, the codehandler needs to be in memory, and the code to patch needs to be in the right pace
+			debug ("{");
 			if (dochannelhooks(dolchunkoffset[i], dolchunksize[i], bootcontent))
 			{
 				hookpatched = true;
 			}			
+			debug ("}");
 		}
 	}
 	if (hooktypeoption != 0 && !hookpatched)
 	{
 		debug("ERR: (patch_dol) Could not patch the hook: Ocarina and debugger won't work\n");
 	}
+	
+	debug("done\n");
+
 }  
 
 #define MEM1_MAX 0x817FFFFF
@@ -700,6 +715,7 @@ void bootTitle(u64 titleid)
 		DCFlushRange((void*)0x80003184, 4);
 		}
 	
+	debug("ES_SetUID...");
 	// Maybe not required at all?	
 	ret = ES_SetUID(titleid);
 	if (ret < 0)
@@ -707,6 +723,7 @@ void bootTitle(u64 titleid)
 		debug("ERR: (bootTitle) ES_SetUID failed %d", ret);
 		return;
 		}	
+	debug("done\n");
 
 	if (hooktypeoption)
 		{

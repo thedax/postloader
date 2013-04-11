@@ -844,6 +844,10 @@ int BootChannel(s_run *run)
 		RunChannelNeek2o (run);
 		}
 
+	// bootit !
+	grlibSettings.doNotCall_GRRLIB_Exit = false;
+	Shutdown ();
+
 	// Copy the nandbooter image
 	memcpy(EXECUTE_ADDR, nandbooter_dol, nandbooter_dol_size);
 	DCFlushRange((void *) EXECUTE_ADDR, nandbooter_dol_size);
@@ -860,10 +864,6 @@ int BootChannel(s_run *run)
 	memcpy (&nb.channel, &run->channel, sizeof (s_channelConfig));
 	memcpy (tfb, &nb, sizeof(s_nandbooter));
 	DCFlushRange((void *) tfb, sizeof(s_nandbooter));
-	
-	// bootit !
-	grlibSettings.doNotCall_GRRLIB_Exit = true;
-	Shutdown ();
 	
 	u32 level;
 	SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);

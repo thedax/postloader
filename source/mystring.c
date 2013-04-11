@@ -10,6 +10,8 @@
 
 char *ms_AllocCopy (char *source, int addbytes) // basically remove/add \n\r, source buffer must contain enought space
 	{
+	if (*source == '\0') return NULL;
+	
 	char *p;
 	int l = strlen (source);
 	

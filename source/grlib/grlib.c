@@ -287,6 +287,8 @@ int grlib_printf (const f32 xpos, const f32 ypos, const u8 align, const u32 colo
 	{
     char tmp[1024];
 
+	if (!text || *text == '\0') return 0;
+
     va_list argp;
     va_start(argp, text);
     vsprintf(tmp, text, argp);

@@ -478,13 +478,13 @@ static void SortItems (void)
 		if (emus[i].filtered) filtered++;
 		}
 	
-	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
+	Video_WaitIcon (TEX_HGL);
 	bsort (emus, emusCnt, sizeof(s_emu), bsort_filter);
 
-	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
+	Video_WaitIcon (TEX_HGL);
 	bsort (emus, filtered, sizeof(s_emu), bsort_hidden);
 
-	Video_WaitPanel (TEX_HGL, "Please wait...|Sorting...");
+	Video_WaitIcon (TEX_HGL);
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
@@ -580,7 +580,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 		
 		if (++updater > 100)
 			{
-			Video_WaitPanel (TEX_HGL, "Please wait...|Searching for roms...");
+			Video_WaitIcon (TEX_HGL);
 			updater = 0;
 			}
 		
@@ -601,7 +601,7 @@ static int EmuBrowse (void)
 	gui_Clean ();
 	StructFree ();
 
-	Video_WaitPanel (TEX_HGL, "Please wait...");
+	Video_WaitIcon (TEX_HGL);
 
 	char path[300];
 	int dev;
@@ -1248,10 +1248,12 @@ int EmuBrowser (void)
 	StructFree ();
 	InitializeGui ();
 	
+	/*
 	Redraw ();
 	grlib_PushScreen ();
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
+	*/
 	
 	page = config.gamePageEmu;
 	EmuBrowse ();

@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------
 
  usbstorage_starlet.c -- USB mass storage support, inside starlet
- Copyright (C) 2012 stfour
+ Copyright (C) 2013 stfour
  Copyright (C) 2011 Dimok
  Copyright (C) 2011 Rodries
  Copyright (C) 2009 Kwiirk

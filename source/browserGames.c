@@ -550,7 +550,7 @@ static void UpdateTitlesFromTxt (void)
 			games[i].name = ms_utf8_to_ascii (title);
 			}
 		
-		if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Parsing...");
+		if (i % 20 == 0) Video_WaitIcon (TEX_HGL);
 		}
 		
 	free (vars.titlestxt);
@@ -603,7 +603,7 @@ static int GameBrowse (int forcescan)
 	char *titles = NULL;
 	char *p;
 	
-	Video_WaitPanel (TEX_HGL, "Please wait...");
+	Video_WaitIcon (TEX_HGL);
 	
 	CoverCache_Pause (true);
 
@@ -683,7 +683,7 @@ static int GameBrowse (int forcescan)
 			
 			//Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
 
-			if (i % 20 == 0) Video_WaitPanel (TEX_HGL, "Please wait...|Loading game configuration");
+			if (i % 20 == 0) Video_WaitIcon (TEX_HGL);
 			
 			if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM22 && games[i].slot == 0)
 				{
@@ -1821,10 +1821,12 @@ int GameBrowser (void)
 	StructFree ();
 	InitializeGui ();
 	
+	/*
 	Redraw ();
 	grlib_PushScreen ();
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
+	*/
 	
 	page = config.gamePageWii;
 	GameBrowse (0);
