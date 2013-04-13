@@ -1,3 +1,7 @@
+postLoader 4.2.2
+
+* gameBrowser: fixed game name handling for wii and gamecube games
+
 postLoader 4.2.1
 
 * AppBrowser: as requested subfolder support is back.

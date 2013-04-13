@@ -121,6 +121,7 @@ static void Conf (bool open)
 	{
 	char cfgpath[64];
 	
+	Video_WaitIcon (TEX_HGL);
 	Debug ("Conf %d", open);
 	
 	if (vars.neek != NEEK_NONE)

@@ -133,6 +133,8 @@ static void Conf (bool open)
 	char cfgpath[64];
 	sprintf (cfgpath, "%s://ploader/emus.conf", vars.defMount);
 
+	Video_WaitIcon (TEX_HGL);
+	
 	cfg_Section (NULL);
 	if (open)
 		{

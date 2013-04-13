@@ -407,9 +407,16 @@ static int ReadGameConfig (int ia)
 			gameConf.dmlVideoMode = DMLVIDEOMODE_PAL;
 		}
 
-	if (games[ia].name) free (games[ia].name);
-	games[ia].name = ms_AllocCopy (gameConf.name, 0);
-	
+	if (strcmp (games[ia].name, gameConf.name) && *gameConf.name != '\0')
+		{
+		if (games[ia].name) free (games[ia].name);
+		games[ia].name = ms_AllocCopy (gameConf.name, 0);
+		if (!games[ia].name) 
+			{
+			games[ia].name = ms_AllocCopy (games[ia].asciiId, 0);
+			}
+		}
+
 	games[ia].category = gameConf.category;
 	games[ia].hidden = gameConf.hidden;
 	games[ia].priority = gameConf.priority;
@@ -545,9 +552,11 @@ static void UpdateTitlesFromTxt (void)
 		title = cfg_FindInBuffer (vars.titlestxt, games[i].asciiId);
 		if (title)
 			{
-			Debug ("UpdateTitlesFromTxt: '%s' -> '%s'", games[i].name, title);
+			//Debug ("%s %s -> '%s'", games[i].asciiId, games[i].name, title);
 			free (games[i].name);
 			games[i].name = ms_utf8_to_ascii (title);
+			
+			WriteGameConfig (i);
 			}
 		
 		if (i % 20 == 0) Video_WaitIcon (TEX_HGL);
@@ -681,24 +690,14 @@ static int GameBrowse (int forcescan)
 				p += (strlen(p) + 1);
 				}
 			
-			//Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
+			Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
 
 			if (i % 20 == 0) Video_WaitIcon (TEX_HGL);
 			
-			if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM22 && games[i].slot == 0)
-				{
-				// do nothing, only games on USB are added (slot != 0)
-				}
-			else if (config.gameMode == GM_DML && config.dmlVersion == GCMODE_DEVO && (games[i].slot == 0 || strstr (games[i].source, "usb:")))
-				{
-				// with devolution, games from sd and first usb partition (hopefully FAT/FAT32) can be used
-				
-				ReadGameConfig (i);
-				i ++;
-				}
-			else
+			if (!(config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM22 && games[i].slot == 0))
 				{
 				ReadGameConfig (i);
+
 				i ++;
 				}
 			}
@@ -1784,8 +1783,9 @@ static void Conf (bool open)
 	char cfgpath[64];
 	sprintf (cfgpath, "%s://ploader/games.conf", vars.defMount);
 	
-	cfg_Section (NULL);
+	Video_WaitIcon (TEX_HGL);
 	
+	cfg_Section (NULL);
 	if (open)
 		{
 		cfg = cfg_Alloc (cfgpath, GAMEMAX, 0, 0);
