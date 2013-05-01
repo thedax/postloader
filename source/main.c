@@ -47,10 +47,12 @@ void BootToHBC(void)
 	
 void WiiLoad (int start)
 	{
+#ifndef DOLPHINE
 	if (start)
 		WiiLoad_Start (vars.tempPath, 5);
 	else
 		WiiLoad_Stop ();
+#endif
 	}
 	
 void Subsystems (bool enable)

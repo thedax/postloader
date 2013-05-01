@@ -870,16 +870,22 @@ GRRLIB_texImg*  GRRLIB_LoadTexturePNG (const u8 *my_png) {
         ctx = PNGU_SelectImageFromBuffer(my_png);
         PNGU_GetImageProperties(ctx, &imgProp);
         my_texture->data = PNGU_DecodeTo4x4RGBA8(ctx, imgProp.imgWidth, imgProp.imgHeight, &width, &height, NULL);
-        if(my_texture->data != NULL) {
+        if (my_texture->data != NULL) 
+			{
             my_texture->w = width;
             my_texture->h = height;
             GRRLIB_SetHandle( my_texture, 0, 0 );
-            if(imgProp.imgWidth != width || imgProp.imgHeight != height) {
+            if(imgProp.imgWidth != width || imgProp.imgHeight != height)
+				{
                 // PNGU has resized the texture
-                memset(my_texture->data, 0, (my_texture->h * my_texture->w) << 2);
-            }
+                //memset(my_texture->data, 0, (my_texture->h * my_texture->w) << 2);
+				}
             GRRLIB_FlushTex( my_texture );
-        }
+			}
+		else
+			{
+			Debug ("PNGU_DecodeTo4x4RGBA8 null");
+			}
         PNGU_ReleaseImageContext(ctx);
     }
     return my_texture;
@@ -2899,3 +2905,64 @@ int inline GRRLIB_GetFBMode (void)
 	{
 	return fbMode;
 	}
+	
+void ResizeRGBA(char *img, int imgWidth, int imgHeight, char *resize, int width, int height)
+{
+	u32 x, y, ix, iy, i;
+	u32 rx, ry, nx, ny;
+	u32 fix, fnx, fiy, fny;
+
+	for (y=0; y<height; y++) {
+		for (x=0; x<width; x++) {
+			rx = (x << 8) * imgWidth / width;
+			fnx = rx & 0xff;
+			fix = 0x100 - fnx;
+			ix = rx >> 8;
+			nx = ix+1;
+			if (nx >= imgWidth) nx = imgWidth - 1;
+
+			ry = (y << 8) * imgHeight / height;
+			fny = ry & 0xff;
+			fiy = 0x100 - fny;
+			iy = ry >> 8;
+			ny = iy+1;
+			if (ny >= imgHeight) ny = imgHeight - 1;
+
+			// source pixel pointers (syx i=index n=next)
+			u8 *rp  = (u8*)&((int*)resize)[y*width + x];
+			u8 *sii = (u8*)&((int*)img)[iy*imgWidth + ix];
+			u8 *sin = (u8*)&((int*)img)[iy*imgWidth + nx];
+			u8 *sni = (u8*)&((int*)img)[ny*imgWidth + ix];
+			u8 *snn = (u8*)&((int*)img)[ny*imgWidth + nx];
+			// pixel factors (fyx)
+			u32 fii = fiy * fix;
+			u32 fin = fiy * fnx;
+			u32 fni = fny * fix;
+			u32 fnn = fny * fnx;
+			// pre-multiply factors with alpha
+			fii *= (u32)sii[3];
+			fin *= (u32)sin[3];
+			fni *= (u32)sni[3];
+			fnn *= (u32)snn[3];
+			// compute alpha
+			u32 fff;
+			fff = fii + fin + fni + fnn;
+			rp[3] = fff >> 16;
+			// compute color
+			for (i=0; i<3; i++) { // for each R,G,B
+				if (fff == 0) {
+					rp[i] = 0;
+				} else {
+					rp[i] = 
+						( (u32)sii[i] * fii
+						+ (u32)sin[i] * fin
+						+ (u32)sni[i] * fni
+						+ (u32)snn[i] * fnn
+						) / fff;
+				}
+			}
+		}
+	}
+}
+
+ 

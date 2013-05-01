@@ -63,7 +63,7 @@ char *cfg_EncodeString (char *source) // basically remove/add \n\r, source buffe
 	
 	buff = malloc ((inlen * 2)+1);
 	if (!buff) return source;
-
+	
 	i = 0;
 	p = source;
 	do
@@ -218,8 +218,27 @@ void cfg_Free (s_cfg *c) // Free allocated config. stuct
 		}
 	
 	free (c->items);
+	free (c->tags);
+	
 	free (c);
 	}
+
+void cfg_Empty (s_cfg *c) // Free allocated config. stuct
+	{
+	int i;
+	
+	for (i = 0; i < c->count; i++)
+		{
+		if (c->items[i]) free (c->items[i]);
+		if (c->tags[i]) free (c->tags[i]);
+		
+		c->items[i] = NULL;
+		c->tags[i] = NULL;
+		}
+		
+	c->count = 0;	
+	}
+
 
 bool cfg_Store (s_cfg *c, char *fn)
 	{
@@ -365,7 +384,7 @@ s_cfg *cfg_Alloc (char *fn, int maxcount, int linebuffsize, int skipinvalid)
 	return cfg;
 	}
 
-int cfg_FindTag (s_cfg *c, char *tag) // return the pointer to an item
+int cfg_FindTag (s_cfg *c, char *tag) // return the index to an item
 	{
 	int i;
 	
@@ -599,11 +618,15 @@ int cfg_Value (s_cfg *cfg, int mode, int type, char *item, void *data, int maxby
 		if (type == CFG_ENCSTRING)
 			{
 			cfg_DecodeString (string);
-			
+		
 			if (maxbytes <= 0)
 				strcpy (data, string);
 			else
+				{
 				memcpy (data, string, maxbytes);
+				char*p = data;
+				p[maxbytes-1] = 0;
+				}
 				
 			return ret;
 			}
@@ -854,4 +877,20 @@ int cfg_ValueArray (s_cfg *cfg, int mode, int type, char *item, int idx, void *d
 	
 	sprintf (buff, "%s[%d]", item, idx);
 	return cfg_Value (cfg, mode, type, buff, data, maxbytes);
+	}
+
+char* cfg_TagFromIndex (s_cfg *cfg, int index, char *tag)
+	{
+	static char buff[256]; // should be enught
+	
+	if (index < 0 || index >= cfg->maxcount || !cfg->tags[index])
+		{
+		if (tag) *tag = '\0';
+		return NULL;
+		}
+		
+	if (tag) strcpy (tag, cfg->tags[index]);
+	strcpy (buff, cfg->tags[index]);
+	
+	return buff;
 	}

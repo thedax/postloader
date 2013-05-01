@@ -163,7 +163,7 @@ u8 *ms_FindStringInBuffer (u8 *buffer, size_t size, char *string)
 	return NULL;
 	}
 	
-// This function will return a section of delimited text, ex. "section0;section1;....;sectionn"
+// This function will return a (mallocated) section of delimited text, ex. "section0;section1;....;sectionn"
 char *ms_GetDelimitedString (char *string, char sep, int idx)
 	{
 	char *p = string;
@@ -190,11 +190,9 @@ char *ms_GetDelimitedString (char *string, char sep, int idx)
 			
 		if (i == idx)
 			{
-			//Debug ("return %d", (psep-p));
 			buff = malloc ((psep-p)+1);
 			strncpy (buff, p, (psep-p));
 			buff[(psep-p)] = 0;
-			//Debug (">> %s <<", buff);
 			return buff;
 			}
 		
@@ -207,4 +205,31 @@ char *ms_GetDelimitedString (char *string, char sep, int idx)
 		}
 	
 	return NULL;
+	}
+
+
+// search "tofind" and replace with "replace" in "string" (slow)
+void ms_Subst (char *string, char *tofind, char *replace)
+	{
+	char * found;
+	char * s1;
+	char * s2;
+	
+	do
+		{
+		found = strstr (string, tofind);
+		if (found)
+			{
+			s1 = malloc (strlen(string)+strlen(replace));
+			s2 = malloc (strlen(string)+strlen(replace));
+			found[0] = 0;
+			strcpy (s1, string);
+			strcpy (s2, &found[strlen(tofind)]);
+		
+			sprintf(string, "%s%s%s", s1, replace, s2);
+			free (s1);
+			free (s2);
+			}
+		}
+	while (found != NULL);
 	}

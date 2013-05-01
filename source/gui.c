@@ -257,10 +257,12 @@ int DrawTopBar (int *visibleflag, int *browserRet, u32 *btn, int *closed)
 			if (w > btnWidth) btnWidth = w;
 			}
 		
-		//btnWidth = 60;
+		if (btnWidth < 80)
+			btnWidth = 80;
 		
 		go.x1 = 320 - (((btnWidth + BTNOFFSET) * TOPBARITEMS) / 2) - 10;
 		go.x2 = 320 + (((btnWidth + BTNOFFSET) * TOPBARITEMS) / 2) + 10;
+
 		barWidth = go.x2 - go.x1;
 		
 		grlib_DrawWindow (go);

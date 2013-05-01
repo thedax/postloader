@@ -570,8 +570,10 @@ PNGU_u8 * PNGU_DecodeTo4x4RGBA8 (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, in
 	int x, y, x2=0, y2=0, offset;
 	int xRatio = 0, yRatio = 0;
 	png_byte *pixel;
-
-	if (pngu_decode (ctx, width, height, 0) != PNGU_OK)
+	
+	int ret = pngu_decode (ctx, width, height, 0);
+	
+	if (ret != PNGU_OK)
 		return NULL;
 
 	int newWidth = width;

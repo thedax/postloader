@@ -66,6 +66,7 @@
 	
 	bool cfg_Store (s_cfg *c, char *fn);
 	void cfg_Free (s_cfg *c); // Free allocated config. stuct
+	void cfg_Empty (s_cfg *c);
 	
 	int cfg_FindTag (s_cfg *c, char *tag); // return the pointer to an item
 	int cfg_GetString (s_cfg *cfg, char *tag, char *string);
@@ -78,4 +79,6 @@
 	
 	int cfg_Value (s_cfg *cfg, int mode, int type, char *item, void *data, int maxbytes);
 	int cfg_ValueArray (s_cfg *cfg, int mode, int type, char *item, int idx, void *data, int maxbytes);
+	
+	char* cfg_TagFromIndex (s_cfg *cfg, int index, char *tag);
 #endif

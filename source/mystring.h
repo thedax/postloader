@@ -9,4 +9,7 @@
 	
 	// This function will return a section of delimited text, ex. "section0;section1;....;sectionn"
 	char *ms_GetDelimitedString (char *string, char sep, int idx);
+	
+	// search "tofind" and replace with "replace" in "string" (slow)
+	void ms_Subst (char *string, char *tofind, char *replace);
 #endif

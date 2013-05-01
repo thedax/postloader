@@ -1093,4 +1093,6 @@ int inline GRRLIB_GetFBMode (void); //stfour
 int GRRLIB_InitTTF();
 void GRRLIB_ExitTTF();
 
+void ResizeRGBA(char *img, int imgWidth, int imgHeight, char *resize, int width, int height);
+
 #endif // __GRRLIB_PRIVATE_H__ 

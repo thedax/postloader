@@ -1,3 +1,16 @@
+postLoader 4.3.0
+
+* appBrowser: fixed a memory corruption with more than 86 homebrew. The real limit is 256, and once reached, it should no codedump. (thx MassiveRican)
+* appBrowser: current subfolder/page is correctly restored after executing an homebrew.
+* appBrowser: changed format of cache.
+* appBrowser: <long_desc> tag is read from the meta.xml when required.
+* emuBrowser: now supports .png, .jpg, .bmp covers
+* emuBrowser: added support for emulator's plugin arguments ({device},{path},{name},{loader},{titlelow},{titlehi},{loadername}
+* emuBrowser: added auto import of retroarch snapshots as covers. Note that if enabled (home->Auto import...) any .bmp will be removed from <dev>:/retroarch folder
+* emuBrowser: fixed displaying of the same cover for multiple roms.
+* emuBrowser: plugins.conf has a new format. Please update from full dist.
+* various fix/code optimizations.
+
 postLoader 4.2.2
 
 * gameBrowser: fixed game name handling for wii and gamecube games

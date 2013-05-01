@@ -30,6 +30,77 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 
 s_fsop fsop;
 
+// return a separated char array with directory items. '.' and '..' will be skipped. Terminated with \0, as usual. ext ".bmp;.png;.piripipì'"
+char * fsop_GetDirAsString (char *path, char sep, int skipfolders, char *ext)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	char *buff,*p;
+	int size = 0;
+
+	pdir = opendir (path);
+	if (!pdir) return NULL;
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{			
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || (pent->d_type == DT_DIR && skipfolders)) continue;
+		
+		if (ext)
+			{
+			char *e = fsop_GetExtension(pent->d_name);
+			if (e && !strstr (ext, e)) continue; 
+			}
+		
+		size += (strlen (pent->d_name)+1);
+		}
+	
+	size++;
+	
+	buff = p = calloc (1, size);
+	if (!buff) return NULL;
+	
+	rewinddir (pdir);
+	while ((pent=readdir(pdir)) != NULL) 
+		{			
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || (pent->d_type == DT_DIR && skipfolders)) continue;
+
+		if (ext)
+			{
+			char *e = fsop_GetExtension(pent->d_name);
+			if (e && !strstr (ext, e)) continue; 
+			}
+		
+		strcpy (p, pent->d_name);
+		p += strlen (pent->d_name);
+		*p = sep;
+		p += 1;
+		}
+	
+	closedir (pdir);
+	
+	return buff;
+	}
+
+// retrive extension from a full path. !! NOT THREAD SAFE !!
+char * fsop_GetExtension (char *path)
+	{
+	static char buff[256];
+	char *e = path + strlen(path) - 1;
+	
+	while (e > path)
+		{
+		if (*e == '.')
+			{
+			e++;
+			strcpy (buff, e);
+			return buff;
+			}
+		e--;
+		}
+		
+	return NULL;
+	}
+	
 // retrive filename from a full path. !! NOT THREAD SAFE !!
 char * fsop_GetFilename (char *path, bool killExt)
 	{
@@ -56,17 +127,29 @@ char * fsop_GetFilename (char *path, bool killExt)
 		{
 		i--;
 		}
-	strcpy (fn, &buff[i+1]);
+		
+	if (buff[i] == '/') i++;
+	
+	strcpy (fn, &buff[i]);
 	
 	return fn;
 	}
 
 // retrive path from a full path. !! NOT THREAD SAFE !!
-char * fsop_GetPath (char *path)
+char * fsop_GetPath (char *path, int killDev)
 	{
 	static char fn[256];
 	
-	strcpy (fn, path);
+	if (!killDev)
+		strcpy (fn, path);
+	else
+		{
+		char *p = strstr (path, "//");
+		if (p)
+			strcpy (fn, ++p);
+		else
+			strcpy (fn, path);
+		}
 	
 	int i;
 	
@@ -75,6 +158,7 @@ char * fsop_GetPath (char *path)
 		{
 		i--;
 		}
+	
 	fn[i] = 0;
 	
 	return fn;

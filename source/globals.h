@@ -10,10 +10,11 @@
 #include "debug.h"
 #include "cfg.h"
 
-//#define DOLPHINE
+#define DOLPHINE
 
-#define VER "4.2.2"
+#define VER "4.3.0"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
+#define HBCFGVER 1
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
 #define IOS_SNEEK 56
@@ -288,12 +289,11 @@ s_emuConfig;
 typedef struct
 	{
 	char *name;				// name
-	u8 *png;				// Address of png in cache area
+	char *cover;			// covername, if NULL no cover available
 
 	u8 filtered;			// if 1, this app match the filter
 	u8 needUpdate;
 	u8 checked;
-	u8 hasCover;			// if != 0 this rom has it own cover
 
 	u16 playcount;			// how many time this title has bin executed
 	u8 priority;			// Vote !
@@ -308,7 +308,6 @@ typedef struct
 	{
 	char *name;
 	char *desc;
-	char *longdesc;
 	char *path;
 	char *args;
 	char *version;
@@ -437,6 +436,10 @@ typedef struct
 	u32 appFilter;
 	char appCats[APPCATS_MAX][32];	// Application ca
 	u8 volume;
+	u8 enableRetroarchAutocover;
+	char lastRom[PATHMAX];	// filename of latest executed rom. Actually used to import retroarch snapshots
+	char subpath[64];
+	char submount[6];
 	}
 s_config;
 

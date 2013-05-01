@@ -26,8 +26,9 @@ s_fsop;
 
 extern s_fsop fsop;
 
+char * fsop_GetExtension (char *path);
 char * fsop_GetFilename (char *path, bool killExt);
-char * fsop_GetPath (char *path);
+char * fsop_GetPath (char *path, int killDev);
 char * fsop_GetDev (char *path);
 
 u8 *fsop_ReadFile (char *path, size_t bytes2read, size_t *bytesReaded);
@@ -47,5 +48,7 @@ int fsop_CountFolderTree (char *path);
 u32 fsop_GetFolderKb (char *source, fsopCallback vc);
 u64 fsop_GetFolderBytes (char *source, fsopCallback vc);
 u32 fsop_GetFreeSpaceKb (char *path);
+
+char * fsop_GetDirAsString (char *path, char sep, int skipfolders, char *ext);
 
 #endif

@@ -73,6 +73,97 @@ static int usedBytes = 0;
 #define INC_X ICONW+22
 #define INC_Y ICONH+25
 
+static void MakeCoverPath (int ai, char *path);
+
+static void retroarch_PurgeBmps (void)
+	{
+	char path[300];
+	int dev;
+	
+	if (!config.enableRetroarchAutocover)
+		{
+		Debug ("retroarch_PurgeBmps: disabled");
+		return;
+		}
+	
+	Debug ("retroarch_PurgeBmps: begin");
+
+	for (dev = 0; dev < DEV_MAX; dev++)
+		{
+		if (devices_Get (dev))
+			{
+			sprintf (path, "%s:/retroarch", devices_Get (dev));
+			
+			char *buff = fsop_GetDirAsString (path, '\0', 1, ".bmp");
+			if (buff)
+				{
+				char *p = buff;
+				
+				while (*p != '\0')
+					{
+					sprintf (path, "%s:/retroarch/%s", devices_Get (dev), p);
+					Debug (path);
+					unlink (path);
+					p += strlen(p)+1;
+					}
+				
+				free (buff);
+				}
+			}
+		}
+	
+	Debug ("retroarch_PurgeBmps: end");
+	}
+
+static void retroarch_GetCover (void)
+	{
+	char path[300];
+	int dev;
+	
+	if (!config.enableRetroarchAutocover || !*config.lastRom)
+		{
+		Debug ("retroarch_GetCover: disabled or no rom info...");
+		return;
+		}
+	
+	Debug ("retroarch_GetCover: begin");
+
+	for (dev = 0; dev < DEV_MAX; dev++)
+		{
+		if (devices_Get (dev))
+			{
+			sprintf (path, "%s:/retroarch", devices_Get (dev));
+			
+			char *buff = fsop_GetDirAsString (path, '\0', 1, ".bmp");
+			if (buff) // we have a rom snapshot!
+				{
+				sprintf (path, "%s:/retroarch/%s", devices_Get (dev), buff);
+				Debug (path);
+
+				size_t size;
+				fsop_GetFileSizeBytes (path, &size);
+				
+				if (size > 128)
+					{
+					char target[300];
+					
+					sprintf (target, "%s://ploader/covers.emu/%s.%s", vars.defMount, fsop_GetFilename(config.lastRom, true), fsop_GetExtension(buff));
+					fsop_CopyFile (path, target, 0);
+					Debug ("retroarch_GetCover %s -> %s", path, target);
+					}
+				else
+					{
+					Debug ("retroarch_GetCover %s is to small", path);
+					}
+				}
+			}
+		}
+	
+	Debug ("retroarch_GetCover: end");
+	
+	retroarch_PurgeBmps ();
+	}
+
 static void InitializeGui (void)
 	{
 	// Prepare black box
@@ -200,6 +291,7 @@ static int ReadGameConfig (int ia)
 #define PIN_PATH 2
 #define PIN_EXT 3
 #define PIN_ICON 4
+#define PIN_ARGS 5
 
 static char *Plugins_Get (int idx, int type)
 	{
@@ -212,7 +304,7 @@ static char *Plugins_Get (int idx, int type)
 		}
 		
 	*name = '\0';
-	p = ms_GetDelimitedString (plugins->items[idx], ';', type);
+	p = ms_GetDelimitedString (plugins->items[idx], '|', type);
 	if (p)
 		{
 		strcpy (name, p);
@@ -296,7 +388,12 @@ static int CountRomsPlugin (int type)
 	
 static void MakeCoverPath (int ai, char *path)
 	{
-	sprintf (path, "%s://ploader/covers.emu/%s.png", vars.defMount, fsop_GetFilename(emus[ai].name, true));
+	*path = '\0';
+	if (!emus[ai].cover) return;
+	
+	sprintf (path, "%s://ploader/covers.emu/%s", vars.defMount, emus[ai].cover);
+	
+	Debug ("MakeCoverPath: %s", path);
 	}
 
 static void FeedCoverCache (void)
@@ -314,7 +411,7 @@ static void FeedCoverCache (void)
 		{
 		ai = (page * gui.spotsXpage) + i;
 		
-		if (ai >= 0 && ai < emusCnt && emus[ai].hasCover)
+		if (ai >= 0 && ai < emusCnt && emus[ai].cover)
 			{
 			MakeCoverPath (ai, path);
 			CoverCache_Add (path, (i >= 0 && i < gui.spotsXpage) ? true:false );
@@ -330,7 +427,7 @@ static void StructFree (void)
 	
 	for (i = 0; i < emusCnt; i++)
 		{
-		emus[i].png = NULL;
+		emus[i].cover = NULL;
 		
 		if (emus[i].name != NULL) 
 			{
@@ -505,7 +602,10 @@ static void CheckForCovers (void)
 	
 	// Cleanup cover flag
 	for (i = 0; i < emusCnt; i++)
-		emus[i].hasCover = 0;
+		{
+		if (emus[i].cover) free (emus[i].cover);
+		emus[i].cover = NULL;
+		}
 		
 	sprintf (path, "%s://ploader/covers.emu", vars.defMount);
 	pdir=opendir(path);
@@ -513,15 +613,18 @@ static void CheckForCovers (void)
 	while ((pent=readdir(pdir)) != NULL) 
 		{
 		// Skip it
-		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0 || ms_strstr (pent->d_name, ".png") == NULL)
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
+			continue;
+			
+		if (ms_strstr (pent->d_name, ".png") == NULL && ms_strstr (pent->d_name, ".bmp") == NULL && ms_strstr (pent->d_name, ".jpg") == NULL)
 			continue;
 
 		for (i = 0; i < emusCnt; i++)
 			{
-			if (!emus[i].hasCover && ms_strstr (pent->d_name, fsop_GetFilename (emus[i].name, true)))
+			if (!emus[i].cover && ms_strstr (pent->d_name, fsop_GetFilename (emus[i].name, true)))
 				{
-				emus[i].hasCover = 1;
-				break;
+				emus[i].cover = malloc (strlen (pent->d_name) + 1);
+				strcpy (emus[i].cover, pent->d_name);
 				}
 			}
 		}
@@ -675,7 +778,7 @@ static int FindSpot (void)
 			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, title);
 
 			Video_SetFont(TTFSMALL);
-			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, fsop_GetPath(emus[emuSelected].name));
+			grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, fsop_GetPath(emus[emuSelected].name, 0));
 			
 			t = time(NULL);
 			break;
@@ -879,6 +982,8 @@ static void ShowMainMenu (void)
 			
 		grlib_menuAddItem (buff,  1, "Import snapshots as covers");
 		}
+		
+	grlib_menuAddItem (buff,  2, "Auto import retroarch snapshots (%s)", config.enableRetroarchAutocover ? "Yes" : "No");
 
 	Redraw();
 	grlib_PushScreen();
@@ -889,6 +994,11 @@ static void ShowMainMenu (void)
 		{
 		GetCovers ();
 		goto start;
+		}
+
+	if (item == 2)
+		{
+		config.enableRetroarchAutocover = 1 - config.enableRetroarchAutocover;		goto start;
 		}
 
 	if (item == 9)
@@ -934,7 +1044,7 @@ static void RedrawIcons (int xoff, int yoff)
 		gui.spots[i].ico.title[0] = '\0';
 		gui.spots[i].ico.xoff = xoff;
 		}
-	
+
 	// Draw Icons
 	gui.spotsIdx = 0;
 	for (i = 0; i < gui.spotsXpage; i++)
@@ -980,6 +1090,7 @@ static void RedrawIcons (int xoff, int yoff)
 			grlib_IconDraw (&is, &ico);
 			}
 		}
+
 	/*
 	if (emusCnt == 0)
 		{
@@ -1180,35 +1291,27 @@ static bool QuerySelection (int ai)
 
 static void StartEmu (int type, char *fullpath)
 	{
-	char fn[128];
-	char path[128];
 	char cmd[256];
 	char dol[256];
-	char buff[256];
-	char *p;
-	
-	strcpy (buff, fullpath);
-	
-	int i;
-	
-	// remove extension
-	i = strlen(buff)-1;
-	while (i > 0 && buff[i] != '/')
-		{
-		i--;
-		}
-	if (buff[i] == '/') buff[i] = 0;
-	strcpy (fn, &buff[i+1]);
-	strcpy (path, buff);
-	strcat (path, "/");
-	
-	p = strstr (path, "//");
-	if (p) 
-		p += 2;
-	else
-		p = path;
 
-	sprintf (cmd, "%s;%s;%s://ploader/plugins/forwarder.dol;00010001;504F5354;postLoader", path, fn, vars.defMount);
+	strcpy (cmd, Plugins_Get(type, PIN_ARGS));
+	if (*cmd == 0)
+		{
+		grlib_menu (0, "Attention!", "plugins.conf seems to be invalid or corrupted");
+		return;
+		}
+		
+	char loader[256];
+	sprintf (loader, "%s://ploader/plugins/forwarder.dol", vars.defMount);
+
+	ms_Subst (cmd, "{device}", fsop_GetDev (fullpath));
+	ms_Subst (cmd, "{path}", fsop_GetPath (fullpath, 1));
+	ms_Subst (cmd, "{name}", fsop_GetFilename (fullpath, 0));
+	ms_Subst (cmd, "{loader}", loader);
+	ms_Subst (cmd, "{titlelow}", "00010001");
+	ms_Subst (cmd, "{titlehi}", "504F5354");
+	ms_Subst (cmd, "{loadername}", "postLoader");
+
 	sprintf (dol, "%s://ploader/plugins/%s", vars.defMount, Plugins_Get(type, PIN_DOL));
 	
 	Debug ("StartEmu %s (%s)", dol, cmd);
@@ -1218,6 +1321,7 @@ static void StartEmu (int type, char *fullpath)
 		Conf (false);	// Store configuration on disc
 		Plugins (false);
 
+		strcpy (config.lastRom, fsop_GetFilename (fullpath, 0));
 		DirectDolBoot (dol, cmd, 0);
 		}
 	else
@@ -1256,6 +1360,9 @@ int EmuBrowser (void)
 	grlib_PopScreen ();
 	grlib_Render();  // Render the theme.frame buffer to the TV
 	*/
+
+	config.enableRetroarchAutocover = 1;
+	retroarch_GetCover ();
 	
 	page = config.gamePageEmu;
 	EmuBrowse ();
