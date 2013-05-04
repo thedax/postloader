@@ -48,7 +48,8 @@
 		CFG_U32,
 		CFG_U16,
 		CFG_U8,
-		CFG_S8
+		CFG_S8,
+		CFG_BOOL
 		};
 
 	typedef struct cfg

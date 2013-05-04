@@ -129,7 +129,7 @@ static void FeedCoverCache (void)
 		
 		if (ai >= 0 && ai < appsCnt)
 			{
-			sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, config.subpath, apps[ai].path);			
+			sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, config.subpath, apps[ai].path);
 			CoverCache_Add (path,  (i >= 0 && i < gui.spotsXpage) ? true:false );
 			}
 		}
@@ -1251,10 +1251,14 @@ void DrawInfo (void)
 
 		Video_SetFont(TTFNORM);
 		
-		if (apps[appsSelected].version && *apps[appsSelected].version != '\0')
-			sprintf (name, "%s (%s)", apps[appsSelected].name, apps[appsSelected].version);
-		else
-			sprintf (name, "%s", apps[appsSelected].name);
+		*name = 0;
+		if (apps[appsSelected].name)
+			{
+			if (apps[appsSelected].version && *apps[appsSelected].version != '\0')
+				sprintf (name, "%s (%s)", apps[appsSelected].name, apps[appsSelected].version);
+			else
+				sprintf (name, "%s", apps[appsSelected].name);
+			}
 
 		grlib_printf (XMIDLEINFO, theme.line1Y, GRLIB_ALIGNCENTER, 0, name);
 
@@ -1530,9 +1534,10 @@ static bool QuerySelection (int ai)
 	{
 	int i;
 	float mag = 1.0;
+	float magMax = 3.1;
 	int spot = -1;
 	int incX = 1, incY = 1;
-	int y = 220;
+	int y = 200;
 	int yInf = 490;
 	
 	Video_SetFont(TTFNORM);
@@ -1559,6 +1564,12 @@ static bool QuerySelection (int ai)
 	black.y2 = grlib_GetScreenH();
 	black.color = RGBA(0,0,0,192);
 	black.bcolor = RGBA(0,0,0,192);
+
+	// Load full res cover
+	char path[300];
+	sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, config.subpath, apps[ai].path);
+	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	if (tex) ico.icon = tex;
 	
 	while (true)
 		{
@@ -1590,8 +1601,8 @@ static bool QuerySelection (int ai)
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
-		if (mag < 3.0) mag += 0.05;
-		if (mag >= 3.0 && ico.x == 320 && ico.y == y) break;
+		if (mag < magMax) mag += 0.05;
+		if (mag >= magMax && ico.x == 320 && ico.y == y) break;
 		}
 	
 	u32 btn;
@@ -1612,6 +1623,8 @@ static bool QuerySelection (int ai)
 		if (btn & WPAD_BUTTON_A) return true;
 		if (btn & WPAD_BUTTON_B) return false;
 		}
+		
+	GRRLIB_FreeTexture (tex);
 	return true;
 	}
 

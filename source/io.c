@@ -35,7 +35,7 @@ bool CheckForPostLoaderFolders (void)
 		{
 		if (!fsop_MakeFolder (path)) return FALSE;
 		}
-	
+		
 	// If temp folder exist, clean it on sturtup
 	sprintf (path, "%s://ploader/temp",vars.defMount);
 	if (fsop_DirExist (path))

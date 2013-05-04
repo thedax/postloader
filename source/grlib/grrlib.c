@@ -2905,8 +2905,45 @@ int inline GRRLIB_GetFBMode (void)
 	{
 	return fbMode;
 	}
+
+u32 inline GRRLIB_GetPixelFromtexImg4x4RGBA8 (int x, int y, int w, register u8* bp) 
+	{
+    register u32 offs;
+    register u32 ar;
+
+    offs = (((y&(~3))<<2)*w) + ((x&(~3))<<4) + ((((y&3)<<2) + (x&3)) <<1);
+    ar = (u32)(*((u16*)(bp+offs)));
 	
-void ResizeRGBA(char *img, int imgWidth, int imgHeight, char *resize, int width, int height)
+    return (ar<<24) | ( ((u32)(*((u16*)(bp+offs+32)))) <<8) | (ar>>8);  // Wii is big-endian
+	}
+
+void inline GRRLIB_SetPixelTotexImg4x4RGBA8 (int x, int y, int w, register u8* bp, const u32 color) 
+	{
+    register u32 offs;
+
+    offs = (((y&(~3))<<2)*w) + ((x&(~3))<<4) + ((((y&3)<<2) + (x&3)) <<1);
+
+    *((u16*)(bp+offs   )) = (u16)((color <<8) | (color >>24));
+    *((u16*)(bp+offs+32)) = (u16) (color >>8);
+	}
+	
+void ResizeRGBA(u8 *img, int imgWidth, int imgHeight, u8 *resize, int width, int height)
+{
+	int x, y, ix, iy;
+	
+	for (y = 0; y < height; y++) 
+		{
+		for (x=0; x < width; x++) 
+			{
+			ix = x * imgWidth / width;
+			iy = y * imgHeight / height;
+			
+			GRRLIB_SetPixelTotexImg4x4RGBA8 (x, y, width, resize, GRRLIB_GetPixelFromtexImg4x4RGBA8(ix, iy, imgWidth, img));
+			}
+		}
+	}
+	
+void ResizeRGBA1(u8 *img, int imgWidth, int imgHeight, u8 *resize, int width, int height)
 {
 	u32 x, y, ix, iy, i;
 	u32 rx, ry, nx, ny;

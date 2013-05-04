@@ -30,8 +30,8 @@ union uTypes
 	u32				U32;
 	u16				U16;
 	u8 				U8;
-	
 	s8 				S8;
+	bool			Bool;
 
 	float           Float;
     double          Double;
@@ -456,6 +456,11 @@ int cfg_Value (s_cfg *cfg, int mode, int type, char *item, void *data, int maxby
 	
 	if (mode == CFG_WRITE)
 		{
+		if (type == CFG_BOOL)
+			{
+			memcpy (&ut.Bool, data, sizeof(bool));
+			sprintf (string, "%d", ut.Bool);
+			}
 		if (type == CFG_CHAR)
 			{
 			memcpy (&ut.Char, data, sizeof(char));
@@ -535,6 +540,12 @@ int cfg_Value (s_cfg *cfg, int mode, int type, char *item, void *data, int maxby
 		{
 		ret = cfg_GetString (cfg, tag, string);
 
+		if (type == CFG_BOOL)
+			{
+			ut.Bool = (char)atoi(string);
+			memcpy (data, &ut.Bool, sizeof(bool));
+			return ret;
+			}
 		if (type == CFG_CHAR)
 			{
 			ut.Char = (char)atoi(string);

@@ -1,3 +1,20 @@
+postLoader 4.4.1
+
+* added new tag to plugin.conf to specify alternate dol search path (more info in the the file)
+* removed option menu
+* when a an icon is clicked, a full res cover is displayed.
+* postloader binary configuration file is no more resetted if size changes
+* emuBrowser: fixed filters issue if plugins.conf file is modified
+* changed, again, sigh :( semaphores in covercache, hoping that this will stop occasionally hangs
+* various fixs...
+
+postLoader 4.4.0
+
+* covers are scaled down to save memory
+* added "Enable TEX cache" in "config->advanced option". If enabled a folder /ploader/tex will be created, and a rgb raw texture will be saved. 
+This give a great boost on cover update speed but require up to 144Kb per covers on the device. Note that disabling it will remove all cached textures.
+* covers lookup for emus is much faster
+
 postLoader 4.3.0
 
 * appBrowser: fixed a memory corruption with more than 86 homebrew. The real limit is 256, and once reached, it should no codedump. (thx MassiveRican)

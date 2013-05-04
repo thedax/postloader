@@ -363,7 +363,7 @@ void Video_LoadTheme (int init)
 		
 		sprintf (path, "%s://ploader/theme/theme.cfg", vars.defMount);
 		s_cfg *cfg = cfg_Alloc (path, 0, 0, 0);
-		if (cfg)
+		if (cfg->count)
 			{
 			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.windowMagX", &grlibSettings.theme.windowMagX, 0);
 			cfg_Value (cfg, CFG_READ, CFG_INT, "grlibSettings.theme.windowMagY", &grlibSettings.theme.windowMagY, 0);
@@ -388,8 +388,6 @@ void Video_LoadTheme (int init)
 			Debug ("theme.line2Y = %d", theme.line2Y);
 			Debug ("theme.line3Y = %d", theme.line3Y);
 			
-			cfg_Free (cfg);
-			
 			if (grlibSettings.fontDef.reverse) // we likely need to revert textures (skipping cursor)
 				{
 				Debug ("inverting tex");
@@ -403,6 +401,9 @@ void Video_LoadTheme (int init)
 				GRRLIB_BMFX_Invert (vars.tex[TEX_GK],vars.tex[TEX_GK]);
 				}
 			}
+
+		cfg_Free (cfg);
+			
 		
 		#ifndef DOLPHINE
 		if (rmode->viTVMode == VI_DEBUG_PAL)

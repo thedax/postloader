@@ -20,12 +20,19 @@ char *ms_AllocCopy (char *source, int addbytes) // basically remove/add \n\r, so
 	return p;
 	}
 
-void ms_strtoupper(char *str1)
+void ms_strtoupper(char *str)
 	{
-	if (!str1) return;
-	
-	int i;
-	for (i = 0; i < strlen(str1); i++) str1[i] = (char)toupper((int)str1[i]);
+	if (!str) return;
+    for(; *str; str++)
+		if(*str>='a' && *str<='z')
+			*str = *str-('a'-'A');
+}
+ 
+void ms_strtolower(char *str)
+	{
+	for(;*str;str++)
+		if(*str>='A' && *str<='Z')
+			*str = *str+('a'-'A');
 	}
 
 //taken from http://www.daniweb.com/software-development/c/code/216564/strings-case-insensitive-strstr
@@ -59,34 +66,6 @@ char *ms_strstr(char *str1, char *str2)
 		}
 	return 0;
 	}
-
-/*
-	{
-	if (!str1 || !str2 || !*str1 || !*str2)
-		return NULL;
-		
-	int l1 = strlen(str1);
-	int l2 = strlen(str2);
-	
-	char *s1 = malloc (l1+1);
-	char *s2 = malloc (l2+1);
-
-	int i;
-	for (i = 0; i <= l1; i++) s1[i] = toupper((int)str1[i]);
-	for (i = 0; i <= l2; i++) s2[i] = toupper((int)str2[i]);
-	
-	char *p;
-	p = strstr (s1, s2);
-	
-	if (p != NULL)
-		p = str1 + (p - s1);
-	
-	free (s1);
-	free (s2);
-	
-	return p;
-	}
-*/
 
 int ms_strcmp(char *str1, char *str2)
 	{

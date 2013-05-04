@@ -7,19 +7,24 @@
 
 #include "mem2.h"
 #include "globals.h"
+#include "mystring.h"
 
-#define PRIO_IDLE 8
-#define PRIO_HI 32
+#define PRIO 32
+#define TSIZE 192.0
 
 static mutex_t mutex;
 
+#define SET(a, b) a = b;
 //#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
-//#define SET(a, b) a = b;
-#define MAXITEMS 128
+//#define SET(a, b) LWP_MutexLock (mutex); a = b; LWP_MutexUnlock (mutex);
+//#define FRESH(a) DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
+//#define MAXITEMS 128
+#define MAXITEMS 256
 
 #define STACKSIZE	8192
 static u8 * threadStack = NULL;
 static lwp_t hthread = LWP_THREAD_NULL;
+//static lwp_t htmon = LWP_THREAD_NULL;
 
 typedef struct 
 	{
@@ -32,89 +37,97 @@ s_cc; // covercache
 
 static s_cc *cc = NULL;
 
-#define PAUSE_NO 0
-#define PAUSE_REQUEST 1
-#define PAUSE_YES 2
-
 static int age = 0;
-static volatile int threadPause = PAUSE_NO;
-static volatile int threadStop = 0;
-static volatile int threadRunning = 0;
+static volatile bool threadPaused = false;
+static volatile bool threadPause = false;
+static volatile bool threadStop = false;
+static volatile bool threadRunning = false;
+static volatile bool monrunning = false;
+static volatile int cycle = 0;
 static volatile int cId = 0;
 static volatile int update = 0;
 
 #define UPDATE_TP() DCFlushRange(threadPause, sizeof(int))
 
+GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename);
+
+/*
+static void *tmon (void *arg)
+	{
+	monrunning = true;
+	while (monrunning)
+		{
+		gprintf ("tmon: %d %d %d %d %d\n", threadPaused, threadPause, threadStop, threadRunning, cycle);
+		//mem2_PrintAreaInfo (0);
+		usleep (100000);
+		}
+		
+	return NULL;
+	}
+*/
+
 static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex)
 	{
 	if (!tex) return NULL;
 	
-	GRRLIB_texImg *newTex = mem2_malloc (sizeof(GRRLIB_texImg));
-	if (!newTex) return NULL;
-	
-	memcpy (newTex, tex, sizeof(GRRLIB_texImg));
-	DCFlushRange(newTex, sizeof(GRRLIB_texImg));
-
 	u32 size = tex->w * tex->h * 4;
-	newTex->data = mem2_malloc (size);
+
+	u8* data = mem2_malloc (size);
 	
-	if (!newTex->data) 
-		{
-		mem2_free (newTex);
-		return NULL;
-		}
+	if (!data) 
+		return tex;
 	
-	memcpy (newTex->data, tex->data, size);
-	DCFlushRange(newTex->data, size);
+	memcpy (data, tex->data, size);
+	free (tex->data);
+	tex->data = data;
 	
-	GRRLIB_FreeTexture (tex);
+	GRRLIB_FlushTex (tex);
 	
-	return newTex;
+	return tex;
 	}
 	
 static void FreeMem2Tex (GRRLIB_texImg *tex)
 	{
-	if (!tex) return;
-	
 	DCFlushRange(tex, sizeof(GRRLIB_texImg));
-	
+
+	if (!tex) return;
+
 	if (tex->data)
 		mem2_free(tex->data);
 
-	mem2_free(tex);
+	free(tex);
 	}
 
 static void *thread (void *arg)
 	{
 	GRRLIB_texImg *tex;
+	char name[256];
 
 	threadRunning = 1;
 
-	Debug ("covercache thread started");
-	
 	int doPrio = 0;
 	int i;
 	int read;
-	int currentPrio = PRIO_IDLE;
 	
 	while (true)
 		{
 		read = 0;
 		
+		cycle++;
+		
 		for (i = 0; i < MAXITEMS; i++)
 			{
 			if (*cc[i].id != '\0' && !cc[i].cover && ((doPrio == 1 && cc[i].prio == 1) || doPrio == 0))
 				{
+				LWP_MutexLock (mutex);
+				
 				read = 1;
-
-				if (currentPrio == PRIO_IDLE) 
-					{
-					currentPrio = PRIO_HI;
-					LWP_SetThreadPriority (hthread, currentPrio);
-					}
-			
 				cId = i;
-				tex = GRRLIB_LoadTextureFromFile (cc[i].id);
+				strcpy (name, cc[i].id);
+				
+				LWP_MutexUnlock (mutex);
+				
+				tex = CoverCache_LoadTextureFromFile (name);
 				
 				LWP_MutexLock (mutex);
 				cc[i].prio = 0;
@@ -126,24 +139,17 @@ static void *thread (void *arg)
 					}
 				DCFlushRange(&cc[i], sizeof(s_cc));
 				update ++;
+				
 				LWP_MutexUnlock (mutex);
 
 				cId = -1;
+				
+				usleep (10);
 				}
 				
-			//gprintf ("%d ",*threadPause);
-			if (threadPause == PAUSE_REQUEST)
+			if (threadPause)
 				{
-				threadPause = PAUSE_YES;
-				
-				int tout = 10000;
-				while (threadPause == PAUSE_YES && --tout > 0)
-						{
-						usleep (100);
-						LWP_YieldThread();
-						}
-				if (tout < 0) Debug ("tout on threadPause");
-				
+				LWP_SuspendThread(hthread);
 				doPrio = 1;
 				i = 0;
 				}
@@ -155,14 +161,11 @@ static void *thread (void *arg)
 				}
 			}
 			
-		if (read == 0 && currentPrio == PRIO_HI) 
+		if (read == 0) 
 			{
-			currentPrio = PRIO_IDLE;
-			LWP_SetThreadPriority (hthread, currentPrio);
+			usleep (1000);
 			}
 
-		usleep (100);
-		
 		doPrio = 0;
 		}
 	
@@ -175,19 +178,34 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	
 	if (yes)
 		{
-		threadPause = PAUSE_REQUEST;
-
-		int tout = 10000;
-		while (threadPause != PAUSE_YES && --tout > 0)
+		SET (threadPause,true);
+		
+		get_msec(true);
+		while (!LWP_ThreadIsSuspended(hthread)) 
 			{
-			usleep(100);
-			LWP_YieldThread();
+			usleep (1000);
+			if (get_msec(false) > 1000)
+				{
+				Debug ("CoverCache_Pause pause: timeout, retring...");
+				break;
+				}
 			}
-		if (tout < 0) Debug ("tout on CoverCache_Pause request");
 		}
 	else
 		{
-		threadPause = PAUSE_NO;
+		SET (threadPause,false);
+		LWP_ResumeThread (hthread);
+
+		get_msec(true);
+		while (LWP_ThreadIsSuspended(hthread)) 
+			{
+			usleep (1000);
+			if (get_msec(false) > 1000)
+				{
+				Debug ("CoverCache_Pause continue: timeout, retring...");
+				break;
+				}
+			}
 		}
 	}
 	
@@ -201,8 +219,13 @@ void CoverCache_Start (void)
     LWP_MutexInit (&mutex, false);
 
 	threadStack = (u8 *) memalign(32, STACKSIZE);
-	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, PRIO_IDLE);
+	LWP_CreateThread (&hthread, thread, NULL, threadStack, STACKSIZE, PRIO);
 	LWP_ResumeThread(hthread);
+
+	/*
+	LWP_CreateThread (&htmon, tmon, NULL, NULL, 0, PRIO);
+	LWP_ResumeThread(htmon);
+	*/
 	}
 
 void CoverCache_Flush (void)	// empty the cache
@@ -244,30 +267,15 @@ void CoverCache_Stop (void)
 	if (!cc) return; // start wasn't called
 	
 	Debug ("CoverCache_Stop");
+	monrunning = false;
 	if (threadRunning)
 		{
-		threadStop = 1;
-		
-		int i;
-		for (i = 0; i < 2000; i++)
-			{
-			if (threadRunning == 0) break;
-			usleep (1000);
-			}
-		
-		if (threadRunning)
-			{
-			threadStop = 1;
-			Debug ("CoverCache_Stop: Warning, thread doesn't respond !");
-			}
-		else
-			{
-			LWP_JoinThread (hthread, NULL);
-			CoverCache_Flush ();
-			free (threadStack);
-			free (cc);
-			LWP_MutexDestroy (mutex);
-			}
+		SET (threadStop,1);
+		LWP_JoinThread (hthread, NULL);
+		CoverCache_Flush ();
+		free (threadStack);
+		free (cc);
+		LWP_MutexDestroy (mutex);
 		}
 	else
 		Debug ("CoverCache_Stop: thread was already stopped");
@@ -281,6 +289,7 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 	GRRLIB_texImg *tex = NULL;
 	
 	LWP_MutexLock (mutex);
+	
 	for (i = 0; i < MAXITEMS; i++)
 		{
 		if (i != cId && *cc[i].id != '\0' && strcmp (id, cc[i].id) == 0)
@@ -289,8 +298,9 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 			break;
 			}
 		}
-	LWP_MutexUnlock (mutex);
 	
+	LWP_MutexUnlock (mutex);
+
 	return tex;
 	}
 	
@@ -324,11 +334,8 @@ void CoverCache_Add (char *id, bool priority)
 	int i;
 	bool found = false;
 	
-	if (threadPause != PAUSE_YES)
-		{
+	if (!threadPause)
 		CoverCache_Pause (true);
-		return;
-		}
 
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
@@ -384,4 +391,257 @@ void CoverCache_Add (char *id, bool priority)
 
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	age ++;
+	}
+
+/*
+
+*/
+u8 * LoadRGBTexRGBA (char *fn, u16* w, u16* h, u8 alpha)
+	{
+	u16 *wh;
+
+	u32 x, y;
+
+	size_t size_rgb;
+	u8* rgb;
+	u8* prgb;
+
+	u32 size_rgba;
+	u8* rgba;
+	
+	*w = 0;
+	*h = 0;
+	
+	//Debug ("Loading %s", fn);
+	
+	rgb = fsop_ReadFile (fn, 0, &size_rgb);
+	if (!rgb)
+		{
+		//Debug ("...not found", fn);
+		return NULL;
+		}
+	
+	wh = (u16*)(rgb + size_rgb - 4);
+	
+	//Debug ("size = %d, %d, %d, %u", size_rgb, wh[0], wh[1], (void*)wh-(void*)rgb);
+	
+	if (wh[0] == 0 || wh[1] == 0 || wh[0] > TSIZE || wh[1] > TSIZE)
+		{
+		free (rgb);
+		return NULL;
+		}
+	
+	size_rgb = wh[0]*wh[1]*3;
+	size_rgba = wh[0]*wh[1]*4;
+		
+	rgba = malloc (size_rgba);
+	if (!rgba)
+		{
+		free (rgb);
+		return NULL;
+		}
+	
+	prgb = rgb;
+	for (x = 0; x < wh[0]; x++)
+		for (y = 0; y < wh[1]; y++)
+			{
+			GRRLIB_SetPixelTotexImg4x4RGBA8 (x, y, wh[0], rgba, RGBA (prgb[0], prgb[1], prgb[2], alpha));
+			prgb += 3;
+			}
+	
+		
+	free (rgb);
+	
+	*w = wh[0];
+	*h = wh[1];
+	return rgba; 
+	}
+
+bool SaveRGBATexRGB (char *fn, u8* rgba, u16 w, u16 h)
+	{
+	FILE *f;
+	u16 wh[2];
+	u32 x,y;
+	u32 size_rgb;
+	u8* rgb;
+	u8* prgb;
+	u32 pixel;
+	
+	size_rgb = w*h*3;
+
+	rgb = malloc (size_rgb);
+	if (!rgb)
+		{
+		return false;
+		}
+
+	prgb = rgb;
+	for (x = 0; x < w; x++)
+		for (y = 0; y < h; y++)
+			{
+			pixel = GRRLIB_GetPixelFromtexImg4x4RGBA8 (x, y, w, rgba);
+			*(prgb++) = R(pixel);
+			*(prgb++) = G(pixel);
+			*(prgb++) = B(pixel);
+			}
+	
+	f = fopen (fn, "wb");
+	if (!f) 
+		{
+		//Debug ("SaveRGBATexRGB: cannot write to '%s'", fn);
+		free (rgb);
+		return false;
+		}
+	
+	fwrite (rgb, 1, size_rgb, f);
+	wh[0] = w;
+	wh[1] = h;
+	fwrite (wh, 1, sizeof(wh), f);
+
+	fclose (f);
+		
+	free (rgb);
+	return true; 
+	}
+
+u8 * LoadRGBATex (char *fn, u16* w, u16* h, u8 alpha)
+	{
+	u32 size_rgba;
+	u8* rgba;
+	u16 *wh;
+	
+	*w = 0;
+	*h = 0;
+	
+	//Debug ("Loading %s", fn);
+	
+	rgba = fsop_ReadFile (fn, 0, &size_rgba);
+	if (!rgba)
+		{
+		//Debug ("...not found", fn);
+		return NULL;
+		}
+	
+	wh = (u16*)(rgba + size_rgba - 4);
+
+	*w = wh[0];
+	*h = wh[1];
+	
+	return rgba; 
+	}
+
+bool SaveRGBATex (char *fn, u8* rgba, u16 w, u16 h)
+	{
+	FILE *f;
+	u16 wh[2];
+	u32 size_rgba;
+	
+	if (w == 0 || h == 0 || !rgba) return false;
+	
+	size_rgba = w*h*4;
+
+	f = fopen (fn, "wb");
+	if (!f) 
+		{
+		//Debug ("SaveRGBATexRGB: cannot write to '%s'", fn);
+		return false;
+		}
+	
+	fwrite (rgba, 1, size_rgba, f);
+	wh[0] = w;
+	wh[1] = h;
+	fwrite (wh, 1, sizeof(wh), f);
+
+	fclose (f);
+	return true; 
+	}
+
+GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename) 
+	{
+    GRRLIB_texImg  *tex = NULL;
+    unsigned char  *data;
+	char fntex[256];
+	char buff[256];
+	u8 *rgba;
+	u16 i, j, w, h;
+	float fw, fh;
+	
+	// let's clean the filename
+	strcpy (fntex, filename);
+
+	// kill extension
+	j = strlen (fntex);
+	while (j > 0 && fntex[j--] != '.');
+	fntex[j+1] = 0;
+	
+	j = 0;
+	for (i = 0; i < strlen(fntex); i++)
+		{
+		if ((fntex[i] >= 48 && fntex[i] <= 57) || (fntex[i] >= 65 && fntex[i] <= 90) || (fntex[i] >= 97 && fntex[i] <= 122))
+			{
+			buff[j++] = fntex[i];
+			}
+		}
+	buff[j] = 0;
+	ms_strtolower(buff);
+	
+	// let's take max 16 char for texname
+	if (j < 16)
+		{
+		sprintf (fntex, "%s://ploader/tex/%s.tex", vars.defMount, buff);
+		}
+	else
+		{
+		sprintf (fntex, "%s://ploader/tex/%s.tex", vars.defMount, &buff[j-16]);
+		}
+	
+	// Debug ("fntex = %s", fntex);
+		
+	rgba = LoadRGBATex (fntex, &w, &h, 255);
+	if (!rgba)
+		{
+		// return NULL it load fails
+		if (GRRLIB_LoadFile(filename, &data) <= 0)  return NULL;
+		// Convert to texture
+		tex = GRRLIB_LoadTexture(data);
+		// Free up the buffer
+		free(data);
+		
+		if (!tex) return NULL;
+		
+		if (tex->w >= tex->h && tex->w > TSIZE)
+			{
+			fw = TSIZE;
+			fh = TSIZE / ((float)tex->w / (float)tex->h);;
+			}
+		else if (tex->w < tex->h && tex->h > TSIZE)
+			{
+			fw = TSIZE / ((float)tex->h / (float)tex->w);
+			fh = TSIZE;
+			}
+		else
+			{
+			fw = tex->w;
+			fh = tex->h;
+			}
+			
+		w = (u16)fw / 4 * 4;
+		h = (u16)fh / 4 * 4;
+			
+		rgba = malloc (w * h *4);
+		ResizeRGBA (tex->data, tex->w, tex->h, rgba, w, h);
+		GRRLIB_FreeTexture (tex);
+
+		if (config.enableTexCache)
+			SaveRGBATex (fntex, rgba, w, h);
+		}
+
+	tex = calloc(1, sizeof(GRRLIB_texImg));
+	tex->w = w;
+	tex->h = h;
+	tex->data = rgba;
+	GRRLIB_SetHandle( tex, 0, 0 );
+	GRRLIB_FlushTex( tex );
+
+    return tex;
 	}

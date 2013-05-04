@@ -101,6 +101,8 @@ int grlib_menuAddCustomCheckItem (char *menu, int id, bool check, const char *ye
 	if (!p) return 0;
 	*p = '\0';
 
+	strcat (buff, " ");
+
 	if (check)
 		strcat (buff, yn);
 	else

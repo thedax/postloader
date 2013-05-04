@@ -423,6 +423,13 @@ int main(int argc, char **argv)
 				config.browseMode = BROWSE_GM;
 			else if (ret == INTERACTIVE_RET_TOEMU)
 				config.browseMode = BROWSE_EM;
+			else if (ret == INTERACTIVE_RET_NEEK2O)
+				{
+				if (Neek2oLoadKernel ())
+					break;
+				else
+					grlib_menu (50, "Error!\npostLoader was unable to load neek2o kernel", "OK");
+				}
 			else 
 				{
 				grlib_SetRedrawCallback (Redraw, NULL);
@@ -458,7 +465,6 @@ int main(int argc, char **argv)
 
 	if (ret == INTERACTIVE_RET_NEEK2O)
 		{
-		Neek2oLoadKernel ();
 		Shutdown ();
 		Neek2oBoot ();
 		return(0);

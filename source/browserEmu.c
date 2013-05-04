@@ -27,7 +27,6 @@ This allow to browse for applications in emus folder of mounted drive
 
 */
 extern s_grlibSettings grlibSettings;
-static s_emuConfig emuConf;
 
 static int browse = 0;
 static int scanned = 0;
@@ -74,6 +73,7 @@ static int usedBytes = 0;
 #define INC_Y ICONH+25
 
 static void MakeCoverPath (int ai, char *path);
+static void FixFilters (void);
 
 static void retroarch_PurgeBmps (void)
 	{
@@ -240,52 +240,58 @@ static void Conf (bool open)
 	
 static void WriteGameConfig (int ia)
 	{
+	Debug ("WriteGameConfig: begin");
 	if (ia < 0) return;
 	
-	strcpy (emuConf.name, emus[ia].name);
-	emuConf.hidden = emus[ia].hidden;
-	emuConf.priority = emus[ia].priority;
-	//emuConf.category = emus[ia].category;
-	emuConf.playcount = emus[ia].playcount;
+	char buff[2048];
+	int index = 0;
+	*buff = '\0';
 	
-	char *buff = Bin2HexAscii (&emuConf, sizeof (s_emuConfig), 0);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, &emus[ia].priority, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8, &emus[ia].hidden, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U16, &emus[ia].playcount, index++);
+	//cfg_FmtString (buff, CFG_WRITE, CFG_STRING, emus[ia].name, index++);
+
 	cfg_SetString (cfg, fsop_GetFilename(emus[ia].name, true), buff);
-	free (buff);
+	
+	Debug ("WriteGameConfig: end");
 	}
 
 static int ReadGameConfig (int ia)
 	{
-	char buff[1024];
-	bool valid;
+	Debug ("ReadGameConfig: begin");
+	char buff[2048];
+	int index = 0;
+	*buff = '\0';
 	
-	valid = cfg_GetString (cfg, fsop_GetFilename(emus[ia].name, true), buff);
-	
-	if (valid)
+	if (cfg_GetString (cfg, fsop_GetFilename(emus[ia].name, true), buff) >= 0 && strlen(buff) < 250) // old format
 		{
-		if (HexAscii2Bin (buff, &emuConf) > sizeof (s_emuConfig))
-			{
-			valid = false;
-			}
+		cfg_FmtString (buff, CFG_READ, CFG_U8, &emus[ia].priority, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8, &emus[ia].hidden, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U16, &emus[ia].playcount, index++);
+		//cfg_FmtString (buff, CFG_READ, CFG_STRING, emus[ia].name, index++);
+		}
+	else
+		{
+		emus[ia].priority = 5;
+		emus[ia].hidden = 0;
+		emus[ia].playcount = 0;
 		}
 	
-	if (!valid)
-		{
-		emuConf.priority = 5;
-		emuConf.hidden = 0;
-		emuConf.playcount = 0;
-		//emuConf.category = 0;
-		}
-
-	//emus[ia].category = emuConf.category;
-	emus[ia].hidden = emuConf.hidden;
-	emus[ia].priority = emuConf.priority;
-	emus[ia].playcount = emuConf.playcount;
-	
-	return valid;
+	Debug ("ReadGameConfig: end");
+	return true;
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int Plugins_GetItem (int idx)
+	{
+	char tag[32];
+	sprintf (tag, "%03d", idx);
+	
+	return cfg_FindTag (plugins, tag);
+	}
+	
 #define PIN_NAME 0
 #define PIN_DOL 1
 #define PIN_PATH 2
@@ -293,10 +299,11 @@ static int ReadGameConfig (int ia)
 #define PIN_ICON 4
 #define PIN_ARGS 5
 
-static char *Plugins_Get (int idx, int type)
+static char *Plugins_Get (int i, int type)
 	{
 	static char name[128];
 	char *p;
+	int idx = Plugins_GetItem (i);
 	
 	if (!plugins->items[idx])
 		{
@@ -314,8 +321,9 @@ static char *Plugins_Get (int idx, int type)
 	return name;
 	}
 	
-static int Plugins_GetId (int idx)
+static int Plugins_GetId (int i)
 	{
+	int idx = Plugins_GetItem (i);
 	if (!plugins->items[idx])
 		{
 		return 0;
@@ -336,10 +344,16 @@ static void Plugins (bool open)
 		{
 		plugins = cfg_Alloc (cfgpath, 64, 0, 1);
 		
-		pluginsCnt = plugins->count;
-		// just for debug
+		pluginsCnt = 0;
+
 		for (i = 0; i < plugins->count; i++)
-			Debug ("Plugins: %d:%d -> %s", i, pluginsCnt, plugins->items[i]);
+			{
+			if (Plugins_GetItem(i) >= 0)
+				{
+				Debug ("Plugins: %d:%d -> %s", i, pluginsCnt, plugins->items[Plugins_GetItem(i)]);
+				pluginsCnt++;
+				}
+			}
 			
 		if (pluginsCnt > CATMAX)
 			pluginsCnt = CATMAX;
@@ -392,8 +406,6 @@ static void MakeCoverPath (int ai, char *path)
 	if (!emus[ai].cover) return;
 	
 	sprintf (path, "%s://ploader/covers.emu/%s", vars.defMount, emus[ai].cover);
-	
-	Debug ("MakeCoverPath: %s", path);
 	}
 
 static void FeedCoverCache (void)
@@ -568,6 +580,9 @@ static void SortItems (void)
 	int i;
 	int filtered = 0;
 	
+	Debug ("Sorting...");
+	FixFilters	();
+	
 	// Apply filters
 	emus2Disp = 0;
 	for (i = 0; i < emusCnt; i++)
@@ -588,17 +603,18 @@ static void SortItems (void)
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
 	
+	Debug ("...done");
+	
 	FeedCoverCache ();
 	}
 	
 // This will check if cover is available
 static void CheckForCovers (void)
 	{
-	DIR *pdir;
-	struct dirent *pent;
-
 	char path[256];
 	int i;
+	
+	Debug ("Checking covers...");
 	
 	// Cleanup cover flag
 	for (i = 0; i < emusCnt; i++)
@@ -608,27 +624,20 @@ static void CheckForCovers (void)
 		}
 		
 	sprintf (path, "%s://ploader/covers.emu", vars.defMount);
-	pdir=opendir(path);
+	char *dir = fsop_GetDirAsString (path, '|', 1, NULL);
 	
-	while ((pent=readdir(pdir)) != NULL) 
+	for (i = 0; i < emusCnt; i++)
 		{
-		// Skip it
-		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
-			continue;
-			
-		if (ms_strstr (pent->d_name, ".png") == NULL && ms_strstr (pent->d_name, ".bmp") == NULL && ms_strstr (pent->d_name, ".jpg") == NULL)
-			continue;
-
-		for (i = 0; i < emusCnt; i++)
+		char *p = ms_strstr (dir, fsop_GetFilename (emus[i].name, true));
+		if (p)
 			{
-			if (!emus[i].cover && ms_strstr (pent->d_name, fsop_GetFilename (emus[i].name, true)))
-				{
-				emus[i].cover = malloc (strlen (pent->d_name) + 1);
-				strcpy (emus[i].cover, pent->d_name);
-				}
+			emus[i].cover = ms_GetDelimitedString (p, '|', 0);
 			}
 		}
-	closedir(pdir);
+
+	free (dir);
+	
+	Debug ("...done");
 	}
 	
 static int BrowsePluginFolder (int type, int startidx, char *path)
@@ -818,14 +827,26 @@ static bool IsFiltered (int ai)
 	return ret;
 	}
 	
+static void FixFilters (void)
+	{
+	int i;
+	u8 f[CATMAX];
+	
+	for (i = 0; i < pluginsCnt; i++)
+		{
+		f[i] = (config.emuFilter & (1 << i) && CountRomsPlugin(i)) ? 1:0;
+		}
+
+	config.emuFilter = 0;
+	for (i = 0; i < pluginsCnt; i++)
+		if (f[i]) config.emuFilter |= (1 << i);
+	}
+	
 static void ShowFilterMenu (void)
 	{
 	char buff[2048];
 	u8 f[CATMAX];
 	int i, item;
-	
-	for (i = 0; i < pluginsCnt; i++)
-		f[i] = 0;
 	
 	for (i = 0; i < pluginsCnt; i++)
 		f[i] = (config.emuFilter & (1 << i)) ? 1:0;
@@ -843,6 +864,8 @@ static void ShowFilterMenu (void)
 				grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_Get (i, PIN_NAME));
 				col ++;
 				}
+			else
+				f[i] = 0;
 			}
 		
 		Video_SetFontMenu(TTFVERYSMALL);
@@ -909,7 +932,10 @@ static void ShowAppMenu (int ai)
 			int item = grlib_menu (-60, "Reset play count ?", "Yes~No");
 			
 			if (item == 0)
+				{
 				emus[ai].playcount = 0;
+				SortItems ();
+				}
 			}
 			
 		if (item == 2)
@@ -951,7 +977,6 @@ static void ShowAppMenu (int ai)
 	while (TRUE);
 	
 	WriteGameConfig (ai);
-	SortItems ();
 
 	return;
 	}
@@ -1202,9 +1227,10 @@ static bool QuerySelection (int ai)
 	{
 	int i;
 	float mag = 1.0;
+	float magMax = 3.1;
 	int spot = -1;
 	int incX = 1, incY = 1;
-	int y = 220;
+	int y = 200;
 	int yInf = 490;
 	
 	for (i = 0; i < gui.spotsIdx; i++)
@@ -1217,6 +1243,7 @@ static bool QuerySelection (int ai)
 
 	s_grlib_icon ico;
 	grlib_IconInit (&ico, &gui.spots[spot].ico);
+	
 	ico.sel = true;
 	*ico.title = '\0';
 	
@@ -1230,6 +1257,12 @@ static bool QuerySelection (int ai)
 	black.y2 = grlib_GetScreenH();
 	black.color = RGBA(0,0,0,192);
 	black.bcolor = RGBA(0,0,0,192);
+	
+	// Load full res cover
+	char path[300];
+	MakeCoverPath (ai, path);
+	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	if (tex) ico.icon = tex;
 	
 	Video_SetFont(TTFNORM);
 	
@@ -1263,8 +1296,8 @@ static bool QuerySelection (int ai)
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
-		if (mag < 3.0) mag += 0.1;
-		if (mag >= 3.0 && ico.x == 320 && ico.y == y) break;
+		if (mag < magMax) mag += 0.1;
+		if (mag >= magMax && ico.x == 320 && ico.y == y) break;
 		}
 	
 	u32 btn;
@@ -1286,6 +1319,8 @@ static bool QuerySelection (int ai)
 		if (btn & WPAD_BUTTON_A) return true;
 		if (btn & WPAD_BUTTON_B) return false;
 		}
+		
+	GRRLIB_FreeTexture (tex);
 	return true;
 	}
 
@@ -1293,6 +1328,8 @@ static void StartEmu (int type, char *fullpath)
 	{
 	char cmd[256];
 	char dol[256];
+	char path[256];
+	char search[1024];
 
 	strcpy (cmd, Plugins_Get(type, PIN_ARGS));
 	if (*cmd == 0)
@@ -1312,22 +1349,35 @@ static void StartEmu (int type, char *fullpath)
 	ms_Subst (cmd, "{titlehi}", "504F5354");
 	ms_Subst (cmd, "{loadername}", "postLoader");
 
-	sprintf (dol, "%s://ploader/plugins/%s", vars.defMount, Plugins_Get(type, PIN_DOL));
+	cfg_Value (plugins, CFG_READ, CFG_STRING, "dolpath", search, -1);
 	
-	Debug ("StartEmu %s (%s)", dol, cmd);
-
-	if (fsop_FileExist (dol))
+	int i = 0;
+	sprintf (path, "%s://ploader/plugins", vars.defMount);
+	do
 		{
-		Conf (false);	// Store configuration on disc
-		Plugins (false);
+		sprintf (dol, "%s/%s", path, Plugins_Get(type, PIN_DOL));
+		Debug ("StartEmu %s (%s)", dol, cmd);
 
-		strcpy (config.lastRom, fsop_GetFilename (fullpath, 0));
-		DirectDolBoot (dol, cmd, 0);
+		if (fsop_FileExist (dol))
+			{
+			Conf (false);	// Store configuration on disc
+			Plugins (false);
+
+			strcpy (config.lastRom, fsop_GetFilename (fullpath, 0));
+			DirectDolBoot (dol, cmd, 0);
+			}
+			
+		*path = '\0';
+		char *buff = ms_GetDelimitedString (search, '|', i++);
+		if (buff)
+			{
+			strcpy (path, buff);
+			free (buff);
+			}
 		}
-	else
-		{
-		grlib_menu (0, "Attention!", "Requested plugin not found\n\n'%s'", dol);
-		}
+	while (*path);
+
+	grlib_menu (0, "Attention!", "Requested plugin not found");
 	}
 			
 int EmuBrowser (void)
@@ -1338,7 +1388,7 @@ int EmuBrowser (void)
 	
 	Plugins (true);
 	Conf (true);
-
+	
 	scanned = 0;
 	browserRet = -1;
 

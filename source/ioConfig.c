@@ -69,6 +69,7 @@ bool ConfigRead (void)
 	else
 		sprintf (path, "%s://ploader/pldneek.cfg", vars.defMount);
 		
+	/*
 	size_t config_size;
 	if (fsop_GetFileSizeBytes (path, &config_size) && config_size != (sizeof(config) + sizeof(ver)))
 		{
@@ -77,6 +78,7 @@ bool ConfigRead (void)
 		InitConfigCats ();
 		return true;
 		}
+	*/
 	
 	gprintf ("ConfigRead: %s\n", path);
 
@@ -99,7 +101,7 @@ bool ConfigRead (void)
 	
 	return true;
 	}
-
+	
 //////////////////////////////////////////////////
 
 bool ExtConfigWrite (void)

@@ -1692,9 +1692,10 @@ static bool QuerySelection (int ai)
 	{
 	int i;
 	float mag = 1.0;
+	float magMax = 2.2;
 	int spot = -1;
 	int incX = 1, incY = 1;
-	int y = 220;
+	int y = 200;
 	int yInf = 490;
 
 	Video_SetFont(TTFNORM);
@@ -1722,6 +1723,12 @@ static bool QuerySelection (int ai)
 	black.color = RGBA(0,0,0,192);
 	black.bcolor = RGBA(0,0,0,192);
 	
+	// Load full res cover
+	char path[300];
+	MakeCoverPath (ai, path);
+	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	if (tex) ico.icon = tex;
+
 	while (true)
 		{
 		grlib_PopScreen ();
@@ -1752,8 +1759,8 @@ static bool QuerySelection (int ai)
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
-		if (mag < 1.8) mag += 0.05;
-		if (mag >= 1.8 && ico.x == 320 && ico.y == y) break;
+		if (mag < magMax) mag += 0.1;
+		if (mag >= magMax && ico.x == 320 && ico.y == y) break;
 		}
 	
 	u32 btn;
@@ -1775,6 +1782,8 @@ static bool QuerySelection (int ai)
 		if (btn & WPAD_BUTTON_A) return true;
 		if (btn & WPAD_BUTTON_B) return false;
 		}
+
+	GRRLIB_FreeTexture (tex);
 	return true;
 	}
 

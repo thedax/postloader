@@ -10,9 +10,9 @@
 #include "debug.h"
 #include "cfg.h"
 
-#define DOLPHINE
+//#define DOLPHINE
 
-#define VER "4.3.0"
+#define VER "4.4.1"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -440,6 +440,7 @@ typedef struct
 	char lastRom[PATHMAX];	// filename of latest executed rom. Actually used to import retroarch snapshots
 	char subpath[64];
 	char submount[6];
+	u8 enableTexCache;
 	}
 s_config;
 

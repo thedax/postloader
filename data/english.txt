@@ -3,7 +3,7 @@ This is the default english file
 {Close}Close
 
 {YesNo}Yes##0|No##-1
-{Yes|No}(NO)|(YES)
+{Yes|No}(YES)|(NO)
 
 {advopt1}Advanced Options!!!\n\n
 {advopt2}Important notice: postLoader forwarder channel V4 must be installed to use\nIOS249 option and keep the ability to run homebrews with ahbprot.

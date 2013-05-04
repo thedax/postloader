@@ -610,18 +610,17 @@ bool  GRRLIB_GetAntiAliasing (void) {
  * @param tex The texture to get the color from.
  * @return The color of a pixel in RGBA format.
  */
-INLINE
-u32  GRRLIB_GetPixelFromtexImg (const int x, const int y,
-                                const GRRLIB_texImg *tex) {
+INLINE u32  GRRLIB_GetPixelFromtexImg (const int x, const int y, const GRRLIB_texImg *tex) 
+	{
     register u32  offs;
     register u32  ar;
     register u8*  bp = (u8*)tex->data;
 
     offs = (((y&(~3))<<2)*tex->w) + ((x&(~3))<<4) + ((((y&3)<<2) + (x&3)) <<1);
-
-    ar =                 (u32)(*((u16*)(bp+offs   )));
+    ar = (u32)(*((u16*)(bp+offs)));
+	
     return (ar<<24) | ( ((u32)(*((u16*)(bp+offs+32)))) <<8) | (ar>>8);  // Wii is big-endian
-}
+	}
 
 /**
  * Set the color value of a pixel to a GRRLIB_texImg.
@@ -631,9 +630,8 @@ u32  GRRLIB_GetPixelFromtexImg (const int x, const int y,
  * @param tex The texture to set the color to.
  * @param color The color of the pixel in RGBA format.
  */
-INLINE
-void  GRRLIB_SetPixelTotexImg (const int x, const int y,
-                               GRRLIB_texImg *tex, const u32 color) {
+INLINE void  GRRLIB_SetPixelTotexImg (const int x, const int y, GRRLIB_texImg *tex, const u32 color) 
+	{
     register u32  offs;
     register u8*  bp = (u8*)tex->data;
 
@@ -641,7 +639,7 @@ void  GRRLIB_SetPixelTotexImg (const int x, const int y,
 
     *((u16*)(bp+offs   )) = (u16)((color <<8) | (color >>24));
     *((u16*)(bp+offs+32)) = (u16) (color >>8);
-}
+	}
 
 /**
  * Reads a pixel directly from the FrontBuffer.
@@ -1093,6 +1091,8 @@ int inline GRRLIB_GetFBMode (void); //stfour
 int GRRLIB_InitTTF();
 void GRRLIB_ExitTTF();
 
-void ResizeRGBA(char *img, int imgWidth, int imgHeight, char *resize, int width, int height);
+u32 inline GRRLIB_GetPixelFromtexImg4x4RGBA8 (int x, int y, int w, register u8* bp);
+void inline GRRLIB_SetPixelTotexImg4x4RGBA8 (int x, int y, int w, register u8* bp, const u32 color);
+void ResizeRGBA(u8 *img, int imgWidth, int imgHeight, u8 *resize, int width, int height);
 
 #endif // __GRRLIB_PRIVATE_H__ 

@@ -102,7 +102,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 			{
 			int fh;
 			grlib_GetFontMetrics (desc, NULL, &fh);
-			grlib_printf (gro.x1 + w / 2, gro.y2 - fh - 5, GRLIB_ALIGNCENTER, 0, desc); 
+			grlib_printf (gro.x1 + w / 2, gro.y2 - fh - 7, GRLIB_ALIGNCENTER, 0, desc); 
 			}
 			
 		grlibSettings.fontDef.reverse = ofr;

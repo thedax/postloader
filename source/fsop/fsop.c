@@ -601,7 +601,11 @@ Semplified folder make
 */
 int fsop_MakeFolder (char *path)
 	{
-	if (mkdir(path, S_IREAD | S_IWRITE) == 0) return true;
+	int ret;
+	ret = mkdir(path, S_IREAD | S_IWRITE);
+	
+	Debug ("mkdir %s = %d", path, ret);
+	if (ret == 0) return true;
 	
 	return false;
 	}

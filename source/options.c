@@ -187,6 +187,18 @@ static void cb_remove2(void)
 		}
 	}
 
+static void cb_remove3(void)
+	{
+	static time_t lastt = 0;
+	time_t t = time(NULL);
+	
+	if (t - lastt >= 1)
+		{
+		Video_WaitPanel (TEX_HGL, "Clearing TEX cache");
+		lastt = t;
+		}
+	}
+
 void ShowAdvancedOptions (void)
 	{
 	int item;
@@ -203,21 +215,24 @@ void ShowAdvancedOptions (void)
 		*options = '\0';
 		
 		if (vars.neek == NEEK_NONE)
-			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSB, GLS("{Yes|No}"), GLS("srcusb"));
+			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSB, GLS("Yes|No"), GLS("srcusb"));
 		else
-			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSBneek, GLS("{Yes|No}"), GLS("srcusb"));
+			grlib_menuAddCustomCheckItem (options, 1, extConfig.disableUSBneek, GLS("Yes|No"), GLS("srcusb"));
 
 		if (vars.neek == NEEK_NONE)
 			{
-			grlib_menuAddCustomCheckItem (options, 2, extConfig.use249, GLS("{Yes|No}"), GLS("useciosx"));
+			grlib_menuAddCustomCheckItem (options, 2, extConfig.use249, GLS("Yes|No"), GLS("useciosx"));
 			}
 
 		if (vars.neek == NEEK_NONE)
 			{
-			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, GLS("{Yes|No}"), GLS("usepl3ch"));
+			grlib_menuAddCustomCheckItem (options, 3, config.runHBwithForwarder, GLS("Yes|No"), GLS("usepl3ch"));
 			}
 
-		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, GLS("{Yes|No}"), GLS("usegest"));
+		grlib_menuAddCustomCheckItem (options, 6, config.enableTexCache, GLS("Yes|No"), "Enable TEX cache");
+		Debug ("config.enableTexCache %d", config.enableTexCache);
+
+		grlib_menuAddCustomCheckItem (options, 5, config.usesGestures, GLS("Yes|No"), GLS("usegest"));
 			
 		grlib_menuAddItem (options, 4,  GLS("rstrbt"));
 		
@@ -241,6 +256,34 @@ void ShowAdvancedOptions (void)
 			extConfig.use249 = !extConfig.use249;
 			}
 			
+		if (item == 6)
+			{
+			config.enableTexCache = !config.enableTexCache;
+			CoverCache_Flush ();
+			
+			if (config.enableTexCache)
+				{
+				char path[PATHMAX];
+				sprintf (path, "%s://ploader/tex",vars.defMount);
+				if (!fsop_DirExist (path))
+					{
+					if (!fsop_MakeFolder (path))
+						{
+						grlib_menu (50, "Error:\nCannot create /ploader/tex folder", "OK");
+						config.enableTexCache = 0;
+						}
+					}
+				}
+			else
+				{
+				Video_WaitIcon (TEX_HGL);
+				
+				char path[PATHMAX];
+				sprintf (path, "%s://ploader/tex",vars.defMount);
+				fsop_KillFolderTree (path, cb_remove3);
+				}
+			}
+
 		if (item == 3)
 			{
 			config.runHBwithForwarder = !config.runHBwithForwarder;
@@ -415,8 +458,6 @@ void ShowAboutMenu (void)
 		{
 		*options = '\0';
 		
-		grlib_menuAddItem (options, 1,  "About postLoader"VER);
-
 		grlib_menuAddItem (options, 14,  "Change theme...");
 
 		if (vars.neek == NEEK_2o)
@@ -445,11 +486,6 @@ void ShowAboutMenu (void)
 
 		item = grlib_menu (0, "Options:", options);
 		
-		if (item == 1)
-			{
-			ShowAboutPLMenu ();
-			}
-
 		if (item == 2)
 			{
 			AutoUpdate ();
