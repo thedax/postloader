@@ -348,17 +348,6 @@ static void ParseXML (int ai)
 		strcpy (apps[ai].args, args);
 		}
 		
-	if (apps[ai].name != NULL && *apps[ai].name == '\0')
-		{
-		free (apps[ai].name);
-		apps[ai].name = NULL;
-		}
-		
-	if (apps[ai].name == NULL)
-		{
-		apps[ai].name = ms_AllocCopy (apps[ai].path, 0);
-		}
-		
 	free (buff);
 	return;
 	}
@@ -1601,7 +1590,7 @@ static bool QuerySelection (int ai)
 		grlib_DrawIRCursor ();
 		grlib_Render();
 		
-		if (mag < magMax) mag += 0.05;
+		if (mag < magMax) mag += 0.1;
 		if (mag >= magMax && ico.x == 320 && ico.y == y) break;
 		}
 	

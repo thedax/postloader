@@ -30,6 +30,7 @@ void ms_strtoupper(char *str)
  
 void ms_strtolower(char *str)
 	{
+	if (!str) return;
 	for(;*str;str++)
 		if(*str>='A' && *str<='Z')
 			*str = *str+('a'-'A');

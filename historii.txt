@@ -1,3 +1,10 @@
+postLoader 4.4.2
+
+* fixed buffer allocation error in mem2 that was causing a dsi
+* covercache now uses a single large buffer in mem2 for covers
+* added mutex in mp3 player to control multithreaded file io
+* minor fixes..
+
 postLoader 4.4.1
 
 * added new tag to plugin.conf to specify alternate dol search path (more info in the the file)
