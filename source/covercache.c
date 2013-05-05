@@ -179,33 +179,15 @@ void CoverCache_Pause (bool yes) // return after putting thread in
 	if (yes)
 		{
 		SET (threadPause,true);
-		
-		get_msec(true);
 		while (!LWP_ThreadIsSuspended(hthread)) 
 			{
 			usleep (1000);
-			if (get_msec(false) > 1000)
-				{
-				Debug ("CoverCache_Pause pause: timeout, retring...");
-				break;
-				}
 			}
 		}
 	else
 		{
 		SET (threadPause,false);
 		LWP_ResumeThread (hthread);
-
-		get_msec(true);
-		while (LWP_ThreadIsSuspended(hthread)) 
-			{
-			usleep (1000);
-			if (get_msec(false) > 1000)
-				{
-				Debug ("CoverCache_Pause continue: timeout, retring...");
-				break;
-				}
-			}
 		}
 	}
 	
@@ -517,7 +499,7 @@ u8 * LoadRGBATex (char *fn, u16* w, u16* h, u8 alpha)
 	rgba = fsop_ReadFile (fn, 0, &size_rgba);
 	if (!rgba)
 		{
-		Debug ("'%s' NOT loaded ...", fn);
+		//Debug ("'%s' NOT loaded ...", fn);
 		return NULL;
 		}
 	
@@ -526,7 +508,7 @@ u8 * LoadRGBATex (char *fn, u16* w, u16* h, u8 alpha)
 	*w = wh[0];
 	*h = wh[1];
 	
-	Debug ("'%s' loaded succesfully...", fn);
+	//Debug ("'%s' loaded succesfully...", fn);
 
 	return rgba; 
 	}
@@ -567,7 +549,7 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	u16 i, j, w, h;
 	float fw, fh;
 	
-	Debug ("CoverCache_LoadTextureFromFile '%s'", filename);
+	//Debug ("CoverCache_LoadTextureFromFile '%s'", filename);
 	
 	// let's clean the filename
 	strcpy (fntex, filename);
@@ -648,7 +630,7 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	
 	end:
 	
-	Debug ("CoverCache_LoadTextureFromFile 0x%X", tex);
+	//Debug ("CoverCache_LoadTextureFromFile 0x%X", tex);
 
     return tex;
 	}
