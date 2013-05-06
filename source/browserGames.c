@@ -173,7 +173,7 @@ static void MakeCoverPath (int ai, char *path)
 	if (config.gameMode == GM_DML)
 		asciiId[6] = 0;
 
-	sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, asciiId);
+	sprintf (path, "%s/%s.png", vars.covers, asciiId);
 	}
 
 static void FeedCoverCache (void)
@@ -215,12 +215,12 @@ static bool DownloadCovers_Get (char *path, char *buff)
 		//suficientes bytes
 		FILE *f;
 		
-		f = fopen (path, "wb");
+		f = mt_fopen (path, "wb");
 		if (f)
 			{
 			Debug ("DownloadCovers_Get: writing png");
-			fwrite (outbuf, outlen, 1, f);
-			fclose (f);
+			mt_fwrite (outbuf, outlen, 1, f);
+			mt_fclose (f);
 			}
 		
 		free(outbuf);
@@ -249,15 +249,19 @@ static void DownloadCovers (void)
 		{
 		Debug ("DownloadCovers: opening sd:/missgames.txt");
 		sprintf (path, "%s://missgame.txt", devices_Get(DEV_SD));
-		f = fopen (path, "wb");
+		f = mt_fopen (path, "wb");
 		}
 	
 	for (ia = 0; ia < gamesCnt; ia++)
 		{
 		Video_WaitPanel (TEX_HGL, "Downloading %s.png (%d of %d)|(B) Stop", games[ia].asciiId, ia, gamesCnt);
-		sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, games[ia].asciiId);
+		sprintf (path, "%s/%s.png", vars.covers, games[ia].asciiId);
 		
-		if (!fsop_FileExist(path))
+		mt_Lock();
+		int ret = fsop_FileExist(path);
+		mt_Unlock();
+
+		if (!ret)
 			{
 			bool ret = FALSE;
 			
@@ -285,7 +289,7 @@ static void DownloadCovers (void)
 			if (!ret && f)
 				{
 				sprintf (buff, "%s:%s\n", games[ia].asciiId, games[ia].name);
-				fwrite (buff, 1, strlen(buff), f);
+				mt_fwrite (buff, 1, strlen(buff), f);
 				}
 				
 			if (grlib_GetUserInput () == WPAD_BUTTON_B)
@@ -298,7 +302,7 @@ static void DownloadCovers (void)
 		if (stop) break;
 		}
 		
-	if (f) fclose (f);
+	if (f) mt_fclose (f);
 		
 	WiiLoad_Resume ();
 	
@@ -580,8 +584,11 @@ static void CheckForCovers (void)
 	for (i = 0; i < gamesCnt; i++)
 		games[i].hasCover = 0;
 		
-	sprintf (path, "%s://ploader/covers", vars.defMount);
+	sprintf (path, "%s", vars.covers);
+	
+	mt_Lock();
 	pdir=opendir(path);
+	mt_Unlock();
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
@@ -614,7 +621,7 @@ static int GameBrowse (int forcescan)
 	
 	Video_WaitIcon (TEX_HGL);
 	
-	CoverCache_Pause (true);
+	mt_Lock();
 
 #ifndef DOLPHINE	
 	if (config.gameMode == GM_WII)
@@ -639,7 +646,8 @@ static int GameBrowse (int forcescan)
 		}
 #endif
 	
-	CoverCache_Pause (false);	
+	mt_Unlock();
+	
 	if (!titles) 
 		{
 		games2Disp = 0;
@@ -659,13 +667,13 @@ static int GameBrowse (int forcescan)
 		if (*p != '\0' && strlen(p))
 			{
 			// Add name
-			// Debug ("name = %s (%d)", p, strlen(p));
+			//Debug ("name = %s (%d)", p, strlen(p));
 			games[i].name = malloc (strlen(p)+1);
 			strcpy (games[i].name, p);
 			p += (strlen(p) + 1);
 			
 			// Add id
-			// Debug ("id = %s (%d)", p, strlen(p));
+			//Debug ("id = %s (%d)", p, strlen(p));
 			strncpy (games[i].asciiId, p, 6);
 			if (config.gameMode == GM_DML)
 				games[i].disc = p[6];
@@ -1726,7 +1734,9 @@ static bool QuerySelection (int ai)
 	// Load full res cover
 	char path[300];
 	MakeCoverPath (ai, path);
+	mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	mt_Unlock();
 	if (tex) ico.icon = tex;
 
 	while (true)
@@ -1797,11 +1807,15 @@ static void Conf (bool open)
 	cfg_Section (NULL);
 	if (open)
 		{
+		mt_Lock();
 		cfg = cfg_Alloc (cfgpath, GAMEMAX, 0, 0);
+		mt_Unlock();
 		}
 	else
 		{
+		mt_Lock();
 		cfg_Store (cfg, cfgpath);
+		mt_Unlock();
 		cfg_Free (cfg);
 		}
 	}

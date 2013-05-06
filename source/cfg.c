@@ -141,6 +141,7 @@ char *cfg_DecodeString (char *source) // reverse
 char *cfg_FindInBuffer (char *buff, char *tag)
 	{
 	static char item[1024];
+	char t[256];
 	char *p = buff;
 	int i = 0;
 	
@@ -149,12 +150,18 @@ char *cfg_FindInBuffer (char *buff, char *tag)
 
 	do
 		{
-		p = strstr (buff, tag);
+		sprintf (t, "%s=", tag);
+		p = strstr (buff, t);
+		
+		if (p == NULL)
+			{
+			sprintf (t, "%s =", tag);
+			p = strstr (buff, t);
+			}
+
 		if (p != NULL)
 			{
-			p += strlen(tag);
-			if (*p != 0 && *p == ' ') p++;
-			if (*p != 0 && *p == '=') p++;
+			p += strlen(t);
 			if (*p != 0 && *p == ' ') p++;
 			if (*p == 0) return NULL;
 			

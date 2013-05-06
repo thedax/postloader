@@ -9,10 +9,11 @@
 #include "plneek.h"
 #include "debug.h"
 #include "cfg.h"
+#include "multithread.h"
 
 //#define DOLPHINE
 
-#define VER "4.4.3"
+#define VER "4.4.4"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -71,7 +72,8 @@ enum {
 	INTERACTIVE_RET_DISC,
 	INTERACTIVE_RET_SE,
 	INTERACTIVE_RET_WM,
-	INTERACTIVE_RET_HBC
+	INTERACTIVE_RET_HBC,
+	INTERACTIVE_RET_REBOOT
 	};
 
 enum {
@@ -344,6 +346,9 @@ typedef struct
 	
 	char sePath[256];				// setting editor
 	char wmPath[256];				// wiimod
+	
+	char covers[256];				// covers path
+	char coversEmu[256];			// covers path emu
 	
 	char *titlestxt;				// this will keep titles.txt file
 	}

@@ -11,11 +11,12 @@
 #include <sys/unistd.h>
 #include <string.h>
 #include <gccore.h>
+#include <errno.h>
 #include "usbstorage.h"
 #include "devices.h"
 #include "debug.h"
 #include "fsop/fsop.h"
-#include <errno.h>
+#include "multithread.h"
 
 //these are the only stable and speed is good
 #define CACHE 8
@@ -275,6 +276,8 @@ int devices_TickUSB (void)
 	int ret = 0;
 	u8 sector[4096];
 	static time_t t = 0;
+
+	mt_Lock();
 	
 	if (storage && (partnfs || partfat) && time(NULL) > t)
 		{
@@ -283,7 +286,8 @@ int devices_TickUSB (void)
 		
 		gprintf ("USB ticked \n");
 		}
-		
+	
+	mt_Unlock();	
 	return ret;
 	}
 	

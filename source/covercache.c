@@ -125,9 +125,7 @@ static void *thread (void *arg)
 				strcpy (name, cc[i].id);
 				LWP_MutexUnlock (mutex);
 				
-				MP3Player_Lock (true);
 				tex = CoverCache_LoadTextureFromFile (name);
-				MP3Player_Lock (false);
 
 				LWP_MutexLock (mutex);
 				cc[i].prio = 0;
@@ -468,7 +466,7 @@ bool SaveRGBATexRGB (char *fn, u8* rgba, u16 w, u16 h)
 			*(prgb++) = B(pixel);
 			}
 	
-	f = fopen (fn, "wb");
+	f = mt_fopen (fn, "wb");
 	if (!f) 
 		{
 		//Debug ("SaveRGBATexRGB: cannot write to '%s'", fn);
@@ -476,10 +474,10 @@ bool SaveRGBATexRGB (char *fn, u8* rgba, u16 w, u16 h)
 		return false;
 		}
 	
-	fwrite (rgb, 1, size_rgb, f);
+	mt_fwrite (rgb, 1, size_rgb, f);
 	wh[0] = w;
 	wh[1] = h;
-	fwrite (wh, 1, sizeof(wh), f);
+	mt_fwrite (wh, 1, sizeof(wh), f);
 
 	fclose (f);
 		
@@ -526,7 +524,7 @@ bool SaveRGBATex (char *fn, u8* rgba, u16 w, u16 h)
 	f = fopen (fn, "wb");
 	if (!f) 
 		{
-		//Debug ("SaveRGBATexRGB: cannot write to '%s'", fn);
+		Debug ("SaveRGBATexRGB: cannot write to '%s'", fn);
 		return false;
 		}
 	
@@ -536,6 +534,7 @@ bool SaveRGBATex (char *fn, u8* rgba, u16 w, u16 h)
 	fwrite (wh, 1, sizeof(wh), f);
 
 	fclose (f);
+	
 	return true; 
 	}
 
@@ -549,7 +548,9 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	u16 i, j, w, h;
 	float fw, fh;
 	
-	//Debug ("CoverCache_LoadTextureFromFile '%s'", filename);
+	//Debug ("CoverCache_LoadTextureFromFile: %s", filename);
+	
+	mt_Lock ();
 	
 	// let's clean the filename
 	strcpy (fntex, filename);
@@ -586,13 +587,16 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	if (!rgba)
 		{
 		// return NULL it load fails
-		if (GRRLIB_LoadFile(filename, &data) <= 0)  goto end;
+		data = fsop_ReadFile (filename, 0, NULL);
+		if (!data) goto end;
+		
 		// Convert to texture
 		tex = GRRLIB_LoadTexture(data);
+		
 		// Free up the buffer
 		free(data);
 		
-		if (!tex) return NULL;
+		if (!tex) goto end;
 		
 		if (tex->w >= tex->h && tex->w > TSIZE)
 			{
@@ -629,6 +633,8 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	GRRLIB_FlushTex( tex );
 	
 	end:
+	
+	mt_Unlock ();
 	
 	//Debug ("CoverCache_LoadTextureFromFile 0x%X", tex);
 

@@ -23,9 +23,7 @@ en exposed s_fsop fsop structure can be used by callback to update operation sta
 
 #include "fsop.h"
 #include "../debug.h"
-#include "../mem2.h"
 
-//#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a));
 #define SET(a, b) a = b;
 
 s_fsop fsop;

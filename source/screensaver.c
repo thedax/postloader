@@ -19,7 +19,11 @@ static bool Play (char * fn) // return true interrupt the screensaver
 	if (fn == NULL)
 		img = GRRLIB_LoadTexturePNG (icon_png);
 	else
+		{
+		mt_Lock();
 		img = GRRLIB_LoadTextureFromFile (fn);
+		mt_Unlock();
+		}
 
 	if (!img) return false;
 	
@@ -85,9 +89,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 
 	GRRLIB_FreeTexture (img);
 	
-	CoverCache_Pause (true);
 	devices_TickUSB ();
-	CoverCache_Pause (false);
 	
 	snd_Mp3Go ();
 	
@@ -208,9 +210,7 @@ bool LiveCheck (int reset)
 		{
 		t = ct;
 		
-		//CoverCache_Pause (true);
 		devices_TickUSB ();
-		//CoverCache_Pause (false);
 		}
 
 	if ((ct - tp) > 2)

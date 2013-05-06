@@ -132,7 +132,9 @@ void LoadTitlesTxt (void)
 
 	Video_WaitPanel (TEX_HGL, "Please wait...|Loading titles.txt");
 	
+	mt_Lock();
 	vars.titlestxt = (char*)fsop_ReadFile (txtpath, 0, NULL);
+	mt_Unlock();
 	}
 	
 	
@@ -194,6 +196,8 @@ bool Neek2oLoadKernel (void)
 	
 	Debug ("Neek2oLoadKernel: begin");
 
+	mt_Lock();
+	
 	*path = '\0';
 	if (devices_Get(DEV_USB))
 		{
@@ -205,6 +209,8 @@ bool Neek2oLoadKernel (void)
 		sprintf (path, "%s://sneek/kernel.bin", devices_Get(DEV_SD));
 		kernel = fsop_ReadFile (path, 0, &kernelsize);
 		}
+		
+	mt_Lock();
 
 	Debug ("Neek2oLoadKernel: found on %s (size = %d)", path, kernelsize);
 	Debug ("Neek2oLoadKernel: end (0x%X)", kernel);
@@ -223,17 +229,23 @@ bool Neek2oBoot (void)
 bool ReloadPostloader (void)
 	{
 	char path[64];
+	int ret;
 	
 	if (devices_Get(DEV_SD))
 		{
 		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_SD));
-		if (fsop_FileExist (path)) DirectDolBoot (path, NULL, 0);
+		mt_Lock();
+		ret = fsop_FileExist (path);
+		mt_Unlock();
+		if (ret) DirectDolBoot (path, NULL, 0);
 		}
 
 	if (devices_Get(DEV_USB))
 		{
 		sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(DEV_USB));
-		if (fsop_FileExist (path)) DirectDolBoot (path, NULL, 0);
+		mt_Lock();
+		ret = fsop_FileExist (path);
+		mt_Unlock();
 		}
 	
 	return false;

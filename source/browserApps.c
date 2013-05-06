@@ -181,7 +181,10 @@ static void ParseXML (int ai)
 	char *buff;
 
 	sprintf (cfg, "%s://apps/%s/meta.xml", apps[ai].mount, apps[ai].path);
+	
+	mt_Lock();
 	buff = (char*)fsop_ReadFile (cfg, 0, NULL);
+	mt_Unlock();
 
 	if (!buff || strlen(buff) == 0) return;
 	
@@ -359,7 +362,10 @@ static char *GetLongdescFromXML (int ai)
 	char *longdesc = NULL;
 
 	sprintf (cfg, "%s://apps/%s/meta.xml", apps[ai].mount, apps[ai].path);
+
+	mt_Lock();
 	buff = (char*)fsop_ReadFile (cfg, 0, NULL);
+	mt_Unlock();
 
 	if (!buff || strlen(buff) == 0) return NULL;
 	
@@ -437,7 +443,10 @@ static int AppExist (const char *mount, char *path, char *filename)
 	Debug ("AppExist %s", fn);
 
 
+	mt_Lock();
 	char *dir = fsop_GetDirAsString(fn,'|',1,".elf;.xml;.dol");
+	mt_Unlock();
+
 	if (!dir) return 0;
 	
 	elf = ms_strstr (dir, "boot.elf");
@@ -445,16 +454,6 @@ static int AppExist (const char *mount, char *path, char *filename)
 	dol = ms_strstr (dir, "boot.dol");
 	
 	free (dir);
-	/*
-	sprintf (fn, "%s://apps/%s%s/boot.elf", mount, config.subpath, path);
-	elf = fsop_FileExist (fn);
-
-	sprintf (fn, "%s://apps/%s%s/meta.xml", mount, config.subpath, path);
-	xml = fsop_FileExist (fn);
-	
-	sprintf (fn, "%s://apps/%s%s/boot.dol", mount, config.subpath, path);
-	dol = fsop_FileExist (fn);
-	*/
 	
 	if (elf)
 		strcpy (filename, "boot.elf");
@@ -573,7 +572,10 @@ static int ScanApps (const char *mount, int refresh)
 	sprintf (path, "%s://apps/%s", mount, config.subpath);
 	Debug ("ScanApps: searching '%s'", path);
 	
+	mt_Lock();
 	pdir=opendir(path);
+	mt_Unlock();
+
 	cfg_Section (NULL);
 	
 	while ((pent=readdir(pdir)) != NULL) 
@@ -694,11 +696,16 @@ static void SaveSettings (void)
 	Video_WaitIcon (TEX_HGL);
 	
 	sprintf (path, "%s://ploader/homebrew.conf", vars.defMount);
+	mt_Lock();
 	cfg = cfg_Alloc(path, 0, 0, 1);
+	mt_Unlock();
 	
 	UpdateAllSettings (cfg);
 
+	mt_Lock();
 	cfg_Store(cfg , path);
+	mt_Unlock();
+
 	cfg_Free(cfg );
 	
 	needToSave = 0;
@@ -713,7 +720,9 @@ static int AppsBrowse (int refresh)
 	char path[PATHMAX];
 	sprintf (path, "%s://ploader/homebrew.conf", vars.defMount);
 	
+	mt_Lock();
 	cfg = cfg_Alloc(path, 0, 0, 1);
+	mt_Unlock();
 	
 	int ver = 0;
 	cfg_Value (cfg, CFG_READ, CFG_INT, "VERSION", &ver, -1);
@@ -752,7 +761,9 @@ static int AppsBrowse (int refresh)
 	if (needToSave)
 		{
 		UpdateAllSettings (cfg);
+		mt_Lock();
 		cfg_Store(cfg , path);
+		mt_Unlock();
 		}
 		
 	cfg_Free (cfg);
@@ -1557,7 +1568,9 @@ static bool QuerySelection (int ai)
 	// Load full res cover
 	char path[300];
 	sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, config.subpath, apps[ai].path);
+	mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	mt_Unlock();
 	if (tex) ico.icon = tex;
 	
 	while (true)

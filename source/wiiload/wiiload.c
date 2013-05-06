@@ -13,6 +13,8 @@
 #include "../debug.h"
 #include "../zip/infdef.h"
 #include "../fsop/fsop.h"
+#include "../multithread.h"
+
 #define PORT	4299
 #define STACKSIZE	8192
 
@@ -115,6 +117,8 @@ static int GeckoRead(int connection, u8 *buf, u32 len, u32 tout) // timeout in m
 
 static bool UncompressData (char *wiiloadVersion, int isZip)
 	{
+	mt_Lock();
+	
 	printopt("UncompressData");
 
 	char source[256];
@@ -159,7 +163,8 @@ static bool UncompressData (char *wiiloadVersion, int isZip)
 			}
 		}
 
-    return true;
+    mt_Unlock();
+	return true;
 	}
 
 int __usb_checkrecv(s32 chn);
@@ -284,7 +289,10 @@ static bool GeckoLoad (void)
 	char path[256];
 	sprintf (path, "%s/%s", tpath, WIILOAD_TMPFILE);
 
+	mt_Lock();
 	ret = fsop_WriteFile (path, buff, buffsize);
+	mt_Unlock();
+	
 	free (buff);
 	buff = NULL;
 	
@@ -354,7 +362,7 @@ static bool WiiLoad (s32 connection)
 	FILE *f;
 	char path[300];
 	sprintf (path, "%s/%s", tpath, WIILOAD_TMPFILE);
-	f = fopen (path, "wb");
+	f = mt_fopen (path, "wb");
 
 	do
 		{
@@ -369,7 +377,7 @@ static bool WiiLoad (s32 connection)
 			}
 		else
 			{
-			if (f) fwrite (buff, 1, result, f);
+			if (f) mt_fwrite (buff, 1, result, f);
 			
 			retries = 10;
 			
@@ -387,7 +395,7 @@ static bool WiiLoad (s32 connection)
 			free (buff);
 			buff = 0;
 			buffsize = 0;
-			if (f) fclose(f);
+			if (f) mt_fclose(f);
 			printopt ("Transfer failed.");
 			return false;
 			}
@@ -398,7 +406,7 @@ static bool WiiLoad (s32 connection)
 		} 
 	while (done < buffsize);
 	
-	if (f) fclose(f);
+	if (f) mt_fclose(f);
 	
 	if (done != buffsize)
 		{

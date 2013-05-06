@@ -122,6 +122,8 @@ bool ExtConfigWrite (void)
 	memcpy (idStop, &EXTCONFIG[EXTCONFIGSIZE+EXTCONFIGOFFS], EXTCONFIGOFFS);
 	idStop[EXTCONFIGOFFS] = '\0';
 	
+	mt_Lock();
+	
 	int dev;
 	for (dev = 0; dev <= 1; dev++)
 		if (devices_Get (dev))
@@ -150,7 +152,9 @@ bool ExtConfigWrite (void)
 					}
 				}
 			}
-		
+	
+	mt_Unlock();
+	
 	return true;
 	}
 	

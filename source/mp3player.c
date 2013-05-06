@@ -16,8 +16,8 @@
 #include <asndlib.h>
 
 #include "mp3player.h"
+#include "multithread.h"
 
-static mutex_t mutex;
 static s32 have_samples = 0;
 static u32 mp3_volume = 255;
 
@@ -268,8 +268,6 @@ s32 MP3Player_PlayFileDirect(char *filename)
 {
 	if(thr_running==TRUE) return -1;
 	
-	if (!mutex) LWP_MutexInit (&mutex, false);
-
 	sprintf (mp3filename, filename);
 	mp3cb_data = NULL;
 	mp3read = NULL;
@@ -304,9 +302,7 @@ static void *StreamPlay(void *arg)
 	EQState eqs[2];
 	FILE *mp3f = NULL;
 	
-	LWP_MutexLock (mutex);
-	mp3f = fopen (mp3filename, "rb");
-	LWP_MutexUnlock (mutex);
+	mp3f = mt_fopen (mp3filename, "rb");
 	
 	if (!mp3f) return NULL;
 
@@ -349,15 +345,11 @@ static void *StreamPlay(void *arg)
 				Remaining = 0;
 			}
 
-			LWP_MutexLock (mutex);
-			
 			if (mp3read)
 				ReadSize = mp3read(mp3cb_data,ReadStart,ReadSize);
 			else
-				ReadSize = fread(ReadStart, 1, ReadSize, mp3f);
+				ReadSize = mt_fread(ReadStart, 1, ReadSize, mp3f);
 			
-			LWP_MutexUnlock (mutex);
-	
 			if(ReadSize<=0) {
 				GuardPtr = ReadStart;
 				memset(GuardPtr,0,MAD_BUFFER_GUARD);
@@ -406,7 +398,7 @@ static void *StreamPlay(void *arg)
 
 	SET(thr_running,FALSE);
 	
-	fclose (mp3f);
+	mt_fclose (mp3f);
 
 	return 0;
 }
@@ -517,11 +509,3 @@ void MP3Player_Volume(u32 volume)
 	SND_ChangeVolumeVoice(0,volume,volume);
 #endif
 }
-
-void MP3Player_Lock (bool lock)
-	{
-	if (lock) 
-		LWP_MutexLock (mutex);
-	else
-		LWP_MutexUnlock (mutex);
-	}

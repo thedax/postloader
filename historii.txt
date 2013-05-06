@@ -1,3 +1,11 @@
+postLoader 4.4.4
+
+* added a flag in plugins.conf to enable/disable plugins. Check the file!
+* added mutex for almost any file i/o. Seems that postLoader no more hang occasionally
+* added "Return to real WII" in exit menu when working in neek2o
+* the folder for covers can now be changed. Check "ploader/paths.conf.sample" and rename it to "paths.conf". Postloader uses sd:// and usb://, usb2://, usb3://, usb4:// for additional partitions)
+* minor fixes
+
 postLoader 4.4.3
 
 * removed some debug messages

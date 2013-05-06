@@ -134,11 +134,15 @@ static void Conf (bool open)
 	cfg_Section (NULL);
 	if (open)
 		{
+		mt_Lock();
 		cfg = cfg_Alloc (cfgpath, CHNMAX, 0, 0);
+		mt_Unlock();
 		}
 	else
 		{
+		mt_Lock();
 		cfg_Store (cfg, cfgpath);
+		mt_Unlock();
 		cfg_Free (cfg);
 		}
 	}
@@ -155,11 +159,11 @@ static bool DownloadCovers_Get (char *path, char *buff)
 		//suficientes bytes
 		FILE *f;
 		
-		f = fopen (path, "wb");
+		f = mt_fopen (path, "wb");
 		if (f)
 			{
-			fwrite (outbuf, outlen, 1, f);
-			fclose (f);
+			mt_fwrite (outbuf, outlen, 1, f);
+			mt_fclose (f);
 			}
 		
 		free(outbuf);
@@ -186,7 +190,7 @@ static void FeedCoverCache (void)
 		
 		if (ai >= 0 && ai < chansCnt && chans[ai].hasCover)
 			{
-			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
+			sprintf (path, "%s/%s.png", vars.covers, chans[ai].asciiId);
 			CoverCache_Add (path,  (i >= 0 && i < gui.spotsXpage) ? true:false );
 			}
 		}
@@ -213,15 +217,19 @@ static void DownloadCovers (void)
 	if (devices_Get (DEV_SD))
 		{
 		sprintf (path, "%s://misschan.txt", devices_Get(DEV_SD));
-		f = fopen (path, "wb");
+		f = mt_fopen (path, "wb");
 		}
 	
 	for (ia = 0; ia < chansCnt; ia++)
 		{
 		Video_WaitPanel (TEX_HGL, "Downloading %s.png (%d of %d)|(B) Stop", chans[ia].asciiId, ia, chansCnt);
-		sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ia].asciiId);
+		sprintf (path, "%s/%s.png", vars.covers, chans[ia].asciiId);
 
-		if (!fsop_FileExist(path))
+		mt_Lock();
+		int ret = fsop_FileExist(path);
+		mt_Unlock();
+
+		if (!ret)
 			{
 			bool ret = FALSE;
 		
@@ -243,7 +251,7 @@ static void DownloadCovers (void)
 			if (!ret && f)
 				{
 				sprintf (buff, "%s:%s\n", chans[ia].asciiId, chans[ia].name);
-				fwrite (buff, 1, strlen(buff), f);
+				mt_fwrite (buff, 1, strlen(buff), f);
 				}
 				
 			if (grlib_GetUserInput () == WPAD_BUTTON_B)
@@ -251,11 +259,12 @@ static void DownloadCovers (void)
 				stop = 1;
 				break;
 				}
+			
 			}
 		if (stop) break;
 		}
 	
-	if (f) fclose (f);
+	if (f) mt_fclose (f);
 	
 	WiiLoad_Resume ();
 	
@@ -488,7 +497,7 @@ static void CheckForCovers (void)
 	for (i = 0; i < chansCnt; i++)
 		chans[i].hasCover = 0;
 		
-	sprintf (path, "%s://ploader/covers", vars.defMount);
+	sprintf (path, "%s", vars.covers);
 	pdir=opendir(path);
 	
 	while ((pent=readdir(pdir)) != NULL) 
@@ -630,7 +639,7 @@ static int RebuildCacheFile (void)
 	FILE* f = NULL;
 	char buff[256];
 	
-	f = fopen(path, "wb");
+	f = mt_fopen(path, "wb");
 	if (!f) 
 		{
 		Debug ("RebuildCacheFile: failed to open '%s'", path);
@@ -640,11 +649,11 @@ static int RebuildCacheFile (void)
 	for (i = 0; i < cnt; i++)
 		{
 		sprintf (buff, "%u:%u:%s\n", upper[i], lower[i], names[i]);
-		fwrite (buff, 1, strlen(buff), f );
+		mt_fwrite (buff, 1, strlen(buff), f );
 		
 		free (names[i]);
 		}
-	fclose(f);
+	mt_fclose(f);
 	
 	Debug ("RebuildCacheFile: done !");
 	
@@ -1358,7 +1367,7 @@ static void RedrawIcons (int xoff, int yoff)
 		if (ai < chansCnt && ai < chans2Disp && gui.spotsIdx < SPOTSMAX)
 			{
 			// Draw application png
-			sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
+			sprintf (path, "%s/%s.png", vars.covers, chans[ai].asciiId);
 			gui.spots[gui.spotsIdx].ico.icon = CoverCache_Get(path);
 			
 			// Need a name ?	
@@ -1570,8 +1579,10 @@ static bool QuerySelection (int ai)
 	
 	// Load full res cover
 	char path[300];
-	sprintf (path, "%s://ploader/covers/%s.png", vars.defMount, chans[ai].asciiId);
+	sprintf (path, "%s/%s.png", vars.covers, chans[ai].asciiId);
+	mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	mt_Unlock();
 	if (tex) ico.icon = tex;
 
 	while (true)

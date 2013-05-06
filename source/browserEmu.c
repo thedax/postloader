@@ -94,6 +94,7 @@ static void retroarch_PurgeBmps (void)
 			{
 			sprintf (path, "%s:/retroarch", devices_Get (dev));
 			
+			mt_Lock();
 			char *buff = fsop_GetDirAsString (path, '\0', 1, ".bmp");
 			if (buff)
 				{
@@ -109,6 +110,7 @@ static void retroarch_PurgeBmps (void)
 				
 				free (buff);
 				}
+			mt_Unlock();
 			}
 		}
 	
@@ -134,6 +136,7 @@ static void retroarch_GetCover (void)
 			{
 			sprintf (path, "%s:/retroarch", devices_Get (dev));
 			
+			mt_Lock();
 			char *buff = fsop_GetDirAsString (path, '\0', 1, ".bmp");
 			if (buff) // we have a rom snapshot!
 				{
@@ -147,7 +150,7 @@ static void retroarch_GetCover (void)
 					{
 					char target[300];
 					
-					sprintf (target, "%s://ploader/covers.emu/%s.%s", vars.defMount, fsop_GetFilename(config.lastRom, true), fsop_GetExtension(buff));
+					sprintf (target, "%s/%s.%s", vars.coversEmu, fsop_GetFilename(config.lastRom, true), fsop_GetExtension(buff));
 					fsop_CopyFile (path, target, 0);
 					Debug ("retroarch_GetCover %s -> %s", path, target);
 					}
@@ -156,6 +159,7 @@ static void retroarch_GetCover (void)
 					Debug ("retroarch_GetCover %s is to small", path);
 					}
 				}
+			mt_Unlock();
 			}
 		}
 	
@@ -229,11 +233,15 @@ static void Conf (bool open)
 	cfg_Section (NULL);
 	if (open)
 		{
+		mt_Lock();
 		cfg = cfg_Alloc (cfgpath, 16384, 0, 0);
+		mt_Unlock();
 		}
 	else
 		{
+		mt_Lock();		
 		cfg_Store (cfg, cfgpath);
+		mt_Unlock();
 		cfg_Free (cfg);
 		}
 	}
@@ -292,17 +300,19 @@ static int Plugins_GetItem (int idx)
 	return cfg_FindTag (plugins, tag);
 	}
 	
-#define PIN_NAME 0
-#define PIN_DOL 1
-#define PIN_PATH 2
-#define PIN_EXT 3
-#define PIN_ICON 4
-#define PIN_ARGS 5
+#define PIN_ENABLED 0
+#define PIN_NAME 1
+#define PIN_DOL 2
+#define PIN_PATH 3
+#define PIN_EXT 4
+#define PIN_ICON 5
+#define PIN_ARGS 6
 
 static char *Plugins_Get (int i, int type)
 	{
 	static char name[128];
 	char *p;
+	
 	int idx = Plugins_GetItem (i);
 	
 	if (!plugins->items[idx])
@@ -342,7 +352,9 @@ static void Plugins (bool open)
 
 	if (open)
 		{
+		mt_Lock();
 		plugins = cfg_Alloc (cfgpath, 64, 0, 1);
+		mt_Unlock();
 		
 		pluginsCnt = 0;
 
@@ -405,7 +417,7 @@ static void MakeCoverPath (int ai, char *path)
 	*path = '\0';
 	if (!emus[ai].cover) return;
 	
-	sprintf (path, "%s://ploader/covers.emu/%s", vars.defMount, emus[ai].cover);
+	sprintf (path, "%s/%s", vars.coversEmu, emus[ai].cover);
 	}
 
 static void FeedCoverCache (void)
@@ -611,7 +623,6 @@ static void SortItems (void)
 // This will check if cover is available
 static void CheckForCovers (void)
 	{
-	char path[256];
 	int i;
 	
 	Debug ("Checking covers...");
@@ -623,19 +634,23 @@ static void CheckForCovers (void)
 		emus[i].cover = NULL;
 		}
 		
-	sprintf (path, "%s://ploader/covers.emu", vars.defMount);
-	char *dir = fsop_GetDirAsString (path, '|', 1, NULL);
+	char *dir = fsop_GetDirAsString (vars.coversEmu, '|', 1, NULL);
 	
-	for (i = 0; i < emusCnt; i++)
+	Debug ("fsop_GetDirAsString = '%s' = 0x%X", vars.coversEmu, dir);
+	
+	if (dir)
 		{
-		char *p = ms_strstr (dir, fsop_GetFilename (emus[i].name, true));
-		if (p)
+		for (i = 0; i < emusCnt; i++)
 			{
-			emus[i].cover = ms_GetDelimitedString (p, '|', 0);
+			char *p = ms_strstr (dir, fsop_GetFilename (emus[i].name, true));
+			if (p)
+				{
+				emus[i].cover = ms_GetDelimitedString (p, '|', 0);
+				}
 			}
-		}
 
-	free (dir);
+		free (dir);
+		}
 	
 	Debug ("...done");
 	}
@@ -650,9 +665,14 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	char ext[256];
 	char *p;
 	
+	p = Plugins_Get(type, PIN_ENABLED);
+	if (!p || *p == '0') return 0;
+	
 	strcpy (ext, Plugins_Get(type, PIN_EXT));
 
+	mt_Lock();
 	pdir=opendir(path);
+	mt_Unlock();
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
@@ -1261,7 +1281,9 @@ static bool QuerySelection (int ai)
 	// Load full res cover
 	char path[300];
 	MakeCoverPath (ai, path);
+	mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
+	mt_Unlock();
 	if (tex) ico.icon = tex;
 	
 	Video_SetFont(TTFNORM);

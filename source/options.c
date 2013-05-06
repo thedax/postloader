@@ -646,14 +646,15 @@ int ShowExitMenu (void)
 	
 	*options = '\0';
 	
+	grlib_menuAddItem (options, 3,  "Shutdown my WII");
+	if (vars.neek != NEEK_NONE)
+		grlib_menuAddItem (options, 5,  "Return to real WII");
+	grlib_menuAddSeparator (options);
 	grlib_menuAddItem (options, 1,  "Exit to WII Menu");
 	if (CheckParental(0))		
 		grlib_menuAddItem (options, 2,  "Exit to Homebrew Channel");
-	grlib_menuAddItem (options, 3,  "Shutdown my WII");
 	if (CheckParental(0))		
 		grlib_menuAddItem (options, 4,  "Restart postLoader");
-	grlib_menuAddSeparator (options);
-	grlib_menuAddItem (options, -1,  "Close");
 	
 	item = grlib_menu (0, "Exit: Select an option", options);
 	
@@ -661,6 +662,7 @@ int ShowExitMenu (void)
 	if (item == 2) return INTERACTIVE_RET_HBC;
 	if (item == 3) return INTERACTIVE_RET_SHUTDOWN;
 	if (item == 4) ReloadPostloader();
+	if (item == 5) return INTERACTIVE_RET_REBOOT;
 	
 	return -1;
 	}
@@ -673,9 +675,8 @@ int ShowBootmiiMenu (void)
 	*options = '\0';
 	
 	grlib_menuAddItem (options, 1,  "Start NEEK2O (Direct mode)");
-	grlib_menuAddItem (options, 2,  "Start NEEK/BOOTMII (IOS254 Method)");
 	grlib_menuAddSeparator (options);
-	grlib_menuAddItem (options, -1,  "Close");
+	grlib_menuAddItem (options, 2,  "Start NEEK/BOOTMII (IOS254 Method)");
 	
 	item = grlib_menu (0, "NEEK/BOOTMII: Select an option", options);
 	

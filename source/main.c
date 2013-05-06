@@ -44,7 +44,7 @@ void BootToHBC(void)
 	
 	exit (0);
 	}
-	
+
 void WiiLoad (int start)
 	{
 #ifndef DOLPHINE
@@ -55,12 +55,58 @@ void WiiLoad (int start)
 #endif
 	}
 	
+void SetupCoversPaths (void)
+	{
+	*vars.covers = '\0';
+	*vars.coversEmu = '\0';
+	
+	char path[64];
+	sprintf (path, "%s://ploader/paths.conf", vars.defMount);
+	char *buff = (char*)fsop_ReadFile (path, 0, NULL);
+	if (buff)
+		{
+		char *p;
+		
+		p = cfg_FindInBuffer (buff, "covers");
+		if (p) strcpy (vars.covers, p);
+		
+		p = cfg_FindInBuffer (buff, "covers.emu");
+		strcpy (vars.coversEmu, p);
+		
+		free (buff);
+		}
+
+	if (!(*vars.covers)) sprintf (vars.covers, "%s://ploader/covers", vars.defMount);
+	if (!(*vars.coversEmu)) sprintf (vars.coversEmu, "%s://ploader/covers.emu", vars.defMount);
+	
+	//char *d;
+
+	Debug ("vars.covers = '%s'", vars.covers);
+	/*
+	d = fsop_GetDirAsString (vars.covers, '\n', 0, NULL);
+	if (d)
+		{
+		Debug (d);
+		free (d);
+		}
+	*/
+	Debug ("vars.covers.emu = '%s'", vars.coversEmu);
+	/*
+	d = fsop_GetDirAsString (vars.coversEmu, '\n', 0, NULL);
+	if (d)
+		{
+		Debug (d);
+		free (d);
+		}
+	*/
+	}
+	
 void Subsystems (bool enable)
 	{
 	if (enable)
 		{
 		if (vars.neek == NEEK_NONE) USB_Initialize ();
-		
+		mt_Init ();
 		grlib_Controllers (true);
 		MountDevices (1);
 		DebugStart (true, "sd://ploader.log");
@@ -77,7 +123,7 @@ void Subsystems (bool enable)
 		Debug ("stopping debug");
 		DebugStop ();
 		UnmountDevices ();
-		
+		mt_Deinit ();
 		if (vars.neek == NEEK_NONE) USB_Deinitialize ();
 		}
 	}
@@ -402,6 +448,7 @@ int main(int argc, char **argv)
 		snd_Init ();
 		WiiLoad (1);
 		neek_UID_Read ();
+		SetupCoversPaths ();
 
 		if (vars.usbtime != 1)
 			{
@@ -453,6 +500,13 @@ int main(int argc, char **argv)
 	if (ret == INTERACTIVE_RET_WM)
 		{
 		DirectDolBoot (vars.wmPath, "pl", 1);
+		return(0);
+		}
+
+	if (ret == INTERACTIVE_RET_REBOOT)
+		{
+		Shutdown ();
+		SYS_ResetSystem(SYS_RESTART,0,0);
 		return(0);
 		}
 
