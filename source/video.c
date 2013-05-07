@@ -212,7 +212,7 @@ void Video_WaitPanel (int icon, const char *text, ...)
 	
 	int l1 = grlib_GetFontMetrics (mex, NULL, NULL);
 	int l2 = 0;
-	if (p) l2 = grlib_GetFontMetrics (mex, NULL, NULL);
+	if (p) l2 = grlib_GetFontMetrics (p, NULL, NULL);
 	
 	if (l1 > w - 25) w = l1 + 25;
 	if (l2 > w - 25) w = l2 + 25;

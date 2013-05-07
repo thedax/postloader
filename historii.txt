@@ -1,3 +1,11 @@
+postLoader 4.4.5
+
+* emuBrowser: Fixed loading of AbdallahTerro plugins.conf
+* emuBrowser: Plugins are searched only one time. Filters are now applyed instantly
+* emuBrowser: up to 27 plugins can be displayed in filters (tested). Note that no more than 32 different plugins can be used.
+* emuBrowser: added current selected plugin(s) and rom count
+* minor fixes
+
 postLoader 4.4.4
 
 * added a flag in plugins.conf to enable/disable plugins. Check the file!

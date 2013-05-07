@@ -28,6 +28,7 @@ This allow to browse for applications in emus folder of mounted drive
 */
 extern s_grlibSettings grlibSettings;
 
+static int rescanRoms = 0;
 static int browse = 0;
 static int scanned = 0;
 
@@ -353,8 +354,10 @@ static void Plugins (bool open)
 	if (open)
 		{
 		mt_Lock();
-		plugins = cfg_Alloc (cfgpath, 64, 0, 1);
+		plugins = cfg_Alloc (cfgpath, 256, 0, 1);
 		mt_Unlock();
+		
+		Debug ("Plugins: %d", pluginsCnt);
 		
 		pluginsCnt = 0;
 
@@ -367,7 +370,7 @@ static void Plugins (bool open)
 				}
 			}
 			
-		if (pluginsCnt > CATMAX)
+		if (pluginsCnt >= CATMAX)
 			pluginsCnt = CATMAX;
 			
 		emuicons = calloc (sizeof (GRRLIB_texImg), pluginsCnt);
@@ -728,43 +731,50 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 	
 static int EmuBrowse (void)
 	{
-	int i, cnt;
 	Debug ("begin EmuBrowse");
-	
-	gui.spotsIdx = 0;
-	gui_Clean ();
-	StructFree ();
 
-	Video_WaitIcon (TEX_HGL);
-
-	char path[300];
-	int dev;
-	
-	Debug ("Emu Browse: searching for plugins data roms");
-	
-	usedBytes = 0;
-	emusCnt = 0;
-	for (dev = 0; dev < DEV_MAX; dev++)
+	if (rescanRoms)
 		{
-		if (devices_Get (dev))
+		int i, cnt;
+		
+		gui.spotsIdx = 0;
+		gui_Clean ();
+		StructFree ();
+
+		Video_WaitIcon (TEX_HGL);
+
+		char path[300];
+		int dev;
+		
+		Debug ("Emu Browse: searching for plugins data roms");
+		
+		usedBytes = 0;
+		emusCnt = 0;
+		for (dev = 0; dev < DEV_MAX; dev++)
 			{
-			Debug ("Checking: %s (%d)", devices_Get (dev), pluginsCnt);
-			
-			for (i = 0; i < pluginsCnt; i++)
+			if (devices_Get (dev))
 				{
-				sprintf (path, "%s:/%s", devices_Get (dev), Plugins_Get (i, PIN_PATH));
-				cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path);
-				emusCnt += cnt;
-				Debug ("found %d roms in %s", cnt, path);
+				Debug ("Checking: %s (%d)", devices_Get (dev), pluginsCnt);
+				
+				for (i = 0; i < pluginsCnt; i++)
+					{
+					sprintf (path, "%s:/%s", devices_Get (dev), Plugins_Get (i, PIN_PATH));
+					cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path);
+					emusCnt += cnt;
+					Debug ("found %d roms in %s", cnt, path);
+					}
 				}
 			}
+				
+		scanned = 1;
+		
+		Debug ("Allocated %d bytes (%d Kb)", EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
+		
+		CheckForCovers ();
+		
+		rescanRoms = 0;
 		}
-			
-	scanned = 1;
-	
-	Debug ("Allocated %d bytes (%d Kb)", EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
-	
-	CheckForCovers ();
+		
 	SortItems ();
 
 	Debug ("end EmuBrowse");
@@ -866,21 +876,32 @@ static void ShowFilterMenu (void)
 	{
 	char buff[2048];
 	u8 f[CATMAX];
-	int i, item;
+	int i, item, lines, addCol = 0;
 	
 	for (i = 0; i < pluginsCnt; i++)
 		f[i] = (config.emuFilter & (1 << i)) ? 1:0;
 
+	if (pluginsCnt > 16)
+		lines = 9;
+	else
+		lines = 8;
+		
 	do
 		{
 		buff[0] = '\0';
 		int col = 0;
 		for (i = 0; i < pluginsCnt; i++)
 			{
-			if (col == 8 || col == 16 || col == 24) grlib_menuAddColumn (buff);
-			//grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s: %s", Plugins_GetName (i), Plugins_GetPath (i));
+			if (col == (lines) || col == (lines*2) || col == (lines*3)) addCol = 1;
+
 			if (CountRomsPlugin(i))
 				{
+				if (addCol)
+					{
+					grlib_menuAddColumn (buff);
+					addCol = 0;
+					}
+					
 				grlib_menuAddCheckItem (buff, 100 + i, f[i], "%s", Plugins_Get (i, PIN_NAME));
 				col ++;
 				}
@@ -889,7 +910,10 @@ static void ShowFilterMenu (void)
 			}
 		
 		Video_SetFontMenu(TTFVERYSMALL);
-		item = grlib_menu (0, "Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
+		if (col >= 27)
+			item = grlib_menu (0, "Filter menu: Press (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
+		else
+			item = grlib_menu (0, "Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all emus)", buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
@@ -1145,14 +1169,58 @@ static void RedrawIcons (int xoff, int yoff)
 	*/
 	}
 
+static char *GetFilterString (int maxwidth)
+	{
+	static u32 lastfilter = -1;
+	static char string[1024] = {0};
+	int i;
+	
+	if (lastfilter == config.emuFilter) // nothing changed
+		return string;
+		
+	lastfilter = config.emuFilter;
+	
+	sprintf (string, "(%d ROMs) ", emus2Disp);
+	if (config.emuFilter == 0x0 || config.emuFilter == 0xFF)
+		{
+		return string;
+		}
+	
+	for (i = 0; i < pluginsCnt; i++)
+		if (config.emuFilter & (1 << i))
+			{
+			strcat (string, Plugins_Get (i, PIN_NAME));
+			strcat (string, "/");
+			}
+			
+	string[strlen(string)-1] = 0;
+	
+	// now limit width
+	int cutted = 0;
+	while (strlen(string) > 0 && grlib_GetFontMetrics(string, NULL, NULL) > maxwidth)
+		{
+		string[strlen(string)-1] = 0;
+		cutted = 1;
+		}
+	if (cutted) strcat (string, "...");
+	
+	return string;
+	}
+	
 static void Redraw (void)
 	{
 	Video_DrawBackgroud (1);
 	
 	Video_SetFont(TTFNORM);
 
-	grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::Emulators");
-	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
+	int w1 = grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::Emulators");
+	int w2 = grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);
+	
+	w1 = w1 + 25;
+	w2 = 615 - w2;
+	
+	Video_SetFont(TTFVERYSMALL);
+	grlib_printf ( w1 + (w2 - w1) / 2, 27, GRLIB_ALIGNCENTER, 0, GetFilterString((w2 - w1) - 30));
 	
 	if (redrawIcons) RedrawIcons (0,0);
 	
@@ -1437,6 +1505,7 @@ int EmuBrowser (void)
 	retroarch_GetCover ();
 	
 	page = config.gamePageEmu;
+	rescanRoms = 1;
 	EmuBrowse ();
 	
 	LiveCheck (1);
