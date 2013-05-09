@@ -333,6 +333,8 @@ s_cfg *cfg_Alloc (char *fn, int maxcount, int linebuffsize, int skipinvalid)
 	fbuff[filesize] = 0;
 	fclose (f);
 	
+	//Debug (fbuff);
+	
 	// scan and count how many lines we have
 	for (i = 0; i < filesize; i++)
 		if (fbuff[i] == '\n')

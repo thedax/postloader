@@ -302,12 +302,13 @@ static int Plugins_GetItem (int idx)
 	}
 	
 #define PIN_ENABLED 0
-#define PIN_NAME 1
-#define PIN_DOL 2
-#define PIN_PATH 3
-#define PIN_EXT 4
-#define PIN_ICON 5
-#define PIN_ARGS 6
+#define PIN_RECURSE 1
+#define PIN_NAME 2
+#define PIN_DOL 3
+#define PIN_PATH 4
+#define PIN_EXT 5
+#define PIN_ICON 6
+#define PIN_ARGS 7
 
 static char *Plugins_Get (int i, int type)
 	{
@@ -365,7 +366,7 @@ static void Plugins (bool open)
 			{
 			if (Plugins_GetItem(i) >= 0)
 				{
-				Debug ("Plugins: %d:%d -> %s", i, pluginsCnt, plugins->items[Plugins_GetItem(i)]);
+				//Debug ("Plugins: %d:%d:%d -> %s", i, Plugins_GetItem(i), pluginsCnt, plugins->items[Plugins_GetItem(i)]);
 				pluginsCnt++;
 				}
 			}
@@ -411,7 +412,7 @@ static int CountRomsPlugin (int type)
 		{
 		if (emus[i].type == type) count++;
 		}
-	
+
 	return count;
 	}
 	
@@ -595,7 +596,6 @@ static void SortItems (void)
 	int i;
 	int filtered = 0;
 	
-	Debug ("Sorting...");
 	FixFilters	();
 	
 	// Apply filters
@@ -618,8 +618,6 @@ static void SortItems (void)
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
 	
-	Debug ("...done");
-	
 	FeedCoverCache ();
 	}
 	
@@ -627,8 +625,6 @@ static void SortItems (void)
 static void CheckForCovers (void)
 	{
 	int i;
-	
-	Debug ("Checking covers...");
 	
 	// Cleanup cover flag
 	for (i = 0; i < emusCnt; i++)
@@ -654,23 +650,56 @@ static void CheckForCovers (void)
 
 		free (dir);
 		}
-	
-	Debug ("...done");
 	}
 	
-static int BrowsePluginFolder (int type, int startidx, char *path)
+static bool PluginExist (int type, char * dol)
+	{
+	char path[256];
+	char search[256];
+	
+	int i = 0;
+	
+	*dol = '\0';
+	
+	cfg_Value (plugins, CFG_READ, CFG_STRING, "dolpath", search, -1);
+	sprintf (path, "%s://ploader/plugins", vars.defMount);
+	do
+		{
+		sprintf (dol, "%s/%s", path, Plugins_Get(type, PIN_DOL));
+		if (fsop_FileExist (dol))
+			{
+			return true;
+			}
+			
+		*path = '\0';
+		char *buff = ms_GetDelimitedString (search, '|', i++);
+		if (buff)
+			{
+			strcpy (path, buff);
+			free (buff);
+			}
+		}
+	while (*path);
+	
+	return false;
+	}
+	
+static int BrowsePluginFolder (int type, int startidx, char *path, int recursive)
 	{
 	int i = startidx;
 	DIR *pdir;
 	struct dirent *pent;
-	char fn[300];
 	int updater = 0;
+	char fn[300];
 	char ext[256];
 	char *p;
 	
 	p = Plugins_Get(type, PIN_ENABLED);
 	if (!p || *p == '0') return 0;
 	
+	// Check if the plugin exist
+	if (!PluginExist (type, fn)) return 0;
+
 	strcpy (ext, Plugins_Get(type, PIN_EXT));
 
 	mt_Lock();
@@ -685,6 +714,16 @@ static int BrowsePluginFolder (int type, int startidx, char *path)
 		// Skip it
 		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
 			continue;
+			
+		if (pent->d_type == DT_DIR)
+			{
+			if (recursive)
+				{
+				char newpath[256];
+				sprintf (newpath, "%s/%s", path, pent->d_name);
+				i += BrowsePluginFolder (type, i, newpath, 1);
+				}
+			}
 			
 		p = pent->d_name + strlen(pent->d_name) - 1;
 
@@ -759,9 +798,9 @@ static int EmuBrowse (void)
 				for (i = 0; i < pluginsCnt; i++)
 					{
 					sprintf (path, "%s:/%s", devices_Get (dev), Plugins_Get (i, PIN_PATH));
-					cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path);
+					cnt = BrowsePluginFolder (Plugins_GetId(i), emusCnt, path, *Plugins_Get (i, PIN_RECURSE) == '1' ? 1:0);
 					emusCnt += cnt;
-					Debug ("found %d roms in %s", cnt, path);
+					Debug ("%s:found %d roms in %s", Plugins_Get(i, PIN_NAME), cnt, path);
 					}
 				}
 			}
@@ -1418,8 +1457,6 @@ static void StartEmu (int type, char *fullpath)
 	{
 	char cmd[256];
 	char dol[256];
-	char path[256];
-	char search[1024];
 
 	strcpy (cmd, Plugins_Get(type, PIN_ARGS));
 	if (*cmd == 0)
@@ -1439,33 +1476,14 @@ static void StartEmu (int type, char *fullpath)
 	ms_Subst (cmd, "{titlehi}", "504F5354");
 	ms_Subst (cmd, "{loadername}", "postLoader");
 
-	cfg_Value (plugins, CFG_READ, CFG_STRING, "dolpath", search, -1);
-	
-	int i = 0;
-	sprintf (path, "%s://ploader/plugins", vars.defMount);
-	do
+	if (PluginExist(type, dol))	// theorically this check isn't needed...
 		{
-		sprintf (dol, "%s/%s", path, Plugins_Get(type, PIN_DOL));
-		Debug ("StartEmu %s (%s)", dol, cmd);
+		Conf (false);	// Store configuration on disc
+		Plugins (false);
 
-		if (fsop_FileExist (dol))
-			{
-			Conf (false);	// Store configuration on disc
-			Plugins (false);
-
-			strcpy (config.lastRom, fsop_GetFilename (fullpath, 0));
-			DirectDolBoot (dol, cmd, 0);
-			}
-			
-		*path = '\0';
-		char *buff = ms_GetDelimitedString (search, '|', i++);
-		if (buff)
-			{
-			strcpy (path, buff);
-			free (buff);
-			}
+		strcpy (config.lastRom, fsop_GetFilename (fullpath, 0));
+		DirectDolBoot (dol, cmd, 0);
 		}
-	while (*path);
 
 	grlib_menu (0, "Attention!", "Requested plugin not found");
 	}

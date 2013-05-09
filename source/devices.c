@@ -283,8 +283,6 @@ int devices_TickUSB (void)
 		{
 		ret = storage->readSectors(0, 1, sector);
 		t = time(NULL) + 30;
-		
-		gprintf ("USB ticked \n");
 		}
 	
 	mt_Unlock();	
