@@ -170,6 +170,8 @@ char *ms_GetDelimitedString (char *string, char sep, int idx)
 			
 		if (i == idx)
 			{
+			if (psep-p == 0) return NULL;
+			
 			buff = malloc ((psep-p)+1);
 			strncpy (buff, p, (psep-p));
 			buff[(psep-p)] = 0;

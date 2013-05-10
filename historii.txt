@@ -1,3 +1,8 @@
+postLoader 4.4.7
+
+* emuBrowser: added cache system. To rebuild, [home]->rebuild cache (it is required also if plugin.conf change)
+* emuBrowser: in plugins.conf arguments, '$' will be replaced by '|'. This should make dosbox work.
+
 postLoader 4.4.6
 
 * emuBrowser: added an option in plugin.conf to enable recursive search of roms in a folder
