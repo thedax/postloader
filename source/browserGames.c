@@ -17,7 +17,7 @@
 #include "cfg.h"
 #include "devices.h"
 #include "browser.h"
-
+#include "wad.h"
 
 #define GAMEMAX 1024
 
@@ -34,6 +34,16 @@ static int scanned = 0;
 
 #define CATN 32
 #define CATMAX 32
+
+#define QFIDN 6
+static char *qfid[QFIDN] = {
+"GGPE01", //Mario Kart Arcade GP
+"GGPE02", //Mario Kart Arcade GP
+"GFZJ8P", //F-Zero AX
+"GVSJ8P", // VirtuaStriker4
+"GVS46E", // Virtua Striker 4 Ver.2006
+"GVS46J", // Virtua Striker 4 Ver.2006
+};
 
 static char *flt[CATN] = { 
 "Action",
@@ -162,6 +172,111 @@ static void InitializeGui (void)
 			x+=INC_X;
 			}
 		}
+	}
+	
+static bool SelectDMLWad (ai)
+	{
+	if (config.dmlVersion != GCMODE_DMAUTO) return true;
+	if (vars.neek != NEEK_NONE) return true; // nothing to do in neek !
+	
+	int i;
+	bool isqf = false;
+	char wad[300];
+	int dmwad = 0;
+	
+	// is qf ?
+	for (i = 0; i < QFIDN; i++)
+		if (!strncmp (games[ai].asciiId, qfid[i], strlen(qfid[i])))
+			isqf = true;
+			
+	if (isqf)
+		{
+		if (games[ai].slot == 0) //sd
+			{
+			sprintf (wad, "%s://ploader/wads/qfsd.wad", vars.defMount);
+			dmwad = DMLWAD_QFSD;
+			}
+		if (games[ai].slot == 1) //usb
+			{
+			sprintf (wad, "%s://ploader/wads/qfusb.wad", vars.defMount);
+			dmwad = DMLWAD_QFUSB;
+			}
+		}
+	else
+		{
+		if (games[ai].slot == 0) //sd
+			{
+			sprintf (wad, "%s://ploader/wads/dml.wad", vars.defMount);
+			dmwad = DMLWAD_DML;
+			}
+		if (games[ai].slot == 1) //usb
+			{
+			sprintf (wad, "%s://ploader/wads/dm.wad", vars.defMount);
+			dmwad = DMLWAD_DM;
+			}
+		}
+		
+	if (!dmwad)
+		{
+		grlib_menu (0, "Attention\nFor an unknown reason, I can't understand the required wad\nI can't continue....", "  OK  ");
+		return false;
+		}
+		
+	mt_Lock ();
+	int wadexist = fsop_FileExist (wad);
+	mt_Unlock ();
+	
+	if (!wadexist)
+		{
+		char buff[300];
+		
+		sprintf (buff, "Attention\nThe required wad was not found\n'%s'\nI can't continue....", wad);
+		grlib_menu (0, buff, "  OK  ");
+		return false;
+		}
+		
+	if (!config.currentDmlWad)
+		{
+		char buff[300];
+		
+		sprintf (buff, "Attention\npostLoader will now install\n'%s'\non your nand.\nThis should be a safe operation, anyway it is a your choice.\nNo warranty provided, no responsibility on me if you brick anything!\n\nContinue ?", wad);
+		if (grlib_menu (30, buff, "Yes##1~No##-1") != 1)
+			return false;
+		}
+		
+	if (config.currentDmlWad == dmwad)
+		{
+		return true; // already ok...
+		}
+		
+	if (vars.ios == IOS_PREFERRED)
+		{
+		Debug ("SelectDMLWad: Patching NAND permission");
+		Video_WaitPanel (TEX_CHIP, "Patching NAND permission");
+		IOSPATCH_Apply ();
+		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
+			{
+			grlib_menu (0, "postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+			Debug ("postLoader was unable to patch ISFS permission. Cannot continue");
+			return false;
+			}
+		}
+	else if (vars.ios == IOS_CIOS)
+		{
+		}
+	else
+		{
+		grlib_menu (0, "Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
+		return false;
+		}
+
+	// Ok, let's Good to be with us
+	if (Wad_Install (wad) >= 0) 
+		{
+		config.currentDmlWad = dmwad;
+		return true;
+		}
+	return false;
 	}
 
 static void MakeCoverPath (int ai, char *path)
@@ -356,9 +471,7 @@ static void WriteGameConfig (int ia)
 static int ReadGameConfig (int ia)
 	{
 	char buff[2048];
-	bool valid;
-
-	valid = (cfg_GetString (cfg, games[ia].asciiId, buff) != -1 && cfg_CountSepString (buff) >= 23);
+	bool valid = (cfg_GetString (cfg, games[ia].asciiId, buff) != -1 && cfg_CountSepString (buff) >= 22);
 	
 	if (valid)
 		{
@@ -369,6 +482,7 @@ static int ReadGameConfig (int ia)
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.ios, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.vmode, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_S8, 		&gameConf.language, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_S8, 		&gameConf.vpatch, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.hook, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.ocarina, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.nand, index++);
@@ -1051,7 +1165,7 @@ static void ShowAppMenu (int ai)
 					strcat (buff, "DM(L): Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
 					}
 
-				if (config.dmlVersion == GCMODE_DM22)
+				if (config.dmlVersion == GCMODE_DM22 || config.dmlVersion == GCMODE_DMAUTO)
 					   {
 					   grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 					   grlib_menuAddItem (buff, 9, "DM(L): Full NoDisc Patching (%s)", gameConf.dmlFullNoDisc ? "Yes" : "No");
@@ -1060,7 +1174,7 @@ static void ShowAppMenu (int ai)
 				if (config.dmlVersion == GCMODE_DML1x)
 					grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
 
-				if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22)
+				if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22 || config.dmlVersion == GCMODE_DMAUTO)
 					{
 				   grlib_menuAddItem (buff,10, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
 				   grlib_menuAddItem (buff,11, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
@@ -1108,7 +1222,7 @@ static void ShowAppMenu (int ai)
 		*/
 		
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (0, games[ai].name, buff);
+		item = grlib_menu (200, games[ai].name, buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item >= 100)
@@ -1359,6 +1473,8 @@ start:
 				grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
 			if (config.dmlVersion == GCMODE_DM22)
 				grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.2+ USB");
+			if (config.dmlVersion == GCMODE_DMAUTO)
+				grlib_menuAddItem (buff, 12, "GameCube mode: DM AUTO");
 			if (config.dmlVersion == GCMODE_DEVO)
 				grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
 
@@ -1441,7 +1557,10 @@ start:
 		config.dmlVersion++;
 		if (config.dmlVersion >= GCMODE_MAX)
 			config.dmlVersion = GCMODE_DML0x;
-			
+		
+		if (config.dmlVersion == GCMODE_DMAUTO)
+			config.currentDmlWad = 0;
+
 		rebrowse = 1;
 		goto start;
 		}
@@ -1495,7 +1614,7 @@ static void RedrawIcons (int xoff, int yoff)
 
 			if (config.gameMode == GM_DML)
 				{
-				if (config.dmlVersion < GCMODE_DM22 && games[ai].slot)
+				if (config.dmlVersion < GCMODE_DM22 && config.dmlVersion != GCMODE_DMAUTO && games[ai].slot)
 					gui.spots[gui.spotsIdx].ico.transparency = 128;
 				else
 					gui.spots[gui.spotsIdx].ico.transparency = 255;
@@ -1540,6 +1659,7 @@ static void Redraw (void)
 		if (config.dmlVersion == GCMODE_DML0x) strcpy (buff, "DML 0.X");
 		if (config.dmlVersion == GCMODE_DML1x) strcpy (buff, "DML 1.X");
 		if (config.dmlVersion == GCMODE_DM22) strcpy (buff, "DM 2.2+");
+		if (config.dmlVersion == GCMODE_DMAUTO) strcpy (buff, "DM/QF AUTO");
 		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
 		
 		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GameCube Games (%s)", buff);
@@ -1880,11 +2000,12 @@ int GameBrowser (void)
 			
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
 				{
-				if (!QuerySelection (gamesSelected))
+				if (!QuerySelection (gamesSelected) || !SelectDMLWad (gamesSelected))
 					{
 					redraw = 1;
 					continue;
 					}
+					
 				if (config.gameMode == GM_WII)
 					{
 					ReadGameConfig (gamesSelected);
@@ -1920,8 +2041,6 @@ int GameBrowser (void)
 
 					if (!err)
 						{
-						MasterInterface (1, 0, 3, "Booting...");
-
 						Debug ("DMLRun");
 						ReadGameConfig (gamesSelected);
 						games[gamesSelected].playcount++;
@@ -1929,8 +2048,7 @@ int GameBrowser (void)
 						Conf (false);	// Store configuration on disc
 						config.gamePageGC = page;
 						
-						//Debug ("%s -> %s", games[gamesSelected].source, p);
-						
+						MasterInterface (1, 0, 3, "Booting...");
 						// Execute !
 						
 						switch (config.dmlVersion)
@@ -1946,11 +2064,12 @@ int GameBrowser (void)
 								}
 								break;
 							
+							case GCMODE_DMAUTO:
 							case GCMODE_DML1x:
 							case GCMODE_DM22:
 								{
 								char *p = strstr (games[gamesSelected].source, "//")+1;
-								DMLRunNew (p, games[gamesSelected].asciiId, &gameConf);
+								DMLRunNew (p, games[gamesSelected].asciiId, &gameConf, games[gamesSelected].slot);
 								}
 								break;
 								

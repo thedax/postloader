@@ -1,4 +1,4 @@
-postLoader 4.2 (readmii.txt 1.9)
+postLoader 4.4.8 (readmii.txt 1.10)
 
 ========================================
 What postLoader is:
@@ -8,7 +8,7 @@ What postLoader is:
 * Emulator frontend page with plugin system (plugin .dol from WiiFlow)
 * neek2o & Uneek+DI game browser with cover support
 * game loaders forwarder (for CFG, GX and WiiFlow) with cover and filters support
-* DML gamecube browser with USB to SD copy feature
+* DML/QF gamecube browser with USB to SD copy feature and auto wad install (please, read notes carefully !!!)
 * Themable user interface
 * Wiiload server
 * Designed for stability and performance
@@ -107,11 +107,33 @@ CON: SD is always needed in the Wii
 10) postLoader MUST exist on the root of SD, and SD must be inside the Wii
 
 ========================================
+DM(L),QUADFORCE automatic mode:
+========================================
+
+When this option is enabled (press [home] while in gamecube mode, then "GameCube mode"), postLoader will choose and install the correct wad file to execute the selected gc/qf game.
+To use this feature, you must create a wads folder in your <dev>/ploader folder, for example usb://ploader/wads if your postloader data folder is in the usb device.
+Then rename the dm(l)/qadforce wads as follow
+
+DIOSMIOS_2.10.wad -> dm.wad
+DIOSMIOSLite_2.10.wad -> dml.wad
+quadforce_4.1.wad -> qfusb.wad
+quadforce_4.0.wad -> qfsd.wad
+
+so you will end with the following files
+
+<dev>://ploader/wads/dm.wad
+<dev>://ploader/wads/dml.wad
+<dev>://ploader/wads/qfusb.wad
+<dev>://ploader/wads/qfsd.wad
+
+Use only tested wads, from well known source. Installing these wads should be a safe operation, anyway it is a your choice. No warranty provided, no responsibility on me if you brick anything!
+
+========================================
 DML: (gamecube games on USB)
 ========================================
 
-notes: ngc iso (already converted with DiscEX) must be copied in usb://ngc folder (primary FAT32 part). 
-postLoader will take care to copy to sd://games when required
+notes: ngc iso (already converted with DiscEX) must be copied in usb://ngc or usb://games folder (primary FAT32 part). 
+postLoader will take care to copy to sd://games when required (if DML is selected)
 Games icon from usb games are dimmed. Copying process is slow (1750 kb/s on my sd)
 If there is no space on sd, postLoader will ask to delete some games.
 

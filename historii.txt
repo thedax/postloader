@@ -1,3 +1,32 @@
+postLoader 4.4.8
+
+* gameBrowser: Automatic DM(L)/QuadForce wad installation (please, read notes carefully !!!). Thx to waninkoko WadManager 1.7 source codes.
+* gameBrowser: Fixed a bug on reading/writing configuration information
+* Increased mp3 buffer size (less disc i/o)
+* little fixes
+
+========================================
+DM(L),QUADFORCE automatic mode:
+========================================
+
+When this option is enabled (press [home] while in gamecube mode, then "GameCube mode"), postLoader will choose and install the correct wad file to execute the selected gc/qf game.
+To use this feature, you must create a wads folder in your <dev>/ploader folder, for example usb://ploader/wads if your postloader data folder is in the usb device.
+Then rename the dm(l)/qadforce wads as follow
+
+DIOSMIOS_2.10.wad -> dm.wad
+DIOSMIOSLite_2.10.wad -> dml.wad
+quadforce_4.1.wad -> qfusb.wad
+quadforce_4.0.wad -> qfsd.wad
+
+so you will end with the following files
+
+<dev>://ploader/wads/dm.wad
+<dev>://ploader/wads/dml.wad
+<dev>://ploader/wads/qfusb.wad
+<dev>://ploader/wads/qfsd.wad
+
+Use only tested wads, from well known source. Installing these wads should be a safe operation, anyway it is a your choice. No warranty provided, no responsibility on me if you brick anything!
+
 postLoader 4.4.7
 
 * emuBrowser: added cache system. To rebuild, [home]->rebuild cache (it is required also if plugin.conf change)

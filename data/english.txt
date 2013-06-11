@@ -27,3 +27,5 @@ This is the default english file
 {n2onotice}Important notice: for some options, neek2obooter.app must be installed
 {n2obooterstartpl}neek2obooter is configured to start postLoader
 {n2obooternostartpl}neek2obooter is configured to start System Menu
+
+{installDmlWads}Auto Install DML wads

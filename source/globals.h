@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.4.7"
+#define VER "4.4.8"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -43,6 +43,11 @@
 
 #define DMLVIDEOMODE_NTSC 0
 #define DMLVIDEOMODE_PAL 1
+
+#define DMLWAD_DM 1
+#define DMLWAD_DML 2
+#define DMLWAD_QFSD 3
+#define DMLWAD_QFUSB 4
 
 #define GM_WII 0
 #define GM_DML 1
@@ -81,6 +86,7 @@ enum {
 	GCMODE_DML1x,
 	GCMODE_DM22,
 	GCMODE_DEVO,
+	GCMODE_DMAUTO,
 	GCMODE_MAX
 	};
 
@@ -447,6 +453,7 @@ typedef struct
 	char subpath[64];
 	char submount[6];
 	u8 enableTexCache;
+	u8 currentDmlWad;		// 0 = unknown...
 	}
 s_config;
 
@@ -592,7 +599,7 @@ void DMLResetCache (void);
 int DMLSelect (void);
 char * DMLScanner  (bool reset);
 int DMLRun (char *folder, char *id, u32 videomode);
-int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
+int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
 

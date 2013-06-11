@@ -254,7 +254,7 @@ int DMLRun (char *folder, char *id, u32 videomode)
 	return 1;
 	}
 
-int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
+int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot)
 	{
 	DML_CFG cfg;
 	char path[256];
@@ -265,7 +265,7 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
 	
 	cfg.Config |= DML_CFG_GAME_PATH;
 
-	if (config.dmlVersion == 2)
+	if (slot)
 		sprintf (path, "usb:/%s/game.iso", folder);
 	else
 		sprintf (path, "sd:/%s/game.iso", folder);
@@ -286,7 +286,7 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf)
 	Shutdown ();
 
 	cfg.Magicbytes = 0xD1050CF6;
-	if (config.dmlVersion == GCMODE_DM22)
+	if (config.dmlVersion == GCMODE_DM22 || config.dmlVersion == GCMODE_DMAUTO)
 		cfg.CfgVersion = 0x00000002;
 	else
 		cfg.CfgVersion = 0x00000001;

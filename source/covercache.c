@@ -550,8 +550,6 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	
 	//Debug ("CoverCache_LoadTextureFromFile: %s", filename);
 	
-	mt_Lock ();
-	
 	// let's clean the filename
 	strcpy (fntex, filename);
 
@@ -583,11 +581,16 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	
 	//Debug ("fntex = %s", fntex);
 		
+	mt_Lock ();
 	rgba = LoadRGBATex (fntex, &w, &h, 255);
+	mt_Unlock ();
+	
 	if (!rgba)
 		{
 		// return NULL it load fails
+		mt_Lock ();
 		data = fsop_ReadFile (filename, 0, NULL);
+		mt_Unlock ();
 		if (!data) goto end;
 		
 		// Convert to texture
@@ -622,7 +625,11 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 		GRRLIB_FreeTexture (tex);
 
 		if (config.enableTexCache)
+			{
+			mt_Lock ();
 			SaveRGBATex (fntex, rgba, w, h);
+			mt_Unlock ();
+			}
 		}
 
 	tex = calloc(1, sizeof(GRRLIB_texImg));

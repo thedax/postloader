@@ -374,6 +374,8 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 			int dev;
 			char path[256];
 			
+			mt_Lock();
+			
 			for (dev = 0; dev < DEV_MAX; dev++)
 				{
 				if (devices_Get (dev))
@@ -417,7 +419,9 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 						}
 					}
 				}
-
+			
+			mt_Unlock();
+			
 			i = 0;
 			
 			strcpy (goItems[i].text, "About.."); 	itemAbout = i++;

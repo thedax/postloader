@@ -28,7 +28,8 @@ static u32 mp3_volume = 255;
 #endif
 #define STACKSIZE				(32768)
 
-#define DATABUFFER_SIZE			(32768)
+//#define DATABUFFER_SIZE			(32768)
+#define DATABUFFER_SIZE			(65536)
 
 #ifndef SET
 	// this may help
