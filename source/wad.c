@@ -123,17 +123,18 @@ void __Wad_FixTicket(signed_blob *p_tik)
 }
 
 
-s32 Wad_Install(char *filename)
+s32 Wad_Install(char *filename, bool compact)
 {
 	FILE *fp;
+	char buff[300];
 	
 	fp = fopen (filename, "rb");
 	if (!fp) 
 		{
-		char buff[300];
-		
 		sprintf (buff, "Wad file not found:\n%s", filename);
 		grlib_menu (50, buff, "Ok");
+		
+		return -999;
 		}
 	
 	wadHeader   *header  = NULL;
@@ -144,7 +145,10 @@ s32 Wad_Install(char *filename)
 	u32 cnt, offset = 0;
 	s32 ret;
 
-	Video_WaitPanel (TEX_HGL, "Reading WAD data...");
+	if (!compact)
+		Video_WaitPanel (TEX_HGL, "Reading WAD data...|%s", filename);
+	else
+		Video_WaitIcon (TEX_HGL);
 
 	/* WAD header */
 	ret = __Wad_ReadAlloc(fp, (void *)&header, offset, sizeof(wadHeader));
@@ -186,14 +190,20 @@ s32 Wad_Install(char *filename)
 	/* Fix ticket */
 	__Wad_FixTicket(p_tik);
 
-	Video_WaitPanel (TEX_HGL, "Installing ticket...");
+	if (!compact)
+		Video_WaitPanel (TEX_HGL, "Installing ticket...|%s", filename);
+	else
+		Video_WaitIcon (TEX_HGL);
 
 	/* Install ticket */
 	ret = ES_AddTicket(p_tik, header->tik_len, p_certs, header->certs_len, p_crl, header->crl_len);
 	if (ret < 0)
 		goto err;
 
-	Video_WaitPanel (TEX_HGL, "Installing title...");
+	if (!compact)
+		Video_WaitPanel (TEX_HGL, "Installing title...|%s", filename);
+	else
+		Video_WaitIcon (TEX_HGL);
 
 	/* Install title */
 	ret = ES_AddTitleStart(p_tmd, header->tmd_len, p_certs, header->certs_len, p_crl, header->crl_len);
@@ -210,7 +220,10 @@ s32 Wad_Install(char *filename)
 		u32 idx = 0, len;
 		s32 cfd;
 
-		Video_WaitPanel (TEX_HGL, "Installing content #%02d...", content->cid);
+		if (!compact)
+			Video_WaitPanel (TEX_HGL, "Installing contents %d of %d|%s", cnt+1, tmd_data->num_contents, filename);
+		else
+			Video_WaitIcon (TEX_HGL);
 
 		/* Encrypted content size */
 		len = round_up(content->size, 64);
@@ -252,7 +265,10 @@ s32 Wad_Install(char *filename)
 			goto err;
 	}
 
-	Video_WaitPanel (TEX_HGL, "Finishing installation...");
+	if (!compact)
+		Video_WaitPanel (TEX_HGL, "Finishing installation...|%s", filename);
+	else
+		Video_WaitIcon (TEX_HGL);
 
 	/* Finish title install */
 	ret = ES_AddTitleFinish();
@@ -261,8 +277,8 @@ s32 Wad_Install(char *filename)
 		goto out;
 
 err:
-	Video_WaitPanel (TEX_HGL, "ERROR %d", ret);
-	sleep (1);
+	sprintf (buff, "An error was occured during installation of\n%sCode: %d", filename, ret);
+	grlib_menu (50, buff, "Ok");
 
 	/* Cancel install */
 	ES_AddTitleCancel();

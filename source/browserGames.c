@@ -252,7 +252,8 @@ static bool SelectDMLWad (ai)
 	if (vars.ios == IOS_PREFERRED)
 		{
 		Debug ("SelectDMLWad: Patching NAND permission");
-		Video_WaitPanel (TEX_CHIP, "Patching NAND permission");
+		Video_WaitIcon (TEX_HGL);
+		//Video_WaitPanel (TEX_CHIP, "Patching NAND permission|%s", wad);
 		IOSPATCH_Apply ();
 		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
 			{
@@ -271,7 +272,7 @@ static bool SelectDMLWad (ai)
 		}
 
 	// Ok, let's Good to be with us
-	if (Wad_Install (wad) >= 0) 
+	if (Wad_Install (wad, true) >= 0) 
 		{
 		config.currentDmlWad = dmwad;
 		return true;

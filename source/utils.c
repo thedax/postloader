@@ -343,3 +343,14 @@ void bsort(_PTR __base, size_t __nmemb, size_t __size, int(*_compar)(const _PTR,
 
 	return;
 	}
+	
+bool CheckvWii (void) {
+	#ifdef DOLPHIN
+	return false;
+	#endif
+	// Check Device ID
+	u32 deviceID = 0;
+	ES_GetDeviceID(&deviceID);
+	// If it is greater than or equal to 0x20000000 (536870912), then you are running on a Wii U
+	return (deviceID >= 536870912);
+} // CheckvWii

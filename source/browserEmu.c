@@ -1547,7 +1547,7 @@ static void StartEmu (int type, char *fullpath)
 	ms_Subst (cmd, "{titlelow}", "00010001");
 	ms_Subst (cmd, "{titlehi}", "504F5354");
 	ms_Subst (cmd, "{loadername}", "postLoader");
-	ms_Subst (cmd, "$", "|");
+	ms_Subst (cmd, "$", ";");
 
 	if (PluginExist(type, dol))	// theorically this check isn't needed...
 		{

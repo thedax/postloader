@@ -45,28 +45,11 @@ static volatile bool threadPaused = false;
 static volatile bool threadPause = false;
 static volatile bool threadStop = false;
 static volatile bool threadRunning = false;
-//static volatile bool monrunning = false;
 static volatile int cycle = 0;
 static volatile int cId = 0;
 static volatile int update = 0;
 
-#define UPDATE_TP() DCFlushRange(threadPause, sizeof(int))
-
 GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename);
-
-/*
-static void *tmon (void *arg)
-	{
-	monrunning = true;
-	while (monrunning)
-		{
-		gprintf ("tmon: %d %d %d %d %d\n", threadPaused, threadPause, threadStop, threadRunning, cycle);
-		usleep (200000);
-		}
-		
-	return NULL;
-	}
-*/
 
 static GRRLIB_texImg *MoveTex2Mem2 (GRRLIB_texImg *tex, int index)
 	{
@@ -137,7 +120,6 @@ static void *thread (void *arg)
 					}
 				DCFlushRange(&cc[i], sizeof(s_cc));
 				update ++;
-				
 				LWP_MutexUnlock (mutex);
 
 				cId = -1;
@@ -203,9 +185,6 @@ void CoverCache_Start (void)
 
 	LWP_CreateThread (&hthread, thread, NULL, NULL, 0, PRIO);
 	LWP_ResumeThread(hthread);
-
-	//LWP_CreateThread (&htmon, tmon, NULL, NULL, 0, PRIO);
-	//LWP_ResumeThread(htmon);
 	}
 
 void CoverCache_Stop (void)

@@ -1,3 +1,8 @@
+postLoader 4.4.9
+
+* wad installation: now just the hourglass is showed during installation
+* emuBrowser: fixed "$" separator (dosbox will now work)
+
 postLoader 4.4.8
 
 * gameBrowser: Automatic DM(L)/QuadForce wad installation (please, read notes carefully !!!). Thx to waninkoko WadManager 1.7 source codes.
@@ -9,7 +14,7 @@ postLoader 4.4.8
 DM(L),QUADFORCE automatic mode:
 ========================================
 
-When this option is enabled (press [home] while in gamecube mode, then "GameCube mode"), postLoader will choose and install the correct wad file to execute the selected gc/qf game.
+When this option is enabled (press [home] while in gamecube mode, then "GameCube mode = DM Auto"), postLoader will choose and install the correct wad file to execute the selected gc/qf game.
 To use this feature, you must create a wads folder in your <dev>/ploader folder, for example usb://ploader/wads if your postloader data folder is in the usb device.
 Then rename the dm(l)/qadforce wads as follow
 
