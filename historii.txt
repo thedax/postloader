@@ -1,3 +1,7 @@
+postLoader 4.4.10
+
+* gameBrowser: fixed wii games execution (and not required wad installation) if dml is set to auto.
+
 postLoader 4.4.9
 
 * wad installation: now just the hourglass is showed during installation

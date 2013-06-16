@@ -176,8 +176,10 @@ static void InitializeGui (void)
 	
 static bool SelectDMLWad (ai)
 	{
-	if (config.dmlVersion != GCMODE_DMAUTO) return true;
-	if (vars.neek != NEEK_NONE) return true; // nothing to do in neek !
+	if (config.dmlVersion != GCMODE_DMAUTO  ||
+		config.gameMode == GM_WII ||
+		vars.neek != NEEK_NONE
+		) return true;
 	
 	int i;
 	bool isqf = false;
