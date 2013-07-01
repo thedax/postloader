@@ -1,3 +1,12 @@
+postLoader 4.4.12
+
+* gameBrowser/gc: fixed cheat codes support for dml. Cheats files (gct) must be in the same partition of game and only '/codes' folder is supported.
+* gameBrowser/gc: added manual mios installation ([home]->"Manual MIOS installation..."). You can also create in /ploader/wads/mios.wad and cmios.wad as standard mios and custom mios
+
+postLoader 4.4.11
+
+* ....
+
 postLoader 4.4.10
 
 * gameBrowser: fixed wii games execution (and not required wad installation) if dml is set to auto.

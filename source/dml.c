@@ -266,9 +266,15 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot)
 	cfg.Config |= DML_CFG_GAME_PATH;
 
 	if (slot)
+		{
 		sprintf (path, "usb:/%s/game.iso", folder);
+		sprintf (cfg.CheatPath, "usb:/codes/%s.gct", id);
+		}
 	else
+		{
 		sprintf (path, "sd:/%s/game.iso", folder);
+		sprintf (cfg.CheatPath, "sd:/codes/%s.gct", id);
+		}
 		
 	if (fsop_FileExist (path))
 		{

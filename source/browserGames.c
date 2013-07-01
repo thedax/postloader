@@ -174,6 +174,150 @@ static void InitializeGui (void)
 		}
 	}
 	
+static bool ShowMIOSMenu (void)
+	{
+	int i;
+	char wads[DMLWAD_MAX][64];
+	bool slots[DMLWAD_MAX];
+	char menu[2048];
+	int count = 0;
+	
+	// cleanup
+	memset (slots, 0, sizeof (slots));
+
+	// checkup
+	mt_Lock ();
+	
+	i = DMLWAD_QFSD;
+	sprintf (wads[i], "%s://ploader/wads/qfsd.wad", vars.defMount);
+	slots[i] = fsop_FileExist (wads[i]);
+	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
+	
+	i = DMLWAD_QFUSB;
+	sprintf (wads[i], "%s://ploader/wads/qfusb.wad", vars.defMount);
+	slots[i] = fsop_FileExist (wads[i]);
+	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
+	
+	i = DMLWAD_DML;
+	sprintf (wads[i], "%s://ploader/wads/dml.wad", vars.defMount);
+	slots[i] = fsop_FileExist (wads[i]);
+	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
+	
+	i = DMLWAD_DM;
+	sprintf (wads[i], "%s://ploader/wads/dm.wad", vars.defMount);
+	slots[i] = fsop_FileExist (wads[i]);
+	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
+	
+	i = DMLWAD_MIOS;
+	sprintf (wads[i], "%s://ploader/wads/mios.wad", vars.defMount);
+	slots[i] = fsop_FileExist (wads[i]);
+	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
+	
+	i = DMLWAD_CMIOS;
+	sprintf (wads[i], "%s://ploader/wads/cmios.wad", vars.defMount);
+	slots[i] = fsop_FileExist (wads[i]);
+	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
+		
+	mt_Unlock ();
+	
+	for (i = 0; i < DMLWAD_MAX; i++)
+		if (slots[i]) count++;
+		
+	if (!count)
+		{
+		grlib_menu (50, "Attention\npostLoader was unable to find required wad files", "OK");
+		return false;
+		}
+		
+	// show menu
+	do
+		{
+		*menu = '\0';
+		
+		char buff[64];
+		
+		if (slots[DMLWAD_MIOS])
+			{
+			sprintf (buff, "Standard MIOS (mios.wad)%s", config.currentDmlWad == DMLWAD_MIOS ? "*":"");
+			grlib_menuAddItem (menu, DMLWAD_MIOS, buff);
+			}
+			
+		if (slots[DMLWAD_CMIOS])
+			{
+			sprintf (buff, "Custom MIOS (cmios.wad)%s", config.currentDmlWad == DMLWAD_CMIOS ? "*":"");
+			grlib_menuAddItem (menu, DMLWAD_CMIOS, buff);
+			}
+			
+		if (slots[DMLWAD_DML])
+			{
+			sprintf (buff, "DiosMios Lite (dml.wad)%s", config.currentDmlWad == DMLWAD_DML ? "*":"");
+			grlib_menuAddItem (menu, DMLWAD_DML, buff);
+			}
+		
+		if (slots[DMLWAD_DM])
+			{
+			sprintf (buff, "DiosMios (dm.wad)%s", config.currentDmlWad == DMLWAD_DM ? "*":"");
+			grlib_menuAddItem (menu, DMLWAD_DM, buff);
+			}
+		
+		if (slots[DMLWAD_QFSD])
+			{
+			sprintf (buff, "QuadForce SD (qfsd.wad)%s", config.currentDmlWad == DMLWAD_QFSD ? "*":"");
+			grlib_menuAddItem (menu, DMLWAD_QFSD, buff);
+			}
+		
+		if (slots[DMLWAD_QFUSB])
+			{
+			sprintf (buff, "QuadForce USB (qfusb.wad)%s", config.currentDmlWad == DMLWAD_QFUSB ? "*":"");
+			grlib_menuAddItem (menu, DMLWAD_QFUSB, buff);
+			}
+		
+		i = grlib_menu (0, "MIOS Installation:\nPlease, select the MIOS you want install", menu);
+		
+		if (i > 0)
+			{
+			if (!config.currentDmlWad)
+				{
+				char buff[300];
+				
+				sprintf (buff, "Attention\npostLoader will now install\n'%s'\non your nand.\nThis should be a safe operation, anyway it is a your choice.\nNo warranty provided, no responsibility on me if you brick anything!\n\nContinue ?", wads[i]);
+				if (grlib_menu (30, buff, "Yes##1~No##-1") != 1)
+					return false;
+				}
+				
+			if (vars.ios == IOS_PREFERRED)
+				{
+				Debug ("SelectDMLWad: Patching NAND permission");
+				Video_WaitIcon (TEX_HGL);
+				IOSPATCH_Apply ();
+				if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
+					{
+					grlib_menu (0, "postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
+					Debug ("postLoader was unable to patch ISFS permission. Cannot continue");
+					return false;
+					}
+				}
+			else if (vars.ios == IOS_CIOS)
+				{
+				// thats good, no patch required...
+				}
+			else
+				{
+				grlib_menu (0, "Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
+				return false;
+				}
+			
+			if (Wad_Install (wads[i], true) >= 0) 
+				{
+				config.currentDmlWad = i;
+				}
+			}
+		}
+	while (i > 0);
+
+	return true;
+	}
+	
 static bool SelectDMLWad (ai)
 	{
 	if (config.dmlVersion != GCMODE_DMAUTO  ||
@@ -255,7 +399,6 @@ static bool SelectDMLWad (ai)
 		{
 		Debug ("SelectDMLWad: Patching NAND permission");
 		Video_WaitIcon (TEX_HGL);
-		//Video_WaitPanel (TEX_CHIP, "Patching NAND permission|%s", wad);
 		IOSPATCH_Apply ();
 		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
 			{
@@ -266,6 +409,7 @@ static bool SelectDMLWad (ai)
 		}
 	else if (vars.ios == IOS_CIOS)
 		{
+		// thats good, no patch required...
 		}
 	else
 		{
@@ -1483,6 +1627,8 @@ start:
 
 			if (config.dmlVersion != GCMODE_DEVO)
 				grlib_menuAddItem (buff, 3, "Set default videomode...");
+
+			if (vars.neek == NEEK_NONE) grlib_menuAddItem (buff, 7, "Manual MIOS installation...");
 			}
 		
 		if (showHidden)
@@ -1528,6 +1674,11 @@ start:
 	if (item == 6)
 		{
 		GameBrowse (1);
+		}
+		
+	if (item == 7)
+		{
+		ShowMIOSMenu ();
 		}
 		
 	if (item == 8)

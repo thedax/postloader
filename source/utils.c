@@ -354,3 +354,48 @@ bool CheckvWii (void) {
 	// If it is greater than or equal to 0x20000000 (536870912), then you are running on a Wii U
 	return (deviceID >= 536870912);
 } // CheckvWii
+
+void DumpFolders (char *folder)
+	{
+	int i;
+	Debug ("DumpRootFolders: begin");
+	
+	for (i = 0; i < DEV_MAX; i++)
+		{
+		if (devices_Get(i))
+			{
+			char path[64];
+			
+			sprintf (path, "%s:%s", devices_Get(i), folder);
+			
+			Debug ("DumpRootFolders: %s", path);
+			
+			DIR *pdir;
+			struct dirent *pent;
+			
+			mt_Lock();
+			pdir=opendir(path);
+			
+			if (!pdir)
+				Debug ("DumpRootFolders: ERROR !");
+			
+			while ((pent=readdir(pdir)) != NULL) 
+				{
+				if (pent->d_type == DT_DIR)
+					{
+					Debug ("> '%s' (dir)", pent->d_name);
+					}
+				else
+					{
+					Debug ("> '%s'", pent->d_name);
+					}
+				}
+				
+			closedir (pdir);
+
+			mt_Unlock();
+			}
+		}
+	
+	Debug ("DumpRootFolders: end");
+	}

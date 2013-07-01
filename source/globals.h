@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.4.9"
+#define VER "4.4.12"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -44,11 +44,6 @@
 #define DMLVIDEOMODE_NTSC 0
 #define DMLVIDEOMODE_PAL 1
 
-#define DMLWAD_DM 1
-#define DMLWAD_DML 2
-#define DMLWAD_QFSD 3
-#define DMLWAD_QFUSB 4
-
 #define GM_WII 0
 #define GM_DML 1
 
@@ -57,6 +52,17 @@
 #define TITLE_UPPER(x)		((u32)((x) >> 32))
 #define TITLE_LOWER(x)		((u32)(x))
 #define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
+
+enum {
+	DMLWAD_UNKNOWN = 0,
+	DMLWAD_DM,
+	DMLWAD_DML,
+	DMLWAD_QFSD,
+	DMLWAD_QFUSB,
+	DMLWAD_MIOS,
+	DMLWAD_CMIOS,
+	DMLWAD_MAX,
+	};
 
 enum {
 	INTERACTIVE_RET_NONE=0,
@@ -522,6 +528,7 @@ bool ReloadPostloaderChannel (void);
 s32 CheckDisk(void *id);
 
 void bsort(_PTR __base, size_t __nmemb, size_t __size, int(*_compar)(const _PTR, const _PTR));
+void DumpFolders (char *folder);
 
 // dol.c
 #define EXECUTE_ADDR   ((u8 *) 0x92000000)

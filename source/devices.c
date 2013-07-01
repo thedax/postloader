@@ -22,6 +22,8 @@
 #define CACHE 8
 #define SECTORS 64
 
+//#define DUMP_MBRPART
+
 const DISC_INTERFACE* storage = NULL;
 
 #define le32(i) (((((u32) i) & 0xFF) << 24) | ((((u32) i) & 0xFF00) << 8) | \
@@ -106,10 +108,10 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 
     storage->readSectors(0, 1, mbr);
 	
-	/*
+#ifdef DUMP_MBRPART	
 	if (mounted[DEV_SD])
-		fsop_WriteFile ("sd://mbr->dat", (u8*)&mbr, sizeof (mbr));
-	*/
+		fsop_WriteFile ("sd://mbr.dat", (u8*)&fullsector, sizeof (fullsector));
+#endif
 	
 	int j;
 	int inc;
@@ -138,14 +140,16 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
             continue;
 
         storage->readSectors(le32(mbr->partitions[i].lba_start), 1, BootSector);
-		/*
+
+#ifdef DUMP_MBRPART
 		if (mounted[DEV_SD])
 			{
 			char path[300];
 			sprintf (path,"sd://part%d.dat",i);
 			fsop_WriteFile (path, (u8*)BootSector, sizeof (BootSector));
 			}
-		*/
+#endif
+
         if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
 			{
             //! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
