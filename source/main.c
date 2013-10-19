@@ -370,10 +370,9 @@ int main(int argc, char **argv)
 			}
 		}
 		
-	/*
 	DumpFolders ("//");
 	DumpFolders ("//wbfs");
-	*/	
+	
 	Video_LoadTheme (1);
 
 	if (vars.usbtime == 1)

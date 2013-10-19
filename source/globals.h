@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.4.12"
+#define VER "4.4.16"
 #define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -450,7 +450,7 @@ typedef struct
 
 	bool runHBwithForwarder;
 	
-	u32 emuFilter;			// 
+	u8 emuFilter[32];		// 
 	u32 appFilter;
 	char appCats[APPCATS_MAX][32];	// Application ca
 	u8 volume;

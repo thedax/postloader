@@ -27,6 +27,8 @@
 #define MNUBTN_MINUS -3
 #define MNUBTN_1 -4
 #define MNUBTN_2 -5
+#define MNUBTN_LEFT -6
+#define MNUBTN_RIGHT -7
 #define MNUBTN_TOUT -99	// Menu has gone in timeout
 
 // THEMED FLAGS
@@ -141,7 +143,7 @@ typedef struct
 	GRRLIB_texImg *alticon;   // if icon is NULL draw this one
 	GRRLIB_texImg *iconOverlay[4];	// topleft, topright,bottomright, bottomleft overlay icons.
 	
-	char title[64];	// Icon text (font must be selected before)
+	char title[128];	// Icon text (font must be selected before)
 	int titleAlign;
 	
 	f32 rx1, rx2, ry1, ry2; // After icon has been drawn, this is the bounding rect

@@ -19,10 +19,11 @@
 #include "multithread.h"
 
 //these are the only stable and speed is good
-#define CACHE 8
+//#define CACHE 8
+#define CACHE 32
 #define SECTORS 64
 
-//#define DUMP_MBRPART
+// #define DUMP_MBRPART
 
 const DISC_INTERFACE* storage = NULL;
 
@@ -38,9 +39,9 @@ static char DeviceName[DEV_MAX][6] =
 {
     "sd",
     "usb",
-    "usb2",
-    "usb3",
-    "usb4"
+    "part2",
+    "part3",
+    "part4"
 };
 
 typedef struct _PARTITION_RECORD {
@@ -74,12 +75,19 @@ static int isNTFS (char *BootSector)
 		
 	return false;
 	}
-
+	
 static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 	{
+	char dev[32];
+	char mex[32][256];
+	int midx = 0;
+	int ret = -1;
+	
+	memset (&mex, 0, sizeof(mex));
+	
     time_t start = time(0);
 	
-	gprintf ("USBDevice_Init: begin\n");
+	sprintf (mex[midx++], "USBDevice_Init: begin\n");
 
     while (time(0) - start < usbTimeout) // 5 sec
 		{
@@ -95,11 +103,11 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 	
     if(!storage->startup() || !storage->isInserted())
 		{
-		gprintf ("USBDevice_Init: device initialization failed\n");
-        return -1;
+		sprintf (mex[midx++], "USBDevice_Init: device initialization failed\n");
+        goto quit;
 		}
 
-	gprintf ("USBDevice_Init: device initialization ok\n");
+	sprintf (mex[midx++], "USBDevice_Init: device initialization ok\n");
 
     int i;
 	u8 fullsector[4096];
@@ -107,7 +115,7 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
     char BootSector[4096];
 
     storage->readSectors(0, 1, mbr);
-	
+
 #ifdef DUMP_MBRPART	
 	if (mounted[DEV_SD])
 		fsop_WriteFile ("sd://mbr.dat", (u8*)&fullsector, sizeof (fullsector));
@@ -134,72 +142,96 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 	idx = 0;
     for (j = 0; j < 4; ++j)
 		{
-		gprintf ("USBDevice_Init: partcount %d, parttyp = %d\n", i, mbr->partitions[i].type);
+		sprintf (mex[midx++], "USBDevice_Init: i=%d, j=%d, parttyp = %d, start = %u\n", i, j, mbr->partitions[i].type, mbr->partitions[i].lba_start);
 		
-        if (mbr->partitions[i].type == 0)
-            continue;
-
-        storage->readSectors(le32(mbr->partitions[i].lba_start), 1, BootSector);
+        if (mbr->partitions[i].type)
+			{
+			s32 rs = storage->readSectors(le32(mbr->partitions[i].lba_start), 1, BootSector);
+			sprintf (mex[midx++], "USBDevice_Init: readSectors = %d\n", rs);
 
 #ifdef DUMP_MBRPART
-		if (mounted[DEV_SD])
-			{
-			char path[300];
-			sprintf (path,"sd://part%d.dat",i);
-			fsop_WriteFile (path, (u8*)BootSector, sizeof (BootSector));
-			}
+			if (mounted[DEV_SD])
+				{
+				char path[300];
+				sprintf (path,"sd://part%d.dat",i);
+				fsop_WriteFile (path, (u8*)BootSector, sizeof (BootSector));
+				}
 #endif
 
-        if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
-			{
-            //! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
-            if(isFAT32 (BootSector))
+			if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
 				{
-                if (fatMount(DeviceName[DEV_USB+idx], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS))
+				//! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
+				sprintf (dev, "%s", DeviceName[DEV_USB+idx]);
+				if(isFAT32 (BootSector))
 					{
-					gprintf ("USBDevice_Init: fat->updating slot %d\n", DEV_USB+i);
+					if (fatMount(dev, storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS))
+						{
+						sprintf (mex[midx++], "USBDevice_Init: fatMount->updating slot %d => %s (%u)\n", DEV_USB+i, dev, le32(mbr->partitions[i].lba_start));
 
-					partinfo[DEV_USB+idx] = partfat;
-					partfat++;
-					mounted[DEV_USB+idx] = 1;
-					idx ++;
+						partinfo[DEV_USB+idx] = partfat;
+						partfat++;
+						mounted[DEV_USB+idx] = 1;
+						idx ++;
+						}
+					else
+						{
+						sprintf (mex[midx++], "USBDevice_Init: fatMount->unable to mount partition (%d, %s)\n", errno, DeviceName[DEV_USB+i]);
+						}
 					}
-				else
+				else if (isNTFS (BootSector))
 					{
-					gprintf ("USBDevice_Init: ntfsMount->unable to mount partition (%d, %s)\n", errno, DeviceName[DEV_USB+i]);
-					}
-				}
-            else if (isNTFS (BootSector))
-				{
-				//ntfsRemoveDevice(DeviceName[DEV_USB+idx]);
-				
-				if (ntfsMount(DeviceName[DEV_USB+idx], storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER))
-					{
-					gprintf ("USBDevice_Init: ntfs->updating slot %d\n", DEV_USB+i);
-
-					partinfo[DEV_USB+idx] = partnfs + 10;
-					partnfs++;
-					mounted[DEV_USB+idx] = 1;
+					//ntfsRemoveDevice(DeviceName[DEV_USB+idx]);
 					
-					idx++;
-					}
-				else
-					{
-					gprintf ("USBDevice_Init: ntfsMount->unable to mount partition (%d, %s)\n", errno, DeviceName[DEV_USB+i]);
+					if (ntfsMount(dev, storage, le32(mbr->partitions[i].lba_start), CACHE, SECTORS, NTFS_SHOW_HIDDEN_FILES | NTFS_RECOVER))
+						{
+						sprintf (mex[midx++], "USBDevice_Init: ntfsMount->updating slot %d\n", DEV_USB+i);
+
+						partinfo[DEV_USB+idx] = partnfs + 10;
+						partnfs++;
+						mounted[DEV_USB+idx] = 1;
+						
+						idx++;
+						}
+					else
+						{
+						sprintf (mex[midx++], "USBDevice_Init: ntfsMount->unable to mount partition (%d, %s)\n", errno, DeviceName[DEV_USB+i]);
+						}
 					}
 				}
-			}
-		else
-			{
-			gprintf ("USBDevice_Init: wrong signature 0x%04X\n", *((u16 *) (BootSector + 0x1FE)));
+			else
+				{
+				sprintf (mex[midx++], "USBDevice_Init: wrong signature 0x%04X\n", *((u16 *) (BootSector + 0x1FE)));
+				}
 			}
 
 		i += inc;
 		}
 	
-	return partnfs + partfat;
+	ret = partnfs + partfat;
 
-	return -1;
+quit:
+#ifdef DUMP_MBRPART
+	if (mounted[DEV_SD])
+		{
+		FILE *f = fopen ("sd://devinit.log", "wb");
+		if (f)
+			{
+			for (i = 0; i < midx; i++)
+				{
+				fwrite (mex[i],1,strlen(mex[i]), f);
+				}
+			fclose (f);
+			}
+		
+		}
+#endif
+	for (i = 0; i < midx; i++)
+		{
+		gprintf (mex[i]);
+		}
+
+
+	return ret;
 }
 
 void devices_Mount (int devmode, int neek, int usbTimeout, devicesCallback cb)

@@ -70,6 +70,8 @@
 	void cfg_Empty (s_cfg *c);
 	
 	int cfg_FindTag (s_cfg *c, char *tag); // return the pointer to an item
+	bool cfg_RemoveIndex (s_cfg *cfg, int index);
+	bool cfg_RemoveTag (s_cfg *cfg, char *tag);
 	int cfg_GetString (s_cfg *cfg, char *tag, char *string);
 	int cfg_SetString (s_cfg *cfg, char *tag, char *string);
 	int cfg_CountSepString (char *buff);

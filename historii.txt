@@ -1,3 +1,23 @@
+postLoader 4.4.16
+
+* up to 256 different plugins are supported
+* rom count is displayed in filter menu
+* new plugin.conf format. The old format is compatible as the first digitig of definition line in plugin.conf is '0'
+* added to grlib_menu the support for (<) (>) buttons
+* added cfg_RemoveIndex/cfg_RemoveTag functions to cfg library
+
+postLoader 4.4.15
+
+* fixed "|" support in emulators. Use $ symbol 
+
+postLoader 4.4.14
+
+* fixed support for multiple fat32 partitions
+
+postLoader 4.4.13
+
+* bhoooo ?!?
+
 postLoader 4.4.12
 
 * gameBrowser/gc: fixed cheat codes support for dml. Cheats files (gct) must be in the same partition of game and only '/codes' folder is supported.

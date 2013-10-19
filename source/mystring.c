@@ -151,7 +151,7 @@ char *ms_GetDelimitedString (char *string, char sep, int idx)
 	char *buff;
 	int i;
 	
-	if (string == NULL)
+	if (!string)
 		return NULL;
 	
 	if (!strlen (string))
@@ -215,3 +215,15 @@ void ms_Subst (char *string, char *tofind, char *replace)
 		}
 	while (found != NULL);
 	}
+
+int ms_isnumeric(char *str)
+	{
+	while(*str)
+		{
+		if(!isdigit((unsigned char)*str))
+		return 0;
+		str++;
+		}
+	return 1;
+	}
+

@@ -285,10 +285,12 @@ int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) /
 		
 	if (fixButtonWidth > 0)
 		{
+		fixButtonWidth += 10;
 		itemw = fixButtonWidth;
 		}
 	if (fixButtonWidth < 0)
 		{
+		fixButtonWidth -= 10;
 		if (itemw < abs(fixButtonWidth)) itemw = abs(fixButtonWidth);
 		}
 	
@@ -379,7 +381,9 @@ int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) /
 			goItems[i].y2 = y + lineh + 10;
 			goItems[i].bcolor = RGBA (64, 64, 64, 128);
 			goItems[i].color = RGBA (192, 192, 192, 255);
-			grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
+			
+			if (strcmp (goItems[i].text, "_"))
+				grlib_DrawButton (&goItems[i], BTNSTATE_NORM);
 						
 			y += lineh + YSPACING;
 			}
@@ -406,7 +410,7 @@ int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) /
 		item = -1;
 		for (i = 0; i < itemsCnt; i++)
 			{
-			if (grlib_irPos.x > goItems[i].x1 && grlib_irPos.x < goItems[i].x2 && grlib_irPos.y > goItems[i].y1 && grlib_irPos.y < goItems[i].y2)
+			if (grlib_irPos.x > goItems[i].x1 && grlib_irPos.x < goItems[i].x2 && grlib_irPos.y > goItems[i].y1 && grlib_irPos.y < goItems[i].y2 && strcmp (goItems[i].text, "_"))
 				{
 				item = i;
 
@@ -441,6 +445,8 @@ int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) /
 			if (btn & WPAD_BUTTON_MINUS) {item = MNUBTN_MINUS; break;}
 			if (btn & WPAD_BUTTON_1) {item = MNUBTN_1; break;}
 			if (btn & WPAD_BUTTON_2) {item = MNUBTN_2; break;}
+			if (btn & WPAD_BUTTON_LEFT) {item = MNUBTN_LEFT; break;}
+			if (btn & WPAD_BUTTON_RIGHT) {item = MNUBTN_RIGHT; break;}
 			}
 			
 		if (grlibSettings.wiiswitch_reset || grlibSettings.wiiswitch_poweroff)

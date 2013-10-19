@@ -404,11 +404,44 @@ int cfg_FindTag (s_cfg *c, char *tag) // return the index to an item
 	
 	return -1;
 	}
+	
+/*
+Remove index will remove the element at the specified index
+*/
+bool cfg_RemoveIndex (s_cfg *cfg, int index)
+	{
+	if (index >= cfg->count || index < 0) return false;
+	
+	int i = index;
+	
+	//Debug ("%d:%s:%s", index, cfg->tags[i], cfg->items[i]);
+	if (cfg->tags[i]) free (cfg->tags[i]);
+	if (cfg->items[i]) free (cfg->items[i]);
 
+	cfg->tags[i] = NULL;
+	cfg->items[i] = NULL;
+
+	return true;
+	for (; i < cfg->count - 1; i++)
+		{
+		cfg->tags[i] = cfg->tags[i+1];
+		cfg->items[i] = cfg->items[i+1];
+		}
+	
+	cfg->tags[i] = NULL;
+	cfg->items[i] = NULL;
+	
+	cfg->count--;
+
+	return true;
+	}
+
+/*
+same as above but you with a tag instead of index
+*/
 bool cfg_RemoveTag (s_cfg *cfg, char *tag)
 	{
-	
-	return true;
+	return cfg_RemoveIndex (cfg, cfg_FindTag (cfg, tag));
 	}
 	
 

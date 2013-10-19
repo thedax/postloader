@@ -570,7 +570,11 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 		mt_Lock ();
 		data = fsop_ReadFile (filename, 0, NULL);
 		mt_Unlock ();
-		if (!data) goto end;
+		if (!data)
+			{
+			free (rgba);
+			return NULL;
+			}
 		
 		// Convert to texture
 		tex = GRRLIB_LoadTexture(data);
@@ -578,7 +582,12 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 		// Free up the buffer
 		free(data);
 		
-		if (!tex) goto end;
+		if (!tex) 
+			{
+			free (data);
+			free (rgba);
+			return NULL;
+			}
 		
 		if (tex->w >= tex->h && tex->w > TSIZE)
 			{
@@ -618,11 +627,5 @@ GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename)
 	GRRLIB_SetHandle( tex, 0, 0 );
 	GRRLIB_FlushTex( tex );
 	
-	end:
-	
-	mt_Unlock ();
-	
-	//Debug ("CoverCache_LoadTextureFromFile 0x%X", tex);
-
     return tex;
 	}

@@ -91,7 +91,16 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 		}
 	
 	if (toggle == -1) strcpy(text, b->text);
-	
+
+	int pt3 = grlib_GetFontMetrics("...", NULL, NULL);
+	bool cutted = FALSE;
+	while (strlen(text) > 0 && grlib_GetFontMetrics(text, NULL, NULL) > ((b->x2 - b->x1) - 5 - pt3))
+		{
+		text[strlen(text)-1] = 0;
+		cutted = TRUE;
+		}
+	if (cutted) strcat (text, "...");
+
 	if (grlibSettings.theme.enabled)
 		{
 		if (state == BTNSTATE_SEL && grlibSettings.theme.texButtonSel)
