@@ -1268,11 +1268,21 @@ static void ShowMainMenu (void)
 			}
 		}
 		
+	if (config.lockCurrentMode)
+		grlib_menuAddItem (buff,  20, "Unlock this mode");
+	else
+		grlib_menuAddItem (buff,  20, "Lock this mode");
+
 	Redraw();
 	grlib_PushScreen();
 	
 	int item = grlib_menu (0, "Channel menu", buff);
 			
+	if (item == 20)
+		{
+		config.lockCurrentMode = !config.lockCurrentMode;
+		}
+
 	if (item == 1)
 		{
 		ShowNandMenu();

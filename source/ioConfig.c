@@ -26,9 +26,9 @@ bool ConfigWrite (void)
 	else
 		sprintf (path, "%s://ploader/pldneek.cfg", vars.defMount);
 	
-	Debug ("ConfigWrite: %s", path);
-
 	f = fopen (path, "wb");
+
+	Debug ("ConfigWrite: %s (0x%X)", path, f);
 	if (!f) return false;
 	
 	// Let's write version
@@ -69,23 +69,11 @@ bool ConfigRead (void)
 	else
 		sprintf (path, "%s://ploader/pldneek.cfg", vars.defMount);
 		
-	/*
-	size_t config_size;
-	if (fsop_GetFileSizeBytes (path, &config_size) && config_size != (sizeof(config) + sizeof(ver)))
-		{
-		gprintf ("ConfigRead: %s, filesize mismatch, resetting settins\n", path);
-		
-		InitConfigCats ();
-		return true;
-		}
-	*/
-	
-	gprintf ("ConfigRead: %s\n", path);
-
 	f = fopen (path, "rb");
+	Debug ("ConfigRead: %s (0x%X)", path, f);
 	if (!f) 
 		{
-		gprintf ("unable to open configuration file\n", path);
+		Debug ("unable to open configuration file", path);
 		InitConfigCats ();
 		return false;
 		}
@@ -95,7 +83,15 @@ bool ConfigRead (void)
 	ver[31] = 0; // make sure to terminate string
 	
 	if (strcmp (ver, CFGVER) == 0)
+		{
+		Debug ("Valid configuration found");
 		fread (&config, sizeof(config), 1, f);
+		}
+	else
+		{
+		Debug ("Invalid configuration found");
+		InitConfigCats ();
+		}
 
 	fclose (f);
 	

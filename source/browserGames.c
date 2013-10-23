@@ -1636,12 +1636,22 @@ start:
 		else
 			grlib_menuAddItem (buff, 11, "Show hidden games");
 		}
-					
+
+	if (config.lockCurrentMode)
+		grlib_menuAddItem (buff,  20, "Unlock this mode");
+	else
+		grlib_menuAddItem (buff,  20, "Lock this mode");
+
 	Redraw();
 	grlib_PushScreen();
 	
-	int item = grlib_menu (0, "Games menu", buff);
+	int item = grlib_menu (250, "Games menu", buff);
 	
+	if (item == 20)
+		{
+		config.lockCurrentMode = !config.lockCurrentMode;
+		}
+
 	if (item == 1)
 		{
 		DownloadCovers();
@@ -1813,10 +1823,26 @@ static void Redraw (void)
 		if (config.dmlVersion == GCMODE_DML0x) strcpy (buff, "DML 0.X");
 		if (config.dmlVersion == GCMODE_DML1x) strcpy (buff, "DML 1.X");
 		if (config.dmlVersion == GCMODE_DM22) strcpy (buff, "DM 2.2+");
-		if (config.dmlVersion == GCMODE_DMAUTO) strcpy (buff, "DM/QF AUTO");
+		if (config.dmlVersion == GCMODE_DMAUTO)
+			{
+			char mode[32];
+
+			if (config.currentDmlWad == DMLWAD_UNKNOWN) strcpy (mode, "?");
+			if (config.currentDmlWad == DMLWAD_QFSD) strcpy (mode, "QFSD");
+			if (config.currentDmlWad == DMLWAD_QFUSB) strcpy (mode, "QFUSB");
+			if (config.currentDmlWad == DMLWAD_DML) strcpy (mode, "DML");
+			if (config.currentDmlWad == DMLWAD_DM) strcpy (mode, "DM");
+			
+			sprintf (buff, "(AUTO:%s)", mode);
+			}
 		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
 		
-		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GameCube Games (%s)", buff);
+		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GC Games ");
+		int w = grlib_GetFontMetrics ("postLoader::GC Games ", NULL, NULL);
+		
+		Video_SetFont(TTFVERYSMALL);
+		grlib_printf ( 25 + w, 27, GRLIB_ALIGNLEFT, 0, buff);
+		Video_SetFont(TTFNORM);
 		}
 	
 	grlib_printf ( 615, 26, GRLIB_ALIGNRIGHT, 0, "Page %d of %d", page+1, pageMax+1);

@@ -178,6 +178,7 @@ int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) /
 	grlib_DrawSquare (&goWindow);
 	
 	line = calloc (1, strlen (title) + 1);
+	
 	// Lets count tile lines
 	titleLines = 0;
 

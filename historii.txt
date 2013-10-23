@@ -1,3 +1,22 @@
+postLoader 4.4.18
+
+* emuBrowser: fixed empty page on plugins filter menu
+* emuBrowser: up to 32768 rom can be virtually browsed.
+* emuBrowser: the cache file is no more fully readed in memory, but in small chunk.
+* emuBrowser: fixed rom count display if none or every plugin is selected in filters.
+
+postLoader 4.4.17
+
+* any mode can now be locked using [home]->lock this mode. Top and botton bar are disabled as well the d-pad shortcuts.
+* fixed button text that may be cutted in 4.4.16
+* better debug output for emulators
+* faster ploader.log writing (as usual, log is activated only if the file exist on sd root, thx joostin for the tip)
+* GameBrowser (GC): added current installed wad information (AUTO:DM, AUTO:DML.... etc)
+* Fixed default homebrew category creation when configuration file change revision
+* minor changes in user interface
+
+NOTE: this version will clear all configuration files (autoboot settings... etc.etc.)
+
 postLoader 4.4.16
 
 * up to 256 different plugins are supported
@@ -1614,32 +1633,3 @@ postLoader1 b1
 * Ad more checking on some buffers
 
 postLoader1 b0 (beta) - First public release
-
-
-============================================================
-TODO
-============================================================
-
-* Export of not-found icons
-* Export of hidden channels
-* Support power button and reset button on the console.
-
-
-============================================================
-KNOWN BUGS (current release)
-============================================================
-
-* none known
-
-
-============================================================
-nandBooter (based on triiforce r92)
-============================================================
-
-b1
-
-* Added no ios reload under neek
-
-b0
-* Changed usbstorage interface
-* Changed the way cert.sys is managed

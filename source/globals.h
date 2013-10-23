@@ -13,8 +13,8 @@
 
 //#define DOLPHINE
 
-#define VER "4.4.16"
-#define CFGVER "PLCFGV0016" //PLCFGV0016 4.2.0 
+#define VER "4.4.18"
+#define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
 #define IOS_PREFERRED 58
@@ -460,6 +460,7 @@ typedef struct
 	char submount[6];
 	u8 enableTexCache;
 	u8 currentDmlWad;		// 0 = unknown...
+	u8 lockCurrentMode;
 	}
 s_config;
 

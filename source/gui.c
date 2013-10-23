@@ -33,6 +33,8 @@ void gui_Clean (void)
 
 int ChooseDPadReturnMode (u32 btn)
 	{
+	if (config.lockCurrentMode) return -1;
+	
 	if (btn & WPAD_BUTTON_UP) // WII Games
 		{
 		if (config.browseMode == BROWSE_GM)

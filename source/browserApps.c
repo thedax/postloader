@@ -1180,9 +1180,18 @@ static void ShowMainMenu (void)
 		grlib_menuAddItem (buff,  1, "View options...");
 		grlib_menuAddItem (buff,  2, "Select device(s)...");
 		grlib_menuAddItem (buff,  3, "Refresh cache...");
-			
+		if (config.lockCurrentMode)
+			grlib_menuAddItem (buff,  20, "Unlock this mode");
+		else
+			grlib_menuAddItem (buff,  20, "Lock this mode");
+
 		item = grlib_menu (0, "Homebrew menu", buff);
 			
+		if (item == 20)
+			{
+			config.lockCurrentMode = !config.lockCurrentMode;
+			}
+
 		if (item == 0)
 			{
 			MasterInterface (1, 0, 2, "Please wait...");

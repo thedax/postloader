@@ -508,7 +508,7 @@ void Video_SetFontMenu (int size)
 #define VITOP 420
 void Video_DrawVersionInfo (void)
 	{
-	Video_SetFont(TTFSMALL);
+	Video_SetFont(TTFVERYSMALL);
 	grlib_Text ( VILEFT, VITOP, GRLIB_ALIGNLEFT, 0, "V."VER);
 	
 	if (vars.neek == NEEK_NONE)
