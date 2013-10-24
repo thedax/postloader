@@ -13,30 +13,38 @@ Debug, will write debug information to sd and/or gecko.... as debug file is open
 
 //#define DEBUGDISABLED
 
+#define DEBUG_MAXCACHE 32
 static char dbgfile[64];
+static char *cache[DEBUG_MAXCACHE];
+
 static int started = 0;
+static int filelog = 0;
 static int geckolog = 0;
-static FILE * fdebug = NULL;
+
 s32 DebugStart (bool gecko, char *fn)
 	{
 #ifdef DEBUGDISABLED
 	return;
 #else
+	filelog = 0;
 	started = 0;
 	
 	sprintf (dbgfile, fn);
 
 	geckolog = usb_isgeckoalive (EXI_CHANNEL_1);
 	
-	// Open debug file
-	fdebug = fopen(dbgfile, "rb");
-	if (fdebug)
+	// check if the file exist
+	FILE * f = NULL;
+	f = fopen(dbgfile, "rb");
+	if (f) 
 		{
-		fclose (fdebug);
-		fdebug = fopen(dbgfile, "ab");
+		filelog = 1;
+		fclose (f);
 		}
 	
-	if (fdebug || geckolog)
+	memset (cache, 0, sizeof(cache));
+	
+	if (filelog || geckolog)
 		started = 1;
 	
 	return started;
@@ -48,10 +56,8 @@ void DebugStop (void)
 #ifdef DEBUGDISABLED
 	return;
 #endif
-	if (fdebug)
-		fclose (fdebug);
 
-	fdebug = NULL;
+	filelog = 0;
 	started = 2;
 	}
 
@@ -62,7 +68,9 @@ void Debug (const char *text, ...)
 #else	
 	if (!started || text == NULL) return;
 		
+	int i;
 	char mex[2048];
+	FILE * f = NULL;
 
 	va_list argp;
 	va_start (argp, text);
@@ -77,14 +85,39 @@ void Debug (const char *text, ...)
 		usb_flush(EXI_CHANNEL_1);
 		usleep (500);
 		}
-
 	if (started == 2) return;
+	if (filelog == 0) return;
 	
-	int ret = -1;
-	if (fdebug)
+	// If a message start with '@', do not open... it will be cached
+	if (mex[0] != '@')
+		f = fopen(dbgfile, "ab");
+
+	//if file cannot be opened, cannot open the file, maybe filesystem unmounted or nand emu active... use cache
+	if (f)
 		{
-		ret = fwrite (mex, 1, strlen(mex), fdebug );
-		fflush (fdebug);
+		for (i = 0; i < DEBUG_MAXCACHE; i++)
+			{
+			if (cache[i] != NULL)
+				{
+				fwrite (cache[i], 1, strlen(mex), f );
+				free (cache[i]);
+				cache[i] = NULL;
+				}
+			}
+		fwrite (mex, 1, strlen(mex), f );
+		fclose(f);
+		}
+	else
+		{
+		for (i = 0; i < DEBUG_MAXCACHE; i++)
+			{
+			if (cache[i] == NULL)
+				{
+				cache[i] = calloc (strlen(mex) + 1, 1);
+				strcpy (cache[i], mex);
+				break;
+				}
+			}
 		}
 #endif		
 	}

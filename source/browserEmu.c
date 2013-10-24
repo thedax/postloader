@@ -825,8 +825,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 		
 	closedir (pdir);
 	
-	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found", plugin.pin[type].description, path, i-startidx);
-		
+	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found (%u kb)", plugin.pin[type].description, path, i-startidx, EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
+
 	return i-startidx;
 	}
 	

@@ -1,3 +1,7 @@
+postLoader 4.5.2
+
+* rolled back to the damn slow sd logging system
+
 postLoader 4.5.1
 
 * fixed missing roms
