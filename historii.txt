@@ -1,3 +1,14 @@
+postLoader 4.5.1
+
+* fixed missing roms
+* added more information if wad installation fails.
+
+postLoader 4.5.0
+
+* version changed
+
+NOTE: this version will clear all configuration files (autoboot settings... etc.etc.)
+
 postLoader 4.4.18
 
 * emuBrowser: fixed empty page on plugins filter menu
@@ -14,8 +25,6 @@ postLoader 4.4.17
 * GameBrowser (GC): added current installed wad information (AUTO:DM, AUTO:DML.... etc)
 * Fixed default homebrew category creation when configuration file change revision
 * minor changes in user interface
-
-NOTE: this version will clear all configuration files (autoboot settings... etc.etc.)
 
 postLoader 4.4.16
 

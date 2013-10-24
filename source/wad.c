@@ -127,6 +127,7 @@ s32 Wad_Install(char *filename, bool compact)
 {
 	FILE *fp;
 	char buff[300];
+	char op[64];
 	
 	fp = fopen (filename, "rb");
 	if (!fp) 
@@ -150,21 +151,21 @@ s32 Wad_Install(char *filename, bool compact)
 	else
 		Video_WaitIcon (TEX_HGL);
 
-	/* WAD header */
+	strcpy (op, "WAD header");
 	ret = __Wad_ReadAlloc(fp, (void *)&header, offset, sizeof(wadHeader));
 	if (ret >= 0)
 		offset += round_up(header->header_len, 64);
 	else
 		goto err;
 
-	/* WAD certificates */
+	strcpy (op, "WAD certificates");
 	ret = __Wad_ReadAlloc(fp, (void *)&p_certs, offset, header->certs_len);
 	if (ret >= 0)
 		offset += round_up(header->certs_len, 64);
 	else
 		goto err;
 
-	/* WAD crl */
+	strcpy (op, "WAD crl");
 	if (header->crl_len) {
 		ret = __Wad_ReadAlloc(fp, (void *)&p_crl, offset, header->crl_len);
 		if (ret >= 0)
@@ -173,14 +174,14 @@ s32 Wad_Install(char *filename, bool compact)
 			goto err;
 	}
 
-	/* WAD ticket */
+	strcpy (op, "WAD ticket");
 	ret = __Wad_ReadAlloc(fp, (void *)&p_tik, offset, header->tik_len);
 	if (ret >= 0)
 		offset += round_up(header->tik_len, 64);
 	else
 		goto err;
 
-	/* WAD TMD */
+	strcpy (op, "WAD TMD");
 	ret = __Wad_ReadAlloc(fp, (void *)&p_tmd, offset, header->tmd_len);
 	if (ret >= 0)
 		offset += round_up(header->tmd_len, 64);
@@ -195,7 +196,7 @@ s32 Wad_Install(char *filename, bool compact)
 	else
 		Video_WaitIcon (TEX_HGL);
 
-	/* Install ticket */
+	strcpy (op, "Install ticket");
 	ret = ES_AddTicket(p_tik, header->tik_len, p_certs, header->certs_len, p_crl, header->crl_len);
 	if (ret < 0)
 		goto err;
@@ -205,7 +206,7 @@ s32 Wad_Install(char *filename, bool compact)
 	else
 		Video_WaitIcon (TEX_HGL);
 
-	/* Install title */
+	strcpy (op, "Install title");
 	ret = ES_AddTitleStart(p_tmd, header->tmd_len, p_certs, header->certs_len, p_crl, header->crl_len);
 	if (ret < 0)
 		goto err;
@@ -228,7 +229,7 @@ s32 Wad_Install(char *filename, bool compact)
 		/* Encrypted content size */
 		len = round_up(content->size, 64);
 
-		/* Install content */
+		strcpy (op, "Install content");
 		cfd = ES_AddContentStart(tmd_data->title_id, content->cid);
 		if (cfd < 0) {
 			ret = cfd;
@@ -244,12 +245,12 @@ s32 Wad_Install(char *filename, bool compact)
 			if (size > BLOCK_SIZE)
 				size = BLOCK_SIZE;
 
-			/* Read data */
+			strcpy (op, "Read data");
 			ret = __Wad_ReadFile(fp, &wadBuffer, offset, size);
 			if (ret < 0)
 				goto err;
 
-			/* Install data */
+			strcpy (op, "Install data");
 			ret = ES_AddContentData(cfd, wadBuffer, size);
 			if (ret < 0)
 				goto err;
@@ -259,7 +260,7 @@ s32 Wad_Install(char *filename, bool compact)
 			offset += size;
 		}
 
-		/* Finish content installation */
+		strcpy (op, "Finish content installation");
 		ret = ES_AddContentFinish(cfd);
 		if (ret < 0)
 			goto err;
@@ -270,14 +271,14 @@ s32 Wad_Install(char *filename, bool compact)
 	else
 		Video_WaitIcon (TEX_HGL);
 
-	/* Finish title install */
+	strcpy (op, "Finish title install");
 	ret = ES_AddTitleFinish();
 	Debug ("ES_AddTitleFinish = %d\n");
 	if (ret >= 0)
 		goto out;
 
 err:
-	sprintf (buff, "An error was occured during installation of\n%sCode: %d", filename, ret);
+	sprintf (buff, "An error was occured during installation of\n%sCode: %d\nOp: %s", filename, ret, op);
 	grlib_menu (50, buff, "Ok");
 
 	/* Cancel install */

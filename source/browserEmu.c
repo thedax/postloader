@@ -143,7 +143,6 @@ static void plugin_Set (int i, u8 enabled,	u8 recurse,	char *description, char *
 	pin->description = description;
 	pin->args = args;
 	
-	/*
 	Debug ("%d:%d:%d:%s:%s:%s:%s:%s:%s", 
 		i,
 		pin->enabled,
@@ -154,7 +153,6 @@ static void plugin_Set (int i, u8 enabled,	u8 recurse,	char *description, char *
 		pin->ext,
 		pin->icon,
 		pin->args);
-	*/
 	}
 	
 static void retroarch_PurgeBmps (void)
@@ -685,7 +683,7 @@ static void CheckForCovers (void)
 	{
 	int i;
 	
-	// Cleanup cover flag
+	// Cleanup cover...
 	for (i = 0; i < emusCnt; i++)
 		{
 		if (emus[i].cover) free (emus[i].cover);
@@ -906,12 +904,16 @@ static int EmuBrowse (bool rebuild)
 					p++;
 					}
 				
+				if (index) size = index;
+				
 				p = cache;
 				do
 					{
 					emus[emusCnt].type = (u8)atoi (p);
 					emus[emusCnt].name = ms_GetDelimitedString (p, '|', 1);
 					emus[emusCnt].cover = ms_GetDelimitedString (p, '|', 2);
+					
+					Debug ("%d %u '%s' '%s'", emusCnt, emus[emusCnt].type, emus[emusCnt].name, emus[emusCnt].cover);
 					
 					emusCnt++;
 					
@@ -923,7 +925,7 @@ static int EmuBrowse (bool rebuild)
 						
 					p += strlen(p)+1;
 					}
-				while (*p && (p-cache) < index);
+				while (*p && (p-cache) < size);
 				
 				//break;
 				}
@@ -988,12 +990,6 @@ static int EmuBrowse (bool rebuild)
 	*/
 
 	int i;
-	
-	Debug ("Actual plugins:");
-	for (i = 0; i < plugin.count; i++)
-		{
-		}
-	
 	for (i = 0; i < plugin.count; i++)
 		{
 		plugin.pin[i].count = CountRomsPlugin(i);
@@ -1475,7 +1471,7 @@ static char *GetFilterString (int maxwidth)
 		if (plugin.pin[i].enabled) active++;
 		}
 	
-	if (memcmp (lastfilter, config.emuFilter, sizeof (config.emuFilter)) == 0 && !string[0]) // nothing changed
+	if (memcmp (lastfilter, config.emuFilter, sizeof (config.emuFilter)) == 0 && strlen(string)) // nothing changed
 		return string;
 		
 	memcpy (lastfilter, config.emuFilter, sizeof (config.emuFilter));
