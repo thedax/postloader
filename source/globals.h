@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.5.1"
+#define VER "4.5.3"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -302,18 +302,14 @@ s_emuConfig;
 
 typedef struct
 	{
-	char *name;				// name
 	u8 type;				// plugin type...
-
+	char *name;				// name
 	char *cover;			// covername, if NULL no cover available
-
 	u8 filtered;			// if 1, this app match the filter
-	u8 needUpdate;
-	u8 checked;
-
 	u16 playcount;			// how many time this title has bin executed
 	u8 priority;			// Vote !
 	u8 hidden;				// if 1, this app will be not listed
+	s16 pathid;
 	}
 s_emu;
 

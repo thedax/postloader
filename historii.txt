@@ -1,3 +1,8 @@
+postLoader 4.5.3
+
+* emuBrowser: Reduced memory occupation. Depending on roms path names, also more then 50%
+* minor fixes
+
 postLoader 4.5.2
 
 * rolled back to the damn slow sd logging system

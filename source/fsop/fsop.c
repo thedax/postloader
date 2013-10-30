@@ -82,7 +82,10 @@ char * fsop_GetDirAsString (char *path, char sep, int skipfolders, char *ext)
 // retrive extension from a full path. !! NOT THREAD SAFE !!
 char * fsop_GetExtension (char *path)
 	{
-	static char buff[256];
+	static char buff[256] = {0};
+	
+	if (!path || !*path) return buff;
+	
 	char *e = path + strlen(path) - 1;
 	
 	while (e > path)
@@ -102,12 +105,13 @@ char * fsop_GetExtension (char *path)
 // retrive filename from a full path. !! NOT THREAD SAFE !!
 char * fsop_GetFilename (char *path, bool killExt)
 	{
-	static char fn[256];
+	static char fn[256] = {0};
 	char buff[256];
+	int i = 0;
+	
+	if (!path || !*path) return fn;
 	
 	strcpy (buff, path);
-	
-	int i;
 	
 	// remove extension
 	if (killExt)
@@ -119,8 +123,14 @@ char * fsop_GetFilename (char *path, bool killExt)
 			}
 		if (buff[i] == '.') buff[i] = 0;
 		}
-
+	
 	i = strlen(buff)-1;
+	if (i < 0)
+		{
+		strcpy (fn, buff);
+		return fn;
+		}
+		
 	while (i > 0 && buff[i] != '/')
 		{
 		i--;
@@ -136,7 +146,9 @@ char * fsop_GetFilename (char *path, bool killExt)
 // retrive path from a full path. !! NOT THREAD SAFE !!
 char * fsop_GetPath (char *path, int killDev)
 	{
-	static char fn[256];
+	static char fn[256] = {0};
+	
+	if (!path || !*path) return fn;
 	
 	if (!killDev)
 		strcpy (fn, path);
@@ -165,7 +177,9 @@ char * fsop_GetPath (char *path, int killDev)
 // retrive dev from a full path. !! NOT THREAD SAFE !!
 char * fsop_GetDev (char *path)
 	{
-	static char fn[256];
+	static char fn[256] = {0};
+	
+	if (!path || !*path) return fn;
 	
 	strcpy (fn, path);
 	

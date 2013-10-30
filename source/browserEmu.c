@@ -28,10 +28,12 @@ This allow to browse for applications in emus folder of mounted drive
 
 #define EMUMAX 32768
 #define CATMAX 256
+#define ROMPATHMAX 256
 
 typedef struct
 	{
 	u8 enabled;
+	u8 enabledCfg;
 	u8 recurse;
 	u16 count;
 	char *description;
@@ -48,6 +50,8 @@ typedef struct
 	s_pin pin[CATMAX];
 	int count;
 	char *dolpath;
+	char *rompaths[ROMPATHMAX];
+	int rompathscount;
 	}
 s_plugin;
 	
@@ -101,6 +105,87 @@ static void plugin_Init (void)
 	{
 	memset (&plugin, 0, sizeof(plugin));
 	}
+	
+static int plugin_AssignRomPath (char *fullpath, int idx)
+	{
+	int i;
+	char filename[256];
+	char path[256];
+	
+	strcpy (filename, fsop_GetFilename(fullpath, 0));
+	strcpy (path, fsop_GetPath(fullpath, 0));
+	
+	for (i = 0; i < plugin.rompathscount; i++)
+		{
+		if (strcmp (plugin.rompaths[i], path) == 0)
+			{
+			emus[idx].name = malloc (strlen(filename)+1);
+			strcpy (emus[idx].name, filename);
+			
+			emus[idx].pathid = i;
+			return 2;
+			}
+		}
+	
+	if (plugin.rompathscount >= ROMPATHMAX-1)
+		{
+		emus[idx].name = malloc (strlen(fullpath)+1);
+		strcpy (emus[idx].name, fullpath);
+		
+		emus[idx].pathid = -1;
+		return 0;
+		}
+		
+	plugin.rompaths[plugin.rompathscount] = malloc (strlen(path)+1);
+	strcpy (plugin.rompaths[plugin.rompathscount], path);
+	emus[idx].pathid = plugin.rompathscount;
+	plugin.rompathscount++;
+
+	emus[idx].name = malloc (strlen(filename)+1);
+	if (!emus[idx].name)
+		{
+		Debug ("allocation error (%s)", filename);
+		return 0;
+		}
+	strcpy (emus[idx].name, filename);
+	
+	return 1;
+	}
+
+static int plugin_AddRomPath (char *path)
+	{
+	int i;
+	for (i = 0; i < plugin.rompathscount; i++)
+		{
+		if (strcmp (plugin.rompaths[i], path) == 0)
+			{
+			return 2; // already added
+			}
+		}
+	if (plugin.rompathscount >= ROMPATHMAX-1)
+		{
+		return 0; // no mor space
+		}
+		
+	// add-it
+	plugin.rompaths[plugin.rompathscount] = malloc (strlen(path)+1);
+	strcpy (plugin.rompaths[plugin.rompathscount], path);
+	plugin.rompathscount++;
+
+	return 1;
+	}
+
+static char* plugin_GetRomFullPath (int idx)
+	{
+	static char fullpath[256];
+	
+	if (emus[idx].pathid < 0)
+		strcpy (fullpath, emus[idx].name);
+	else
+		sprintf (fullpath, "%s/%s", plugin.rompaths[emus[idx].pathid], emus[idx].name);
+	Debug ("plugin_GetRomFullPath: '%s'", fullpath);
+	return fullpath;
+	}
 
 static void plugin_Free (void)
 	{
@@ -118,12 +203,21 @@ static void plugin_Free (void)
 		if (pin->args) free (pin->args);
 		}
 	
+	for (i = 0; i < ROMPATHMAX; i++)
+		{
+		if (plugin.rompaths[i])
+			free (plugin.rompaths[i]);
+		}
+		
 	if (plugin.dolpath) free (plugin.dolpath);
 	plugin_Init ();
 	}
 
-static void plugin_Set (int i, u8 enabled,	u8 recurse,	char *description, char *dol, char *romfolder, char *ext, char *icon, char *args)
+static bool plugin_Set (int i, u8 enabled, u8 recurse, char *description, char *dol, char *romfolder, char *ext, char *icon, char *args)
 	{
+	if (!description || !dol || !romfolder || !ext || !args)
+		return false;
+	
 	s_pin *pin = &plugin.pin[i];
 
 	if (pin->description) free (pin->description);
@@ -133,6 +227,7 @@ static void plugin_Set (int i, u8 enabled,	u8 recurse,	char *description, char *
 	if (pin->icon) free (pin->icon);
 	if (pin->args) free (pin->args);
 	
+	pin->enabledCfg = enabled;
 	pin->enabled = enabled;
 	pin->recurse = recurse;
 	pin->description = description;
@@ -153,6 +248,8 @@ static void plugin_Set (int i, u8 enabled,	u8 recurse,	char *description, char *
 		pin->ext,
 		pin->icon,
 		pin->args);
+		
+	return true;
 	}
 	
 static void retroarch_PurgeBmps (void)
@@ -405,7 +502,7 @@ static void Plugins (bool open)
 			// Rename the plugin
 			if (strcmp (pcfg->tags[i], "plugin") == 0 || pcfg->tags[i][0] == '0')
 				{
-				plugin_Set (plugin.count, 
+				if (plugin_Set (plugin.count, 
 						atoi(ms_GetDelimitedString (pcfg->items[i], '|', 0)),
 						atoi(ms_GetDelimitedString (pcfg->items[i], '|', 1)),
 						ms_GetDelimitedString (pcfg->items[i], '|', 2),
@@ -414,9 +511,9 @@ static void Plugins (bool open)
 						ms_GetDelimitedString (pcfg->items[i], '|', 5),
 						ms_GetDelimitedString (pcfg->items[i], '|', 6),
 						ms_GetDelimitedString (pcfg->items[i], '|', 7)
-						);
-
-				plugin.count++;
+						)
+					)
+					plugin.count++;
 				}
 			
 			if (plugin.count >= CATMAX) break;
@@ -476,9 +573,17 @@ static int CountRomsPlugin (int index)
 static void MakeCoverPath (int ai, char *path)
 	{
 	*path = '\0';
-	if (!emus[ai].cover) return;
 	
-	sprintf (path, "%s/%s", vars.coversEmu, emus[ai].cover);
+	if (!emus[ai].cover) return;
+	if (!strstr (emus[ai].cover,".")) // packed name
+		{
+		sprintf (path, "%s/%s.%s", vars.coversEmu, fsop_GetFilename(emus[ai].name,true), emus[ai].cover);
+		//Debug (">>>>> %s", path);
+		}
+	else
+		{
+		sprintf (path, "%s/%s", vars.coversEmu, emus[ai].cover);
+		}
 	}
 
 static void FeedCoverCache (void)
@@ -625,7 +730,7 @@ static int qsort_name (const void * a, const void * b)
 	{
 	s_emu *aa = (s_emu*) a;
 	s_emu *bb = (s_emu*) b;
-	return (ms_strcmp (strrchr (aa->name, '/') + 1, strrchr (bb->name, '/') + 1));
+	return (ms_strcmp (aa->name, bb->name));
 	}
 	
 static int bsort_filter (const void * a, const void * b)
@@ -653,7 +758,10 @@ static void SortItems (void)
 	int i;
 	int filtered = 0;
 	
+	Debug ("SortItems: FixFilters");
 	FixFilters	();
+	
+	Debug ("SortItems: Appling filters...");
 	
 	// Apply filters
 	emus2Disp = 0;
@@ -664,18 +772,27 @@ static void SortItems (void)
 		if (emus[i].filtered) filtered++;
 		}
 	
+	Debug ("SortItems: Sorting...bsort_filter");
+
 	Video_WaitIcon (TEX_HGL);
 	bsort (emus, emusCnt, sizeof(s_emu), bsort_filter);
+	
+	Debug ("SortItems: Sorting...bsort_hidden");
 
 	Video_WaitIcon (TEX_HGL);
 	bsort (emus, filtered, sizeof(s_emu), bsort_hidden);
+	
+	Debug ("SortItems: Sorting...qsort_name");
 
 	Video_WaitIcon (TEX_HGL);
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
 	
+	Debug ("SortItems: FeedCoverCache...");
 	FeedCoverCache ();
+	
+	Debug ("SortItems: done");
 	}
 	
 // This will check if cover is available
@@ -698,10 +815,22 @@ static void CheckForCovers (void)
 		{
 		for (i = 0; i < emusCnt; i++)
 			{
-			char *p = ms_strstr (dir, fsop_GetFilename (emus[i].name, true));
+			char filename[128];
+			
+			strcpy (filename, fsop_GetFilename (emus[i].name, true));
+			
+			char *p = ms_strstr (dir, filename);
 			if (p)
 				{
-				emus[i].cover = ms_GetDelimitedString (p, '|', 0);
+				char *cover = ms_GetDelimitedString (p, '|', 0);
+				
+				if (ms_strcmp (fsop_GetFilename(cover, true), filename) == 0)
+					{
+					emus[i].cover = ms_AllocCopy (fsop_GetExtension(cover),0);
+					free (cover);
+					}
+				else
+					emus[i].cover = cover;
 				}
 			}
 
@@ -749,7 +878,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 	char ext[256];
 	s_pin *pin = &plugin.pin[type];
 	
-	if (!pin->enabled)
+	if (!pin->enabledCfg)
 		{
 		Debug ("BrowsePluginFolder[%s]: '%s' => plugin not active", plugin.pin[type].description, path);
 		return 0;
@@ -762,6 +891,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 		return 0;
 		}
 
+	Debug ("ext: %d %s %s", type, pin->ext, pin->description);
 	strcpy (ext, pin->ext);
 
 	mt_Lock();
@@ -770,6 +900,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
+		Debug ("%s, %s", path, pent->d_name);
+
 		if (i >= EMUMAX)
 			break;
 		
@@ -801,17 +933,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 
 		sprintf (fn, "%s/%s", path, pent->d_name);
 		
-		emus[i].name = calloc (1, strlen (fn) + 1);
-		
-		usedBytes += (strlen (fn) + 1);
-		
-		if (!emus[i].name)
-			{
-			Debug ("allocation error (%s)", pent->d_name);
-			continue;
-			}
-		strcpy (emus[i].name, fn);
-		
+		plugin_AssignRomPath (fn, i);
+		usedBytes += (strlen (emus[i].name) + 1);
 		emus[i].type = type;
 		
 		if (++updater > 100)
@@ -825,7 +948,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 		
 	closedir (pdir);
 	
-	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found (%u kb)", plugin.pin[type].description, path, i-startidx, EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
+	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found (%u kb)", plugin.pin[type].description, path, i-startidx, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
 
 	return i-startidx;
 	}
@@ -909,14 +1032,27 @@ static int EmuBrowse (bool rebuild)
 				p = cache;
 				do
 					{
-					emus[emusCnt].type = (u8)atoi (p);
-					emus[emusCnt].name = ms_GetDelimitedString (p, '|', 1);
-					emus[emusCnt].cover = ms_GetDelimitedString (p, '|', 2);
-					
-					Debug ("%d %u '%s' '%s'", emusCnt, emus[emusCnt].type, emus[emusCnt].name, emus[emusCnt].cover);
-					
-					emusCnt++;
-					
+					if (strstr (p, "{rp}"))
+						{
+						char * path = ms_GetDelimitedString (p, '|', 2);
+						if (path)
+							{
+							plugin_AddRomPath (path);
+							free (path);
+							}
+						}
+					else
+						{
+						char *pp = strstr (p, "|"); if (pp) pp++;
+						emus[emusCnt].type = (u8)atoi (p);
+						emus[emusCnt].pathid = (s16)atoi (pp);
+						emus[emusCnt].name = ms_GetDelimitedString (p, '|', 2);
+						emus[emusCnt].cover = ms_GetDelimitedString (p, '|', 3);
+						
+						//Debug ("%d %u '%s' '%s'", emusCnt, emus[emusCnt].type, emus[emusCnt].name, emus[emusCnt].cover);
+						
+						emusCnt++;
+						}
 					if (++updater > 100)
 						{
 						Video_WaitIcon (TEX_HGL);
@@ -933,6 +1069,12 @@ static int EmuBrowse (bool rebuild)
 			
 			fclose (f);
 			free (cache);
+			
+			if (plugin.rompathscount == 0)
+				{
+				grlib_menu (50, "Error:\nThe file emu.dat seems to be old\nTry to refresh the cache.\nIf postloader hang, delete it.", ":-(");
+				StructFree ();
+				}
 			}
 		else
 			{
@@ -968,16 +1110,22 @@ static int EmuBrowse (bool rebuild)
 			f = fopen (cachefile, "wb");
 			if (f)
 				{
+				// writing folders....
+				for (i = 0; i < plugin.rompathscount; i++)
+					{
+					sprintf (buff, "%u|{rp}|%s\n", i, plugin.rompaths[i]);
+					fwrite (buff, 1, strlen(buff), f);
+					}
 				for (i = 0; i < emusCnt; i++)
 					{
-					sprintf (buff, "%u|%s|%s\n", emus[i].type, emus[i].name, emus[i].cover ? emus[i].cover: "");
+					sprintf (buff, "%u|%d|%s|%s\n", emus[i].type, emus[i].pathid, emus[i].name, emus[i].cover ? emus[i].cover: "");
 					fwrite (buff, 1, strlen(buff), f);
 					}
 				fclose (f);
 				}
 			else
 				{
-				grlib_menu (50, "Error:\nUnable to write cache file.", ":(");
+				grlib_menu (50, "Cannot write cache file", ":(");
 				}
 			
 			
@@ -1259,14 +1407,14 @@ static void ShowAppMenu (int ai)
 			
 			if (item == 0)
 				{
-				unlink (emus[ai].name);
+				unlink (plugin_GetRomFullPath (ai));
 				
 				char cover[256];
 				MakeCoverPath (ai, cover);
 				
 				unlink (cover);
 				
-				EmuBrowse (false);
+				EmuBrowse (true);
 				break;
 				}
 			}
@@ -1311,6 +1459,8 @@ static void ShowMainMenu (void)
 		grlib_menuAddItem (buff,  9, "Sort by: play count");
 	
 	grlib_menuAddItem (buff,  3, "Select filters");
+	
+	Debug ("CheckParental = %d", CheckParental(0));
 
 	if (CheckParental(0))
 		{
@@ -1723,8 +1873,14 @@ static void StartEmu (int type, char *fullpath)
 		return;
 		}
 		
+	Debug ("StartEmu: cmd='%s'", cmd);
+		
 	char loader[256];
 	sprintf (loader, "%s://ploader/plugins/forwarder.dol", vars.defMount);
+	
+	Debug ("fsop_GetDev: '%s'", fsop_GetDev(fullpath));
+	Debug ("fsop_GetPath: '%s'", fsop_GetPath(fullpath, 1));
+	Debug ("fsop_GetFilename: '%s'", fsop_GetFilename(fullpath, 0));
 
 	ms_Subst (cmd, "{device}", fsop_GetDev (fullpath));
 	ms_Subst (cmd, "{path}", fsop_GetPath (fullpath, 1));
@@ -1735,6 +1891,8 @@ static void StartEmu (int type, char *fullpath)
 	ms_Subst (cmd, "{loadername}", "postLoader");
 	ms_Subst (cmd, "$", ";");
 
+	Debug ("StartEmu: cmd='%s'", cmd);
+	
 	if (PluginExist(type, dol))	// theorically this check isn't needed...
 		{
 		Conf (false);	// Store configuration on disc
@@ -1818,7 +1976,7 @@ int EmuBrowser (void)
 				WriteGameConfig (emuSelected);
 				config.gamePageEmu = page;
 				
-				StartEmu (emus[emuSelected].type, emus[emuSelected].name);
+				StartEmu (emus[emuSelected].type, plugin_GetRomFullPath (emuSelected));
 
 				redraw = 1;
 				}
