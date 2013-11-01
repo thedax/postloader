@@ -1,3 +1,10 @@
+postLoader 4.5.4
+
+* emuBrowser: introduced some more checking, like rom name checking. Only one rom is added if the same path is specified on another plugin
+* fixed a memory issue with screensaver
+* much faster ms_strcmp function. This should speedup a lot of operations
+* various fixes
+
 postLoader 4.5.3
 
 * emuBrowser: Reduced memory occupation. Depending on roms path names, also more then 50%

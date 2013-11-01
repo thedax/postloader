@@ -423,7 +423,7 @@ static bool WiiLoad (s32 connection)
 	int ret = NetRead(connection, (u8 *) temp, 1023, 250);
 	temp[ret] = 0;
 	
-	Debug_hexdump (temp, ret);
+	//Debug_hexdump (temp, ret);
 	
 	if (ret > 2 && temp[ret - 1] == '\0' && temp[ret - 2] == '\0') // Check if it is really an arg
 		{

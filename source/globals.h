@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.5.3"
+#define VER "4.5.4"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -27,11 +27,11 @@
 #define HBAPPFOLDER "/apps/postloader"
 
 #define TTFVERYSMALL 17
-#define TTFVERYSMALL_fontOffsetY -2
+#define TTFVERYSMALL_fontOffsetY -4
 #define TTFVERYSMALL_fontSizeOffsetY -3
 
 #define TTFSMALL 18
-#define TTFSMALL_fontOffsetY -6
+#define TTFSMALL_fontOffsetY -7
 #define TTFSMALL_fontSizeOffsetY -6
 
 #define TTFNORM 22

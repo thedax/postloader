@@ -517,7 +517,7 @@ bool SaveRGBATex (char *fn, u8* rgba, u16 w, u16 h)
 	return true; 
 	}
 
-GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename) 
+GRRLIB_texImg* CoverCache_LoadTextureFromFile(char *filename) 
 	{
     GRRLIB_texImg  *tex = NULL;
     unsigned char  *data;

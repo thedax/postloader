@@ -47,9 +47,18 @@ s_pin;
 
 typedef struct
 	{
+	unsigned int alreadyAdded;
+	unsigned int noMoreFolderSpace;
+	unsigned int allocErrors;
+	}
+s_browseflag;
+
+typedef struct
+	{
 	s_pin pin[CATMAX];
 	int count;
 	char *dolpath;
+	
 	char *rompaths[ROMPATHMAX];
 	int rompathscount;
 	}
@@ -84,6 +93,7 @@ static int disableSpots;
 
 static s_cfg *cfg;
 static s_plugin plugin;
+static s_browseflag browseflag;
 
 static GRRLIB_texImg **emuicons;
 
@@ -100,6 +110,7 @@ static int usedBytes = 0;
 
 static void MakeCoverPath (int ai, char *path);
 static void FixFilters (void);
+static char* plugin_GetRomFullPath (int idx);
 
 static void plugin_Init (void)
 	{
@@ -111,6 +122,16 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 	int i;
 	char filename[256];
 	char path[256];
+	
+	for (i = 0; i < emusCnt; i++)
+		{
+		if (ms_isequal (fullpath, plugin_GetRomFullPath(i)))
+			{
+			browseflag.alreadyAdded++;
+			//Debug ("plugin_AssignRomPath: '%s' ROM Already added", fullpath);
+			return 0;
+			}
+		}
 	
 	strcpy (filename, fsop_GetFilename(fullpath, 0));
 	strcpy (path, fsop_GetPath(fullpath, 0));
@@ -129,10 +150,8 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 	
 	if (plugin.rompathscount >= ROMPATHMAX-1)
 		{
-		emus[idx].name = malloc (strlen(fullpath)+1);
-		strcpy (emus[idx].name, fullpath);
-		
-		emus[idx].pathid = -1;
+		browseflag.noMoreFolderSpace++;
+		//Debug ("plugin_AssignRomPath: allocation error (%s)", filename);
 		return 0;
 		}
 		
@@ -144,7 +163,8 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 	emus[idx].name = malloc (strlen(filename)+1);
 	if (!emus[idx].name)
 		{
-		Debug ("allocation error (%s)", filename);
+		browseflag.allocErrors ++;
+		Debug ("plugin_AssignRomPath: allocation error (%s)", filename);
 		return 0;
 		}
 	strcpy (emus[idx].name, filename);
@@ -183,7 +203,7 @@ static char* plugin_GetRomFullPath (int idx)
 		strcpy (fullpath, emus[idx].name);
 	else
 		sprintf (fullpath, "%s/%s", plugin.rompaths[emus[idx].pathid], emus[idx].name);
-	Debug ("plugin_GetRomFullPath: '%s'", fullpath);
+
 	return fullpath;
 	}
 
@@ -238,6 +258,7 @@ static bool plugin_Set (int i, u8 enabled, u8 recurse, char *description, char *
 	pin->description = description;
 	pin->args = args;
 	
+	/*
 	Debug ("%d:%d:%d:%s:%s:%s:%s:%s:%s", 
 		i,
 		pin->enabled,
@@ -248,7 +269,8 @@ static bool plugin_Set (int i, u8 enabled, u8 recurse, char *description, char *
 		pin->ext,
 		pin->icon,
 		pin->args);
-		
+	*/
+	
 	return true;
 	}
 	
@@ -402,6 +424,8 @@ static void InitializeGui (void)
 
 static void Conf (bool open)
 	{
+	Debug ("Conf %d (begin))", open);
+	
 	char cfgpath[64];
 	sprintf (cfgpath, "%s://ploader/emus.conf", vars.defMount);
 
@@ -421,6 +445,8 @@ static void Conf (bool open)
 		mt_Unlock();
 		cfg_Free (cfg);
 		}
+
+	Debug ("Conf %d (end))", open);
 	}
 	
 static void WriteGameConfig (int ia)
@@ -471,10 +497,12 @@ static int ReadGameConfig (int ia)
 
 static void Plugins (bool open)
 	{
+	Debug ("Plugins %d (begin))", open);
+
 	char cfgpath[64];
 	char path[1024];
 	int i;
-	
+		
 	sprintf (cfgpath, "%s://ploader/plugins.conf", vars.defMount);
 
 	if (open)
@@ -533,6 +561,8 @@ static void Plugins (bool open)
 		emuicons = calloc (sizeof (GRRLIB_texImg), plugin.count);
 		for (i = 0; i < plugin.count; i++)
 			{
+			Video_WaitIcon (TEX_HGL);
+			
 			sprintf (path, "%s://ploader/theme/%s", vars.defMount, plugin.pin[i].icon);
 			emuicons[i] = GRRLIB_LoadTextureFromFile (path);
 
@@ -553,6 +583,8 @@ static void Plugins (bool open)
 		free (emuicons);
 		plugin_Free ();
 		}
+
+	Debug ("Plugins %d (end)", open);
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -891,7 +923,6 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 		return 0;
 		}
 
-	Debug ("ext: %d %s %s", type, pin->ext, pin->description);
 	strcpy (ext, pin->ext);
 
 	mt_Lock();
@@ -900,8 +931,6 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
-		Debug ("%s, %s", path, pent->d_name);
-
 		if (i >= EMUMAX)
 			break;
 		
@@ -932,8 +961,9 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 			continue;
 
 		sprintf (fn, "%s/%s", path, pent->d_name);
-		
-		plugin_AssignRomPath (fn, i);
+		if (!plugin_AssignRomPath (fn, i)) 
+			continue;
+
 		usedBytes += (strlen (emus[i].name) + 1);
 		emus[i].type = type;
 		
@@ -956,6 +986,8 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 static int EmuBrowse (bool rebuild)
 	{
 	Debug ("begin EmuBrowse");
+	
+	memset (&browseflag, 0, sizeof (s_browseflag));
 	
 	if (!plugin.count)
 		{
@@ -1072,7 +1104,7 @@ static int EmuBrowse (bool rebuild)
 			
 			if (plugin.rompathscount == 0)
 				{
-				grlib_menu (50, "Error:\nThe file emu.dat seems to be old\nTry to refresh the cache.\nIf postloader hang, delete it.", ":-(");
+				grlib_menu (50, "Error:\nThe file emu.dat seems to be old\nYou need to refresh the cache...", ":-(");
 				StructFree ();
 				}
 			}
@@ -1150,6 +1182,8 @@ static int EmuBrowse (bool rebuild)
 	SortItems ();
 
 	Debug ("end EmuBrowse");
+	
+	redraw = 1;
 
 	return emusCnt;
 	}
@@ -1310,10 +1344,6 @@ static void ShowFilterMenu (void)
 			grlib_menuAddItem (buff, 100 + i, "_");
 			col ++;
 			}
-		
-		Debug ("buff is %d", strlen(buff));
-		gprintf (buff);
-		gprintf ("\n");
 		
 		Video_SetFontMenu(TTFVERYSMALL);
 		if (pages == 0)
@@ -1614,6 +1644,7 @@ static char *GetFilterString (int maxwidth)
 	static char string[1024] = {0};
 	int i;
 	int filterd = 0, active = 0;
+	int emusCntLast = 0;
 
 	for (i = 0; i < plugin.count; i++)
 		{
@@ -1621,8 +1652,10 @@ static char *GetFilterString (int maxwidth)
 		if (plugin.pin[i].enabled) active++;
 		}
 	
-	if (memcmp (lastfilter, config.emuFilter, sizeof (config.emuFilter)) == 0 && strlen(string)) // nothing changed
+	if (memcmp (lastfilter, config.emuFilter, sizeof (config.emuFilter)) == 0 && strlen(string) && emusCntLast == emusCnt) // nothing changed
 		return string;
+		
+	emusCntLast = emusCnt;
 		
 	memcpy (lastfilter, config.emuFilter, sizeof (config.emuFilter));
 	

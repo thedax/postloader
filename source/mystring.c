@@ -68,28 +68,44 @@ char *ms_strstr(char *str1, char *str2)
 	return 0;
 	}
 
-int ms_strcmp(char *str1, char *str2)
+int ms_strcmp(const char *s1, const char *s2) 
+	{
+	int ret = 0;
+	while (!(ret = toupper(*(unsigned char *) s1) - toupper(*(unsigned char *) s2)) && *s2) ++s1, ++s2;
+
+	if (ret < 0) 
+		{
+		ret = -1;
+		} 	
+	else if (ret > 0) 
+		{
+		ret = 1 ;
+		}
+
+	return ret;
+	}
+
+
+int ms_isequal(char *str1, char *str2)
 	{
 	if (!str1 || !str2 || !*str1 || !*str2)
 		return 0;
 		
-	int l1 = strlen(str1);
-	int l2 = strlen(str2);
-
-	char *s1 = malloc (l1+1);
-	char *s2 = malloc (l2+1);
-
-	int i;
-	for (i = 0; i <= l1; i++) s1[i] = toupper((int)str1[i]);
-	for (i = 0; i <= l2; i++) s2[i] = toupper((int)str2[i]);
+	int l = strlen(str1);
 	
-	int ret;
-	ret = strcmp (s1, s2);
+	if (l != strlen(str2)) return 0; // not equal
 	
-	free (s1);
-	free (s2);
-	
-	return ret;
+	while (*str1)
+		{
+		if (toupper((int)*str1) != toupper((int)*str2))
+			{
+			return 0;
+			}
+		
+		str1++;
+		str2++;
+		}
+	return 1;
 	}
 
 // Very simple wrapper for some utf8

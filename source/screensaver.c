@@ -153,10 +153,9 @@ static bool ScreenSaver (void)
 			{
 			if (pdir[cp]) closedir(pdir[cp]);
 			pdir[cp] = NULL;
+			cp ++;
+			if (cp >= PATHS) cp = 0;
 			}
-			
-		cp ++;
-		if (cp >= PATHS) cp = 0;
 		}
 	while (!ret);
 	
