@@ -91,7 +91,7 @@ static bool IsFiltered (int ai);
 
 static int disableSpots;
 
-static s_cfg *cfg;
+//static s_cfg *cfg;
 static s_plugin plugin;
 static s_browseflag browseflag;
 
@@ -112,6 +112,19 @@ static void MakeCoverPath (int ai, char *path);
 static void FixFilters (void);
 static char* plugin_GetRomFullPath (int idx);
 
+static void VWI(void)
+	{
+	static u64 t1 = 0;
+	u64 t2;
+	
+	t2 = gettime();
+	if (diff_msec (t1, t2) > 100)
+		{
+		t1 = t2;
+		Video_WaitIcon (TEX_HGL);
+		}
+	}
+
 static void plugin_Init (void)
 	{
 	memset (&plugin, 0, sizeof(plugin));
@@ -122,6 +135,11 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 	int i;
 	char filename[256];
 	char path[256];
+	
+	// these three lines must be erased when per-game configuration is back
+	emus[idx].priority = 5;
+	emus[idx].hidden = 0;
+	emus[idx].playcount = 0;
 	
 	for (i = 0; i < emusCnt; i++)
 		{
@@ -424,6 +442,7 @@ static void InitializeGui (void)
 
 static void Conf (bool open)
 	{
+	/*
 	Debug ("Conf %d (begin))", open);
 	
 	char cfgpath[64];
@@ -447,10 +466,12 @@ static void Conf (bool open)
 		}
 
 	Debug ("Conf %d (end))", open);
+	*/
 	}
 	
 static void WriteGameConfig (int ia)
 	{
+	/*
 	Debug ("WriteGameConfig: begin");
 	if (ia < 0) return;
 	
@@ -461,15 +482,16 @@ static void WriteGameConfig (int ia)
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, &emus[ia].priority, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, &emus[ia].hidden, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U16, &emus[ia].playcount, index++);
-	//cfg_FmtString (buff, CFG_WRITE, CFG_STRING, emus[ia].name, index++);
 
 	cfg_SetString (cfg, fsop_GetFilename(emus[ia].name, true), buff);
 	
 	Debug ("WriteGameConfig: end");
+	*/
 	}
 
 static int ReadGameConfig (int ia)
 	{
+	/*
 	Debug ("ReadGameConfig: begin");
 	char buff[2048];
 	int index = 0;
@@ -489,6 +511,8 @@ static int ReadGameConfig (int ia)
 		}
 	
 	Debug ("ReadGameConfig: end");
+	*/
+	
 	return true;
 	}
 
@@ -561,7 +585,7 @@ static void Plugins (bool open)
 		emuicons = calloc (sizeof (GRRLIB_texImg), plugin.count);
 		for (i = 0; i < plugin.count; i++)
 			{
-			Video_WaitIcon (TEX_HGL);
+			VWI ();
 			
 			sprintf (path, "%s://ploader/theme/%s", vars.defMount, plugin.pin[i].icon);
 			emuicons[i] = GRRLIB_LoadTextureFromFile (path);
@@ -686,7 +710,7 @@ static void GetCovers_Scan (char *path)
 				{
 				strcpy (romname, fsop_GetFilename (emus[i].name, true));
 				romname[32] = 0;
-				Video_WaitPanel (TEX_HGL, "Searching...|(B) Stop", romname, emusCnt);
+				Video_WaitPanel (TEX_HGL, 0, "Searching...|(B) Stop", romname, emusCnt);
 				t = time(NULL)+1;
 				}
 
@@ -765,23 +789,23 @@ static int qsort_name (const void * a, const void * b)
 	return (ms_strcmp (aa->name, bb->name));
 	}
 	
-static int bsort_filter (const void * a, const void * b)
+static int qsort_filter (const void * a, const void * b)
 	{
 	s_emu *aa = (s_emu*) a;
 	s_emu *bb = (s_emu*) b;
 
+	if (aa->filtered > bb->filtered) return -1;
 	if (aa->filtered < bb->filtered) return 1;
-	
 	return 0;
 	}
 	
-static int bsort_hidden (const void * a, const void * b)
+static int qsort_hidden (const void * a, const void * b)
 	{
 	s_emu *aa = (s_emu*) a;
 	s_emu *bb = (s_emu*) b;
 
-	if (aa->filtered > bb->filtered) return 1;
-	
+	if (aa->hidden > bb->hidden) return -1;
+	if (aa->hidden < bb->hidden) return 1;
 	return 0;
 	}
 	
@@ -804,19 +828,19 @@ static void SortItems (void)
 		if (emus[i].filtered) filtered++;
 		}
 	
-	Debug ("SortItems: Sorting...bsort_filter");
+	Debug ("SortItems: Sorting...qsort_filter");
 
-	Video_WaitIcon (TEX_HGL);
-	bsort (emus, emusCnt, sizeof(s_emu), bsort_filter);
+	VWI ();
+	qsort (emus, emusCnt, sizeof(s_emu), qsort_filter);
 	
-	Debug ("SortItems: Sorting...bsort_hidden");
+	Debug ("SortItems: Sorting...qsort_hidden");
 
-	Video_WaitIcon (TEX_HGL);
-	bsort (emus, filtered, sizeof(s_emu), bsort_hidden);
+	VWI ();
+	qsort (emus, filtered, sizeof(s_emu), qsort_hidden);
 	
 	Debug ("SortItems: Sorting...qsort_name");
 
-	Video_WaitIcon (TEX_HGL);
+	VWI ();
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
@@ -903,9 +927,9 @@ static bool PluginExist (int index, char * dol)
 static int BrowsePluginFolder (int type, int startidx, char *path, int recursive)
 	{
 	int i = startidx;
+	int rejected = 0;
 	DIR *pdir;
 	struct dirent *pent;
-	int updater = 0;
 	char fn[300];
 	char ext[256];
 	s_pin *pin = &plugin.pin[type];
@@ -925,12 +949,27 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 
 	strcpy (ext, pin->ext);
 
+	//VWI ();
+	Video_WaitPanel (TEX_HGL, 500, "%s|%d roms found, %d%%", path, i, (type * 100) / plugin.count);
+
 	mt_Lock();
 	pdir=opendir(path);
 	mt_Unlock();
 	
+	u64 t1 = 0;
+	u64 t2;
+	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
+		//VWI ();
+		
+		t2 = gettime();
+		if (diff_msec (t1, t2) > 200)
+			{
+			t1 = t2;
+			Video_WaitPanel (TEX_HGL, 500, "%s|%d roms found, %d%%", path, i, (type * 100) / plugin.count);
+			}
+
 		if (i >= EMUMAX)
 			break;
 		
@@ -961,24 +1000,20 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 			continue;
 
 		sprintf (fn, "%s/%s", path, pent->d_name);
-		if (!plugin_AssignRomPath (fn, i)) 
-			continue;
-
-		usedBytes += (strlen (emus[i].name) + 1);
-		emus[i].type = type;
-		
-		if (++updater > 100)
+		if (plugin_AssignRomPath (fn, i)) 
 			{
-			Video_WaitIcon (TEX_HGL);
-			updater = 0;
+			usedBytes += (strlen (emus[i].name) + 1);
+			emus[i].type = type;
+			
+			i++;
 			}
-		
-		i++;
+		else
+			rejected ++;
 		}
 		
 	closedir (pdir);
 	
-	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found (%u kb)", plugin.pin[type].description, path, i-startidx, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
+	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found (%u kb), %d rejected", plugin.pin[type].description, path, i-startidx, usedBytes / 1024, rejected);
 
 	return i-startidx;
 	}
@@ -1006,7 +1041,6 @@ static int EmuBrowse (bool rebuild)
 		char buff[300];
 		int i, cnt;
 		int dev;
-		int updater = 0;
 		size_t size;
 		
 		sprintf (cachefile, "%s://ploader/emu.dat", vars.defMount);
@@ -1015,7 +1049,7 @@ static int EmuBrowse (bool rebuild)
 		gui_Clean ();
 		StructFree ();
 		
-		Video_WaitIcon (TEX_HGL);
+		VWI ();
 		
 		f = fopen (cachefile, "rb");
 		
@@ -1028,9 +1062,10 @@ static int EmuBrowse (bool rebuild)
 			char *cache = calloc (CACHESIZE+1,1);
 			int index = 0;
 			int subsize = 0;
-			
 			do
 				{
+				VWI ();
+				
 				// read first block
 				if (subsize)
 					memcpy (cache, &cache[index], subsize);
@@ -1085,11 +1120,6 @@ static int EmuBrowse (bool rebuild)
 						
 						emusCnt++;
 						}
-					if (++updater > 100)
-						{
-						Video_WaitIcon (TEX_HGL);
-						updater = 0;
-						}
 						
 					p += strlen(p)+1;
 					}
@@ -1112,7 +1142,7 @@ static int EmuBrowse (bool rebuild)
 			{
 			Debug ("Emu Browse: searching for plugins data roms");
 			
-			usedBytes = 0;
+			usedBytes = EMUMAX * sizeof(s_emu);
 			emusCnt = 0;
 			for (dev = 0; dev < DEV_MAX; dev++)
 				{
@@ -1134,7 +1164,7 @@ static int EmuBrowse (bool rebuild)
 					
 			scanned = 1;
 			
-			Debug ("Allocated %d bytes (%d Kb)", EMUMAX * sizeof(s_emu) + usedBytes, (EMUMAX * sizeof(s_emu) + usedBytes) / 1024);
+			Debug ("Allocated %d bytes (%d Kb)", usedBytes, usedBytes / 1024);
 			
 			CheckForCovers ();
 
@@ -1163,20 +1193,22 @@ static int EmuBrowse (bool rebuild)
 			
 			rescanRoms = 0;
 			}
-		}
-		
-	/*
-	Let's clean undeeded plugins
-	*/
 
-	int i;
-	for (i = 0; i < plugin.count; i++)
-		{
-		plugin.pin[i].count = CountRomsPlugin(i);
-		Debug ("> %s (enabled=%d, count=%d)", plugin.pin[i].description, plugin.pin[i].enabled, plugin.pin[i].count);
+		// Load roms config
+		/*
+		for (i = 0; i < emusCnt; i++)
+			ReadGameConfig (i);
+		*/
+		// Let's clean undeeded plugins
 
-		if (!plugin.pin[i].count)
-			plugin.pin[i].enabled = 0;
+		for (i = 0; i < plugin.count; i++)
+			{
+			plugin.pin[i].count = CountRomsPlugin(i);
+			Debug ("> %s (enabled=%d, count=%d)", plugin.pin[i].description, plugin.pin[i].enabled, plugin.pin[i].count);
+
+			if (!plugin.pin[i].count)
+				plugin.pin[i].enabled = 0;
+			}
 		}
 
 	SortItems ();
@@ -1394,6 +1426,8 @@ static void ShowAppMenu (int ai)
 	char buff[512];
 	char title[256];
 	
+	if (!CheckParental(0)) return;
+	
 	strcpy (title, emus[ai].name);
 	if (strlen(title) > 64)
 		{
@@ -1406,14 +1440,14 @@ static void ShowAppMenu (int ai)
 		{
 		buff[0] = '\0';
 
-		grlib_menuAddItem (buff,  1, "Played %d times", emus[ai].playcount);
+		//grlib_menuAddItem (buff,  1, "Played %d times", emus[ai].playcount);
 		
-		if (CheckParental(0))
-			{
+		//if (CheckParental(0))
+		//	{
 			grlib_menuAddSeparator (buff);
 			grlib_menuAddItem (buff,  2, "Delete this rom (and cover)");
 			grlib_menuAddItem (buff,  3, "Delete this cover");
-			}
+		//	}
 		
 		int item = grlib_menu (0, title, buff);
 		
@@ -1494,11 +1528,12 @@ static void ShowMainMenu (void)
 
 	if (CheckParental(0))
 		{
+		/*
 		if (showHidden)
 			grlib_menuAddItem (buff,  6, "Hide hidden emus");
 		else
 			grlib_menuAddItem (buff,  7, "Show hidden emus");
-			
+		*/	
 		grlib_menuAddItem (buff,  1, "Import snapshots as covers");
 		}
 		
@@ -1923,6 +1958,9 @@ static void StartEmu (int type, char *fullpath)
 	ms_Subst (cmd, "{titlehi}", "504F5354");
 	ms_Subst (cmd, "{loadername}", "postLoader");
 	ms_Subst (cmd, "$", ";");
+	ms_Subst (cmd, "part2:", "usb1:");
+	ms_Subst (cmd, "part3:", "usb2:");
+	ms_Subst (cmd, "part4:", "usb3:");
 
 	Debug ("StartEmu: cmd='%s'", cmd);
 	
@@ -1944,21 +1982,24 @@ int EmuBrowser (void)
 
 	Debug ("GameBrowser (begin)");
 	
-	Plugins (true);
-	Conf (true);
-	
-	scanned = 0;
-	browserRet = -1;
-
 	grlibSettings.color_window = RGBA(192,192,192,255);
 	grlibSettings.color_windowBg = RGBA(32,32,32,128);
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
 	Video_WaitIcon (TEX_HGL);	
+
+	Plugins (true);
+	Conf (true);
 	
-	usedBytes = 0;
-	emus = calloc (EMUMAX, sizeof(s_emu));
+	scanned = 0;
+	browserRet = -1;
+	
+	usedBytes = EMUMAX * sizeof(s_emu);
+	emus = (s_emu*) vars.bigblock; //malloc (usedBytes);
+	memset (emus, 0, usedBytes);
+	
+	Debug ("GameBrowser: Allocated %d Kb for emu structure:", usedBytes);
 	
 	// Immediately draw the screen...
 	StructFree ();
@@ -2116,7 +2157,7 @@ int EmuBrowser (void)
 	// Clean up all data
 	StructFree ();
 	gui_Clean ();
-	free (emus);
+	//free (emus);
 	
 	grlib_SetRedrawCallback (NULL, NULL);
 	

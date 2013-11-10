@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.5.4"
+#define VER "4.6.0"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -360,6 +360,8 @@ typedef struct
 	char coversEmu[256];			// covers path emu
 	
 	char *titlestxt;				// this will keep titles.txt file
+	
+	void *bigblock;					// about 1Mb, used to store emu structure
 	}
 s_vars;
 
@@ -560,7 +562,7 @@ void Video_Deinit (void);
 void Video_DrawBackgroud (int type);
 void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy);
 void Video_DrawIcon (int icon, int x, int y);
-void Video_WaitPanel (int icon, const char *text, ...); // Draw a panel with a wait screen
+void Video_WaitPanel (int icon, int width, const char *text, ...); // Draw a panel with a wait screen
 void Video_WaitIcon (int icon);
 void Video_LoadTheme (int init);
 void Video_DrawWIFI (void);

@@ -1,3 +1,9 @@
+postLoader 4.6.0
+
+* now every mode allocate it's structure to mem2... tested with up to 23767 unique roms (thank abz)
+* emuBrowser: now all partiotions should handled correctly
+* various fixes
+
 postLoader 4.5.4
 
 * emuBrowser: introduced some more checking, like rom name checking. Only one rom is added if the same path is specified on another plugin

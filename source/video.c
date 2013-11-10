@@ -184,10 +184,11 @@ void Video_DrawWIFI (void)
 		}
 	}
 
-void Video_WaitPanel (int icon, const char *text, ...)
+void Video_WaitPanel (int icon, int width, const char *text, ...)
 	{
 	char mex[1024];
 	char *p;
+	int w;
 	
 	if (text != NULL)
 		{
@@ -207,8 +208,11 @@ void Video_WaitPanel (int icon, const char *text, ...)
 	grlib_PopScreen() ;
 	
 	Video_SetFont (TTFNORM);
-	
-	int w = WAITPANWIDTH;
+
+	if (width == 0)
+		w = WAITPANWIDTH;
+	else
+		w = width;
 	
 	int l1 = grlib_GetFontMetrics (mex, NULL, NULL);
 	int l2 = 0;

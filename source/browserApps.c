@@ -626,7 +626,7 @@ static int ScanApps (const char *mount, int refresh)
 				{
 				ParseXML (appsCnt);
 				
-				Video_WaitPanel (TEX_HGL, "Please wait...|Searching for applications");
+				Video_WaitPanel (TEX_HGL, 0, "Please wait...|Searching for applications");
 
 				needToSave = 1;
 				}
@@ -1657,7 +1657,8 @@ int AppBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	apps = calloc (APPSMAX, sizeof(s_app));
+	apps = (s_app*) vars.bigblock; //malloc (usedBytes);
+	memset (apps, 0, APPSMAX * sizeof(s_app));
 	
 	config.run.enabled = 0;
 	
@@ -1868,7 +1869,7 @@ int AppBrowser (void)
 	// Clean up all data
 	AppsFree ();
 	gui_Clean ();
-	free (apps);
+	//free (apps);
 	
 	grlib_SetRedrawCallback (NULL, NULL);
 

@@ -208,7 +208,7 @@ static void DownloadCovers (void)
 	Redraw ();
 	grlib_PushScreen ();
 	
-	Video_WaitPanel (TEX_HGL, "Stopping wiiload thread");
+	Video_WaitPanel (TEX_HGL, 0, "Stopping wiiload thread");
 	WiiLoad_Pause ();
 	
 	stop = 0;
@@ -222,7 +222,7 @@ static void DownloadCovers (void)
 	
 	for (ia = 0; ia < chansCnt; ia++)
 		{
-		Video_WaitPanel (TEX_HGL, "Downloading %s.png (%d of %d)|(B) Stop", chans[ia].asciiId, ia, chansCnt);
+		Video_WaitPanel (TEX_HGL, 0, "Downloading %s.png (%d of %d)|(B) Stop", chans[ia].asciiId, ia, chansCnt);
 		sprintf (path, "%s/%s.png", vars.covers, chans[ia].asciiId);
 
 		mt_Lock();
@@ -546,7 +546,7 @@ static int RebuildCacheFile (void)
 		if (vars.ios == IOS_PREFERRED)
 			{
 			Debug ("RebuildCacheFile: Patching NAND permission");
-			Video_WaitPanel (TEX_CHIP, "Patching NAND permission");
+			Video_WaitPanel (TEX_CHIP, 0, "Patching NAND permission");
 			sleep (1);
 			IOSPATCH_Apply ();
 			if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
@@ -558,7 +558,7 @@ static int RebuildCacheFile (void)
 			}
 		else if (vars.ios == IOS_CIOS)
 			{
-			Video_WaitPanel (TEX_CHIP, "Please wait...");
+			Video_WaitPanel (TEX_CHIP, 0, "Please wait...");
 			}
 		else
 			{
@@ -579,7 +579,7 @@ static int RebuildCacheFile (void)
 			sprintf (path, "usb:/%s", config.chnBrowser.nandPath);
 		
 		Debug ("RebuildCacheFile: browsing '%s'", path);
-		Video_WaitPanel (TEX_CHIP, "Please wait...");
+		Video_WaitPanel (TEX_CHIP, 0, "Please wait...");
 		}
 
 	LoadTitlesTxt ();
@@ -618,7 +618,7 @@ static int RebuildCacheFile (void)
 					names[cnt] = ms_utf8_to_ascii (title);
 					}
 				
-				Video_WaitPanel (TEX_HGL, "Searching for channels: %d found...", cnt);
+				Video_WaitPanel (TEX_HGL, 0, "Searching for channels: %d found...", cnt);
 				
 				cnt++;
 				}
@@ -1158,7 +1158,7 @@ static void SyncNandFile (char *sourcepath, char *sourcefn)
 	s32 err;
 	size_t readed;
 	
-	Video_WaitPanel (TEX_HGL, "Please wait...|Copying SYSCONF");
+	Video_WaitPanel (TEX_HGL, 0, "Please wait...|Copying SYSCONF");
 
 	//ISFS init
 	err = ISFS_Initialize();
@@ -1224,7 +1224,7 @@ static void ChangeDefaultIOS (void)
 			
 		if (j++ > 10)
 			{
-			Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/chansCnt);
+			Video_WaitPanel (TEX_HGL, 0, "Updating configuration files|%d%%", (i * 100)/chansCnt);
 			j = 0;
 			}
 		}
@@ -1674,7 +1674,9 @@ int ChnBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	chans = calloc (CHNMAX, sizeof(s_channel));
+	//chans = calloc (CHNMAX, sizeof(s_channel));
+	chans = (s_channel*) vars.bigblock; //malloc (usedBytes);
+	memset (chans, 0, CHNMAX * sizeof(s_channel));
 	
 	// Immediately draw the screen...
 	ChansFree ();
@@ -1879,7 +1881,7 @@ int ChnBrowser (void)
 	// Clean up all data
 	ChansFree ();
 	gui_Clean ();
-	free (chans);
+	//free (chans);
 	
 	grlib_SetRedrawCallback (NULL, NULL);
 	

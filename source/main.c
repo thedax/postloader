@@ -79,26 +79,8 @@ void SetupCoversPaths (void)
 	if (!(*vars.covers)) sprintf (vars.covers, "%s://ploader/covers", vars.defMount);
 	if (!(*vars.coversEmu)) sprintf (vars.coversEmu, "%s://ploader/covers.emu", vars.defMount);
 	
-	//char *d;
-
 	Debug ("vars.covers = '%s'", vars.covers);
-	/*
-	d = fsop_GetDirAsString (vars.covers, '\n', 0, NULL);
-	if (d)
-		{
-		Debug (d);
-		free (d);
-		}
-	*/
 	Debug ("vars.covers.emu = '%s'", vars.coversEmu);
-	/*
-	d = fsop_GetDirAsString (vars.coversEmu, '\n', 0, NULL);
-	if (d)
-		{
-		Debug (d);
-		free (d);
-		}
-	*/
 	}
 	
 void Subsystems (bool enable)
@@ -141,6 +123,8 @@ void Shutdown(void)
 	Subsystems (false);
 	Video_Deinit ();
 	
+	mem2_free (vars.bigblock);
+	
 	if (vars.neek != NEEK_NONE) // We are not working under neek
 		{
 		// exit_uneek_fs ();
@@ -173,6 +157,9 @@ int Initialize (int silent)
 		}
 		
 	Debug ("Default device is '%s'", vars.defMount);
+	
+	vars.bigblock = mem2_malloc (1024*1024);
+	Debug ("Allocated 1Mb bigblock meme2");
 	
 	return ret;
 	}

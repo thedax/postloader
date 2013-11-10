@@ -709,7 +709,7 @@ bool neek_CreateCDIConfigBrowse (CDIConfig *DICfg, u32 *count, char *path)
 			{
 			strcpy (tmp, pent->d_name);
 			tmp[24] = '\0';
-			Video_WaitPanel (TEX_HGL, "%d|%s", (*count)+1, tmp);
+			Video_WaitPanel (TEX_HGL, 0, "%d|%s", (*count)+1, tmp);
 			
 			Debug ("neek_CreateCDIConfigBrowse: [FN] %s", fn);
 			

@@ -117,7 +117,7 @@ int ZipUnpack (char *path, char *target, char *dols, int *errcnt)
 			sprintf (outpath, "%s/%s", target, fn);
 			fsop_CreateFolderTree (outpath);
 			
-			Video_WaitPanel (TEX_HGL, "Creating folders %d", count ++);
+			Video_WaitPanel (TEX_HGL, 0, "Creating folders %d", count ++);
 			}
 
 		if (unzGoToNextFile(uf) != UNZ_OK) break;
@@ -152,7 +152,7 @@ int ZipUnpack (char *path, char *target, char *dols, int *errcnt)
 				{
 				do 
 					{
-					Video_WaitPanel (TEX_HGL, "Unpacking file %d", count+1);
+					Video_WaitPanel (TEX_HGL, 0, "Unpacking file %d", count+1);
 					
 					bytes = unzReadCurrentFile (uf,b,bsize);
 					if (bytes < 0) 
@@ -408,7 +408,7 @@ bool WiiloadCheck (void)
 				if (devices_Get(i)) 
 					{
 					sprintf (path, "%s://apps/postloader/boot.dol", devices_Get(i));
-					Video_WaitPanel (TEX_HGL, "Please wait...|Updating '%s'", path);
+					Video_WaitPanel (TEX_HGL, 0, "Please wait...|Updating '%s'", path);
 					
 					if (fsop_FileExist (path))
 						{
@@ -446,7 +446,7 @@ bool WiiloadCheck (void)
 			{
 			if (devices_Get(i)) 
 				{
-				Video_WaitPanel (TEX_HGL, "Please wait...|Copying file...");
+				Video_WaitPanel (TEX_HGL, 0, "Please wait...|Copying file...");
 				
 				sprintf (path, "%s://wad", devices_Get(i));
 				fsop_MakeFolder (path);

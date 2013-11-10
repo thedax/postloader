@@ -170,7 +170,7 @@ static bool ScanWBFS (char *ob, char *path)
 		
 		strcpy (tmp, wbfs);
 		tmp[24] = '\0';
-		Video_WaitPanel (TEX_HGL, "%d|%s", ++count, tmp);
+		Video_WaitPanel (TEX_HGL, 0, "%d|%s", ++count, tmp);
 
 		int len = strlen(wbfs);
 

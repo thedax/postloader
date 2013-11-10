@@ -464,7 +464,7 @@ char *DMLScanner  (bool reset)
 				
 				if (found)
 					{
-					Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+					Video_WaitPanel (TEX_HGL, 0, "Please wait...|Searching gamecube games");
 					
 					bool skip = false;
 					
@@ -539,7 +539,7 @@ char *DMLScanner  (bool reset)
 						{
 						if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0) continue;
 						
-						Video_WaitPanel (TEX_HGL, "Please wait...|Searching gamecube games");
+						Video_WaitPanel (TEX_HGL, 0, "Please wait...|Searching gamecube games");
 						
 						ms_strtoupper (pent->d_name);
 						

@@ -150,7 +150,7 @@ static void cb_filecopy (void)
 		u32 elapsed = time(NULL) - fsop.multy.startms;
 		u32 perc = (mb * 100)/sizemb;
 		
-		Video_WaitPanel (TEX_HGL, GLS("pwcopying"), perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
+		Video_WaitPanel (TEX_HGL, 0, GLS("pwcopying"), perc, mb, sizemb, (u32)(fsop.multy.bytes/elapsed));
 		
 		mstout = ms + 250;
 		
@@ -170,7 +170,7 @@ static void cb_remove1(void)
 	
 	if (t - lastt >= 1)
 		{
-		Video_WaitPanel (TEX_HGL, GLS("clrusbdata"));
+		Video_WaitPanel (TEX_HGL, 0, GLS("clrusbdata"));
 		lastt = t;
 		}
 	}
@@ -182,7 +182,7 @@ static void cb_remove2(void)
 	
 	if (t - lastt >= 1)
 		{
-		Video_WaitPanel (TEX_HGL, GLS("clrsddata"));
+		Video_WaitPanel (TEX_HGL, 0, GLS("clrsddata"));
 		lastt = t;
 		}
 	}
@@ -194,7 +194,7 @@ static void cb_remove3(void)
 	
 	if (t - lastt >= 1)
 		{
-		Video_WaitPanel (TEX_HGL, "Clearing TEX cache");
+		Video_WaitPanel (TEX_HGL, 0, "Clearing TEX cache");
 		lastt = t;
 		}
 	}

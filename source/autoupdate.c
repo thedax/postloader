@@ -91,10 +91,10 @@ static void cb_au (void)
 	if (mstout < ms)
 		{
 		if (cb_mode == 0)
-			Video_WaitPanel (TEX_HGL, "Please wait %d %%|downloading %u of %u Kb", (http.bytes * 100)/http.size, http.bytes / 1024, http.size / 1024);
+			Video_WaitPanel (TEX_HGL, 0, "Please wait %d %%|downloading %u of %u Kb", (http.bytes * 100)/http.size, http.bytes / 1024, http.size / 1024);
 
 		if (cb_mode == 1)
-			Video_WaitPanel (TEX_HGL, "Please wait...|updating postLoader");
+			Video_WaitPanel (TEX_HGL, 0, "Please wait...|updating postLoader");
 			
 		mstout = ms + 200;
 		}
@@ -111,12 +111,12 @@ int AutoUpdate (void)
 	grlib_Redraw ();
 	grlib_PushScreen ();
 	
-	Video_WaitPanel (TEX_HGL, "Checking online update");
+	Video_WaitPanel (TEX_HGL, 0, "Checking online update");
 	sprintf (buff, "http://postloader.googlecode.com/svn/trunk/historii.txt");
 	outbuf = (char*)downloadfile (buff, &outlen, NULL); // outbuf is 0 terminated
 	if (!outbuf) 
 		{
-		Video_WaitPanel (TEX_HGL, "Error getting update informations (%d)", outlen);
+		Video_WaitPanel (TEX_HGL, 0, "Error getting update informations (%d)", outlen);
 		sleep (3);
 		return 0;
 		}

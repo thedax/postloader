@@ -147,7 +147,7 @@ s32 Wad_Install(char *filename, bool compact)
 	s32 ret;
 
 	if (!compact)
-		Video_WaitPanel (TEX_HGL, "Reading WAD data...|%s", filename);
+		Video_WaitPanel (TEX_HGL, 0, "Reading WAD data...|%s", filename);
 	else
 		Video_WaitIcon (TEX_HGL);
 
@@ -192,7 +192,7 @@ s32 Wad_Install(char *filename, bool compact)
 	__Wad_FixTicket(p_tik);
 
 	if (!compact)
-		Video_WaitPanel (TEX_HGL, "Installing ticket...|%s", filename);
+		Video_WaitPanel (TEX_HGL, 0, "Installing ticket...|%s", filename);
 	else
 		Video_WaitIcon (TEX_HGL);
 
@@ -202,7 +202,7 @@ s32 Wad_Install(char *filename, bool compact)
 		goto err;
 
 	if (!compact)
-		Video_WaitPanel (TEX_HGL, "Installing title...|%s", filename);
+		Video_WaitPanel (TEX_HGL, 0, "Installing title...|%s", filename);
 	else
 		Video_WaitIcon (TEX_HGL);
 
@@ -222,7 +222,7 @@ s32 Wad_Install(char *filename, bool compact)
 		s32 cfd;
 
 		if (!compact)
-			Video_WaitPanel (TEX_HGL, "Installing contents %d of %d|%s", cnt+1, tmd_data->num_contents, filename);
+			Video_WaitPanel (TEX_HGL, 0, "Installing contents %d of %d|%s", cnt+1, tmd_data->num_contents, filename);
 		else
 			Video_WaitIcon (TEX_HGL);
 
@@ -267,7 +267,7 @@ s32 Wad_Install(char *filename, bool compact)
 	}
 
 	if (!compact)
-		Video_WaitPanel (TEX_HGL, "Finishing installation...|%s", filename);
+		Video_WaitPanel (TEX_HGL, 0, "Finishing installation...|%s", filename);
 	else
 		Video_WaitIcon (TEX_HGL);
 
@@ -319,7 +319,7 @@ s32 Wad_Uninstall(char *filename)
 	u32 viewCnt;
 	s32 ret;
 
-	Video_WaitPanel (TEX_HGL, "Reading WAD data...");
+	Video_WaitPanel (TEX_HGL, 0, "Reading WAD data...");
 
 	/* WAD header */
 	ret = __Wad_ReadAlloc(fp, (void *)&header, 0, sizeof(wadHeader));
@@ -335,7 +335,7 @@ s32 Wad_Uninstall(char *filename)
 		goto out;
 	}
 
-	Video_WaitPanel (TEX_HGL, "Deleting tickets...");
+	Video_WaitPanel (TEX_HGL, 0, "Deleting tickets...");
 
 	/* Get ticket views */
 	ret = Title_GetTicketViews(tid, &viewData, &viewCnt);
@@ -358,13 +358,13 @@ s32 Wad_Uninstall(char *filename)
 		Debug ("ES_DeleteTicket = %d", ret);
 	}
 
-	Video_WaitPanel (TEX_HGL, "Deleting title contents...");
+	Video_WaitPanel (TEX_HGL, 0, "Deleting title contents...");
 
 	/* Delete title contents */
 	ret = ES_DeleteTitleContent(tid);
 	Debug ("ES_DeleteTitleContent = %d", ret);
 
-	Video_WaitPanel (TEX_HGL, "Deleting title...");
+	Video_WaitPanel (TEX_HGL, 0, "Deleting title...");
 
 	/* Delete title */
 	ret = ES_DeleteTitle(tid);

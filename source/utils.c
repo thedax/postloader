@@ -130,7 +130,7 @@ void LoadTitlesTxt (void)
 	char txtpath[64];
 	sprintf (txtpath, "%s://ploader/titles.txt", vars.defMount);
 
-	Video_WaitPanel (TEX_HGL, "Please wait...|Loading titles.txt");
+	Video_WaitPanel (TEX_HGL, 0, "Please wait...|Loading titles.txt");
 	
 	mt_Lock();
 	vars.titlestxt = (char*)fsop_ReadFile (txtpath, 0, NULL);

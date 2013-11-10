@@ -501,7 +501,7 @@ static void DownloadCovers (void)
 	Redraw ();
 	grlib_PushScreen ();
 	
-	Video_WaitPanel (TEX_HGL, "Pausing wiiload thread");
+	Video_WaitPanel (TEX_HGL, 0, "Pausing wiiload thread");
 	WiiLoad_Pause ();
 	
 	stop = 0;
@@ -516,7 +516,7 @@ static void DownloadCovers (void)
 	
 	for (ia = 0; ia < gamesCnt; ia++)
 		{
-		Video_WaitPanel (TEX_HGL, "Downloading %s.png (%d of %d)|(B) Stop", games[ia].asciiId, ia, gamesCnt);
+		Video_WaitPanel (TEX_HGL, 0, "Downloading %s.png (%d of %d)|(B) Stop", games[ia].asciiId, ia, gamesCnt);
 		sprintf (path, "%s/%s.png", vars.covers, games[ia].asciiId);
 		
 		mt_Lock();
@@ -1529,7 +1529,7 @@ static void ChangeDefaultLoader (void)
 			WriteGameConfig (i);
 			}
 		
-		Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
+		Video_WaitPanel (TEX_HGL, 0, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
 		}
 	}
 
@@ -1566,7 +1566,7 @@ static void ChangeDefaultDMLMode (void)
 				WriteGameConfig (i);
 				}
 			
-			Video_WaitPanel (TEX_HGL, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
+			Video_WaitPanel (TEX_HGL, 0, "Updating configuration files|%d%%", (i * 100)/gamesCnt);
 			}
 		}
 	}
@@ -1841,7 +1841,7 @@ static void Redraw (void)
 		int w = grlib_GetFontMetrics ("postLoader::GC Games ", NULL, NULL);
 		
 		Video_SetFont(TTFVERYSMALL);
-		grlib_printf ( 25 + w, 27, GRLIB_ALIGNLEFT, 0, buff);
+		grlib_printf ( 25 + w, 30, GRLIB_ALIGNLEFT, 0, buff);
 		Video_SetFont(TTFNORM);
 		}
 	
@@ -1942,7 +1942,7 @@ static void cb_filecopy (void)
 	u32 sizemb = (u32)(fsop.multy.size/1000000);
 	u32 perc = (mb * 100)/sizemb;
 	
-	Video_WaitPanel (TEX_HGL, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/fsop.multy.elapsed));
+	Video_WaitPanel (TEX_HGL, 0, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/fsop.multy.elapsed));
 	
 	if (grlib_GetUserInput() & WPAD_BUTTON_B)
 		{
@@ -2138,7 +2138,9 @@ int GameBrowser (void)
 	
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
-	games = calloc (GAMEMAX, sizeof(s_game));
+	//games = calloc (GAMEMAX, sizeof(s_game));
+	games = (s_game*) vars.bigblock; //malloc (usedBytes);
+	memset (games, 0, GAMEMAX * sizeof(s_game));
 	
 	// Immediately draw the screen...
 	StructFree ();
@@ -2375,7 +2377,7 @@ int GameBrowser (void)
 	// Clean up all data
 	StructFree ();
 	gui_Clean ();
-	free (games);
+	//free (games);
 
 	grlib_SetRedrawCallback (NULL, NULL);
 	
