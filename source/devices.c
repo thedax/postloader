@@ -37,11 +37,11 @@ static int partnfs = 0, partfat = 0;
 
 static char DeviceName[DEV_MAX][6] =
 {
-    "sd",
-    "usb",
-    "part2",
-    "part3",
-    "part4"
+    DEV_MN_SD,
+    DEV_MN_USB,
+    DEV_MN_USB1,
+    DEV_MN_USB2,
+    DEV_MN_USB3
 };
 
 typedef struct _PARTITION_RECORD {

@@ -16,18 +16,13 @@
 #define ELEMENT ((int)TSIZE * (int)TSIZE * 4)
 #define BLOCK (ELEMENT * MAXITEMS)
 
-static mutex_t mutex;
-
-#define SET(a, b) a = b;
-//#define SET(a, b) a = b; DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
-//#define FRESH(a) DCFlushRange(&a, sizeof(a)); ICInvalidateRange(&a, sizeof(a));
-//#define MAXITEMS 128
+static mutex_t mutex_process;
+static mutex_t mutex_master;
 
 #define STACKSIZE	8192
 static u8 * cache = NULL;
 static u8 * threadStack = NULL;
 static lwp_t hthread = LWP_THREAD_NULL;
-//static lwp_t htmon = LWP_THREAD_NULL;
 
 typedef struct 
 	{
@@ -41,13 +36,12 @@ s_cc; // covercache
 static s_cc *cc = NULL;
 
 static int age = 0;
-static volatile bool threadPaused = false;
-static volatile bool threadPause = false;
 static volatile bool threadStop = false;
 static volatile bool threadRunning = false;
 static volatile int cycle = 0;
 static volatile int cId = 0;
 static volatile int update = 0;
+static volatile int doPrio = 0;
 
 GRRLIB_texImg*  CoverCache_LoadTextureFromFile(char *filename);
 
@@ -88,7 +82,6 @@ static void *thread (void *arg)
 
 	threadRunning = 1;
 
-	int doPrio = 0;
 	int i;
 	int read;
 	
@@ -100,17 +93,19 @@ static void *thread (void *arg)
 		
 		for (i = 0; i < MAXITEMS; i++)
 			{
+			LWP_MutexLock (mutex_master);
+			
 			if (*cc[i].id != '\0' && !cc[i].cover && ((doPrio == 1 && cc[i].prio == 1) || doPrio == 0))
 				{
-				LWP_MutexLock (mutex);
+				LWP_MutexLock (mutex_process);
 				read = 1;
 				cId = i;
 				strcpy (name, cc[i].id);
-				LWP_MutexUnlock (mutex);
+				LWP_MutexUnlock (mutex_process);
 				
 				tex = CoverCache_LoadTextureFromFile (name);
 
-				LWP_MutexLock (mutex);
+				LWP_MutexLock (mutex_process);
 				cc[i].prio = 0;
  				cc[i].cover = MoveTex2Mem2 (tex, i);
 				
@@ -120,20 +115,15 @@ static void *thread (void *arg)
 					}
 				DCFlushRange(&cc[i], sizeof(s_cc));
 				update ++;
-				LWP_MutexUnlock (mutex);
+				LWP_MutexUnlock (mutex_process);
 
 				cId = -1;
 				
 				usleep (10);
 				}
-				
-			if (threadPause)
-				{
-				LWP_SuspendThread(hthread);
-				doPrio = 1;
-				i = 0;
-				}
 			
+			LWP_MutexUnlock (mutex_master);
+				
 			if (threadStop)
 				{
 				threadRunning = 0;
@@ -152,23 +142,14 @@ static void *thread (void *arg)
 	return NULL;
 	}
 
-void CoverCache_Pause (bool yes) // return after putting thread in 
+void CoverCache_Lock (void) // return after putting thread in 
 	{
-	if (!threadRunning) return;
+	LWP_MutexLock (mutex_master);
+	}
 	
-	if (yes)
-		{
-		SET (threadPause,true);
-		while (!LWP_ThreadIsSuspended(hthread)) 
-			{
-			usleep (1000);
-			}
-		}
-	else
-		{
-		SET (threadPause,false);
-		LWP_ResumeThread (hthread);
-		}
+void CoverCache_Unlock (void) // return after putting thread in 
+	{
+	LWP_MutexUnlock (mutex_master);
 	}
 	
 void CoverCache_Start (void)
@@ -180,8 +161,9 @@ void CoverCache_Start (void)
 	
 	Debug ("cache = 0x%X (size = %u Kb)", cache, BLOCK);
 
-	mutex = LWP_MUTEX_NULL;
-    LWP_MutexInit (&mutex, false);
+	mutex_master = mutex_process = LWP_MUTEX_NULL;
+    LWP_MutexInit (&mutex_process, false);
+	LWP_MutexInit (&mutex_master, false);
 
 	LWP_CreateThread (&hthread, thread, NULL, NULL, 0, PRIO);
 	LWP_ResumeThread(hthread);
@@ -195,13 +177,15 @@ void CoverCache_Stop (void)
 	//monrunning = false;
 	if (threadRunning)
 		{
-		SET (threadStop,1);
+		threadStop = 1;
+		while (threadRunning) usleep (1000);
 		LWP_JoinThread (hthread, NULL);
 		CoverCache_Flush ();
 		free (threadStack);
 		free (cc);
 		mem2_free (cache);
-		LWP_MutexDestroy (mutex);
+		LWP_MutexDestroy (mutex_process);
+		LWP_MutexDestroy (mutex_master);
 		}
 	else
 		Debug ("CoverCache_Stop: thread was already stopped");
@@ -215,7 +199,7 @@ void CoverCache_Flush (void)	// empty the cache
 	int count = 0;
 	Debug ("CoverCache_Flush");
 	
-	CoverCache_Pause (true);
+	if (threadRunning) CoverCache_Lock ();
 	
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
@@ -236,7 +220,7 @@ void CoverCache_Flush (void)	// empty the cache
 	
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 
-	CoverCache_Pause (false);
+	if (threadRunning) CoverCache_Unlock ();
 
 	Debug ("CoverCache_Flush: %d covers flushed", count);
 	}
@@ -248,7 +232,7 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 	int i;
 	GRRLIB_texImg *tex = NULL;
 	
-	LWP_MutexLock (mutex);
+	LWP_MutexLock (mutex_process);
 	
 	for (i = 0; i < MAXITEMS; i++)
 		{
@@ -259,7 +243,7 @@ GRRLIB_texImg *CoverCache_Get (char *id) // this will return the same text
 			}
 		}
 	
-	LWP_MutexUnlock (mutex);
+	LWP_MutexUnlock (mutex_process);
 
 	return tex;
 	}
@@ -289,14 +273,12 @@ bool CoverCache_IsUpdated (void) // this will return the same text
 	return false;
 	}
 
+// CoverCache_Lock must be invocked before calling this, otherwhise unpredictable result may happens
 void CoverCache_Add (char *id, bool priority)
 	{
 	int i;
 	bool found = false;
 	
-	if (!threadPause)
-		CoverCache_Pause (true);
-
 	DCFlushRange(cc, MAXITEMS * sizeof(s_cc));
 	
 	// Let's check if the item already exists...

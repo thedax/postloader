@@ -111,8 +111,9 @@ void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy)
 		}
 	if (icon == TEX_HGL)
 		{
-		hgl_angle+=2; 
-		if (hgl_angle >= 360) hgl_angle = 0;
+		hgl_angle-=45; 
+		//if (hgl_angle > 360) hgl_angle = 0;
+		if (hgl_angle <= 0) hgl_angle = 360;
 		angle = hgl_angle;
 		}
 		
@@ -241,9 +242,26 @@ void Video_WaitIcon (int icon)
 	grlib_PopScreen() ;
 	grlib_DrawCenteredWindow ("", 50, 40, 0, NULL);
 	Video_DrawIcon (icon, 320, 240);
-	
 	grlib_Render ();
 	}
+	
+void Video_WaitIconTimed (int icon)
+	{
+	static u64 t1 = 0;
+	u64 t2;
+	
+	t2 = gettime();
+	if (diff_msec (t1, t2) > 100)
+		{
+		t1 = t2;
+
+		grlib_PopScreen() ;
+		grlib_DrawCenteredWindow ("", 50, 40, 0, NULL);
+		Video_DrawIcon (icon, 320, 240);
+		grlib_Render ();
+		}
+	}
+	
 	
 void Video_LoadTheme (int init)
 	{

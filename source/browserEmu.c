@@ -28,7 +28,7 @@ This allow to browse for applications in emus folder of mounted drive
 
 #define EMUMAX 32768
 #define CATMAX 256
-#define ROMPATHMAX 256
+#define ROMPATHMAX 1024
 
 typedef struct
 	{
@@ -112,19 +112,6 @@ static void MakeCoverPath (int ai, char *path);
 static void FixFilters (void);
 static char* plugin_GetRomFullPath (int idx);
 
-static void VWI(void)
-	{
-	static u64 t1 = 0;
-	u64 t2;
-	
-	t2 = gettime();
-	if (diff_msec (t1, t2) > 100)
-		{
-		t1 = t2;
-		Video_WaitIcon (TEX_HGL);
-		}
-	}
-
 static void plugin_Init (void)
 	{
 	memset (&plugin, 0, sizeof(plugin));
@@ -132,6 +119,8 @@ static void plugin_Init (void)
 	
 static int plugin_AssignRomPath (char *fullpath, int idx)
 	{
+	if (browseflag.noMoreFolderSpace) return 0;
+	
 	int i;
 	char filename[256];
 	char path[256];
@@ -146,7 +135,7 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 		if (ms_isequal (fullpath, plugin_GetRomFullPath(i)))
 			{
 			browseflag.alreadyAdded++;
-			//Debug ("plugin_AssignRomPath: '%s' ROM Already added", fullpath);
+			//Debug ("plugin_AssignRomPath: '%s' ROM Already added (%d)", fullpath, browseflag.alreadyAdded);
 			return 0;
 			}
 		}
@@ -169,7 +158,8 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 	if (plugin.rompathscount >= ROMPATHMAX-1)
 		{
 		browseflag.noMoreFolderSpace++;
-		//Debug ("plugin_AssignRomPath: allocation error (%s)", filename);
+		Debug ("plugin_AssignRomPath: %d limit reached (%s)", ROMPATHMAX, filename);
+
 		return 0;
 		}
 		
@@ -225,6 +215,21 @@ static char* plugin_GetRomFullPath (int idx)
 	return fullpath;
 	}
 
+static void plugin_FreeRompaths (void)
+	{
+	int i;
+
+	for (i = 0; i < plugin.rompathscount; i++)
+		{
+		if (plugin.rompaths[i])
+			free (plugin.rompaths[i]);
+			
+		plugin.rompaths[i] = NULL;
+		}
+		
+	plugin.rompathscount = 0;
+	}
+	
 static void plugin_Free (void)
 	{
 	int i;
@@ -241,13 +246,10 @@ static void plugin_Free (void)
 		if (pin->args) free (pin->args);
 		}
 	
-	for (i = 0; i < ROMPATHMAX; i++)
-		{
-		if (plugin.rompaths[i])
-			free (plugin.rompaths[i]);
-		}
-		
+	plugin_FreeRompaths ();
+
 	if (plugin.dolpath) free (plugin.dolpath);
+	
 	plugin_Init ();
 	}
 
@@ -585,7 +587,7 @@ static void Plugins (bool open)
 		emuicons = calloc (sizeof (GRRLIB_texImg), plugin.count);
 		for (i = 0; i < plugin.count; i++)
 			{
-			VWI ();
+			Video_WaitIconTimed (TEX_HGL);
 			
 			sprintf (path, "%s://ploader/theme/%s", vars.defMount, plugin.pin[i].icon);
 			emuicons[i] = GRRLIB_LoadTextureFromFile (path);
@@ -645,7 +647,8 @@ static void MakeCoverPath (int ai, char *path)
 static void FeedCoverCache (void)
 	{
 	char path[256];
-	CoverCache_Pause (true);
+	
+	CoverCache_Lock ();
 
 	if (page > pageMax) page = pageMax;
 	if (page < 0) page = 0;
@@ -664,7 +667,7 @@ static void FeedCoverCache (void)
 			}
 		}
 	
-	CoverCache_Pause (false);
+	CoverCache_Unlock ();
 	}
 
 static void StructFree (void)
@@ -696,6 +699,7 @@ static void GetCovers_Scan (char *path)
 	char cover[256];
 	int i;
 	time_t t = 0;
+	
 	pdir=opendir(path);
 	
 	while ((pent=readdir(pdir)) != NULL) 
@@ -830,17 +834,17 @@ static void SortItems (void)
 	
 	Debug ("SortItems: Sorting...qsort_filter");
 
-	VWI ();
+	Video_WaitIconTimed (TEX_HGL);
 	qsort (emus, emusCnt, sizeof(s_emu), qsort_filter);
 	
 	Debug ("SortItems: Sorting...qsort_hidden");
 
-	VWI ();
+	Video_WaitIconTimed (TEX_HGL);
 	qsort (emus, filtered, sizeof(s_emu), qsort_hidden);
 	
 	Debug ("SortItems: Sorting...qsort_name");
 
-	VWI ();
+	Video_WaitIconTimed (TEX_HGL);
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
@@ -928,92 +932,91 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 	{
 	int i = startidx;
 	int rejected = 0;
-	DIR *pdir;
-	struct dirent *pent;
 	char fn[300];
 	char ext[256];
+	char item[256];
+	char isFolder;
+	char *dir, *p;
+	static u64 t1 = 0;
+	u64 t2;
+	
 	s_pin *pin = &plugin.pin[type];
+	
+	Debug ("BrowsePluginFolder (%d, %d, '%s', %d)", type, startidx, path, recursive);
 	
 	if (!pin->enabledCfg)
 		{
-		Debug ("BrowsePluginFolder[%s]: '%s' => plugin not active", plugin.pin[type].description, path);
+		Debug ("# %s:%s => plugin not active", plugin.pin[type].description, path);
 		return 0;
 		}
 	
 	// Check if the plugin exist
 	if (!PluginExist (type, fn))
 		{
-		Debug ("BrowsePluginFolder[%s]: '%s' => plugin dol doesn't exist (%s)", plugin.pin[type].description, path, plugin.pin[type].dol);
+		Debug ("# %s:%s => plugin dol doesn't exist (%s)", plugin.pin[type].description, path, plugin.pin[type].dol);
 		return 0;
 		}
 
 	strcpy (ext, pin->ext);
 
-	//VWI ();
-	Video_WaitPanel (TEX_HGL, 500, "%s|%d roms found, %d%%", path, i, (type * 100) / plugin.count);
+	t2 = gettime();
+	if (diff_msec (t1, t2) > 200)
+		{
+		t1 = t2;
+		Video_WaitPanel (TEX_HGL, 500, "Searching... %d roms found, %d%%|%s", i, (type * 100) / plugin.count, path);
+		}
 
 	mt_Lock();
-	pdir=opendir(path);
+	p = dir = fsop_GetDirAsStringWithDirFlag (path, 0);
 	mt_Unlock();
 	
-	u64 t1 = 0;
-	u64 t2;
-	
-	while ((pent=readdir(pdir)) != NULL) 
+	while (p && *p) 
 		{
-		//VWI ();
+		strcpy (item, p);
+		p += strlen(p) + 1;
+
+		isFolder = (*p == '1') ? 1:0;
+		p += 2;
 		
 		t2 = gettime();
 		if (diff_msec (t1, t2) > 200)
 			{
 			t1 = t2;
-			Video_WaitPanel (TEX_HGL, 500, "%s|%d roms found, %d%%", path, i, (type * 100) / plugin.count);
+			Video_WaitPanel (TEX_HGL, 500, "Searching... %d roms found, %d%%|%s", i, (type * 100) / plugin.count, path);
 			}
 
 		if (i >= EMUMAX)
 			break;
 		
 		// Skip it
-		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0)
+		if (strcmp (item, ".") == 0 || strcmp (item, "..") == 0)
 			continue;
-			
-		if (pent->d_type == DT_DIR)
+
+		if (isFolder && recursive)
 			{
-			if (recursive)
+			char newpath[256];
+			sprintf (newpath, "%s/%s", path, item);
+			i += BrowsePluginFolder (type, i, newpath, 1);
+			}
+
+		if (ms_strstr (ext, fsop_GetExtension(item)))
+			{
+			sprintf (fn, "%s/%s", path, item);
+			if (plugin_AssignRomPath (fn, i)) 
 				{
-				char newpath[256];
-				sprintf (newpath, "%s/%s", path, pent->d_name);
-				i += BrowsePluginFolder (type, i, newpath, 1);
+				usedBytes += (strlen (emus[i].name) + 1);
+				emus[i].type = type;
+				
+				i++;
 				}
+			else
+				rejected ++;
 			}
-			
-		char *p = pent->d_name + strlen(pent->d_name) - 1;
-
-		while (p > pent->d_name && *p != '.') p--;
-		
-		if (*p != '.')
-			continue;
-			
-		p++;
-		
-		if (!ms_strstr (ext, p))
-			continue;
-
-		sprintf (fn, "%s/%s", path, pent->d_name);
-		if (plugin_AssignRomPath (fn, i)) 
-			{
-			usedBytes += (strlen (emus[i].name) + 1);
-			emus[i].type = type;
-			
-			i++;
-			}
-		else
-			rejected ++;
 		}
 		
-	closedir (pdir);
+	if (dir) free (dir);
 	
-	Debug ("BrowsePluginFolder[%s]: '%s' => %d roms found (%u kb), %d rejected", plugin.pin[type].description, path, i-startidx, usedBytes / 1024, rejected);
+	Debug ("# %d roms found (%u kb), %d rejected (%s:%s)", i-startidx, usedBytes / 1024, rejected, plugin.pin[type].description, path);
 
 	return i-startidx;
 	}
@@ -1049,7 +1052,7 @@ static int EmuBrowse (bool rebuild)
 		gui_Clean ();
 		StructFree ();
 		
-		VWI ();
+		Video_WaitIconTimed (TEX_HGL);
 		
 		f = fopen (cachefile, "rb");
 		
@@ -1064,7 +1067,7 @@ static int EmuBrowse (bool rebuild)
 			int subsize = 0;
 			do
 				{
-				VWI ();
+				Video_WaitIconTimed (TEX_HGL);
 				
 				// read first block
 				if (subsize)
@@ -1142,6 +1145,8 @@ static int EmuBrowse (bool rebuild)
 			{
 			Debug ("Emu Browse: searching for plugins data roms");
 			
+			plugin_FreeRompaths ();
+			
 			usedBytes = EMUMAX * sizeof(s_emu);
 			emusCnt = 0;
 			for (dev = 0; dev < DEV_MAX; dev++)
@@ -1165,6 +1170,11 @@ static int EmuBrowse (bool rebuild)
 			scanned = 1;
 			
 			Debug ("Allocated %d bytes (%d Kb)", usedBytes, usedBytes / 1024);
+			
+			for (i = 0; i < plugin.rompathscount; i++)
+				{
+				Debug ("RP> %d:%s", i, plugin.rompaths[i]);
+				}
 			
 			CheckForCovers ();
 
@@ -1958,9 +1968,9 @@ static void StartEmu (int type, char *fullpath)
 	ms_Subst (cmd, "{titlehi}", "504F5354");
 	ms_Subst (cmd, "{loadername}", "postLoader");
 	ms_Subst (cmd, "$", ";");
-	ms_Subst (cmd, "part2:", "usb1:");
-	ms_Subst (cmd, "part3:", "usb2:");
-	ms_Subst (cmd, "part4:", "usb3:");
+	ms_Subst (cmd, DEV_MN_USB1, "usb1:");
+	ms_Subst (cmd, DEV_MN_USB2, "usb2:");
+	ms_Subst (cmd, DEV_MN_USB3, "usb3:");
 
 	Debug ("StartEmu: cmd='%s'", cmd);
 	

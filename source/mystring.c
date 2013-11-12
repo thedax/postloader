@@ -39,7 +39,7 @@ void ms_strtolower(char *str)
 //taken from http://www.daniweb.com/software-development/c/code/216564/strings-case-insensitive-strstr
 char *ms_strstr(char *str1, char *str2)
 	{
-	if ( !*str2 )
+	if ( !str2 || !*str2 )
 		{
 		return str1;
 		}

@@ -75,16 +75,65 @@ char * fsop_GetDirAsString (char *path, char sep, int skipfolders, char *ext)
 		}
 	
 	closedir (pdir);
-	
 	return buff;
 	}
+	
+// return a separated char array with directory items followed by type (ascii char). '.' and '..' will be skipped. Terminated with \0, as usual. ext ".bmp;0;.png;0;.piripipì;1"
+char * fsop_GetDirAsStringWithDirFlag (char *path, char sep)
+	{
+	DIR *pdir;
+	struct dirent *pent;
+	char *buff,*p;
+	int size = 0;
+
+	pdir = opendir (path);
+	if (!pdir) return NULL;
+	
+	while ((pent=readdir(pdir)) != NULL) 
+		{			
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0) continue;
+		size += (strlen (pent->d_name)+3);
+		}
+	
+	size++;
+	
+	buff = p = calloc (1, size);
+	if (!buff) return NULL;
+	
+	rewinddir (pdir);
+	while ((pent=readdir(pdir)) != NULL) 
+		{			
+		if (strcmp (pent->d_name, ".") == 0 || strcmp (pent->d_name, "..") == 0) continue;
+
+		strcpy (p, pent->d_name);
+		p += strlen (pent->d_name);
+		*p = sep;
+		p += 1;
+		
+		if (pent->d_type == DT_DIR)
+			*p = '1';
+		else
+			*p = '0';
+		p ++;
+		*p = sep;
+		p ++;
+		}
+	
+	closedir (pdir);
+	return buff;
+	}
+
 
 // retrive extension from a full path. !! NOT THREAD SAFE !!
 char * fsop_GetExtension (char *path)
 	{
 	static char buff[256] = {0};
 	
-	if (!path || !*path) return buff;
+	if (!path || !*path) 
+		{
+		*buff = 0;
+		return buff;
+		}
 	
 	char *e = path + strlen(path) - 1;
 	
@@ -94,11 +143,12 @@ char * fsop_GetExtension (char *path)
 			{
 			e++;
 			strcpy (buff, e);
+			
 			return buff;
 			}
 		e--;
 		}
-		
+
 	return NULL;
 	}
 	
@@ -109,7 +159,11 @@ char * fsop_GetFilename (char *path, bool killExt)
 	char buff[256];
 	int i = 0;
 	
-	if (!path || !*path) return fn;
+	if (!path || !*path) 
+		{
+		*fn = 0;
+		return fn;
+		}
 	
 	strcpy (buff, path);
 	
@@ -148,7 +202,11 @@ char * fsop_GetPath (char *path, int killDev)
 	{
 	static char fn[256] = {0};
 	
-	if (!path || !*path) return fn;
+	if (!path || !*path) 
+		{
+		*fn = 0;
+		return fn;
+		}
 	
 	if (!killDev)
 		strcpy (fn, path);
@@ -179,7 +237,11 @@ char * fsop_GetDev (char *path)
 	{
 	static char fn[256] = {0};
 	
-	if (!path || !*path) return fn;
+	if (!path || !*path) 
+		{
+		*fn = 0;
+		return fn;
+		}
 	
 	strcpy (fn, path);
 	

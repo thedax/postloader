@@ -13,7 +13,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.6.0"
+#define VER "4.6.1"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -564,6 +564,7 @@ void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy);
 void Video_DrawIcon (int icon, int x, int y);
 void Video_WaitPanel (int icon, int width, const char *text, ...); // Draw a panel with a wait screen
 void Video_WaitIcon (int icon);
+void Video_WaitIconTimed (int icon);
 void Video_LoadTheme (int init);
 void Video_DrawWIFI (void);
 void Video_SetFont (int size);
@@ -621,7 +622,8 @@ void snd_Pause (void);
 void snd_Resume (void);
 
 // covercache.c
-void CoverCache_Pause (bool yes);
+void CoverCache_Lock (void);
+void CoverCache_Unlock (void);
 void CoverCache_Start (void);
 void CoverCache_Flush (void);
 void CoverCache_Stop (void);

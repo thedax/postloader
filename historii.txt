@@ -1,3 +1,10 @@
+postLoader 4.6.1
+
+* emuBrowser: fixed dsi when browsing ntfs partitions
+* changed hourglass icon with something more "modern"
+* new locking method for covercache thread
+* various fixes
+
 postLoader 4.6.0
 
 * now every mode allocate it's structure to mem2... tested with up to 23767 unique roms (thank abz)

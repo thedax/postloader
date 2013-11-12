@@ -8,6 +8,12 @@
 #define DEVMODE_IOS 0
 #define DEVMODE_CIOSX 1
 
+#define DEV_MN_SD "sd"
+#define DEV_MN_USB "usb"
+#define DEV_MN_USB1 "ex1"
+#define DEV_MN_USB2 "ex2"
+#define DEV_MN_USB3 "ex3"
+
 // This is the devices callback. Return 0 to interrupt the process
 typedef int (*devicesCallback)(void); 
 

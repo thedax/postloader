@@ -118,7 +118,7 @@ static void FeedCoverCache (void)
 	{
 	char path[PATHMAX];
 
-	CoverCache_Pause (true);
+	CoverCache_Lock ();
 
 	int i;
 	int ai;	// Application index (corrected by the offset)
@@ -134,7 +134,7 @@ static void FeedCoverCache (void)
 			}
 		}
 	
-	CoverCache_Pause (false);
+	CoverCache_Unlock ();
 	}
 
 static void AppsFree (void)

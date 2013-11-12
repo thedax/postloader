@@ -50,5 +50,6 @@ u64 fsop_GetFolderBytes (char *source, fsopCallback vc);
 u32 fsop_GetFreeSpaceKb (char *path);
 
 char * fsop_GetDirAsString (char *path, char sep, int skipfolders, char *ext);
+char * fsop_GetDirAsStringWithDirFlag (char *path, char sep);
 
 #endif

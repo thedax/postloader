@@ -176,7 +176,8 @@ static bool DownloadCovers_Get (char *path, char *buff)
 static void FeedCoverCache (void)
 	{
 	char path[128];
-	CoverCache_Pause (true);
+	
+	CoverCache_Lock ();
 
 	if (page > pageMax) page = pageMax;
 	if (page < 0) page = 0;
@@ -195,7 +196,7 @@ static void FeedCoverCache (void)
 			}
 		}
 
-	CoverCache_Pause (false);
+	CoverCache_Unlock ();
 	}
 
 static void DownloadCovers (void)
