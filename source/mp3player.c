@@ -16,7 +16,7 @@
 #include <asndlib.h>
 
 #include "mp3player.h"
-#include "multithread.h"
+//#include "multithread.h"
 
 static s32 have_samples = 0;
 static u32 mp3_volume = 255;
@@ -303,7 +303,7 @@ static void *StreamPlay(void *arg)
 	EQState eqs[2];
 	FILE *mp3f = NULL;
 	
-	mp3f = mt_fopen (mp3filename, "rb");
+	mp3f = fopen (mp3filename, "rb");
 	
 	if (!mp3f) return NULL;
 
@@ -349,7 +349,7 @@ static void *StreamPlay(void *arg)
 			if (mp3read)
 				ReadSize = mp3read(mp3cb_data,ReadStart,ReadSize);
 			else
-				ReadSize = mt_fread(ReadStart, 1, ReadSize, mp3f);
+				ReadSize = fread(ReadStart, 1, ReadSize, mp3f);
 			
 			if(ReadSize<=0) {
 				GuardPtr = ReadStart;
@@ -399,7 +399,7 @@ static void *StreamPlay(void *arg)
 
 	SET(thr_running,FALSE);
 	
-	mt_fclose (mp3f);
+	fclose (mp3f);
 
 	return 0;
 }

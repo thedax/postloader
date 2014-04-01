@@ -290,90 +290,40 @@ static char *get_name_from_banner_buffer(u8 *buffer)
 	return out;
 }
 
-// to identify title we should look of 0x00 0x00 0x00 0x00 0x00 [Printable char]
+// thank kuwanger for the code!
 static char *find_title_name (u8 *buff, int buffsize)
 	{
-	char printable[] = "1234567890QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm ";
-	char pattern[] = {'\0', '\0', '\0', '\0', '\0', '\0'};
-	
-	int printableLen = sizeof(printable);
-	int patternLen = sizeof(pattern);
-	int pid = patternLen-1;
-
-	char *outbuff;
-	char tempbuff[256];
-	
-	char *p, *eob;
-	
-	int start, j;
-	
+	char *p, *outbuff;
+	u8 *endbuff = buff + buffsize;
+	 
+	int pos = 0;
+	 
 	p = (char*)ms_FindStringInBuffer (buff, buffsize, "IMET");
 	if (!p) return NULL;
-	
-	start = (u8*)p - buff;
-	
-	p = (char*)buff+start;
-	eob = (char *) ((buff+buffsize) - (patternLen+2));
-
-	while (p < eob)
+	 
+	  //Jump to english title (from IMET struct in usbloader-gui's nandtitle.h)
+	p += 0x71;
+	 
+	outbuff = malloc(0x2b);
+	 
+	  // 0x2a is max IMET title size
+	while (pos < 0x2a && (int) p < (int) endbuff)
 		{
-		for (j = 0; j < printableLen; j++)
-			{
-			if (printable[j])
-				pattern[pid] = printable[j];
-		
-			if (memcmp(p, pattern, patternLen) == 0)
-				{
-				int pos, err;
-				
-				// We have found something valid
-				memset (tempbuff, 0, sizeof(tempbuff));
-				
-				p += patternLen-1;
-				pos = 0;
-				err = -10;
-				
-				while (p < eob)
-					{
-					if (*p == '\0' && *(p+1) == '\0')
-						{
-						err = 0;
-						break;
-						}
-					if (*p < 32)
-						{
-						err = -1;
-						break;
-						}
-					if (*(p+1) != '\0')
-						{
-						err = -2;
-						break;
-						}
-					if (pos >= 255)
-						{
-						err = -3;
-						break;
-						}
-					tempbuff[pos] = *p;
-					p += 2;
-					pos++;
-					}
-				if (pos > 3 && err == 0) 
-					{
-					outbuff = malloc (pos + 16);
-					
-					if (outbuff)
-						strcpy (outbuff, tempbuff);
-					
-					return outbuff;
-					}
-				}
-			}
-		p++;
+		if (*p == '\0')
+		break;
+		if (*p >= 32 && *p <= 127)
+			outbuff[pos] = *p;
+		else
+			outbuff[pos] = '_';
+		 
+		pos++;
+		p += 2;
 		}
-	
-	return NULL;
+	 
+	// Null terminate title
+	outbuff[pos] = '\0';
+	 
+	return outbuff;
 	}
 
 char *read_name_from_banner_app(u64 titleid, char *nandmountpoint)

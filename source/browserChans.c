@@ -134,15 +134,15 @@ static void Conf (bool open)
 	cfg_Section (NULL);
 	if (open)
 		{
-		mt_Lock();
+		//mt_Lock();
 		cfg = cfg_Alloc (cfgpath, CHNMAX, 0, 0);
-		mt_Unlock();
+		//mt_Unlock();
 		}
 	else
 		{
-		mt_Lock();
+		//mt_Lock();
 		cfg_Store (cfg, cfgpath);
-		mt_Unlock();
+		//mt_Unlock();
 		cfg_Free (cfg);
 		}
 	}
@@ -159,11 +159,11 @@ static bool DownloadCovers_Get (char *path, char *buff)
 		//suficientes bytes
 		FILE *f;
 		
-		f = mt_fopen (path, "wb");
+		f = fopen (path, "wb");
 		if (f)
 			{
-			mt_fwrite (outbuf, outlen, 1, f);
-			mt_fclose (f);
+			fwrite (outbuf, outlen, 1, f);
+			fclose (f);
 			}
 		
 		free(outbuf);
@@ -218,7 +218,7 @@ static void DownloadCovers (void)
 	if (devices_Get (DEV_SD))
 		{
 		sprintf (path, "%s://misschan.txt", devices_Get(DEV_SD));
-		f = mt_fopen (path, "wb");
+		f = fopen (path, "wb");
 		}
 	
 	for (ia = 0; ia < chansCnt; ia++)
@@ -226,9 +226,9 @@ static void DownloadCovers (void)
 		Video_WaitPanel (TEX_HGL, 0, "Downloading %s.png (%d of %d)|(B) Stop", chans[ia].asciiId, ia, chansCnt);
 		sprintf (path, "%s/%s.png", vars.covers, chans[ia].asciiId);
 
-		mt_Lock();
+		//mt_Lock();
 		int ret = fsop_FileExist(path);
-		mt_Unlock();
+		//mt_Unlock();
 
 		if (!ret)
 			{
@@ -252,7 +252,7 @@ static void DownloadCovers (void)
 			if (!ret && f)
 				{
 				sprintf (buff, "%s:%s\n", chans[ia].asciiId, chans[ia].name);
-				mt_fwrite (buff, 1, strlen(buff), f);
+				fwrite (buff, 1, strlen(buff), f);
 				}
 				
 			if (grlib_GetUserInput () == WPAD_BUTTON_B)
@@ -265,7 +265,7 @@ static void DownloadCovers (void)
 		if (stop) break;
 		}
 	
-	if (f) mt_fclose (f);
+	if (f) fclose (f);
 	
 	WiiLoad_Resume ();
 	
@@ -585,6 +585,8 @@ static int RebuildCacheFile (void)
 
 	LoadTitlesTxt ();
 	
+	Video_PanelsUpdateTime (100);
+	
 	cnt = 0;
 	for (id = 0; id < 2; id++)
 		{
@@ -628,6 +630,8 @@ static int RebuildCacheFile (void)
 			}
 		}
 		
+	Video_PanelsUpdateTime (0);
+	
 	free (vars.titlestxt);
 	vars.titlestxt = NULL;
 
@@ -640,7 +644,7 @@ static int RebuildCacheFile (void)
 	FILE* f = NULL;
 	char buff[256];
 	
-	f = mt_fopen(path, "wb");
+	f = fopen(path, "wb");
 	if (!f) 
 		{
 		Debug ("RebuildCacheFile: failed to open '%s'", path);
@@ -650,11 +654,11 @@ static int RebuildCacheFile (void)
 	for (i = 0; i < cnt; i++)
 		{
 		sprintf (buff, "%u:%u:%s\n", upper[i], lower[i], names[i]);
-		mt_fwrite (buff, 1, strlen(buff), f );
+		fwrite (buff, 1, strlen(buff), f );
 		
 		free (names[i]);
 		}
-	mt_fclose(f);
+	fclose(f);
 	
 	Debug ("RebuildCacheFile: done !");
 	
@@ -1561,7 +1565,8 @@ static bool QuerySelection (int ai)
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 200;
-	int yInf = 490;
+	int yInf = 500, yTop = 400;
+	u32 transp = 32, transpLimit = 224;
 
 	Video_SetFont(TTFNORM);
 	
@@ -1591,15 +1596,20 @@ static bool QuerySelection (int ai)
 	// Load full res cover
 	char path[300];
 	sprintf (path, "%s/%s.png", vars.covers, chans[ai].asciiId);
-	mt_Lock();
+	//mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
-	mt_Unlock();
+	//mt_Unlock();
 	if (tex) ico.icon = tex;
 
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
 
 		istemp.magXSel = mag;
 		istemp.magYSel = mag;
@@ -1618,9 +1628,9 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
-		DrawInfoWindo (yInf, chans[ai].name, "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, chans[ai].name, "Press (A) to start, (B) Cancel", NULL);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 
 		Overlay ();
 		grlib_DrawIRCursor ();
@@ -1635,13 +1645,19 @@ static bool QuerySelection (int ai)
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
+
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		DrawInfoWindo (yInf, chans[ai].name, "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, chans[ai].name, "Press (A) to start, (B) Cancel", NULL);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();

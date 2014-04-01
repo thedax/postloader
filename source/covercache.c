@@ -11,7 +11,7 @@
 #include "mystring.h"
 
 #define MAXITEMS 192
-#define PRIO 32
+#define PRIO 64
 #define TSIZE 192.0
 #define ELEMENT ((int)TSIZE * (int)TSIZE * 4)
 #define BLOCK (ELEMENT * MAXITEMS)
@@ -103,7 +103,9 @@ static void *thread (void *arg)
 				strcpy (name, cc[i].id);
 				LWP_MutexUnlock (mutex_process);
 				
+				LWP_MutexUnlock (mutex_master);
 				tex = CoverCache_LoadTextureFromFile (name);
+				LWP_MutexLock (mutex_master);
 
 				LWP_MutexLock (mutex_process);
 				cc[i].prio = 0;
@@ -149,6 +151,7 @@ void CoverCache_Lock (void) // return after putting thread in
 	
 void CoverCache_Unlock (void) // return after putting thread in 
 	{
+	doPrio = 1;
 	LWP_MutexUnlock (mutex_master);
 	}
 	
@@ -427,7 +430,7 @@ bool SaveRGBATexRGB (char *fn, u8* rgba, u16 w, u16 h)
 			*(prgb++) = B(pixel);
 			}
 	
-	f = mt_fopen (fn, "wb");
+	f = fopen (fn, "wb");
 	if (!f) 
 		{
 		//Debug ("SaveRGBATexRGB: cannot write to '%s'", fn);
@@ -435,10 +438,10 @@ bool SaveRGBATexRGB (char *fn, u8* rgba, u16 w, u16 h)
 		return false;
 		}
 	
-	mt_fwrite (rgb, 1, size_rgb, f);
+	fwrite (rgb, 1, size_rgb, f);
 	wh[0] = w;
 	wh[1] = h;
-	mt_fwrite (wh, 1, sizeof(wh), f);
+	fwrite (wh, 1, sizeof(wh), f);
 
 	fclose (f);
 		
@@ -489,11 +492,10 @@ bool SaveRGBATex (char *fn, u8* rgba, u16 w, u16 h)
 		return false;
 		}
 	
-	fwrite (rgba, 1, size_rgba, f);
 	wh[0] = w;
 	wh[1] = h;
+	fwrite (rgba, 1, size_rgba, f);
 	fwrite (wh, 1, sizeof(wh), f);
-
 	fclose (f);
 	
 	return true; 
@@ -508,6 +510,7 @@ GRRLIB_texImg* CoverCache_LoadTextureFromFile(char *filename)
 	u8 *rgba;
 	u16 i, j, w, h;
 	float fw, fh;
+	u32 t1 = get_msec(0);
 	
 	//Debug ("CoverCache_LoadTextureFromFile: %s", filename);
 	
@@ -542,24 +545,30 @@ GRRLIB_texImg* CoverCache_LoadTextureFromFile(char *filename)
 	
 	//Debug ("fntex = %s", fntex);
 		
-	mt_Lock ();
+	//mt_Lock ();
 	rgba = LoadRGBATex (fntex, &w, &h, 255);
-	mt_Unlock ();
+	//mt_Unlock ();
+	
+	Debug ("CoverCache_LoadTextureFromFile->step1 took %u msec", get_msec(0) - t1);
 	
 	if (!rgba)
 		{
+		size_t size;
 		// return NULL it load fails
-		mt_Lock ();
-		data = fsop_ReadFile (filename, 0, NULL);
-		mt_Unlock ();
+		//mt_Lock ();
+		u32 t2 = get_msec(0);
+		data = fsop_ReadFile (filename, 0, &size);
+		Debug ("CoverCache_LoadTextureFromFile->fsop_ReadFile %u msec (%u)", get_msec(0) - t2, size);
+		//mt_Unlock ();
 		if (!data)
 			{
 			free (rgba);
-			return NULL;
+			goto quit;
 			}
 		
 		// Convert to texture
 		tex = GRRLIB_LoadTexture(data);
+		Debug ("CoverCache_LoadTextureFromFile->GRRLIB_LoadTexture %u msec", get_msec(0) - t2);
 		
 		// Free up the buffer
 		free(data);
@@ -568,7 +577,7 @@ GRRLIB_texImg* CoverCache_LoadTextureFromFile(char *filename)
 			{
 			free (data);
 			free (rgba);
-			return NULL;
+			goto quit;
 			}
 		
 		if (tex->w >= tex->h && tex->w > TSIZE)
@@ -593,13 +602,18 @@ GRRLIB_texImg* CoverCache_LoadTextureFromFile(char *filename)
 		rgba = malloc (w * h *4);
 		ResizeRGBA (tex->data, tex->w, tex->h, rgba, w, h);
 		GRRLIB_FreeTexture (tex);
+		Debug ("CoverCache_LoadTextureFromFile->ResizeRGBA %u msec", get_msec(0) - t2);
 
 		if (config.enableTexCache)
 			{
-			mt_Lock ();
+			//mt_Lock ();
+			//LWP_SetThreadPriority (hthread, LWP_PRIO_HIGHEST);
 			SaveRGBATex (fntex, rgba, w, h);
-			mt_Unlock ();
+			//LWP_SetThreadPriority (hthread, PRIO);
+			//mt_Unlock ();
 			}
+			
+		Debug ("CoverCache_LoadTextureFromFile->SaveRGBATex %u msec (%d)", get_msec(0) - t2, config.enableTexCache);
 		}
 
 	tex = calloc(1, sizeof(GRRLIB_texImg));
@@ -609,5 +623,7 @@ GRRLIB_texImg* CoverCache_LoadTextureFromFile(char *filename)
 	GRRLIB_SetHandle( tex, 0, 0 );
 	GRRLIB_FlushTex( tex );
 	
+quit:
+	Debug ("CoverCache_LoadTextureFromFile->took %u msec", get_msec(0) - t1);
     return tex;
 	}

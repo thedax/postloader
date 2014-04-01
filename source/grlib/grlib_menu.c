@@ -329,7 +329,7 @@ int grlib_menu (int fixButtonWidth, char *title, const char *itemsstring, ...) /
 	
 	if (grlibSettings.theme.enabled)
 		{
-		grlib_DrawSquareThemed (&goWindow, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER);
+		grlib_DrawSquareThemed (&goWindow, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER, 255);
 		}
 	else
 		{

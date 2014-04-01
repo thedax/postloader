@@ -27,7 +27,7 @@ This allow to browse for applications in emus folder of mounted drive
 #include "bits.h"
 
 #define EMUMAX 32768
-#define CATMAX 256
+#define EMUPINMAX 256
 #define ROMPATHMAX 1024
 
 typedef struct
@@ -37,13 +37,20 @@ typedef struct
 	u8 recurse;
 	u16 count;
 	char *description;
-	char *dol;
+	char *id;
 	char *romfolder;
 	char *ext;
 	char *icon;
-	char *args;
 	}
 s_pin;
+
+typedef struct
+	{
+	char *id;
+	char *dol;
+	char *args;
+	}
+s_emudol;
 
 typedef struct
 	{
@@ -55,12 +62,14 @@ s_browseflag;
 
 typedef struct
 	{
-	s_pin pin[CATMAX];
+	s_pin pin[EMUPINMAX];
 	int count;
-	char *dolpath;
-	
 	char *rompaths[ROMPATHMAX];
 	int rompathscount;
+
+	char *dolpath;
+	s_emudol emudols[128];
+	int eumdolscount;
 	}
 s_plugin;
 	
@@ -130,15 +139,16 @@ static int plugin_AssignRomPath (char *fullpath, int idx)
 	emus[idx].hidden = 0;
 	emus[idx].playcount = 0;
 	
+	/*
 	for (i = 0; i < emusCnt; i++)
 		{
 		if (ms_isequal (fullpath, plugin_GetRomFullPath(i)))
 			{
 			browseflag.alreadyAdded++;
-			//Debug ("plugin_AssignRomPath: '%s' ROM Already added (%d)", fullpath, browseflag.alreadyAdded);
 			return 0;
 			}
 		}
+	*/
 	
 	strcpy (filename, fsop_GetFilename(fullpath, 0));
 	strcpy (path, fsop_GetPath(fullpath, 0));
@@ -234,16 +244,15 @@ static void plugin_Free (void)
 	{
 	int i;
 	
-	for (i = 0; i < CATMAX; i++)
+	for (i = 0; i < EMUPINMAX; i++)
 		{
 		s_pin *pin = &plugin.pin[i];
 		
 		if (pin->description) free (pin->description);
-		if (pin->dol) free (pin->dol);
+		if (pin->id) free (pin->id);
 		if (pin->romfolder) free (pin->romfolder);
 		if (pin->ext) free (pin->ext);
 		if (pin->icon) free (pin->icon);
-		if (pin->args) free (pin->args);
 		}
 	
 	plugin_FreeRompaths ();
@@ -253,30 +262,28 @@ static void plugin_Free (void)
 	plugin_Init ();
 	}
 
-static bool plugin_Set (int i, u8 enabled, u8 recurse, char *description, char *dol, char *romfolder, char *ext, char *icon, char *args)
+static bool plugin_Set (int i, u8 enabled, u8 recurse, char *description, char *dol, char *romfolder, char *ext, char *icon)
 	{
-	if (!description || !dol || !romfolder || !ext || !args)
+	if (!description || !dol || !romfolder || !ext)
 		return false;
 	
 	s_pin *pin = &plugin.pin[i];
 
 	if (pin->description) free (pin->description);
-	if (pin->dol) free (pin->dol);
+	if (pin->id) free (pin->id);
 	if (pin->romfolder) free (pin->romfolder);
 	if (pin->ext) free (pin->ext);
 	if (pin->icon) free (pin->icon);
-	if (pin->args) free (pin->args);
 	
 	pin->enabledCfg = enabled;
 	pin->enabled = enabled;
 	pin->recurse = recurse;
 	pin->description = description;
-	pin->dol = dol;
+	pin->id = dol;
 	pin->romfolder = romfolder;
 	pin->ext = ext;
 	pin->icon = icon;
 	pin->description = description;
-	pin->args = args;
 	
 	/*
 	Debug ("%d:%d:%d:%s:%s:%s:%s:%s:%s", 
@@ -284,7 +291,7 @@ static bool plugin_Set (int i, u8 enabled, u8 recurse, char *description, char *
 		pin->enabled,
 		pin->recurse,
 		pin->description,
-		pin->dol,
+		pin->id,
 		pin->romfolder,
 		pin->ext,
 		pin->icon,
@@ -313,7 +320,7 @@ static void retroarch_PurgeBmps (void)
 			{
 			sprintf (path, "%s:/retroarch", devices_Get (dev));
 			
-			mt_Lock();
+			//mt_Lock();
 			char *buff = fsop_GetDirAsString (path, '\0', 1, ".bmp");
 			if (buff)
 				{
@@ -329,7 +336,7 @@ static void retroarch_PurgeBmps (void)
 				
 				free (buff);
 				}
-			mt_Unlock();
+			//mt_Unlock();
 			}
 		}
 	
@@ -355,7 +362,7 @@ static void retroarch_GetCover (void)
 			{
 			sprintf (path, "%s:/retroarch", devices_Get (dev));
 			
-			mt_Lock();
+			//mt_Lock();
 			char *buff = fsop_GetDirAsString (path, '\0', 1, ".bmp");
 			if (buff) // we have a rom snapshot!
 				{
@@ -378,7 +385,7 @@ static void retroarch_GetCover (void)
 					Debug ("retroarch_GetCover %s is to small", path);
 					}
 				}
-			mt_Unlock();
+			//mt_Unlock();
 			}
 		}
 	
@@ -535,11 +542,11 @@ static void Plugins (bool open)
 		{
 		s_cfg *pcfg;
 
-		plugin_Init ();
+		plugin_Free ();
 		
-		mt_Lock();
+		//mt_Lock();
 		pcfg = cfg_Alloc (cfgpath, 384, 0, 1);
-		mt_Unlock();
+		//mt_Unlock();
 		
 		if (!pcfg)
 			{
@@ -554,6 +561,16 @@ static void Plugins (bool open)
 		for (i = 0; i < pcfg->count; i++)
 			{
 			// Rename the plugin
+			if (strcmp (pcfg->tags[i], "dol") == 0)
+				{
+				plugin.emudols[plugin.eumdolscount].id = ms_GetDelimitedString (pcfg->items[i], '|', 0);
+				plugin.emudols[plugin.eumdolscount].dol = ms_GetDelimitedString (pcfg->items[i], '|', 1);
+				plugin.emudols[plugin.eumdolscount].args = ms_GetDelimitedString (pcfg->items[i], '|', 2);
+				
+				Debug ("%d:%s:%s:%s", plugin.eumdolscount, plugin.emudols[plugin.eumdolscount].id, plugin.emudols[plugin.eumdolscount].dol, plugin.emudols[plugin.eumdolscount].args);
+				plugin.eumdolscount++;
+				}
+			// Rename the plugin
 			if (strcmp (pcfg->tags[i], "plugin") == 0 || pcfg->tags[i][0] == '0')
 				{
 				if (plugin_Set (plugin.count, 
@@ -563,14 +580,13 @@ static void Plugins (bool open)
 						ms_GetDelimitedString (pcfg->items[i], '|', 3),
 						ms_GetDelimitedString (pcfg->items[i], '|', 4),
 						ms_GetDelimitedString (pcfg->items[i], '|', 5),
-						ms_GetDelimitedString (pcfg->items[i], '|', 6),
-						ms_GetDelimitedString (pcfg->items[i], '|', 7)
+						ms_GetDelimitedString (pcfg->items[i], '|', 6)
 						)
 					)
 					plugin.count++;
 				}
 			
-			if (plugin.count >= CATMAX) break;
+			if (plugin.count >= EMUPINMAX) break;
 			}
 			
 		Debug ("Plugins: %d", plugin.count);
@@ -585,9 +601,10 @@ static void Plugins (bool open)
 		cfg_Free (pcfg);
 
 		emuicons = calloc (sizeof (GRRLIB_texImg), plugin.count);
+		Video_PanelsUpdateTime (100);
 		for (i = 0; i < plugin.count; i++)
 			{
-			Video_WaitIconTimed (TEX_HGL);
+			Video_WaitIcon (TEX_HGL);
 			
 			sprintf (path, "%s://ploader/theme/%s", vars.defMount, plugin.pin[i].icon);
 			emuicons[i] = GRRLIB_LoadTextureFromFile (path);
@@ -598,6 +615,7 @@ static void Plugins (bool open)
 				emuicons[i] = GRRLIB_LoadTextureFromFile (path);
 				}
 			}
+		Video_PanelsUpdateTime (0);
 		}
 	else
 		{
@@ -720,7 +738,7 @@ static void GetCovers_Scan (char *path)
 
 			strcpy (romname, fsop_GetFilename (emus[i].name, true));
 			
-			if (ms_strstr (pent->d_name, romname))
+			if (ms_strcmp (pent->d_name, romname))
 				{
 				sprintf (fn, "%s/%s", path, pent->d_name);
 				
@@ -832,20 +850,16 @@ static void SortItems (void)
 		if (emus[i].filtered) filtered++;
 		}
 	
-	Debug ("SortItems: Sorting...qsort_filter");
-
-	Video_WaitIconTimed (TEX_HGL);
+	Video_PanelsUpdateTime (100);
+	
+	Video_WaitIcon (TEX_HGL);
 	qsort (emus, emusCnt, sizeof(s_emu), qsort_filter);
-	
-	Debug ("SortItems: Sorting...qsort_hidden");
-
-	Video_WaitIconTimed (TEX_HGL);
+	Video_WaitIcon (TEX_HGL);
 	qsort (emus, filtered, sizeof(s_emu), qsort_hidden);
-	
-	Debug ("SortItems: Sorting...qsort_name");
-
-	Video_WaitIconTimed (TEX_HGL);
+	Video_WaitIcon (TEX_HGL);
 	qsort (emus, emus2Disp, sizeof(s_emu), qsort_name);
+	
+	Video_PanelsUpdateTime (0);
 
 	pageMax = (emus2Disp-1) / gui.spotsXpage;
 	
@@ -898,33 +912,113 @@ static void CheckForCovers (void)
 		}
 	}
 	
-static bool PluginExist (int index, char * dol)
+static char *GetDolById (char *id)
 	{
-	char path[256];
+	int i;
+	static char buff[64];
 	
-	int i = 0;
-	
-	*dol = '\0';
-	
-	sprintf (path, "%s://ploader/plugins", vars.defMount);
-	do
+	*buff = '\0';
+	for (i = 0; i < plugin.eumdolscount; i++)
 		{
-		sprintf (dol, "%s/%s", path, plugin.pin[index].dol);
-		if (fsop_FileExist (dol))
+		if (!strcmp (id, plugin.emudols[i].id))
 			{
-			return true;
-			}
-			
-		*path = '\0';
-		char *buff = ms_GetDelimitedString (plugin.dolpath, '|', i++);
-		if (buff)
-			{
-			strcpy (path, buff);
-			free (buff);
+			strcpy (buff, plugin.emudols[i].dol);
+			break;
 			}
 		}
-	while (*path);
+	return buff;
+	}
 	
+static char *GetArgsById (char *id, int index)
+	{
+	int i;
+	static char buff[64];
+	
+	Debug ("GetArgsById: %s,%d", id, index);
+	
+	*buff = '\0';
+	for (i = 0; i < plugin.eumdolscount; i++)
+		{
+		char *argid = ms_GetDelimitedString  (id, ',', index);
+		if (!argid) continue;
+		
+		if (!strcmp (argid, plugin.emudols[i].id))
+			{
+			free (argid);
+			strcpy (buff, plugin.emudols[i].args);
+			break;
+			}
+		free (argid);
+		}
+	return buff;
+	}
+	
+static bool PluginExist (int index, char * dolpath, int idx) // idx -1 will check if any plugin exist
+	{
+	char *id;
+	char *dol;
+	char path[256];
+	int j = 0;
+	int i = 0;
+	
+	*dolpath = '\0';
+	
+	if (idx > -1) j = idx;
+	
+	do
+		{
+		id = ms_GetDelimitedString  (plugin.pin[index].id, ',', j++);
+		if (!id) break;
+		
+		dol = GetDolById (id);
+		free (id);
+
+		if (!*dol) break;
+
+		sprintf (path, "%s://ploader/plugins", vars.defMount);
+		do
+			{
+			sprintf (dolpath, "%s/%s", path, dol);
+
+			if (fsop_FileExist (dolpath)) return true;
+				
+			*path = '\0';
+			char *buff = ms_GetDelimitedString (plugin.dolpath, '|', i++);
+			if (buff)
+				{
+				strcpy (path, buff);
+				free (buff);
+				}
+			}
+		while (*path);
+		
+		if (idx > -1) break;
+		}
+	while (true);
+	
+	*dol = '\0';
+	return false;
+	}
+
+static bool SearchPlugin (int index, char * dol, int num, int *order) // return the "num" active plugin
+	{
+	int i;
+	int j = 0;
+	
+	for (i = 0; i < 16; i++)
+		{
+		if (PluginExist (index, dol, i))
+			{
+			if (num == j) 
+				{
+				*order = i;
+				return true;
+				}
+			j++;
+			}
+		}
+	
+	*order = 0;
 	return false;
 	}
 	
@@ -950,13 +1044,14 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 		return 0;
 		}
 	
-	// Check if the plugin exist
-	if (!PluginExist (type, fn))
+	// Check if the one of the plugin exist (no check will be performed starting from multydol support
+	/*
+	if (!PluginExist (type, fn, -1))
 		{
 		Debug ("# %s:%s => plugin dol doesn't exist (%s)", plugin.pin[type].description, path, plugin.pin[type].dol);
 		return 0;
 		}
-
+	*/
 	strcpy (ext, pin->ext);
 
 	t2 = gettime();
@@ -966,9 +1061,9 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 		Video_WaitPanel (TEX_HGL, 500, "Searching... %d roms found, %d%%|%s", i, (type * 100) / plugin.count, path);
 		}
 
-	mt_Lock();
+	//mt_Lock();
 	p = dir = fsop_GetDirAsStringWithDirFlag (path, 0);
-	mt_Unlock();
+	//mt_Unlock();
 	
 	while (p && *p) 
 		{
@@ -1052,7 +1147,9 @@ static int EmuBrowse (bool rebuild)
 		gui_Clean ();
 		StructFree ();
 		
-		Video_WaitIconTimed (TEX_HGL);
+		Video_WaitIcon (TEX_HGL);
+		
+		Video_PanelsUpdateTime (100);
 		
 		f = fopen (cachefile, "rb");
 		
@@ -1067,7 +1164,7 @@ static int EmuBrowse (bool rebuild)
 			int subsize = 0;
 			do
 				{
-				Video_WaitIconTimed (TEX_HGL);
+				Video_WaitIcon (TEX_HGL);
 				
 				// read first block
 				if (subsize)
@@ -1134,6 +1231,8 @@ static int EmuBrowse (bool rebuild)
 			
 			fclose (f);
 			free (cache);
+			
+			Video_PanelsUpdateTime (0);
 			
 			if (plugin.rompathscount == 0)
 				{
@@ -1301,7 +1400,7 @@ static bool IsFiltered (int ai)
 		return true;
 		}
 	
-	for (i = 0; i < CATMAX; i++)
+	for (i = 0; i < EMUPINMAX; i++)
 		{
 		if (GBFA (i, config.emuFilter) && emus[ai].type == i)
 			{
@@ -1315,7 +1414,7 @@ static bool IsFiltered (int ai)
 static void FixFilters (void)
 	{
 	int i;
-	u8 f[CATMAX];
+	u8 f[EMUPINMAX];
 	
 	for (i = 0; i < plugin.count; i++)
 		{
@@ -1331,8 +1430,8 @@ static void ShowFilterMenu (void)
 	char buff[2048];
 	char title[128];
 	int active;
-	int lut[CATMAX];
-	u8 f[CATMAX];
+	int lut[EMUPINMAX];
+	u8 f[EMUPINMAX];
 	int i, item, lines, addCol = 0, page = 0, pages, buttons;
 	
 	active = 0;
@@ -1838,13 +1937,18 @@ static int ChangePage (int next)
 
 static bool QuerySelection (int ai)
 	{
+	bool ret = false;
 	int i;
 	float mag = 1.0;
 	float magMax = 3.1;
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 200;
-	int yInf = 490;
+	int yInf = 500, yTop = 420;
+	char dols[16][128];
+	int dolsNum = 0;
+	char buff[128];
+	u32 transp = 32, transpLimit = 224;
 	
 	for (i = 0; i < gui.spotsIdx; i++)
 		{
@@ -1861,30 +1965,54 @@ static bool QuerySelection (int ai)
 	*ico.title = '\0';
 	
 	s_grlib_iconSetting istemp;
+
 	memcpy (&istemp, &is, sizeof(s_grlib_iconSetting));
+	istemp.transparency = 255;
 	
 	s_grlibobj black;
 	black.x1 = 0;
 	black.y1 = 0;
 	black.x2 = grlib_GetScreenW();
 	black.y2 = grlib_GetScreenH();
-	black.color = RGBA(0,0,0,192);
-	black.bcolor = RGBA(0,0,0,192);
 	
 	// Load full res cover
 	char path[300];
 	MakeCoverPath (ai, path);
-	mt_Lock();
+	//mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
-	mt_Unlock();
+	//mt_Unlock();
 	if (tex) ico.icon = tex;
 	
 	Video_SetFont(TTFNORM);
 	
+	for (i = 0; i < 16; i++)
+		{
+		if (PluginExist(emus[emuSelected].type, buff, i))
+			{
+			strcpy (dols[dolsNum], fsop_GetFilename (buff, true));
+			dolsNum++;
+			}
+		}
+	
+	if (config.emuDols[emus[emuSelected].type] >= dolsNum) 
+		config.emuDols[emus[emuSelected].type] = 0;
+		
+	if (dolsNum > 1)
+		sprintf (buff, "(<) %s (>)", dols[config.emuDols[emus[emuSelected].type]]);
+	else if (dolsNum == 1)
+		sprintf (buff, "%s", dols[config.emuDols[emus[emuSelected].type]]);
+	else
+		sprintf (buff, "!!! no dol available !!!");
+	
 	while (true)
 		{
 		grlib_PopScreen ();
+		
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
 
 		istemp.magXSel = mag;
 		istemp.magYSel = mag;
@@ -1903,9 +2031,9 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
-		DrawInfoWindo (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel", buff);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 
 		Overlay ();
 		grlib_DrawIRCursor ();
@@ -1919,63 +2047,120 @@ static bool QuerySelection (int ai)
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
+
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		DrawInfoWindo (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel", buff);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();
 
 		btn = grlib_GetUserInput();
-		if (btn & WPAD_BUTTON_A) return true;
-		if (btn & WPAD_BUTTON_B) return false;
+		if (btn & WPAD_BUTTON_A)
+			{
+			ret = true;
+			break;
+			}
+		if (btn & WPAD_BUTTON_B)
+			{
+			ret = false;
+			break;
+			}
+		if (btn & WPAD_BUTTON_RIGHT && dolsNum > 1)
+			{
+			config.emuDols[emus[emuSelected].type]++;
+			
+			if (config.emuDols[emus[emuSelected].type] >= dolsNum) config.emuDols[emus[emuSelected].type] = 0;
+			if (dolsNum) sprintf (buff, "(<) %s (>)", dols[config.emuDols[emus[emuSelected].type]]);
+			}
+		if (btn & WPAD_BUTTON_LEFT && dolsNum > 1)
+			{
+			config.emuDols[emus[emuSelected].type]--;
+			
+			if (config.emuDols[emus[emuSelected].type] == 0xFF) config.emuDols[emus[emuSelected].type] = dolsNum-1;
+			if (dolsNum) sprintf (buff, "(<) %s (>)", dols[config.emuDols[emus[emuSelected].type]]);
+			}
 		}
 		
+	while (ico.transparency > 10)
+		{
+		istemp.transparency = ico.transparency;
+		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
+		grlib_DrawSquare (&black);
+		if (transp) transp -= 4;
+
+		grlib_IconDraw (&istemp, &ico);
+		ico.transparency -= 10;
+		Overlay ();
+		
+		DrawInfoWindow (yInf, fsop_GetFilename(emus[emuSelected].name, true), "Press (A) to start, (B) Cancel", buff);
+		yInf += 5;
+
+		grlib_DrawIRCursor ();
+		grlib_Render();
+		}
+
 	GRRLIB_FreeTexture (tex);
-	return true;
+	return ret;
 	}
 
 static void StartEmu (int type, char *fullpath)
 	{
-	char cmd[256];
+	char cmd[256] = {0};
 	char dol[256];
+	int order;
 
-	strcpy (cmd, plugin.pin[type].args);
-	if (*cmd == 0)
+	if (SearchPlugin(type, dol, config.emuDols[type], &order))	// theorically this check isn't needed...
 		{
-		grlib_menu (0, "Attention!", "plugins.conf seems to be invalid or corrupted");
-		return;
-		}
+		//if (order > -1) order = 0;
 		
-	Debug ("StartEmu: cmd='%s'", cmd);
+		char *p = GetArgsById (plugin.pin[type].id, order);
+		if (p) 
+			{
+			strcpy (cmd, p);
+			}
+			
+		if (*cmd == 0)
+			{
+			grlib_menu (0, "Attention!", "plugins.conf seems to be invalid or corrupted");
+			return;
+			}
+			
+		Debug ("StartEmu: cmd='%s'", cmd);
+			
+		char loader[256];
+		sprintf (loader, "%s://ploader/plugins/forwarder.dol", vars.defMount);
 		
-	char loader[256];
-	sprintf (loader, "%s://ploader/plugins/forwarder.dol", vars.defMount);
-	
-	Debug ("fsop_GetDev: '%s'", fsop_GetDev(fullpath));
-	Debug ("fsop_GetPath: '%s'", fsop_GetPath(fullpath, 1));
-	Debug ("fsop_GetFilename: '%s'", fsop_GetFilename(fullpath, 0));
+		Debug ("fsop_GetDev: '%s'", fsop_GetDev(fullpath));
+		Debug ("fsop_GetPath: '%s'", fsop_GetPath(fullpath, 1));
+		Debug ("fsop_GetFilename: '%s'", fsop_GetFilename(fullpath, 0));
 
-	ms_Subst (cmd, "{device}", fsop_GetDev (fullpath));
-	ms_Subst (cmd, "{path}", fsop_GetPath (fullpath, 1));
-	ms_Subst (cmd, "{name}", fsop_GetFilename (fullpath, 0));
-	ms_Subst (cmd, "{loader}", loader);
-	ms_Subst (cmd, "{titlelow}", "00010001");
-	ms_Subst (cmd, "{titlehi}", "504F5354");
-	ms_Subst (cmd, "{loadername}", "postLoader");
-	ms_Subst (cmd, "$", ";");
-	ms_Subst (cmd, DEV_MN_USB1, "usb1:");
-	ms_Subst (cmd, DEV_MN_USB2, "usb2:");
-	ms_Subst (cmd, DEV_MN_USB3, "usb3:");
+		ms_Subst (cmd, "{device}", fsop_GetDev (fullpath));
+		ms_Subst (cmd, "{path}", fsop_GetPath (fullpath, 1));
+		ms_Subst (cmd, "{name}", fsop_GetFilename (fullpath, 0));
+		ms_Subst (cmd, "{loader}", loader);
+		ms_Subst (cmd, "{titlelow}", "00010001");
+		ms_Subst (cmd, "{titlehi}", "504F5354");
+		ms_Subst (cmd, "{loadername}", "postLoader");
+		ms_Subst (cmd, "$", ";");
+		ms_Subst (cmd, DEV_MN_USB1, "usb1:");
+		ms_Subst (cmd, DEV_MN_USB2, "usb2:");
+		ms_Subst (cmd, DEV_MN_USB3, "usb3:");
 
-	Debug ("StartEmu: cmd='%s'", cmd);
-	
-	if (PluginExist(type, dol))	// theorically this check isn't needed...
-		{
+		Debug ("StartEmu: cmd='%s'", cmd);
+		
 		Conf (false);	// Store configuration on disc
 		Plugins (false);
 
@@ -1998,6 +2183,8 @@ int EmuBrowser (void)
 	grlib_SetRedrawCallback (Redraw, Overlay);
 	
 	Video_WaitIcon (TEX_HGL);	
+	
+	plugin_Init ();
 
 	Plugins (true);
 	Conf (true);

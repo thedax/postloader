@@ -124,7 +124,9 @@ int AutoUpdate (void)
 	char ver[64];
 	if (ShowInfo (outbuf,ver) == 0)
 		{
-		sprintf (buff, "http://postloader.googlecode.com/files/plupdate.%s.zip", ver);
+		//sprintf (buff, "http://postloader.googlecode.com/files/plupdate.%s.zip", ver);
+		sprintf (buff, "http://postloader.dnsdynamic.net/index.php?down=downloads/plupdate.%s.zip", ver);
+		
 		outbuf = (char*)downloadfile (buff, &outlen, cb_au); // outbuf is 0 terminated
 		
 		Debug ("AutoUpdate %s -> %d", buff, outlen);

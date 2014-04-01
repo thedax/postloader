@@ -170,6 +170,8 @@ typedef struct
 	u32 borderSelColor; 	// Border color
 	u32 borderColor; 		// Border color
 	
+	u8 transparency;
+	
 	u32 fontReverse; 		// Border color
 	}
 s_grlib_iconSetting;
@@ -229,7 +231,7 @@ void grlib_Message (const char *text, ...);
 
 int grlib_GetUserInput (void);
 
-void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg * texbk, f32 magx, f32 magy, u32 flag);
+void grlib_DrawSquareThemed ( s_grlibobj *b, GRRLIB_texImg * tex, GRRLIB_texImg * texbk, f32 magx, f32 magy, u32 flag, u8 transparency);
 
 void grlib_IconSettingInit (s_grlib_iconSetting *grlib_iconSetting);
 void grlib_IconInit (s_grlib_icon *icon, s_grlib_icon *parentIcon);

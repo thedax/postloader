@@ -20,9 +20,9 @@ static bool Play (char * fn) // return true interrupt the screensaver
 		img = GRRLIB_LoadTexturePNG (icon_png);
 	else
 		{
-		mt_Lock();
+		//mt_Lock();
 		img = GRRLIB_LoadTextureFromFile (fn);
-		mt_Unlock();
+		//mt_Unlock();
 		}
 
 	if (!img) return false;

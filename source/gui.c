@@ -376,7 +376,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 			int dev;
 			char path[256];
 			
-			mt_Lock();
+			//mt_Lock();
 			
 			for (dev = 0; dev < DEV_MAX; dev++)
 				{
@@ -422,7 +422,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 					}
 				}
 			
-			mt_Unlock();
+			//mt_Unlock();
 			
 			i = 0;
 			
@@ -545,21 +545,41 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 	return ret;
 	}
 	
-void DrawInfoWindo (f32 y, char *s1, char *s2)
+void DrawInfoWindow (f32 y, char *s1, char *s2, char *s3)
 	{
 	int l1 = 0;
-	int l2 = 15;
-	s_grlibobj go;
+	int l2 = 30;
+	int l3 = 52;
+	int h, offset;
+	//s_grlibobj go;
+
+	int ofr = grlibSettings.fontDef.reverse;
+	grlibSettings.fontDef.reverse = 0;
 	
-	go.x1 = 40;
-	go.x2 = 600;
-	go.y1 = y + l1 - 5;
-	go.y2 = y + l2 + 10;
-	grlib_DrawWindow (go);
+	if (!s3) l3 = 0;
+	
+	h = l1+l2+l3+10;
+	offset = h / 2;
+	/*
+	go.x1 = 0;
+	go.x2 = 640;
+	go.y1 = y - offset - 10;
+	go.y2 = y + 200;
+	go.color = RGBA(0,0,0,192);
+	go.bcolor = RGBA(0,0,0,192);
+	*/
+	//grlib_DrawSquare (&go);
+	//grlib_DrawWindow (go);
 	
 	Video_SetFont(TTFNORM);
-	grlib_printf (320, y+l1-10, GRLIB_ALIGNCENTER, 0, s1);
+	grlib_printf (320, y - offset + l1, GRLIB_ALIGNCENTER, 0, s1);
+	if (s3) 
+		{
+		grlib_printf (320, y - offset + l3, GRLIB_ALIGNCENTER, 0, s3);
+		}
 	Video_SetFont(TTFSMALL);
-	grlib_printf (320, y+l2, GRLIB_ALIGNCENTER, 0, s2);
+	grlib_printf (320, y - offset + l2, GRLIB_ALIGNCENTER, 0, s2);
+	
+	grlibSettings.fontDef.reverse = ofr;
 	}
 	

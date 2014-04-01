@@ -4,6 +4,7 @@
 void grlib_IconSettingInit (s_grlib_iconSetting *grlib_iconSetting)
 	{
 	memset (grlib_iconSetting, 0, sizeof(s_grlib_iconSetting));
+	grlib_iconSetting->transparency = 255;
 	}
 	
 void grlib_IconInit (s_grlib_icon *icon, s_grlib_icon *parentIcon)
@@ -53,7 +54,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 	
 	if (is->themed)		{
 		// Draw mask (if exist)
-		if (!icon->noIcon)	grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE);
+		if (!icon->noIcon)	grlib_DrawSquareThemed (&grob, is->bkgTex, NULL, 0, 0, DSTF_NONE, is->transparency);
 		}
 	else
 		{
@@ -129,8 +130,8 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		{
 		if (is->themed)
 			{
-			grlib_DrawSquareThemed (&grob, is->fgrTex, NULL, 0, 0, DSTF_NONE);
-			grlib_DrawSquareThemed (&grob, is->fgrSelTex, NULL, 0, 0, DSTF_NONE);
+			grlib_DrawSquareThemed (&grob, is->fgrTex, NULL, 0, 0, DSTF_NONE, is->transparency);
+			grlib_DrawSquareThemed (&grob, is->fgrSelTex, NULL, 0, 0, DSTF_NONE, is->transparency);
 			}
 		else
 			{
@@ -144,7 +145,7 @@ void grlib_IconDraw (s_grlib_iconSetting *is, s_grlib_icon *icon)
 		{
 		if (is->themed)
 			{
-			grlib_DrawSquareThemed (&grob, is->fgrTex, NULL, 0, 0, DSTF_NONE);
+			grlib_DrawSquareThemed (&grob, is->fgrTex, NULL, 0, 0, DSTF_NONE, is->transparency);
 			}
 		else
 			{

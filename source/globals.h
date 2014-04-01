@@ -9,11 +9,10 @@
 #include "plneek.h"
 #include "debug.h"
 #include "cfg.h"
-#include "multithread.h"
 
 //#define DOLPHINE
 
-#define VER "4.6.1"
+#define VER "4.7.2"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -104,6 +103,7 @@ enum {
 typedef void (*entrypoint) (void); 
 
 #define CATAPPMAX 8			// number of category for applications
+#define EMUPINMAX 256		// number of loadable plugins
 
 #define APPMODE_NONE 0  	// Homebrew application
 #define APPMODE_HBA 1  	 	// Homebrew application
@@ -459,6 +459,8 @@ typedef struct
 	u8 enableTexCache;
 	u8 currentDmlWad;		// 0 = unknown...
 	u8 lockCurrentMode;
+	
+	u8 emuDols[EMUPINMAX];
 	}
 s_config;
 
@@ -564,7 +566,7 @@ void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy);
 void Video_DrawIcon (int icon, int x, int y);
 void Video_WaitPanel (int icon, int width, const char *text, ...); // Draw a panel with a wait screen
 void Video_WaitIcon (int icon);
-void Video_WaitIconTimed (int icon);
+void Video_PanelsUpdateTime (u32 msec);
 void Video_LoadTheme (int init);
 void Video_DrawWIFI (void);
 void Video_SetFont (int size);

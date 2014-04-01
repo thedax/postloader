@@ -111,9 +111,9 @@ void Video_DrawIconZ (int icon, int x, int y, f32 zx, f32 zy)
 		}
 	if (icon == TEX_HGL)
 		{
-		hgl_angle-=45; 
-		//if (hgl_angle > 360) hgl_angle = 0;
-		if (hgl_angle <= 0) hgl_angle = 360;
+		hgl_angle+=45; 
+		if (hgl_angle >= 360) hgl_angle = 0;
+		//if (hgl_angle <= 0) hgl_angle = 360;
 		angle = hgl_angle;
 		}
 		
@@ -185,11 +185,25 @@ void Video_DrawWIFI (void)
 		}
 	}
 
+// abc
+u32 put_t1 = 0,put_t2 = 0,put_msec = 0;
+void Video_PanelsUpdateTime (u32 msec)
+	{
+	put_msec = msec;
+	}
+	
 void Video_WaitPanel (int icon, int width, const char *text, ...)
 	{
 	char mex[1024];
 	char *p;
 	int w;
+	
+	if (put_msec)
+		{
+		put_t2 = gettime();
+		if (diff_msec (put_t1, put_t2) < put_msec) return;
+		put_t1 = put_t2;
+		}
 	
 	if (text != NULL)
 		{
@@ -239,29 +253,18 @@ void Video_WaitPanel (int icon, int width, const char *text, ...)
 
 void Video_WaitIcon (int icon)
 	{
+	if (put_msec)
+		{
+		put_t2 = gettime();
+		if (diff_msec (put_t1, put_t2) < put_msec) return;
+		put_t1 = put_t2;
+		}
+	
 	grlib_PopScreen() ;
 	grlib_DrawCenteredWindow ("", 50, 40, 0, NULL);
 	Video_DrawIcon (icon, 320, 240);
 	grlib_Render ();
 	}
-	
-void Video_WaitIconTimed (int icon)
-	{
-	static u64 t1 = 0;
-	u64 t2;
-	
-	t2 = gettime();
-	if (diff_msec (t1, t2) > 100)
-		{
-		t1 = t2;
-
-		grlib_PopScreen() ;
-		grlib_DrawCenteredWindow ("", 50, 40, 0, NULL);
-		Video_DrawIcon (icon, 320, 240);
-		grlib_Render ();
-		}
-	}
-	
 	
 void Video_LoadTheme (int init)
 	{

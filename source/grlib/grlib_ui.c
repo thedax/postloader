@@ -107,9 +107,9 @@ void grlib_DrawButton ( s_grlibobj *b, int state)
 	if (grlibSettings.theme.enabled)
 		{
 		if (state == BTNSTATE_SEL && grlibSettings.theme.texButtonSel)
-			grlib_DrawSquareThemed ( b, grlibSettings.theme.texButtonSel, NULL, grlibSettings.theme.buttonMagX, grlibSettings.theme.buttonMagY, DSTF_NONE);
+			grlib_DrawSquareThemed ( b, grlibSettings.theme.texButtonSel, NULL, grlibSettings.theme.buttonMagX, grlibSettings.theme.buttonMagY, DSTF_NONE, 255);
 		else
-			grlib_DrawSquareThemed ( b, grlibSettings.theme.texButton, NULL, grlibSettings.theme.buttonMagX, grlibSettings.theme.buttonMagY, DSTF_NONE);
+			grlib_DrawSquareThemed ( b, grlibSettings.theme.texButton, NULL, grlibSettings.theme.buttonMagX, grlibSettings.theme.buttonMagY, DSTF_NONE, 255);
 		}
 	else
 		grlib_DrawSquare ( b );
@@ -165,7 +165,7 @@ void grlib_DrawWindow (s_grlibobj go)
 	{
 	if (grlibSettings.theme.enabled)
 		{
-		grlib_DrawSquareThemed (&go, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER);
+		grlib_DrawSquareThemed (&go, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER, 255);
 		}
 	else
 		{

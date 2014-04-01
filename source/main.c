@@ -88,7 +88,7 @@ void Subsystems (bool enable)
 	if (enable)
 		{
 		if (vars.neek == NEEK_NONE) USB_Initialize ();
-		mt_Init ();
+		//mt_Init ();
 		grlib_Controllers (true);
 		MountDevices (1);
 		DebugStart (true, "sd://ploader.log");
@@ -105,7 +105,7 @@ void Subsystems (bool enable)
 		Debug ("stopping debug");
 		DebugStop ();
 		UnmountDevices ();
-		mt_Deinit ();
+		//mt_Deinit ();
 		if (vars.neek == NEEK_NONE) USB_Deinitialize ();
 		}
 	}

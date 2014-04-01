@@ -466,7 +466,7 @@ int grlib_DrawCenteredWindow (char * title, int w, int h, bool grayoutBackground
 	
 	if (grlibSettings.theme.enabled)
 		{
-		grlib_DrawSquareThemed (&goWindow, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER);
+		grlib_DrawSquareThemed (&goWindow, grlibSettings.theme.texWindow, grlibSettings.theme.texWindowBk, grlibSettings.theme.windowMagX, grlibSettings.theme.windowMagY, DSTF_BKFILLBORDER, 255);
 		}
 	else
 		{

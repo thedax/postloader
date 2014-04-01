@@ -16,7 +16,7 @@
 #include "devices.h"
 #include "debug.h"
 #include "fsop/fsop.h"
-#include "multithread.h"
+//#include "multithread.h"
 
 //these are the only stable and speed is good
 //#define CACHE 8
@@ -313,7 +313,7 @@ int devices_TickUSB (void)
 	u8 sector[4096];
 	static time_t t = 0;
 
-	mt_Lock();
+	//mt_Lock();
 	
 	if (storage && (partnfs || partfat) && time(NULL) > t)
 		{
@@ -321,7 +321,7 @@ int devices_TickUSB (void)
 		t = time(NULL) + 30;
 		}
 	
-	mt_Unlock();	
+	//mt_Unlock();	
 	return ret;
 	}
 	

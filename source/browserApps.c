@@ -45,6 +45,7 @@ static int spotSelected = -1;
 static int spotSelectedLast = -1;
 
 static u8 redraw = 1;
+static u8 redrawSkipInfo = 0;
 static bool redrawIcons = true;
 
 static u16 sortMode = 0;
@@ -182,9 +183,9 @@ static void ParseXML (int ai)
 
 	sprintf (cfg, "%s://apps/%s/meta.xml", apps[ai].mount, apps[ai].path);
 	
-	mt_Lock();
+	//mt_Lock();
 	buff = (char*)fsop_ReadFile (cfg, 0, NULL);
-	mt_Unlock();
+	//mt_Unlock();
 
 	if (!buff || strlen(buff) == 0) return;
 	
@@ -363,9 +364,7 @@ static char *GetLongdescFromXML (int ai)
 
 	sprintf (cfg, "%s://apps/%s/meta.xml", apps[ai].mount, apps[ai].path);
 
-	mt_Lock();
 	buff = (char*)fsop_ReadFile (cfg, 0, NULL);
-	mt_Unlock();
 
 	if (!buff || strlen(buff) == 0) return NULL;
 	
@@ -443,9 +442,9 @@ static int AppExist (const char *mount, char *path, char *filename)
 	Debug ("AppExist %s", fn);
 
 
-	mt_Lock();
+	//mt_Lock();
 	char *dir = fsop_GetDirAsString(fn,'|',1,".elf;.xml;.dol");
-	mt_Unlock();
+	//mt_Unlock();
 
 	if (!dir) return 0;
 	
@@ -572,9 +571,9 @@ static int ScanApps (const char *mount, int refresh)
 	sprintf (path, "%s://apps/%s", mount, config.subpath);
 	Debug ("ScanApps: searching '%s'", path);
 	
-	mt_Lock();
+	//mt_Lock();
 	pdir=opendir(path);
-	mt_Unlock();
+	//mt_Unlock();
 
 	cfg_Section (NULL);
 	
@@ -696,15 +695,15 @@ static void SaveSettings (void)
 	Video_WaitIcon (TEX_HGL);
 	
 	sprintf (path, "%s://ploader/homebrew.conf", vars.defMount);
-	mt_Lock();
+	//mt_Lock();
 	cfg = cfg_Alloc(path, 0, 0, 1);
-	mt_Unlock();
+	//mt_Unlock();
 	
 	UpdateAllSettings (cfg);
 
-	mt_Lock();
+	//mt_Lock();
 	cfg_Store(cfg , path);
-	mt_Unlock();
+	//mt_Unlock();
 
 	cfg_Free(cfg );
 	
@@ -720,9 +719,9 @@ static int AppsBrowse (int refresh)
 	char path[PATHMAX];
 	sprintf (path, "%s://ploader/homebrew.conf", vars.defMount);
 	
-	mt_Lock();
+	//mt_Lock();
 	cfg = cfg_Alloc(path, 0, 0, 1);
-	mt_Unlock();
+	//mt_Unlock();
 	
 	int ver = 0;
 	cfg_Value (cfg, CFG_READ, CFG_INT, "VERSION", &ver, -1);
@@ -761,9 +760,9 @@ static int AppsBrowse (int refresh)
 	if (needToSave)
 		{
 		UpdateAllSettings (cfg);
-		mt_Lock();
+		//mt_Lock();
 		cfg_Store(cfg , path);
-		mt_Unlock();
+		//mt_Unlock();
 		}
 		
 	cfg_Free (cfg);
@@ -1458,7 +1457,7 @@ static void Redraw (void)
 	if (redrawIcons) RedrawIcons (0,0);
 	
 	Video_DrawVersionInfo ();
-	DrawInfo ();
+	if (!redrawSkipInfo) DrawInfo ();
 	}
 	
 static void Overlay (void)
@@ -1547,8 +1546,14 @@ static bool QuerySelection (int ai)
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 200;
-	int yInf = 490;
+	int yInf = 500, yTop = 400;
+	u32 transp = 32, transpLimit = 224;
 	
+	redrawSkipInfo = 1;
+	Redraw ();
+	grlib_PushScreen ();
+	redrawSkipInfo = 0;
+
 	Video_SetFont(TTFNORM);
 	
 	for (i = 0; i < gui.spotsIdx; i++)
@@ -1577,15 +1582,20 @@ static bool QuerySelection (int ai)
 	// Load full res cover
 	char path[300];
 	sprintf (path, "%s://apps/%s%s/icon.png", apps[ai].mount, config.subpath, apps[ai].path);
-	mt_Lock();
+	//mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
-	mt_Unlock();
+	//mt_Unlock();
 	if (tex) ico.icon = tex;
 	
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
 
 		istemp.magXSel = mag;
 		istemp.magYSel = mag;
@@ -1604,9 +1614,9 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
-		DrawInfoWindo (yInf, apps[ai].name, "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, apps[ai].name, "Press (A) to start, (B) Cancel", NULL);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 
 		Overlay ();
 		grlib_DrawIRCursor ();
@@ -1620,13 +1630,19 @@ static bool QuerySelection (int ai)
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
+
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 
-		DrawInfoWindo (yInf, apps[ai].name, "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, apps[ai].name, "Press (A) to start, (B) Cancel", NULL);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();

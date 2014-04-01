@@ -1,3 +1,25 @@
+postLoader 4.7.2
+
+* fixed category issue in wii/gamecube games
+* updated download site to http://postloader.dnsdynamic.net, the new official site for downloads
+
+postLoader 4.7.1
+
+* remove useless file thread locking system.
+* increased thread priority for covercache. This will solve sound stuttering and very slow file writing during creation of cover cache files (if enabled)
+* now postloader select exact cover name for covers
+* postloader require customfat (and customntfs) to be compiled (from wiiflow). Some file where missing during games/roms browsing with standard library.
+
+postLoader 4.7.0
+
+* new plugin managment system. Now roms are organized on per-system basis. When you select a rom, you can choose your preferred emulator. The plugin.cfg file has a new sintax.
+
+postLoader 4.6.2
+
+* updated grlib library (added transparency option for icon/panel borders)
+* ChannelBrowser: updated find_title_name function. Thx kuwanger!!!
+* little ui changes
+
 postLoader 4.6.1
 
 * emuBrowser: fixed dsi when browsing ntfs partitions

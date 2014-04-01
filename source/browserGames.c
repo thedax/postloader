@@ -186,7 +186,7 @@ static bool ShowMIOSMenu (void)
 	memset (slots, 0, sizeof (slots));
 
 	// checkup
-	mt_Lock ();
+	//mt_Lock ();
 	
 	i = DMLWAD_QFSD;
 	sprintf (wads[i], "%s://ploader/wads/qfsd.wad", vars.defMount);
@@ -218,7 +218,7 @@ static bool ShowMIOSMenu (void)
 	slots[i] = fsop_FileExist (wads[i]);
 	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
 		
-	mt_Unlock ();
+	//mt_Unlock ();
 	
 	for (i = 0; i < DMLWAD_MAX; i++)
 		if (slots[i]) count++;
@@ -368,9 +368,9 @@ static bool SelectDMLWad (ai)
 		return false;
 		}
 		
-	mt_Lock ();
+	//mt_Lock ();
 	int wadexist = fsop_FileExist (wad);
-	mt_Unlock ();
+	//mt_Unlock ();
 	
 	if (!wadexist)
 		{
@@ -478,12 +478,12 @@ static bool DownloadCovers_Get (char *path, char *buff)
 		//suficientes bytes
 		FILE *f;
 		
-		f = mt_fopen (path, "wb");
+		f = fopen (path, "wb");
 		if (f)
 			{
 			Debug ("DownloadCovers_Get: writing png");
-			mt_fwrite (outbuf, outlen, 1, f);
-			mt_fclose (f);
+			fwrite (outbuf, outlen, 1, f);
+			fclose (f);
 			}
 		
 		free(outbuf);
@@ -512,7 +512,7 @@ static void DownloadCovers (void)
 		{
 		Debug ("DownloadCovers: opening sd:/missgames.txt");
 		sprintf (path, "%s://missgame.txt", devices_Get(DEV_SD));
-		f = mt_fopen (path, "wb");
+		f = fopen (path, "wb");
 		}
 	
 	for (ia = 0; ia < gamesCnt; ia++)
@@ -520,9 +520,9 @@ static void DownloadCovers (void)
 		Video_WaitPanel (TEX_HGL, 0, "Downloading %s.png (%d of %d)|(B) Stop", games[ia].asciiId, ia, gamesCnt);
 		sprintf (path, "%s/%s.png", vars.covers, games[ia].asciiId);
 		
-		mt_Lock();
+		//mt_Lock();
 		int ret = fsop_FileExist(path);
-		mt_Unlock();
+		//mt_Unlock();
 
 		if (!ret)
 			{
@@ -552,7 +552,7 @@ static void DownloadCovers (void)
 			if (!ret && f)
 				{
 				sprintf (buff, "%s:%s\n", games[ia].asciiId, games[ia].name);
-				mt_fwrite (buff, 1, strlen(buff), f);
+				fwrite (buff, 1, strlen(buff), f);
 				}
 				
 			if (grlib_GetUserInput () == WPAD_BUTTON_B)
@@ -565,7 +565,7 @@ static void DownloadCovers (void)
 		if (stop) break;
 		}
 		
-	if (f) mt_fclose (f);
+	if (f) fclose (f);
 		
 	WiiLoad_Resume ();
 	
@@ -601,7 +601,7 @@ static void WriteGameConfig (int ia)
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.nand, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.loader, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U16, 		&gameConf.playcount, index++);
-	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.category, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U32, 		&gameConf.category, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.minPlayerAge, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlVideoMode, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.dmlNoDisc, index++);
@@ -619,8 +619,11 @@ static void WriteGameConfig (int ia)
 static int ReadGameConfig (int ia)
 	{
 	char buff[2048];
-	bool valid = (cfg_GetString (cfg, games[ia].asciiId, buff) != -1 && cfg_CountSepString (buff) >= 22);
+	int aid = cfg_GetString (cfg, games[ia].asciiId, buff);
+	int cnt = cfg_CountSepString (buff);
+	bool valid = (aid > -1 && cnt >= 22);
 	
+	Debug ("ReadGameConfig %d:%d (%d,%d)", ia, valid, aid, cnt);
 	if (valid)
 		{
 		int index = 0;
@@ -636,7 +639,7 @@ static int ReadGameConfig (int ia)
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.nand, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.loader, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U16, 	&gameConf.playcount, index++);
-		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.category, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U32,		&gameConf.category, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.minPlayerAge, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlVideoMode, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.dmlNoDisc, index++);
@@ -848,9 +851,9 @@ static void CheckForCovers (void)
 		
 	sprintf (path, "%s", vars.covers);
 	
-	mt_Lock();
+	//mt_Lock();
 	pdir=opendir(path);
-	mt_Unlock();
+	//mt_Unlock();
 	
 	while ((pent=readdir(pdir)) != NULL) 
 		{
@@ -883,7 +886,7 @@ static int GameBrowse (int forcescan)
 	
 	Video_WaitIcon (TEX_HGL);
 	
-	mt_Lock();
+	//mt_Lock();
 
 #ifndef DOLPHINE	
 	if (config.gameMode == GM_WII)
@@ -908,7 +911,7 @@ static int GameBrowse (int forcescan)
 		}
 #endif
 	
-	mt_Unlock();
+	//mt_Unlock();
 	
 	if (!titles) 
 		{
@@ -960,7 +963,7 @@ static int GameBrowse (int forcescan)
 				p += (strlen(p) + 1);
 				}
 			
-			Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
+			//Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
 
 			if (i % 20 == 0) Video_WaitIcon (TEX_HGL);
 			
@@ -2005,7 +2008,8 @@ static bool QuerySelection (int ai)
 	int spot = -1;
 	int incX = 1, incY = 1;
 	int y = 200;
-	int yInf = 490;
+	int yInf = 500, yTop = 420;
+	u32 transp = 32, transpLimit = 224;
 
 	Video_SetFont(TTFNORM);
 	
@@ -2035,15 +2039,20 @@ static bool QuerySelection (int ai)
 	// Load full res cover
 	char path[300];
 	MakeCoverPath (ai, path);
-	mt_Lock();
+	//mt_Lock();
 	GRRLIB_texImg * tex = GRRLIB_LoadTextureFromFile (path);
-	mt_Unlock();
+	//mt_Unlock();
 	if (tex) ico.icon = tex;
 
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
 
 		istemp.magXSel = mag;
 		istemp.magYSel = mag;
@@ -2062,9 +2071,9 @@ static bool QuerySelection (int ai)
 		
 		grlib_IconDraw (&istemp, &ico);
 
-		DrawInfoWindo (yInf, games[ai].name, "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, games[ai].name, "Press (A) to start, (B) Cancel", NULL);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 
 		Overlay ();
 		grlib_DrawIRCursor ();
@@ -2078,13 +2087,19 @@ static bool QuerySelection (int ai)
 	while (true)
 		{
 		grlib_PopScreen ();
+
+		black.color = RGBA(0,0,0,transp);
+		black.bcolor = RGBA(0,0,0,transp);
 		grlib_DrawSquare (&black);
+		transp += 4;
+		if (transp > transpLimit) transp = transpLimit;
+
 		grlib_IconDraw (&istemp, &ico);
 		Overlay ();
 		
-		DrawInfoWindo (yInf, games[ai].name, "Press (A) to start, (B) Cancel");
+		DrawInfoWindow (yInf, games[ai].name, "Press (A) to start, (B) Cancel", NULL);
 		yInf -= 5;
-		if (yInf < 400) yInf = 400;
+		if (yInf < yTop) yInf = yTop;
 		
 		grlib_DrawIRCursor ();
 		grlib_Render();
@@ -2108,15 +2123,15 @@ static void Conf (bool open)
 	cfg_Section (NULL);
 	if (open)
 		{
-		mt_Lock();
+		//mt_Lock();
 		cfg = cfg_Alloc (cfgpath, GAMEMAX, 0, 0);
-		mt_Unlock();
+		//mt_Unlock();
 		}
 	else
 		{
-		mt_Lock();
+		//mt_Lock();
 		cfg_Store (cfg, cfgpath);
-		mt_Unlock();
+		//mt_Unlock();
 		cfg_Free (cfg);
 		}
 	}
