@@ -1,3 +1,13 @@
+postLoader 4.7.4
+
+* Fix files without extension detected as rom
+* updated plugins.conf with latest corrections. 
+* Starting from now, plugins.conf has a version number (v.1)
+
+postLoader 4.7.3
+
+* fix roms/folders dupes
+
 postLoader 4.7.2
 
 * fixed category issue in wii/gamecube games

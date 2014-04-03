@@ -1093,8 +1093,7 @@ static int BrowsePluginFolder (int type, int startidx, char *path, int recursive
 			sprintf (newpath, "%s/%s", path, item);
 			i += BrowsePluginFolder (type, i, newpath, 1);
 			}
-
-		if (ms_strstr (ext, fsop_GetExtension(item)))
+		else if (ms_strstr (ext, fsop_GetExtension(item)))
 			{
 			sprintf (fn, "%s/%s", path, item);
 			if (plugin_AssignRomPath (fn, i)) 

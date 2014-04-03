@@ -41,7 +41,7 @@ char *ms_strstr(char *str1, char *str2)
 	{
 	if ( !str2 || !*str2 )
 		{
-		return str1;
+		return NULL;
 		}
 
 	for ( ; *str1; ++str1 )
@@ -65,7 +65,7 @@ char *ms_strstr(char *str1, char *str2)
 				}
 			}
 		}
-	return 0;
+	return NULL;
 	}
 
 int ms_strcmp(const char *s1, const char *s2) 
