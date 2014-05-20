@@ -1313,7 +1313,14 @@ static void ShowAppMenu (int ai)
 					
 				if (config.dmlVersion != GCMODE_DEVO)
 					{
-					strcat (buff, "DM(L): Video mode: "); strcat (buff, dmlvideomode[gameConf.dmlVideoMode]); strcat (buff, "##108|");
+					if (config.dmlVersion != GCMODE_NIN)
+						{
+						strcat(buff, "DM(L): Video mode: "); strcat(buff, dmlvideomode[gameConf.dmlVideoMode]); strcat(buff, "##108|");
+						}
+					else
+						{
+						strcat(buff, "NIN: Video mode: "); strcat(buff, dmlvideomode[gameConf.dmlVideoMode]); strcat(buff, "##108|");
+						}
 					}
 
 				if (config.dmlVersion == GCMODE_DM22 || config.dmlVersion == GCMODE_DMAUTO)
@@ -1338,6 +1345,13 @@ static void ShowAppMenu (int ai)
 					grlib_menuAddItem (buff,14, "DEVO: widescreen (%s)", gameConf.widescreen ? "Yes" : "No" );
 					grlib_menuAddItem (buff,15, "DEVO: activity led (%s)", gameConf.activity_led ? "Yes" : "No" );
 					grlib_menuAddItem (buff,16, "DEVO: wifi debug (%s)", gameConf.wifi ? "Yes" : "No" );
+					}
+				if (config.dmlVersion == GCMODE_NIN)
+					{
+					grlib_menuAddItem(buff, 13, "NIN: Enable Memcard Emu (%s)", gameConf.dmlNMM ? "Yes" : "No");
+					grlib_menuAddItem(buff, 14, "NIN: Force Widescreen (%s)", gameConf.widescreen ? "Yes" : "No");
+					grlib_menuAddItem(buff, 15, "NIN: Enable Activity Led (%s)", gameConf.activity_led ? "Yes" : "No");
+					grlib_menuAddItem(buff, 16, "NIN: Use HID controller (%s)", gameConf.hidController ? "Yes" : "No");
 					}
 				}
 			}
@@ -1475,8 +1489,15 @@ static void ShowAppMenu (int ai)
 		
 	if (item == 13)
 		{
-		gameConf.memcardId++;
-		if (gameConf.memcardId >= 8) gameConf.memcardId = 0;
+		if (config.dmlVersion == GCMODE_DEVO)
+			{
+			gameConf.memcardId++;
+			if (gameConf.memcardId >= 8) gameConf.memcardId = 0;
+			}
+		if (config.dmlVersion == GCMODE_NIN)
+			{
+			gameConf.dmlNMM = !gameConf.dmlNMM;
+			}
 		goto start;
 		}
 
@@ -1494,7 +1515,10 @@ static void ShowAppMenu (int ai)
 		
 	if (item == 16)
 		{
-		gameConf.wifi = !gameConf.wifi;
+		if (config.dmlVersion == GCMODE_DEVO)
+			gameConf.wifi = !gameConf.wifi;
+		if (config.dmlVersion == GCMODE_NIN)
+			gameConf.hidController = !gameConf.hidController;
 		goto start;
 		}
 
@@ -1628,7 +1652,8 @@ start:
 				grlib_menuAddItem (buff, 12, "GameCube mode: DM AUTO");
 			if (config.dmlVersion == GCMODE_DEVO)
 				grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
-
+			if (config.dmlVersion == GCMODE_NIN)
+				grlib_menuAddItem(buff, 12, "GameCube mode: Nintendont");
 			if (config.dmlVersion != GCMODE_DEVO)
 				grlib_menuAddItem (buff, 3, "Set default videomode...");
 
@@ -1836,10 +1861,12 @@ static void Redraw (void)
 			if (config.currentDmlWad == DMLWAD_QFUSB) strcpy (mode, "QFUSB");
 			if (config.currentDmlWad == DMLWAD_DML) strcpy (mode, "DML");
 			if (config.currentDmlWad == DMLWAD_DM) strcpy (mode, "DM");
+
 			
 			sprintf (buff, "(AUTO:%s)", mode);
 			}
 		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
+		if (config.dmlVersion == GCMODE_NIN) strcpy(buff, "Nintendont");
 		
 		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GC Games ");
 		int w = grlib_GetFontMetrics ("postLoader::GC Games ", NULL, NULL);
@@ -2274,6 +2301,11 @@ int GameBrowser (void)
 							case GCMODE_DEVO:
 								{
 								DEVO_Boot (games[gamesSelected].source, gameConf.memcardId, gameConf.widescreen, gameConf.activity_led, gameConf.wifi);
+								}
+								break;
+							case GCMODE_NIN:
+								{
+								NIN_Boot(games[gamesSelected].source, games[gamesSelected].asciiId, &gameConf);
 								}
 								break;
 							}

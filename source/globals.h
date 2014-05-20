@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.7.4"
+#define VER "4.7.5"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -91,6 +91,7 @@ enum {
 	GCMODE_DML1x,
 	GCMODE_DM22,
 	GCMODE_DEVO,
+	GCMODE_NIN, // Nintendont
 	GCMODE_DMAUTO,
 	GCMODE_MAX
 	};
@@ -261,6 +262,7 @@ typedef struct
 	u8 widescreen;		// this should be for devolution, will force 16/9 mode
 	u8 wifi;			// this should be for devolution, will force 16/9 mode
 	u8 activity_led;
+	u8 hidController; // For Nintendont. It can use USB game controllers.
 	}
 s_gameConfig;
 
@@ -611,7 +613,7 @@ int DMLRun (char *folder, char *id, u32 videomode);
 int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
-
+bool NIN_Boot(char *path, char *gameID, s_gameConfig *gameConf);
 // ScreenSaver
 bool LiveCheck (int reset);
 
