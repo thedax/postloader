@@ -45,7 +45,7 @@ USB Loaders forwarder
 * Support title vote
 * Support ios selection
 
-DM(L) gamecube games
+DM(L) / Devolution / Nintendont Gamecube games
 * Support covers
 * Support title vote
 * Support ios selection
@@ -169,7 +169,7 @@ Copy your png named "ploader.png" on the root of SD card. 640x480 is suggested.
 Using a custom splash screen will slow a bit postLoader startup.
 
 ========================================
-Additiona applications:
+Additional applications:
 ========================================
 
 priibooterGUI.dol

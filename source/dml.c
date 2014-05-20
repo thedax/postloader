@@ -685,7 +685,7 @@ int DMLInstall (char *gamename, size_t reqKb)
 				
 				if (i == MAXGAMES)
 					{
-					Debug ("DMLInstall (%s): Warning... to many games", gamename);
+					Debug ("DMLInstall (%s): Warning... too many games", gamename);
 
 					break;
 					}
@@ -720,12 +720,12 @@ int DMLInstall (char *gamename, size_t reqKb)
 		devKb = fsop_GetFreeSpaceKb (path);
 		if (devKb > reqKb)
 			{
-			Debug ("DMLInstall (%s): OK there is enaught space", gamename);
+			Debug ("DMLInstall (%s): OK there is enough space", gamename);
 			return 1; // We have the space
 			}
 		}
 	
-	Debug ("DMLInstall (%s): Something gone wrong", gamename);
+	Debug ("DMLInstall (%s): Something has gone wrong", gamename);
 	return 0;
 	}
 	
@@ -771,7 +771,7 @@ static bool IsGCCardAvailable (void)
 
 // path is the full path to iso image
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi)
-	{       
+	{    
 	//Read in loader.bin
 	char loader_path[256];
 	
@@ -923,3 +923,149 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 	}
 
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Nintendont
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define NIN_CFG_VERSION 0x00000002
+#define NIN_MAGIC 0x01070CF6
+#define NIN_CFG_MAXPAD 4
+
+	typedef struct NIN_CFG
+	{
+		unsigned int	Magicbytes;	// 0x01070CF6
+		unsigned int	Version;	// 0x00000001
+		unsigned int	Config;
+		unsigned int	VideoMode;
+		unsigned int	Language;
+		char	GamePath[255];
+		char	CheatPath[255];
+		unsigned int	MaxPads;
+		unsigned int	GameID;
+	} NIN_CFG;
+
+	enum ninconfig
+	{
+		NIN_CFG_CHEATS = (1 << 0),
+		NIN_CFG_DEBUGGER = (1 << 1),	// Only for Wii Version
+		NIN_CFG_DEBUGWAIT = (1 << 2),	// Only for Wii Version
+		NIN_CFG_MEMCARDEMU = (1 << 3),
+		NIN_CFG_CHEAT_PATH = (1 << 4),
+		NIN_CFG_FORCE_WIDE = (1 << 5),
+		NIN_CFG_FORCE_PROG = (1 << 6),
+		NIN_CFG_AUTO_BOOT = (1 << 7),
+		NIN_CFG_HID = (1 << 8),
+		NIN_CFG_OSREPORT = (1 << 9),
+		NIN_CFG_USB = (1 << 10),
+		NIN_CFG_LED = (1 << 11),
+	};
+
+	enum ninvideomode
+	{
+		NIN_VID_AUTO = (0 << 16),
+		NIN_VID_FORCE = (1 << 16),
+		NIN_VID_NONE = (2 << 16),
+
+		NIN_VID_MASK = NIN_VID_AUTO | NIN_VID_FORCE | NIN_VID_NONE,
+
+		NIN_VID_FORCE_PAL50 = (1 << 0),
+		NIN_VID_FORCE_PAL60 = (1 << 1),
+		NIN_VID_FORCE_NTSC = (1 << 2),
+		NIN_VID_FORCE_MPAL = (1 << 3),
+
+		NIN_VID_FORCE_MASK = NIN_VID_FORCE_PAL50 | NIN_VID_FORCE_PAL60 | NIN_VID_FORCE_NTSC | NIN_VID_FORCE_MPAL,
+
+		NIN_VID_PROG = (1 << 4),	//important to prevent blackscreens
+	};
+
+	enum ninlanguage
+	{
+		NIN_LAN_ENGLISH = 0,
+		NIN_LAN_GERMAN = 1,
+		NIN_LAN_FRENCH = 2,
+		NIN_LAN_SPANISH = 3,
+		NIN_LAN_ITALIAN = 4,
+		NIN_LAN_DUTCH = 5,
+
+		/* Auto will use English for E/P region codes and
+		only other languages when these region codes are used: D/F/S/I/J */
+
+		NIN_LAN_AUTO = -1,
+	};
+
+	enum VideoModes
+	{
+		GCVideoModeNone = 0,
+		GCVideoModePAL60 = 1,
+		GCVideoModeNTSC = 2,
+		GCVideoModePROG = 3,
+	};
+
+#define NIN_RAW_MEMCARD_SIZE 2*1024*1024 //2MB
+#define NIN_MEMCARD_BLOCKS 0x00000010 //251 Blocks
+
+	/* Borrowed from Nintendont */
+	bool IsOnWiiU(void)
+	{
+		return ((*(vu32*)(0xCd8005A0) >> 16) == 0xCAFE);
+	}
+
+	bool NIN_Boot(char *path, char *gameID, s_gameConfig *gameConf)
+	{
+		const char *bootDevice = fsop_GetDev(path);
+		bool usbDevice = strncmp(fsop_GetDev(path), "usb", 3) == 0;
+
+		NIN_CFG nin_config;
+		memset(&nin_config, 0, sizeof(NIN_CFG));
+		nin_config.Magicbytes = NIN_MAGIC;
+		nin_config.Version = NIN_CFG_VERSION;
+		nin_config.Config |= NIN_CFG_AUTO_BOOT;
+
+		if (usbDevice)
+			nin_config.Config |= NIN_CFG_USB;
+
+		if (gameConf->dmlNMM)
+			nin_config.Config |= NIN_CFG_MEMCARDEMU;
+
+		if (gameConf->widescreen)
+			nin_config.Config |= NIN_CFG_FORCE_WIDE;
+
+		if (gameConf->activity_led)
+			nin_config.Config |= NIN_CFG_LED;
+
+		// On Wii U, we have to force this, because there are no GC controllers.
+		if (IsOnWiiU() || gameConf->hidController)
+			nin_config.Config |= NIN_CFG_HID;
+
+		// TODO: implement video mode forcing. For now, just let Nintendont decide.
+		nin_config.VideoMode |= NIN_VID_NONE;
+
+		/* Just let Nintendont decide the language.
+		   If it really becomes a problem later, we can change this easily. */
+		nin_config.Language = NIN_LAN_AUTO;
+
+		/* Nintendont expects the path to look something like this:
+		"/games/<game id>/game.iso", without the "usb:/" or "sd:/" part. */
+		char gamePath[255];
+		sprintf(gamePath, "%s/game.iso", path);
+		const char *firstSlash = strchr(gamePath, '/');
+		int len = strlen(firstSlash);
+
+		strncpy(nin_config.GamePath, firstSlash, len);
+		nin_config.MaxPads = NIN_CFG_MAXPAD;
+
+		memcpy(&nin_config.GameID, gameID, sizeof(int));
+
+		// Write Nintendont's config to storage.
+		u8 *cfgPtr = (u8 *)&nin_config;
+
+		char cfgPath[256];
+		sprintf(cfgPath, "%s://%s", bootDevice, "nincfg.bin");
+		fsop_WriteFile(cfgPath, cfgPtr, sizeof(NIN_CFG));
+		
+		// Prepare to boot Nintendont!
+		char ninPath[256];
+		sprintf(ninPath, "%s://apps/nintendont/boot.dol", bootDevice);
+		
+		return DirectDolBoot(ninPath, NULL, 0);
+	}
