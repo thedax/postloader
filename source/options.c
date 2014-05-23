@@ -80,7 +80,7 @@ void ShowCreditsMenu (void)
 	"credits\n"
 	"\n"
 	"coding:\n"
-	"WiiFlow, NeoGamma,GRRLIB,TriiForce,Priiloader,CFG Loader,WiiMC,USBLoaderGX\n"
+	"WiiFlow, NeoGamma,GRRLIB,TriiForce,Priiloader,CFG Loader,WiiMC,USBLoaderGX\nNintendont\n"
 	"people:\n"
 	"FIX94(wiiflow/dmlbooter),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\n"
 	"and all active testers:\n"
@@ -124,7 +124,7 @@ void ShowAboutPLMenu (void)
 	sprintf (buff, 	
 	"postLoader"VER" by stfour (2011-12)\n\n"
 	"%s\n"
-	"WII ip: %s\n\n"
+	"WII IP: %s\n\n"
 	"Official support thread on http://gbatemp.net/\n", autoboot, wiiload.ip);
 
 	int ret;
@@ -463,7 +463,7 @@ void ShowAboutMenu (void)
 		if (vars.neek == NEEK_2o)
 			menu_SwitchNandAddOption (options);
 		else
-			grlib_menuAddItem (options, 10,  "Change UNEEK nand");
+			grlib_menuAddItem (options, 10,  "Change UNEEK NAND");
 
 		if (config.autoboot.enabled)
 			grlib_menuAddItem (options, 6,  "Disable autoboot");
@@ -473,7 +473,7 @@ void ShowAboutMenu (void)
 		grlib_menuAddItem (options, 7,  "Advanced options...");
 		
 		if (vars.neek != NEEK_NONE)
-			grlib_menuAddItem (options, 8,  "neek options...");
+			grlib_menuAddItem (options, 8,  "NEEK options...");
 			
 		if (vars.neek == NEEK_2o && devices_Get (DEV_SD) && fsop_FileExist ("sd://neekbooter.dol"))
 			grlib_menuAddItem (options, 13,  "Install neekbooter.dol in priiloader...");

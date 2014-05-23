@@ -1,3 +1,8 @@
+Postloader 4.7.6
+* Fix some English grammatical issues.
+* Attempt to fix crash when booting Nintendont off SD (no promises, though).
+* Log more verbosely when booting Nintendont, for debugging purposes.
+
 postLoader 4.7.5
 * Add Nintendont support.
 
