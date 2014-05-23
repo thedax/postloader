@@ -431,7 +431,7 @@ int DrawBottomBar (int *visibleflag, u32 *btn, int *closed)
 			strcpy (goItems[i].text, "Run Disc");	itemDisc = i++;
 			if (CheckParental(0))
 				{
-				strcpy (goItems[i].text, "Neek");		itemNeek = i++;
+				strcpy (goItems[i].text, "NEEK");		itemNeek = i++;
 				BOTBARITEMS ++;
 				}
 

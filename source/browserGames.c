@@ -1077,12 +1077,12 @@ static int FindSpot (void)
 	Video_SetFont(TTFSMALL);
 	if (!grlib_irPos.valid)
 		{
-		if (gamesSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");
+		if (gamesSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point at an icon with the wiimote or use a GC controller!");
 		}
 	else
 		if (time(NULL) - t > 0 && gamesSelected == -1)
 			{
-			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (D-Pad) Switch mode (1) goto page (2) Filters");
+			grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "(A) Execute (B) Settings (D-Pad) Switch mode (1) Switch page (2) Filters");
 			}
 	
 	return gamesSelected;
@@ -1199,7 +1199,7 @@ static void ShowFilterMenu (void)
 			}
 
 		Video_SetFontMenu(TTFSMALL);
-		item = grlib_menu (0, "Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (shown all games)", buff);
+		item = grlib_menu (0, "Filter menu\nPress (B) to close, (+) Select all, (-) Deselect all (show all games)", buff);
 		Video_SetFontMenu(TTFNORM);
 
 		if (item == MNUBTN_PLUS)
