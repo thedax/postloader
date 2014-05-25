@@ -1,4 +1,11 @@
-Postloader 4.7.6
+postLoader 4.7.7
+* Finally fix the Nintendont loader crash for real.
+* Tell Nintendont to use the OSReport patch (useful for USB Gecko output when running GC games).
+* Don't boot Nintendont if the configuration file (nincfg.bin) can't be written.
+* Support the newer "<ahb_access/>" tag when deciding on reloading IOS or not.
+* Misc. English grammatical tweaks.
+
+postLoader 4.7.6
 * Fix some English grammatical issues.
 * Attempt to fix crash when booting Nintendont off SD (no promises, though).
 * Log more verbosely when booting Nintendont, for debugging purposes.

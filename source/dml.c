@@ -1014,28 +1014,32 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 	{
 		if (path == NULL)
 			{
-			Debug("NIN_Boot: path is null!");
-			return false;
+				Debug ("NIN_Boot: path is null!");
+				return false;
 			}
 
 		if (gameID == NULL)
 			{
-			Debug("NIN_Boot: gameID is null!");
-			return false;
+				Debug ("NIN_Boot: gameID is null!");
+				return false;
 			}
 
 		if (gameConf == NULL)
 			{
-			Debug("NIN_Boot: gameConf is null!");
-			return false;
+				Debug ("NIN_Boot: gameConf is null!");
+				return false;
 			}
+		Debug ("NIN_Boot");
 		const char *bootDevice = fsop_GetDev(path);
+		Debug ("NIN_Boot: bootDevice = %s", bootDevice);
+
 		bool usbDevice = strncmp(fsop_GetDev(path), "usb", 3) == 0;
 
 		NIN_CFG nin_config = { 0 };
 		nin_config.Magicbytes = NIN_MAGIC;
 		nin_config.Version = NIN_CFG_VERSION;
-		nin_config.Config |= NIN_CFG_AUTO_BOOT;
+		// OSREPORT is only useful if we have a USB Gecko, but I got tired of stopping Nintendont's boot every time to enable it.
+		nin_config.Config = NIN_CFG_AUTO_BOOT | NIN_CFG_OSREPORT;
 
 		if (usbDevice)
 			nin_config.Config |= NIN_CFG_USB;
@@ -1069,38 +1073,52 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		/* Nintendont expects the path to look something like this:
 		"/games/<game id>/game.iso", without the "usb:/" or "sd:/" part. */
 		char gamePath[255] = { 0 };
-		sprintf(gamePath, "%s/game.iso", path);
-		const char *firstSlash = strchr(gamePath, '/');
+		sprintf (gamePath, "%s/game.iso", path);
+		Debug ("NIN_Boot: gamePath = %s", gamePath);
+		const char *firstSlash = strstr (gamePath, "/games/");
 		int len = strlen(firstSlash);
+		Debug("NIN_Boot: firstSlash = %s", firstSlash);
 
-		strncpy(nin_config.GamePath, firstSlash, len);
+		strncpy (nin_config.GamePath, firstSlash, len);
+		Debug ("NIN_Boot: nin_config.GamePath = %s", nin_config.GamePath);
+
 		nin_config.MaxPads = NIN_CFG_MAXPAD;
 
 		if (gameID != NULL)
-			memcpy(&nin_config.GameID, gameID, sizeof(int));
+			memcpy (&nin_config.GameID, gameID, sizeof(int));
 		else
 			{
-			Debug("NIN_Boot: gameID is null, wtf? This shouldn't happen!");
-			return false;
+				Debug ("NIN_Boot: gameID is null, wtf? This shouldn't happen!");
+				return false;
 			}
 
 		// Write Nintendont's config to storage.
 		u8 *cfgPtr = (u8 *)&nin_config;
 
 		char cfgPath[256] = { 0 };
-		sprintf(cfgPath, "%s://%s", bootDevice, "nincfg.bin");
+		sprintf (cfgPath, "%s://%s", bootDevice, "nincfg.bin");
 
 		if (cfgPtr != NULL)
-			fsop_WriteFile(cfgPath, cfgPtr, sizeof(NIN_CFG));
+			{
+			if (!fsop_WriteFile (cfgPath, cfgPtr, sizeof(NIN_CFG)))
+				{
+					Debug ("NIN_Boot: Error writing config file %s", cfgPath);
+					return false;
+				}
+			}
 		else
-		{
-		Debug("NIN_Boot: cfgPtr is null, wtf? This shouldn't happen!");
-		return false;
-		}
+			{
+			Debug ("NIN_Boot: cfgPtr is null, wtf? This shouldn't happen!");
+			return false;
+			}
 		
 		// Prepare to boot Nintendont!
 		char ninPath[256] = { 0 };
-		sprintf(ninPath, "%s://apps/nintendont/boot.dol", bootDevice);
+		sprintf (ninPath, "%s://apps/nintendont/boot.dol", bootDevice);
+
+		/* postLoader's stub causes Nintendont to crash randomly, 
+		so make it think there's no current homebrew return stub. */
+		StubUnload ();
 		
-		return DirectDolBoot(ninPath, NULL, 0);
+		return DirectDolBoot (ninPath, NULL, 0);
 	}

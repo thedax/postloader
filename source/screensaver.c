@@ -45,7 +45,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 		grlib_PopScreen ();
 		grlib_DrawImgCenter (x, y, z, z/ratio, img, (float)i, RGBA(255,255,255,255));
 		
-		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
+		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader " VER " (press any key)");
 		if (xs > 1000) xs = -360;
 		
 		grlib_Render ();
@@ -64,7 +64,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 		grlib_PopScreen ();
 		grlib_DrawImgCenter (x, y, z, z/ratio, img, 0, RGBA(255,255,255,255));
 		
-		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
+		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader " VER " (press any key)");
 		if (xs > 1000) xs = -360;
 		
 		grlib_Render ();
@@ -78,7 +78,7 @@ static bool Play (char * fn) // return true interrupt the screensaver
 		grlib_PopScreen ();
 		grlib_DrawImgCenter (x, y, z, z/ratio, img, 0, RGBA(255,255,255,i));
 		
-		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader"VER" (press any key)");
+		grlib_printf (xs++, 450, GRLIB_ALIGNCENTER, 0, "postLoader " VER " (press any key)");
 		if (xs > 1000) xs = -360;
 		
 		grlib_Render ();

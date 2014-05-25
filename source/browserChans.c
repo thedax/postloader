@@ -826,7 +826,7 @@ static int FindSpot (void)
 	Video_SetFont(TTFSMALL);
 	if (!grlib_irPos.valid)
 		{
-		if (chansSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");
+		if (chansSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point at an icon with the wiimote or use a GC controller!");
 		}
 	else
 		if (time(NULL) - t > 0 && chansSelected == -1)

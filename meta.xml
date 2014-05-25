@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1.0">
 	<name>postLoader</name>
-	<version>4.7.4</version>
+	<version>4.7.7</version>
 	<release_date>20140403000000</release_date>
 	<coder>stfour</coder>
 	<short_description>Homebrew browser, channel launcher, neek2o disc loader</short_description>
@@ -46,7 +46,7 @@ USB Loaders forwarder
 * Support title vote
 * Support ios selection
 
-DML gamecube games
+DML / Nintendont / Devolution Gamecube games
 * Support covers
 * Support title vote
 * Support ios selection

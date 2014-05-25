@@ -223,7 +223,7 @@ static void ParseXML (int ai)
 		}
 	while (found);
 	
-	if (strstr (buff, "<no_ios_reload/>"))
+	if (strstr (buff, "<no_ios_reload/>") || strstr(buff, "<ahb_access/>"))
 		apps[ai].iosReload = 0;
 	else
 		apps[ai].iosReload = 1;
@@ -1294,7 +1294,7 @@ void DrawInfo (void)
 	Video_SetFont(TTFSMALL);
 	if (!grlib_irPos.valid)
 		{
-		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point an icon with the wiimote or use a GC controller!");		
+		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point at an icon with the wiimote or use a GC controller!");		
 		}
 	else
 		{
