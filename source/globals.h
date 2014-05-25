@@ -613,7 +613,7 @@ int DMLRun (char *folder, char *id, u32 videomode);
 int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
-bool NIN_Boot(char *path, char *gameID, s_gameConfig *gameConf);
+bool NIN_Boot(s_game *game, s_gameConfig *gameConf);
 // ScreenSaver
 bool LiveCheck (int reset);
 

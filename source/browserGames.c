@@ -2269,6 +2269,16 @@ int GameBrowser (void)
 						Debug ("DMLRun");
 						ReadGameConfig (gamesSelected);
 						games[gamesSelected].playcount++;
+
+						/* If we're playing for the first time, go ahead and enable the memory card
+						just in case the user forgot to enable it. 
+						TODO: Why does this crash if I try to save down in Nintendont's case statement? */
+						if (games[gamesSelected].playcount < 2 && config.dmlVersion == GCMODE_NIN)
+							{
+							gameConf.dmlNMM = true;
+							Debug("pre-NIN_Boot: Enabling memory card emulation by default since this is the first time %s is being played.", games[gamesSelected].name);
+							}
+
 						WriteGameConfig (gamesSelected);
 						Conf (false);	// Store configuration on disc
 						config.gamePageGC = page;
@@ -2305,7 +2315,7 @@ int GameBrowser (void)
 								break;
 							case GCMODE_NIN:
 								{
-								NIN_Boot(games[gamesSelected].source, games[gamesSelected].asciiId, &gameConf);
+									NIN_Boot(&games[gamesSelected], &gameConf);
 								}
 								break;
 							}

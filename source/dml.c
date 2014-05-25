@@ -1010,15 +1010,15 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		return ((*(vu32*)(0xCd8005A0) >> 16) == 0xCAFE);
 	}
 
-	bool NIN_Boot(char *path, char *gameID, s_gameConfig *gameConf)
+	bool NIN_Boot(s_game *game, s_gameConfig *gameConf)
 	{
-		if (path == NULL)
+		if (game->source == NULL)
 			{
 				Debug ("NIN_Boot: path is null!");
 				return false;
 			}
 
-		if (gameID == NULL)
+		if (game->asciiId == NULL)
 			{
 				Debug ("NIN_Boot: gameID is null!");
 				return false;
@@ -1029,16 +1029,18 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 				Debug ("NIN_Boot: gameConf is null!");
 				return false;
 			}
-		Debug ("NIN_Boot");
-		const char *bootDevice = fsop_GetDev(path);
+		Debug ("NIN_Boot: preparing to launch %s", game->name);
+		const char *bootDevice = fsop_GetDev(game->source);
 		Debug ("NIN_Boot: bootDevice = %s", bootDevice);
 
-		bool usbDevice = strncmp(fsop_GetDev(path), "usb", 3) == 0;
+		bool usbDevice = strncmp(bootDevice, "usb", 3) == 0;
 
 		NIN_CFG nin_config = { 0 };
 		nin_config.Magicbytes = NIN_MAGIC;
 		nin_config.Version = NIN_CFG_VERSION;
-		// OSREPORT is only useful if we have a USB Gecko, but I got tired of stopping Nintendont's boot every time to enable it.
+
+		/* OSREPORT is only useful if we have a USB Gecko, 
+		   but I got tired of stopping Nintendont's boot every time to enable it. */
 		nin_config.Config = NIN_CFG_AUTO_BOOT | NIN_CFG_OSREPORT;
 
 		if (usbDevice)
@@ -1071,9 +1073,9 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		nin_config.Language = NIN_LAN_AUTO;
 
 		/* Nintendont expects the path to look something like this:
-		"/games/<game id>/game.iso", without the "usb:/" or "sd:/" part. */
+		   "/games/<game id>/game.iso", without the "usb:/" or "sd:/" part. */
 		char gamePath[255] = { 0 };
-		sprintf (gamePath, "%s/game.iso", path);
+		sprintf (gamePath, "%s/game.iso", game->source);
 		Debug ("NIN_Boot: gamePath = %s", gamePath);
 		const char *firstSlash = strstr (gamePath, "/games/");
 		int len = strlen(firstSlash);
@@ -1084,8 +1086,8 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 
 		nin_config.MaxPads = NIN_CFG_MAXPAD;
 
-		if (gameID != NULL)
-			memcpy (&nin_config.GameID, gameID, sizeof(int));
+		if (game->asciiId != NULL)
+			memcpy (&nin_config.GameID, game->asciiId, sizeof(int));
 		else
 			{
 				Debug ("NIN_Boot: gameID is null, wtf? This shouldn't happen!");
@@ -1115,10 +1117,6 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		// Prepare to boot Nintendont!
 		char ninPath[256] = { 0 };
 		sprintf (ninPath, "%s://apps/nintendont/boot.dol", bootDevice);
-
-		/* postLoader's stub causes Nintendont to crash randomly, 
-		so make it think there's no current homebrew return stub. */
-		StubUnload ();
 		
 		return DirectDolBoot (ninPath, NULL, 0);
 	}
