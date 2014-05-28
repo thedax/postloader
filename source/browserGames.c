@@ -612,6 +612,7 @@ static void WriteGameConfig (int ia)
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.widescreen, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.wifi, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.activity_led, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,			&gameConf.hidController, index++);
 
 	cfg_SetString (cfg, games[ia].asciiId, buff);
 	}
@@ -650,6 +651,7 @@ static int ReadGameConfig (int ia)
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.widescreen, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.wifi, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.activity_led, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,		&gameConf.hidController, index++);
 		}
 	
 	if (!valid)
@@ -1351,7 +1353,8 @@ static void ShowAppMenu (int ai)
 					grlib_menuAddItem(buff, 13, "NIN: Enable Memcard Emu (%s)", gameConf.dmlNMM ? "Yes" : "No");
 					grlib_menuAddItem(buff, 14, "NIN: Force Widescreen (%s)", gameConf.widescreen ? "Yes" : "No");
 					grlib_menuAddItem(buff, 15, "NIN: Enable Activity Led (%s)", gameConf.activity_led ? "Yes" : "No");
-					grlib_menuAddItem(buff, 16, "NIN: Use HID controller (%s)", gameConf.hidController ? "Yes" : "No");
+					if (!IsOnWiiU())
+						grlib_menuAddItem(buff, 16, "NIN: Use HID controller (%s)", gameConf.hidController ? "Yes" : "No");
 					}
 				}
 			}

@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.7.7"
+#define VER "4.7.9"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -614,6 +614,7 @@ int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 v
 int DMLInstall (char *gamename, size_t reqKb);
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
 bool NIN_Boot(s_game *game, s_gameConfig *gameConf);
+bool IsOnWiiU(void);
 // ScreenSaver
 bool LiveCheck (int reset);
 

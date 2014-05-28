@@ -1,3 +1,7 @@
+postLoader 4.7.9:
+* Nintendont support: save and load the HID controller option properly.
+* Don't show the Nintendont HID option if running on Wii U. The option -must- be on, on Wii U.
+
 postLoader 4.7.8
 * Revert the Nintendont crash "fix" (it was really on Nintendont's end). Please use Nintendont 1.61 or higher for less chances of crashing before 
 a game boots.
