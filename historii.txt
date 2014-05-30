@@ -1,4 +1,10 @@
-postLoader 4.7.9:
+ postLoader 4.7.91
+* Use a slightly different versioning scheme, since the following changes don't warrant the next major version (4.8.0).
+* Nintendont: Remove some redundant safety checks, and simplify the booting code.
+* Nintendont: Add a menu option to boot games in supported languages.
+* Nintendont: Clean out/delete ndebug.log on every boot to perform as clean of a boot as possible.
+
+postLoader 4.7.9
 * Nintendont support: save and load the HID controller option properly.
 * Don't show the Nintendont HID option if running on Wii U. The option -must- be on, on Wii U.
 

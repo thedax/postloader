@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.7.9"
+#define VER "4.7.91"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -191,6 +191,20 @@ enum {
 
 typedef void (*voidCallback)(void); 
 
+enum ninlanguage
+	{
+	NIN_LAN_ENGLISH = 0,
+	NIN_LAN_GERMAN = 1,
+	NIN_LAN_FRENCH = 2,
+	NIN_LAN_SPANISH = 3,
+	NIN_LAN_ITALIAN = 4,
+	NIN_LAN_DUTCH = 5,
+
+	/* Auto will use English for E/P region codes and
+	only other languages when these region codes are used: D/F/S/I/J */
+
+	NIN_LAN_AUTO = -1,
+	};
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct
@@ -263,6 +277,7 @@ typedef struct
 	u8 wifi;			// this should be for devolution, will force 16/9 mode
 	u8 activity_led;
 	u8 hidController; // For Nintendont. It can use USB game controllers.
+	u8 ninLanguage; // For Nintendont. It uses a weird language system compared to Wii games.
 	}
 s_gameConfig;
 
@@ -613,7 +628,8 @@ int DMLRun (char *folder, char *id, u32 videomode);
 int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
-bool NIN_Boot(s_game *game, s_gameConfig *gameConf);
+bool NIN_Boot (s_game *game, s_gameConfig *gameConf);
+char *NIN_GetLanguage (int language);
 bool IsOnWiiU(void);
 // ScreenSaver
 bool LiveCheck (int reset);

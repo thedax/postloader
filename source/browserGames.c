@@ -1,4 +1,4 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include <wiiuse/wpad.h>
 #include <dirent.h>
 #include <ogc/lwp_watchdog.h>
@@ -613,6 +613,7 @@ static void WriteGameConfig (int ia)
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.wifi, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8, 		&gameConf.activity_led, index++);
 	cfg_FmtString (buff, CFG_WRITE, CFG_U8,			&gameConf.hidController, index++);
+	cfg_FmtString (buff, CFG_WRITE, CFG_U8,			&gameConf.ninLanguage, index++);
 
 	cfg_SetString (cfg, games[ia].asciiId, buff);
 	}
@@ -652,6 +653,7 @@ static int ReadGameConfig (int ia)
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.wifi, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8, 		&gameConf.activity_led, index++);
 		cfg_FmtString (buff, CFG_READ, CFG_U8,		&gameConf.hidController, index++);
+		cfg_FmtString (buff, CFG_READ, CFG_U8,		&gameConf.ninLanguage, index++);
 		}
 	
 	if (!valid)
@@ -670,7 +672,7 @@ static int ReadGameConfig (int ia)
 		gameConf.ocarina = 0;
 		gameConf.hook = 0;
 		gameConf.loader = config.gameDefaultLoader;
-
+		gameConf.ninLanguage = -1;
 		/*CONF_GetRegion() == CONF_REGION_EU*/ 
 		if (games[ia].asciiId[3] == 'E' || games[ia].asciiId[3] == 'J' || games[ia].asciiId[3] == 'N')
 			gameConf.dmlVideoMode = DMLVIDEOMODE_NTSC;
@@ -1263,7 +1265,9 @@ static void ShowAppMenu (int ai)
 	start:
 	
 	Video_SetFont(TTFNORM);
+
 	gameConf.language ++; // umph... language in triiforce start at -1... not index friendly
+
 	do
 		{
 		
@@ -1355,6 +1359,13 @@ static void ShowAppMenu (int ai)
 					grlib_menuAddItem(buff, 15, "NIN: Enable Activity Led (%s)", gameConf.activity_led ? "Yes" : "No");
 					if (!IsOnWiiU())
 						grlib_menuAddItem(buff, 16, "NIN: Use HID controller (%s)", gameConf.hidController ? "Yes" : "No");
+
+					/* TODO: For some reason I have to do this check here, and not down in "if (item == 17)",
+					because I get a crash otherwise. Why? Threading, maybe? */
+					if (gameConf.ninLanguage > NIN_LAN_DUTCH)
+						gameConf.ninLanguage = NIN_LAN_AUTO;
+
+					grlib_menuAddItem(buff, 17, "NIN: Language: (%s)", NIN_GetLanguage(gameConf.ninLanguage));
 					}
 				}
 			}
@@ -1522,6 +1533,13 @@ static void ShowAppMenu (int ai)
 			gameConf.wifi = !gameConf.wifi;
 		if (config.dmlVersion == GCMODE_NIN)
 			gameConf.hidController = !gameConf.hidController;
+		goto start;
+		}
+	if (item == 17)
+		{
+		if (config.dmlVersion == GCMODE_NIN)
+			gameConf.ninLanguage++;
+
 		goto start;
 		}
 

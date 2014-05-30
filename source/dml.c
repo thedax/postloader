@@ -978,21 +978,6 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		NIN_VID_PROG = (1 << 4),	//important to prevent blackscreens
 	};
 
-	enum ninlanguage
-	{
-		NIN_LAN_ENGLISH = 0,
-		NIN_LAN_GERMAN = 1,
-		NIN_LAN_FRENCH = 2,
-		NIN_LAN_SPANISH = 3,
-		NIN_LAN_ITALIAN = 4,
-		NIN_LAN_DUTCH = 5,
-
-		/* Auto will use English for E/P region codes and
-		only other languages when these region codes are used: D/F/S/I/J */
-
-		NIN_LAN_AUTO = -1,
-	};
-
 	enum VideoModes
 	{
 		GCVideoModeNone = 0,
@@ -1001,47 +986,46 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		GCVideoModePROG = 3,
 	};
 
-#define NIN_RAW_MEMCARD_SIZE 2*1024*1024 //2MB
-#define NIN_MEMCARD_BLOCKS 0x00000010 //251 Blocks
-
 	/* Borrowed from Nintendont */
 	bool IsOnWiiU(void)
 	{
 		return ((*(vu32*)(0xCd8005A0) >> 16) == 0xCAFE);
 	}
 
+	char *NIN_GetLanguage(int language)
+	{
+		static char *languageoptions[6] = { "English", "German", "French", "Spanish", "Italian", "Dutch" };
+
+		return language < 0 || language >= 6? "Auto" : languageoptions[language];
+	}
+
 	bool NIN_Boot(s_game *game, s_gameConfig *gameConf)
 	{
-		if (game->source == NULL)
+		if (game == NULL)
 			{
-				Debug ("NIN_Boot: path is null!");
-				return false;
-			}
-
-		if (game->asciiId == NULL)
-			{
-				Debug ("NIN_Boot: gameID is null!");
-				return false;
+			Debug ("NIN_Boot: game is null!");
+			return false;
 			}
 
 		if (gameConf == NULL)
 			{
-				Debug ("NIN_Boot: gameConf is null!");
-				return false;
+			Debug ("NIN_Boot: gameConf is null!");
+			return false;
 			}
-		Debug ("NIN_Boot: preparing to launch %s", game->name);
-		const char *bootDevice = fsop_GetDev(game->source);
-		Debug ("NIN_Boot: bootDevice = %s", bootDevice);
 
-		bool usbDevice = strncmp(bootDevice, "usb", 3) == 0;
+		Debug ("NIN_Boot: preparing to launch %s", game->name);
 
 		NIN_CFG nin_config = { 0 };
 		nin_config.Magicbytes = NIN_MAGIC;
 		nin_config.Version = NIN_CFG_VERSION;
 
-		/* OSREPORT is only useful if we have a USB Gecko, 
-		   but I got tired of stopping Nintendont's boot every time to enable it. */
-		nin_config.Config = NIN_CFG_AUTO_BOOT | NIN_CFG_OSREPORT;
+		nin_config.Config = NIN_CFG_AUTO_BOOT;
+
+		// OS Report is only useful for USB Gecko users.
+		if (!IsOnWiiU () && usb_isgeckoalive (EXI_CHANNEL_1))
+			nin_config.Config |= NIN_CFG_OSREPORT;
+
+		const bool usbDevice = strncmp(vars.defMount, "usb", 3) == 0;
 
 		if (usbDevice)
 			nin_config.Config |= NIN_CFG_USB;
@@ -1056,67 +1040,61 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 			nin_config.Config |= NIN_CFG_LED;
 
 		// On Wii U, we have to force this, because there are no GC controllers.
-		if (IsOnWiiU() || gameConf->hidController)
+		if (IsOnWiiU () || gameConf->hidController)
 			nin_config.Config |= NIN_CFG_HID;
 
 		// TODO: implement video mode forcing. For now, just let Nintendont decide.
 		nin_config.VideoMode |= NIN_VID_AUTO;
 
-		bool progressive = (CONF_GetProgressiveScan() > 0) && VIDEO_HaveComponentCable();
+		const bool progressive = (CONF_GetProgressiveScan () > 0) && VIDEO_HaveComponentCable ();
 		if (progressive) //important to prevent blackscreens
 			nin_config.VideoMode |= NIN_VID_PROG;
 		else
 			nin_config.VideoMode &= ~NIN_VID_PROG;
-
-		/* Just let Nintendont decide the language.
-		   If it really becomes a problem later, we can change this easily. */
-		nin_config.Language = NIN_LAN_AUTO;
+		
+		nin_config.Language = gameConf->ninLanguage;
+		Debug ("NIN_Boot: Nintendont language set to %s", NIN_GetLanguage(nin_config.Language));
 
 		/* Nintendont expects the path to look something like this:
-		   "/games/<game id>/game.iso", without the "usb:/" or "sd:/" part. */
+		   "/games/<game id or folder name>/game.iso", without the boot device (e.g. "usb:/", "sd:/"),
+		   so we skip it as we build the path.*/
 		char gamePath[255] = { 0 };
 		sprintf (gamePath, "%s/game.iso", game->source);
-		Debug ("NIN_Boot: gamePath = %s", gamePath);
-		const char *firstSlash = strstr (gamePath, "/games/");
-		int len = strlen(firstSlash);
-		Debug("NIN_Boot: firstSlash = %s", firstSlash);
+		
+		int begin = usbDevice ? 5 : 6;
+		strncpy (nin_config.GamePath, gamePath + begin, strlen (gamePath));
+		Debug ("NIN_Boot: Game iso path = %s", nin_config.GamePath);
 
-		strncpy (nin_config.GamePath, firstSlash, len);
-		Debug ("NIN_Boot: nin_config.GamePath = %s", nin_config.GamePath);
+		// TODO: Allow cheats to be enabled or disabled?
 
 		nin_config.MaxPads = NIN_CFG_MAXPAD;
 
-		if (game->asciiId != NULL)
-			memcpy (&nin_config.GameID, game->asciiId, sizeof(int));
-		else
-			{
-				Debug ("NIN_Boot: gameID is null, wtf? This shouldn't happen!");
-				return false;
-			}
+		memcpy (&nin_config.GameID, game->asciiId, sizeof(int));
 
-		// Write Nintendont's config to storage.
-		u8 *cfgPtr = (u8 *)&nin_config;
-
+		/* Write Nintendont's config to storage.
+		   This basically automatically clears it out on every boot. */
 		char cfgPath[256] = { 0 };
-		sprintf (cfgPath, "%s://%s", bootDevice, "nincfg.bin");
+		sprintf (cfgPath, "%s://%s", vars.defMount, "nincfg.bin");
 
-		if (cfgPtr != NULL)
+		if (!fsop_WriteFile (cfgPath, (u8 *)&nin_config, sizeof(NIN_CFG)))
 			{
-			if (!fsop_WriteFile (cfgPath, cfgPtr, sizeof(NIN_CFG)))
-				{
-					Debug ("NIN_Boot: Error writing config file %s", cfgPath);
-					return false;
-				}
+			Debug ("NIN_Boot: Error writing config file %s", cfgPath);
+			return false;
 			}
-		else
+
+		// Clear out Nintendont's log file just in case.
+		char logPath[256] = { 0 };
+		sprintf (logPath, "%s://%s", vars.defMount, "ndebug.log");
+
+		if (!fsop_WriteFile (logPath, NULL, 0))
 			{
-			Debug ("NIN_Boot: cfgPtr is null, wtf? This shouldn't happen!");
+			Debug ("NIN_Boot: Error writing blank log file %s", logPath);
 			return false;
 			}
 		
 		// Prepare to boot Nintendont!
 		char ninPath[256] = { 0 };
-		sprintf (ninPath, "%s://apps/nintendont/boot.dol", bootDevice);
+		sprintf (ninPath, "%s://apps/nintendont/boot.dol", vars.defMount);
 		
 		return DirectDolBoot (ninPath, NULL, 0);
 	}
