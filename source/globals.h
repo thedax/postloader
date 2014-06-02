@@ -12,7 +12,7 @@
 
 //#define DOLPHINE
 
-#define VER "4.7.91"
+#define VER "4.7.92"
 #define CFGVER "PLCFGV0017" //PLCFGV0016 4.2.0 
 #define HBCFGVER 1
 #define IOS_CIOS 249
@@ -51,6 +51,8 @@
 #define TITLE_UPPER(x)		((u32)((x) >> 32))
 #define TITLE_LOWER(x)		((u32)(x))
 #define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
+
+#define ARRAY_LENGTH(arr) (sizeof(arr) / sizeof(arr[0]))
 
 enum {
 	DMLWAD_UNKNOWN = 0,
@@ -628,9 +630,9 @@ int DMLRun (char *folder, char *id, u32 videomode);
 int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
 int DMLInstall (char *gamename, size_t reqKb);
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
-bool NIN_Boot (s_game *game, s_gameConfig *gameConf);
+bool NIN_Boot (s_game *game, s_gameConfig *gameConf, char *error_string, int error_strlen);
 char *NIN_GetLanguage (int language);
-bool IsOnWiiU(void);
+bool RunningOnWiiU (void);
 // ScreenSaver
 bool LiveCheck (int reset);
 

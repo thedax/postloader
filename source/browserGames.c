@@ -1357,7 +1357,7 @@ static void ShowAppMenu (int ai)
 					grlib_menuAddItem(buff, 13, "NIN: Enable Memcard Emu (%s)", gameConf.dmlNMM ? "Yes" : "No");
 					grlib_menuAddItem(buff, 14, "NIN: Force Widescreen (%s)", gameConf.widescreen ? "Yes" : "No");
 					grlib_menuAddItem(buff, 15, "NIN: Enable Activity Led (%s)", gameConf.activity_led ? "Yes" : "No");
-					if (!IsOnWiiU())
+					if (!RunningOnWiiU ())
 						grlib_menuAddItem(buff, 16, "NIN: Use HID controller (%s)", gameConf.hidController ? "Yes" : "No");
 
 					/* TODO: For some reason I have to do this check here, and not down in "if (item == 17)",
@@ -2306,7 +2306,8 @@ int GameBrowser (void)
 						
 						MasterInterface (1, 0, 3, "Booting...");
 						// Execute !
-						
+						char dmlVersionStr[32] = { 0 };
+						char errorReason[128] = { 0 };
 						switch (config.dmlVersion)
 							{
 							case GCMODE_DML0x:
@@ -2315,7 +2316,7 @@ int GameBrowser (void)
 								char *p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
 								while (*p != '/') p--;
 								p++;
-
+								sprintf (dmlVersionStr, "DML 0.X");
 								DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode);
 								}
 								break;
@@ -2325,24 +2326,29 @@ int GameBrowser (void)
 							case GCMODE_DM22:
 								{
 								char *p = strstr (games[gamesSelected].source, "//")+1;
+								sprintf (dmlVersionStr, "DML Auto/1.X/2.2");
 								DMLRunNew (p, games[gamesSelected].asciiId, &gameConf, games[gamesSelected].slot);
 								}
 								break;
 								
 							case GCMODE_DEVO:
 								{
+								sprintf (dmlVersionStr, "Devolution");
 								DEVO_Boot (games[gamesSelected].source, gameConf.memcardId, gameConf.widescreen, gameConf.activity_led, gameConf.wifi);
 								}
 								break;
 							case GCMODE_NIN:
 								{
-									NIN_Boot(&games[gamesSelected], &gameConf);
+								sprintf (dmlVersionStr, "Nintendont");
+								NIN_Boot (&games[gamesSelected], &gameConf, errorReason, 128);
 								}
 								break;
 							}
 						
 						Video_SetFont(TTFNORM);
-						grlib_menu (0, "There was a problem executing DML.\n\nPlease check if 'GameCube mode' is the right one. Press [home]", "   OK   ");
+						char errorMsg[256] = { 0 };
+						sprintf(errorMsg, "There was a problem executing %s.\n%s\nPlease check if 'GameCube mode' is the right one. Press [home]", dmlVersionStr, errorReason);
+						grlib_menu (0, errorMsg, "   OK   ");
 						Conf (true);	// Store configuration on disc
 						}
 					

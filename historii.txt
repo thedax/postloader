@@ -1,3 +1,9 @@
+postLoader 4.7.92
+* UI: Display useful error messages for GC games that fail to boot (Nintendont only, for now).
+* Nintendont: Don't try to boot if Nintendont isn't even installed.
+* Nintendont: Fix a stupid bug where postLoader would look on the wrong device for games.
+* Nintendont: Start initial work on cheat support (disabled for now).
+
  postLoader 4.7.91
 * Use a slightly different versioning scheme, since the following changes don't warrant the next major version (4.8.0).
 * Nintendont: Remove some redundant safety checks, and simplify the booting code.

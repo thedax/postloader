@@ -924,7 +924,7 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Nintendont
+	// Nintendont support: The structs and enums are borrowed from Nintendont (as is IsOnWiiU).
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define NIN_CFG_VERSION 0x00000002
@@ -934,7 +934,7 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 	typedef struct NIN_CFG
 	{
 		unsigned int	Magicbytes;	// 0x01070CF6
-		unsigned int	Version;	// 0x00000001
+		unsigned int	Version;	// 0x00000002
 		unsigned int	Config;
 		unsigned int	VideoMode;
 		unsigned int	Language;
@@ -986,8 +986,8 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 		GCVideoModePROG = 3,
 	};
 
-	/* Borrowed from Nintendont */
-	bool IsOnWiiU(void)
+	/* Borrowed from Nintendont, renamed from IsOnWiiU */
+	bool RunningOnWiiU(void)
 	{
 		return ((*(vu32*)(0xCd8005A0) >> 16) == 0xCAFE);
 	}
@@ -996,20 +996,24 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 	{
 		static char *languageoptions[6] = { "English", "German", "French", "Spanish", "Italian", "Dutch" };
 
-		return language < 0 || language >= 6? "Auto" : languageoptions[language];
+		return language < 0 || language >= ARRAY_LENGTH(languageoptions) ? "Auto" : languageoptions[language];
 	}
 
-	bool NIN_Boot(s_game *game, s_gameConfig *gameConf)
+	bool NIN_Boot(s_game *game, s_gameConfig *gameConf, char *error_string, int error_strlen)
 	{
 		if (game == NULL)
 			{
 			Debug ("NIN_Boot: game is null!");
+			const char * const error = "An internal error occurred. Game info is null.";
+			strncpy (error_string, error, strlen(error));
 			return false;
 			}
 
 		if (gameConf == NULL)
 			{
 			Debug ("NIN_Boot: gameConf is null!");
+			const char * const error = "An internal error occurred. Game config is null.";
+			strncpy (error_string, error, strlen(error));
 			return false;
 			}
 
@@ -1021,80 +1025,124 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 
 		nin_config.Config = NIN_CFG_AUTO_BOOT;
 
-		// OS Report is only useful for USB Gecko users.
-		if (!IsOnWiiU () && usb_isgeckoalive (EXI_CHANNEL_1))
+		// OSReport is only useful for USB Gecko users.
+		if (!RunningOnWiiU () && usb_isgeckoalive (EXI_CHANNEL_1))
 			nin_config.Config |= NIN_CFG_OSREPORT;
 
-		const bool usbDevice = strncmp(vars.defMount, "usb", 3) == 0;
+		const bool gameIsOnUSB = strstr (game->source, "usb:/") != NULL;
 
-		if (usbDevice)
+		if (gameIsOnUSB)
+			{
+			Debug ("NIN_Boot: game is on USB.");
 			nin_config.Config |= NIN_CFG_USB;
+			}
+		else
+			Debug ("NIN_Boot: game is on SD.");
 
 		if (gameConf->dmlNMM)
+			{
+			Debug ("NIN_Boot: enabling MC emulation.");
 			nin_config.Config |= NIN_CFG_MEMCARDEMU;
+			}
 
 		if (gameConf->widescreen)
+			{
+			Debug ("NIN_Boot: forcing widescreen.");
 			nin_config.Config |= NIN_CFG_FORCE_WIDE;
+			}
 
 		if (gameConf->activity_led)
+			{
+			Debug ("NIN_Boot: activity LED will be active.");
 			nin_config.Config |= NIN_CFG_LED;
+			}
 
 		// On Wii U, we have to force this, because there are no GC controllers.
-		if (IsOnWiiU () || gameConf->hidController)
+		if (RunningOnWiiU() || gameConf->hidController)
+			{
+			Debug ("NIN_Boot: HID controllers will be used.");
 			nin_config.Config |= NIN_CFG_HID;
+			}
 
 		// TODO: implement video mode forcing. For now, just let Nintendont decide.
 		nin_config.VideoMode |= NIN_VID_AUTO;
+		Debug ("NIN_Boot: letting Nintendont decide on the video mode.");
 
 		const bool progressive = (CONF_GetProgressiveScan () > 0) && VIDEO_HaveComponentCable ();
 		if (progressive) //important to prevent blackscreens
+			{
+			Debug ("NIN_Boot: this %s seems to be able to use progressive mode.", RunningOnWiiU() ? "Wii U" : "Wii");
 			nin_config.VideoMode |= NIN_VID_PROG;
+			}
 		else
 			nin_config.VideoMode &= ~NIN_VID_PROG;
 		
 		nin_config.Language = gameConf->ninLanguage;
-		Debug ("NIN_Boot: Nintendont language set to %s", NIN_GetLanguage(nin_config.Language));
+		Debug ("NIN_Boot: game language set to %s", NIN_GetLanguage(nin_config.Language));
 
-		/* Nintendont expects the path to look something like this:
+		/* Nintendont expects the path to look something like this (we use /games since most other loaders do, too):
 		   "/games/<game id or folder name>/game.iso", without the boot device (e.g. "usb:/", "sd:/"),
 		   so we skip it as we build the path.*/
-		char gamePath[255] = { 0 };
-		sprintf (gamePath, "%s/game.iso", game->source);
+		// It should be safe to assume that strstr isn't null here.
+		const char * const gamesPath = strstr (game->source, "/games/");
+		sprintf (nin_config.GamePath, "%s/game.iso", gamesPath);
 		
-		int begin = usbDevice ? 5 : 6;
-		strncpy (nin_config.GamePath, gamePath + begin, strlen (gamePath));
-		Debug ("NIN_Boot: Game iso path = %s", nin_config.GamePath);
+		Debug ("NIN_Boot: game ISO path = %s", nin_config.GamePath);
 
-		// TODO: Allow cheats to be enabled or disabled?
+		// TODO: Finish cheat support.
+		//if (gameConf->ocarina)
+		//	{
+		//	nin_config.Config |= NIN_CFG_CHEATS;
+		//  nin_config.Config |= NIN_CFG_CHEATS_PATH;
+		//	sprintf (nin_config.CheatPath, "%s:/%s/%s.gct", gameIsOnUSB ? "usb" : "sd", gamesPath, game->asciiId);
+		//	Debug ("NIN_Boot: Cheat path = %s", nin_config.CheatPath);
+		//	return false;
+		//	}
 
 		nin_config.MaxPads = NIN_CFG_MAXPAD;
 
 		memcpy (&nin_config.GameID, game->asciiId, sizeof(int));
+		Debug ("NIN_Boot: game ID is %s", game->asciiId);
 
 		/* Write Nintendont's config to storage.
 		   This basically automatically clears it out on every boot. */
 		char cfgPath[256] = { 0 };
-		sprintf (cfgPath, "%s://%s", vars.defMount, "nincfg.bin");
+		sprintf(cfgPath, "%s://%s", gameIsOnUSB ? "usb" : "sd", "nincfg.bin");
+		Debug ("NIN_Boot: using %s as config path.", cfgPath);
 
 		if (!fsop_WriteFile (cfgPath, (u8 *)&nin_config, sizeof(NIN_CFG)))
 			{
-			Debug ("NIN_Boot: Error writing config file %s", cfgPath);
+			Debug ("NIN_Boot: unable to write config file %s", cfgPath);
+			const char * const error = "postLoader was unable to write the config file nincfg.bin.";
+			strncpy (error_string, error, strlen(error));
 			return false;
 			}
 
 		// Clear out Nintendont's log file just in case.
 		char logPath[256] = { 0 };
-		sprintf (logPath, "%s://%s", vars.defMount, "ndebug.log");
+		sprintf (logPath, "%s://%s", gameIsOnUSB ? "usb" : "sd", "ndebug.log");
+		Debug ("NIN_Boot: using %s as log path.", logPath);
 
 		if (!fsop_WriteFile (logPath, NULL, 0))
 			{
-			Debug ("NIN_Boot: Error writing blank log file %s", logPath);
+			Debug ("NIN_Boot: Unable to write blank log file %s", logPath);
+			const char * const error = "postLoader was unable to clear out ndebug.log.";
+			strncpy (error_string, error, strlen(error));
 			return false;
 			}
-		
+
 		// Prepare to boot Nintendont!
 		char ninPath[256] = { 0 };
-		sprintf (ninPath, "%s://apps/nintendont/boot.dol", vars.defMount);
-		
+		sprintf (ninPath, "%s://apps/nintendont/boot.dol", gameIsOnUSB ? "usb" : "sd");
+		Debug ("NIN_Boot: looking for Nintendont at %s.", ninPath);
+
+		if (!fsop_FileExist (ninPath))
+			{
+			Debug ("NIN_Boot: unable to find Nintendont at %s.", ninPath);
+			const char * const error = "Nintendont doesn't seem to be installed in /apps/nintendont.";
+			strncpy (error_string, error, strlen(error));
+			return false;
+			}
+
 		return DirectDolBoot (ninPath, NULL, 0);
 	}
