@@ -1,3 +1,9 @@
+postLoader 4.7.93
+* Nintendont: Allow video mode forcing.
+* Nintendont: Add a menu option to enable cheats. postLoader just lets Nintendont handle where the file is.
+* UI: Dualshock 3 controllers are now supported thanks to libsicksaxis (and a corresponding wrapper to make it resemble WPAD). Just connect it and press the PS button to use it. It has the same button layout as Nintendont.
+* UI: postLoader should now work with UStealth drives. This feature is mostly untested, however.
+
 postLoader 4.7.92
 * UI: Display useful error messages for GC games that fail to boot (Nintendont only, for now).
 * Nintendont: Don't try to boot if Nintendont isn't even installed.

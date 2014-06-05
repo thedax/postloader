@@ -4,7 +4,7 @@
 #include <string.h>
 #include <ogc/usbgecko.h>
 #include <ogc/exi.h>
-
+#include <unistd.h>
 /*
 
 Debug, will write debug information to sd and/or gecko.... as debug file is open/closed it will be VERY SLOW

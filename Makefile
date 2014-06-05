@@ -26,10 +26,11 @@ SOURCES		+=	source/fsop
 SOURCES		+=	source/wiiload
 SOURCES		+=	source/zip
 SOURCES		+=	source/disc
+SOURCES   +=  source/sicksaxis-wrapper
 DATA		:=	data
 
 #---------------------------------------------------------------------------------
-# options for code generation
+# options for code generation 
 #---------------------------------------------------------------------------------
 
 CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE)
@@ -49,17 +50,18 @@ LIBS	:=
 LIBS	+= -lpng
 LIBS	+= -ljpeg 
 LIBS	+= -lfreetype
-#LIBS	+= -lz -lfat -lntfs
-LIBS	+= -lz -lcustomfat -lcustomntfs
+LIBS	+= -lz -lfat -lntfs
+#LIBS	+= -lz -lcustomfat -lcustomntfs
 LIBS	+= -lwiiuse
 LIBS	+= -lmad -lasnd
 LIBS	+= -lbte -logc -lm
+LIBS  += -lsicksaxis
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS :=
+LIBDIRS := $(PORTLIBS)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

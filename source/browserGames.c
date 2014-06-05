@@ -1325,7 +1325,10 @@ static void ShowAppMenu (int ai)
 						}
 					else
 						{
-						strcat(buff, "NIN: Video mode: "); strcat(buff, dmlvideomode[gameConf.dmlVideoMode]); strcat(buff, "##108|");
+						char *modes[5] = { "Auto", "NTSC", "MPAL", "PAL50", "PAL60" };
+						if (gameConf.dmlVideoMode > 4)
+							gameConf.dmlVideoMode = 0;
+						strcat(buff, "NIN: Video mode: "); strcat(buff, modes[gameConf.dmlVideoMode]); strcat(buff, "##108|");
 						}
 					}
 
@@ -1366,6 +1369,7 @@ static void ShowAppMenu (int ai)
 						gameConf.ninLanguage = NIN_LAN_AUTO;
 
 					grlib_menuAddItem(buff, 17, "NIN: Language: (%s)", NIN_GetLanguage(gameConf.ninLanguage));
+					grlib_menuAddItem(buff, 18, "NIN: Enable Cheats: (%s)", gameConf.ocarina ? "Yes" : "No");
 					}
 				}
 			}
@@ -1539,6 +1543,13 @@ static void ShowAppMenu (int ai)
 		{
 		if (config.dmlVersion == GCMODE_NIN)
 			gameConf.ninLanguage++;
+
+		goto start;
+		}
+	if (item == 18)
+		{
+		if (config.dmlVersion == GCMODE_NIN)
+			gameConf.ocarina = !gameConf.ocarina;
 
 		goto start;
 		}

@@ -157,8 +157,8 @@ static int USBDevice_Init (int usbTimeout, devicesCallback cb)
 				fsop_WriteFile (path, (u8*)BootSector, sizeof (BootSector));
 				}
 #endif
-
-			if(*((u16 *) (BootSector + 0x1FE)) == 0x55AA)
+			// 0x55AB is UStealth, for WiiU
+			if ((*((u16 *) (BootSector + 0x1FE)) == 0x55AA) || (*((u16 *) (BootSector + 0x1FE)) == 0x55AB))
 				{
 				//! Partition typ can be missleading the correct partition format. Stupid lazy ass Partition Editors.
 				sprintf (dev, "%s", DeviceName[DEV_USB+idx]);
