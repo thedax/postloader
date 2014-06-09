@@ -246,6 +246,7 @@ bool ReloadPostloader (void)
 		//mt_Lock();
 		ret = fsop_FileExist (path);
 		//mt_Unlock();
+		if (ret) DirectDolBoot(path, NULL, 0);
 		}
 	
 	return false;

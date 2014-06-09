@@ -735,6 +735,19 @@ int grlib_GetUserInput (void)
 		}
 
 	// Then gc
+	if (PAD_TriggerL(0) > 48)
+	{
+		grlibSettings.buttonActivity++;
+
+		return WPAD_BUTTON_MINUS;
+	}
+	if (PAD_TriggerR(0) > 48)
+	{
+		grlibSettings.buttonActivity++;
+
+		return WPAD_BUTTON_PLUS;
+	}
+
 	if (gcbtn)
 		{
 		grlibSettings.buttonActivity ++;

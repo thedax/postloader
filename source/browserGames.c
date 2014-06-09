@@ -1686,10 +1686,11 @@ start:
 				grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
 			if (config.dmlVersion == GCMODE_NIN)
 				grlib_menuAddItem(buff, 12, "GameCube mode: Nintendont");
-			if (config.dmlVersion != GCMODE_DEVO)
+			if (config.dmlVersion != GCMODE_DEVO && config.dmlVersion != GCMODE_NIN)
 				grlib_menuAddItem (buff, 3, "Set default videomode...");
 
-			if (vars.neek == NEEK_NONE) grlib_menuAddItem (buff, 7, "Manual MIOS installation...");
+			if (vars.neek == NEEK_NONE && config.dmlVersion != GCMODE_DEVO && config.dmlVersion != GCMODE_NIN) 
+				grlib_menuAddItem (buff, 7, "Manual MIOS installation...");
 			}
 		
 		if (showHidden)
@@ -1900,8 +1901,8 @@ static void Redraw (void)
 		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
 		if (config.dmlVersion == GCMODE_NIN) strcpy(buff, "Nintendont");
 		
-		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::GC Games ");
-		int w = grlib_GetFontMetrics ("postLoader::GC Games ", NULL, NULL);
+		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::Gamecube Games ");
+		int w = grlib_GetFontMetrics ("postLoader::Gamecube Games ", NULL, NULL);
 		
 		Video_SetFont(TTFVERYSMALL);
 		grlib_printf ( 25 + w, 30, GRLIB_ALIGNLEFT, 0, buff);

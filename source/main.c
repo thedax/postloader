@@ -21,11 +21,21 @@ extern void __exception_setreload(int t); // In the event of a code dump, app wi
 int Disc (void);
 bool plneek_GetNandName (void);
 
+void BootToPriiloader(void)
+	{
+	Shutdown ();
+
+	// Let's try to start Priiloader... use magic word "Daco"
+	*(vu32*)0x8132FFFB = PRIILOADER_SKIPAUTO;
+	DCFlushRange((void*)0x8132FFFB, 4);
+	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+	}
+
 void BootToSystemMenu(void)
 	{
 	Shutdown ();
 	
-	// Let's try to start system menu... use magic word, as we may have priiloader behind
+	// Let's try to start system menu... use magic word "Pune", as we may have priiloader behind
 	*(vu32*)0x8132FFFB = PRIILOADER_TOMENU;
 	DCFlushRange((void*)0x8132FFFB,4);
 	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
@@ -523,6 +533,10 @@ int main(int argc, char **argv)
 	if (ret == INTERACTIVE_RET_WIIMENU || grlibSettings.wiiswitch_reset) // System menu
 		{
 		BootToSystemMenu ();
+		}
+	if (ret == INTERACTIVE_RET_PRIILOADER)
+		{
+		BootToPriiloader();
 		}
 
 	if (ret == INTERACTIVE_RET_HBC) // Return to homebrew channel

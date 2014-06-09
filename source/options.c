@@ -655,6 +655,8 @@ int ShowExitMenu (void)
 		grlib_menuAddItem (options, 2,  "Exit to Homebrew Channel");
 	if (CheckParental(0))		
 		grlib_menuAddItem (options, 4,  "Restart postLoader");
+	if (CheckParental(0))
+		grlib_menuAddItem(options, 6, "Exit to Priiloader");
 	
 	item = grlib_menu (0, "Exit: Select an option", options);
 	
@@ -663,6 +665,7 @@ int ShowExitMenu (void)
 	if (item == 3) return INTERACTIVE_RET_SHUTDOWN;
 	if (item == 4) ReloadPostloader();
 	if (item == 5) return INTERACTIVE_RET_REBOOT;
+	if (item == 6) return INTERACTIVE_RET_PRIILOADER;
 	
 	return -1;
 	}
