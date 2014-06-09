@@ -80,9 +80,9 @@ void ShowCreditsMenu (void)
 	"credits\n"
 	"\n"
 	"coding:\n"
-	"WiiFlow, NeoGamma,GRRLIB,TriiForce,Priiloader,CFG Loader,WiiMC,USBLoaderGX\nNintendont\n"
+	"WiiFlow, NeoGamma,GRRLIB,TriiForce,Priiloader,CFG Loader,WiiMC,USBLoaderGX\nNintendont, libsicksaxis\n"
 	"people:\n"
-	"FIX94(wiiflow/dmlbooter),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\n"
+	"FIX94(wiiflow/dmlbooter),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\nXerpi (libsicksaxis), Crediar & The Nintendont Team\n"
 	"and all active testers:\n"
 	"Wever,daxtsu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
@@ -118,11 +118,15 @@ void ShowAboutPLMenu (void)
 			sprintf (autoboot, "Autoboot: CH %s:%s:%s", nand, config.autoboot.asciiId, config.autoboot.path);
 			}
 		}
+	if (vars.ahbprot)
+		sprintf(buff, "AHBPROT: disabled");
+	else
+		sprintf(buff, "AHBPROT: enabled");
 
 	Video_SetFont(TTFNORM);
 	
 	sprintf (buff, 	
-	"postLoader"VER" by stfour (2011-12)\n\n"
+	"postLoader " VER " by stfour (2011-14)\n\n"
 	"%s\n"
 	"WII IP: %s\n\n"
 	"Official support thread on http://gbatemp.net/\n", autoboot, wiiload.ip);

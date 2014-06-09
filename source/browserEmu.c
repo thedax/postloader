@@ -1852,7 +1852,7 @@ static void Redraw (void)
 	if (emusCnt == 0 && scanned)
 		{
 		Video_SetFont(TTFNORM);
-		grlib_DrawCenteredWindow ("No emus found, check /ploader/plugins.conf", WAITPANWIDTH+50, 133, 0, NULL);
+		grlib_DrawCenteredWindow ("No emus found, check /ploader/plugins.conf.", WAITPANWIDTH+50, 133, 0, NULL);
 		Video_DrawIcon (TEX_EXCL, 320, 250);
 		}
 	}
@@ -2133,7 +2133,7 @@ static void StartEmu (int type, char *fullpath)
 			
 		if (*cmd == 0)
 			{
-			grlib_menu (0, "Attention!", "plugins.conf seems to be invalid or corrupted");
+			grlib_menu (0, "Attention!", "Plugins.conf seems to be invalid or corrupted.");
 			return;
 			}
 			
@@ -2167,7 +2167,7 @@ static void StartEmu (int type, char *fullpath)
 		DirectDolBoot (dol, cmd, 0);
 		}
 
-	grlib_menu (0, "Attention!", "Requested plugin not found");
+	grlib_menu (0, "Attention!", "Requested plugin not found.");
 	}
 			
 int EmuBrowser (void)
@@ -2341,7 +2341,7 @@ int EmuBrowser (void)
 			}
 		}
 		
-	// Lets close the topbar, if needed
+	// Let's close the topbar, if needed
 	CLOSETOPBAR();
 	CLOSEBOTTOMBAR();
 	

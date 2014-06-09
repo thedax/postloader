@@ -304,7 +304,9 @@ s32 CheckDisk(void *id)
 
 	if (ret != 1)
 		{
-		grlib_menu (0, "Sorry, no disc is detected in your WII", " OK ");
+		char message[128] = { 0 };
+		sprintf(message, "Please insert a game disc into this %s\nand then press Run Disc again.", RunningOnWiiU() ? "Wii U" : "Wii");
+		grlib_menu (0, message, " OK ");
 		}
 	return ret;
 	}
