@@ -1,3 +1,14 @@
+postLoader 4.7.94
+* Nintendont: Fix auto video mode (it was broken, forcing NTSC all the time).
+* UI: Fix the "restart postLoader" option for USB. It wasn't even attempting to restart the application.
+* UI: Add a menu option to reboot the Wii to Priiloader, bypassing its autoboot.
+* UI: Let the GC analog triggers change pages when partially held down, instead of only working when entirely pressed.
+* UI: Hide the default video mode menu option for Nintendont, it didn't work anyway.
+* UI: Hide the manual MIOS install option when under Nintendont and Devolution, they don't use MIOS at all.
+* UI: Added AHBPROT info to the about screen (the + next to IOS is nice, but it's not immediately obvious what it means).
+* UI: Added Xerpi (libsicksaxis), Crediar, and Nintendont Team to credits.
+* UI: Fix a few more English typos.
+
 postLoader 4.7.93
 * Nintendont: Allow video mode forcing.
 * Nintendont: Add a menu option to enable cheats. postLoader just lets Nintendont handle where the file is.

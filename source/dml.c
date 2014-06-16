@@ -1094,7 +1094,7 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 			Debug ("NIN_Boot: forcing video mode to PAL60.");
 			break;
 		default:
-			force = NIN_VID_FORCE | NIN_VID_AUTO;
+			force = NIN_VID_AUTO;
 			Debug ("NIN_Boot: letting Nintendont decide on the video mode.");
 			break;
 		}
