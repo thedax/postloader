@@ -118,18 +118,25 @@ void ShowAboutPLMenu (void)
 			sprintf (autoboot, "Autoboot: CH %s:%s:%s", nand, config.autoboot.asciiId, config.autoboot.path);
 			}
 		}
+
+	char ahbprot[1024];
 	if (vars.ahbprot)
-		sprintf(buff, "AHBPROT: disabled");
+	{
+		sprintf(ahbprot, "AHBPROT: disabled");
+	}
 	else
-		sprintf(buff, "AHBPROT: enabled");
+	{
+		sprintf(ahbprot, "AHBPROT: enabled");
+	}
 
 	Video_SetFont(TTFNORM);
 	
 	sprintf (buff, 	
 	"postLoader " VER " by stfour (2011-14)\n\n"
 	"%s\n"
-	"WII IP: %s\n\n"
-	"Official support thread on http://gbatemp.net/\n", autoboot, wiiload.ip);
+	"WII IP: %s\n"
+	"%s\n\n"
+	"Official support thread on http://gbatemp.net/\n", autoboot, wiiload.ip, ahbprot);
 
 	int ret;
 	
