@@ -45,7 +45,7 @@
 #define DMLVIDEOMODE_PAL 1
 
 #define GM_WII 0
-#define GM_DML 1
+#define GM_GCN 1
 
 #define APPCATS_MAX 8
 
@@ -54,17 +54,6 @@
 #define TITLE_ID(x,y)		(((u64)(x) << 32) | (y))
 
 #define ARRAY_LENGTH(arr) (sizeof(arr) / sizeof(arr[0]))
-
-enum {
-	DMLWAD_UNKNOWN = 0,
-	DMLWAD_DM,
-	DMLWAD_DML,
-	DMLWAD_QFSD,
-	DMLWAD_QFUSB,
-	DMLWAD_MIOS,
-	DMLWAD_CMIOS,
-	DMLWAD_MAX,
-	};
 
 enum {
 	INTERACTIVE_RET_NONE=0,
@@ -91,12 +80,8 @@ enum {
 	};
 
 enum {
-	GCMODE_DML0x = 0,
-	GCMODE_DML1x,
-	GCMODE_DM22,
 	GCMODE_DEVO,
 	GCMODE_NIN, // Nintendont
-	GCMODE_DMAUTO,
 	GCMODE_MAX
 	};
 

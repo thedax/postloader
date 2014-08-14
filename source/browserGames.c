@@ -35,16 +35,6 @@ static int scanned = 0;
 #define CATN 32
 #define CATMAX 32
 
-#define QFIDN 6
-static char *qfid[QFIDN] = {
-"GGPE01", //Mario Kart Arcade GP
-"GGPE02", //Mario Kart Arcade GP
-"GFZJ8P", //F-Zero AX
-"GVSJ8P", // VirtuaStriker4
-"GVS46E", // Virtua Striker 4 Ver.2006
-"GVS46J", // Virtua Striker 4 Ver.2006
-};
-
 static char *flt[CATN] = { 
 "Action",
 "Adventure",
@@ -173,258 +163,6 @@ static void InitializeGui (void)
 			}
 		}
 	}
-	
-static bool ShowMIOSMenu (void)
-	{
-	int i;
-	char wads[DMLWAD_MAX][64];
-	bool slots[DMLWAD_MAX];
-	char menu[2048];
-	int count = 0;
-	
-	// cleanup
-	memset (slots, 0, sizeof (slots));
-
-	// checkup
-	//mt_Lock ();
-	
-	i = DMLWAD_QFSD;
-	sprintf (wads[i], "%s://ploader/wads/qfsd.wad", vars.defMount);
-	slots[i] = fsop_FileExist (wads[i]);
-	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
-	
-	i = DMLWAD_QFUSB;
-	sprintf (wads[i], "%s://ploader/wads/qfusb.wad", vars.defMount);
-	slots[i] = fsop_FileExist (wads[i]);
-	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
-	
-	i = DMLWAD_DML;
-	sprintf (wads[i], "%s://ploader/wads/dml.wad", vars.defMount);
-	slots[i] = fsop_FileExist (wads[i]);
-	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
-	
-	i = DMLWAD_DM;
-	sprintf (wads[i], "%s://ploader/wads/dm.wad", vars.defMount);
-	slots[i] = fsop_FileExist (wads[i]);
-	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
-	
-	i = DMLWAD_MIOS;
-	sprintf (wads[i], "%s://ploader/wads/mios.wad", vars.defMount);
-	slots[i] = fsop_FileExist (wads[i]);
-	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
-	
-	i = DMLWAD_CMIOS;
-	sprintf (wads[i], "%s://ploader/wads/cmios.wad", vars.defMount);
-	slots[i] = fsop_FileExist (wads[i]);
-	Debug ("Checking %d '%s' -> %d", i, wads[i], slots[i]);
-		
-	//mt_Unlock ();
-	
-	for (i = 0; i < DMLWAD_MAX; i++)
-		if (slots[i]) count++;
-		
-	if (!count)
-		{
-		grlib_menu (50, "Attention\npostLoader was unable to find required wad files", "OK");
-		return false;
-		}
-		
-	// show menu
-	do
-		{
-		*menu = '\0';
-		
-		char buff[64];
-		
-		if (slots[DMLWAD_MIOS])
-			{
-			sprintf (buff, "Standard MIOS (mios.wad)%s", config.currentDmlWad == DMLWAD_MIOS ? "*":"");
-			grlib_menuAddItem (menu, DMLWAD_MIOS, buff);
-			}
-			
-		if (slots[DMLWAD_CMIOS])
-			{
-			sprintf (buff, "Custom MIOS (cmios.wad)%s", config.currentDmlWad == DMLWAD_CMIOS ? "*":"");
-			grlib_menuAddItem (menu, DMLWAD_CMIOS, buff);
-			}
-			
-		if (slots[DMLWAD_DML])
-			{
-			sprintf (buff, "DiosMios Lite (dml.wad)%s", config.currentDmlWad == DMLWAD_DML ? "*":"");
-			grlib_menuAddItem (menu, DMLWAD_DML, buff);
-			}
-		
-		if (slots[DMLWAD_DM])
-			{
-			sprintf (buff, "DiosMios (dm.wad)%s", config.currentDmlWad == DMLWAD_DM ? "*":"");
-			grlib_menuAddItem (menu, DMLWAD_DM, buff);
-			}
-		
-		if (slots[DMLWAD_QFSD])
-			{
-			sprintf (buff, "QuadForce SD (qfsd.wad)%s", config.currentDmlWad == DMLWAD_QFSD ? "*":"");
-			grlib_menuAddItem (menu, DMLWAD_QFSD, buff);
-			}
-		
-		if (slots[DMLWAD_QFUSB])
-			{
-			sprintf (buff, "QuadForce USB (qfusb.wad)%s", config.currentDmlWad == DMLWAD_QFUSB ? "*":"");
-			grlib_menuAddItem (menu, DMLWAD_QFUSB, buff);
-			}
-		
-		i = grlib_menu (0, "MIOS Installation:\nPlease, select the MIOS you want install", menu);
-		
-		if (i > 0)
-			{
-			if (!config.currentDmlWad)
-				{
-				char buff[300];
-				
-				sprintf (buff, "Attention\npostLoader will now install\n'%s'\non your nand.\nThis should be a safe operation, anyway it is a your choice.\nNo warranty provided, no responsibility on me if you brick anything!\n\nContinue ?", wads[i]);
-				if (grlib_menu (30, buff, "Yes##1~No##-1") != 1)
-					return false;
-				}
-				
-			if (vars.ios == IOS_PREFERRED)
-				{
-				Debug ("SelectDMLWad: Patching NAND permission");
-				Video_WaitIcon (TEX_HGL);
-				IOSPATCH_Apply ();
-				if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
-					{
-					grlib_menu (0, "postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
-					Debug ("postLoader was unable to patch ISFS permission. Cannot continue");
-					return false;
-					}
-				}
-			else if (vars.ios == IOS_CIOS)
-				{
-				// thats good, no patch required...
-				}
-			else
-				{
-				grlib_menu (0, "Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
-				return false;
-				}
-			
-			if (Wad_Install (wads[i], true) >= 0) 
-				{
-				config.currentDmlWad = i;
-				}
-			}
-		}
-	while (i > 0);
-
-	return true;
-	}
-	
-static bool SelectDMLWad (ai)
-	{
-	if (config.dmlVersion != GCMODE_DMAUTO  ||
-		config.gameMode == GM_WII ||
-		vars.neek != NEEK_NONE
-		) return true;
-	
-	int i;
-	bool isqf = false;
-	char wad[300];
-	int dmwad = 0;
-	
-	// is qf ?
-	for (i = 0; i < QFIDN; i++)
-		if (!strncmp (games[ai].asciiId, qfid[i], strlen(qfid[i])))
-			isqf = true;
-			
-	if (isqf)
-		{
-		if (games[ai].slot == 0) //sd
-			{
-			sprintf (wad, "%s://ploader/wads/qfsd.wad", vars.defMount);
-			dmwad = DMLWAD_QFSD;
-			}
-		if (games[ai].slot == 1) //usb
-			{
-			sprintf (wad, "%s://ploader/wads/qfusb.wad", vars.defMount);
-			dmwad = DMLWAD_QFUSB;
-			}
-		}
-	else
-		{
-		if (games[ai].slot == 0) //sd
-			{
-			sprintf (wad, "%s://ploader/wads/dml.wad", vars.defMount);
-			dmwad = DMLWAD_DML;
-			}
-		if (games[ai].slot == 1) //usb
-			{
-			sprintf (wad, "%s://ploader/wads/dm.wad", vars.defMount);
-			dmwad = DMLWAD_DM;
-			}
-		}
-		
-	if (!dmwad)
-		{
-		grlib_menu (0, "Attention\nFor an unknown reason, I can't understand the required wad\nI can't continue....", "  OK  ");
-		return false;
-		}
-		
-	//mt_Lock ();
-	int wadexist = fsop_FileExist (wad);
-	//mt_Unlock ();
-	
-	if (!wadexist)
-		{
-		char buff[300];
-		
-		sprintf (buff, "Attention\nThe required wad was not found\n'%s'\nI can't continue....", wad);
-		grlib_menu (0, buff, "  OK  ");
-		return false;
-		}
-		
-	if (!config.currentDmlWad)
-		{
-		char buff[300];
-		
-		sprintf (buff, "Attention\npostLoader will now install\n'%s'\non your nand.\nThis should be a safe operation, anyway it is a your choice.\nNo warranty provided, no responsibility on me if you brick anything!\n\nContinue ?", wad);
-		if (grlib_menu (30, buff, "Yes##1~No##-1") != 1)
-			return false;
-		}
-		
-	if (config.currentDmlWad == dmwad)
-		{
-		return true; // already ok...
-		}
-		
-	if (vars.ios == IOS_PREFERRED)
-		{
-		Debug ("SelectDMLWad: Patching NAND permission");
-		Video_WaitIcon (TEX_HGL);
-		IOSPATCH_Apply ();
-		if (IOSTATCH_Get (PATCH_ISFS_PERMISSIONS) == 0)
-			{
-			grlib_menu (0, "postLoader was unable to patch ISFS permission. Cannot continue", "  OK  ");
-			Debug ("postLoader was unable to patch ISFS permission. Cannot continue");
-			return false;
-			}
-		}
-	else if (vars.ios == IOS_CIOS)
-		{
-		// thats good, no patch required...
-		}
-	else
-		{
-		grlib_menu (0, "Unsupported ios.\npostLoader need 58+AHPBROT or cIOSX rev21d2x on slot 249.\nCannot continue", "  OK  ");
-		return false;
-		}
-
-	// Ok, let's Good to be with us
-	if (Wad_Install (wad, true) >= 0) 
-		{
-		config.currentDmlWad = dmwad;
-		return true;
-		}
-	return false;
-	}
 
 static void MakeCoverPath (int ai, char *path)
 	{
@@ -432,7 +170,7 @@ static void MakeCoverPath (int ai, char *path)
 	
 	strcpy (asciiId, games[ai].asciiId);
 
-	if (config.gameMode == GM_DML)
+	if (config.gameMode == GM_GCN)
 		asciiId[6] = 0;
 
 	sprintf (path, "%s/%s.png", vars.covers, asciiId);
@@ -800,7 +538,7 @@ static void SortItems (void)
 	if (config.gameSort == 2)
 		bsort (games, games2Disp, sizeof(s_game), bsort_playcount);
 
-	if (config.gameMode == GM_DML)
+	if (config.gameMode == GM_GCN)
 		bsort (games, games2Disp, sizeof(s_game), bsort_slot);
 
 	pageMax = (games2Disp-1) / gui.spotsXpage;
@@ -900,18 +638,10 @@ static int GameBrowse (int forcescan)
 		else
 			titles = WBFSSCanner (forcescan);
 		}
-	else
-		{
-		titles = DMLScanner (forcescan);
-		}
 #else
 	if (config.gameMode == GM_WII)
 		{
 		titles = WBFSSCanner (forcescan);
-		}
-	else
-		{
-		titles = DMLScanner (forcescan);
 		}
 #endif
 	
@@ -944,7 +674,7 @@ static int GameBrowse (int forcescan)
 			// Add id
 			//Debug ("id = %s (%d)", p, strlen(p));
 			strncpy (games[i].asciiId, p, 6);
-			if (config.gameMode == GM_DML)
+			if (config.gameMode == GM_GCN)
 				games[i].disc = p[6];
 			p += (strlen(p) + 1);
 				
@@ -970,13 +700,6 @@ static int GameBrowse (int forcescan)
 			//Debug (" > %s (%s:%d:%d) in '%s'", games[i].name, games[i].asciiId, games[i].disc, games[i].slot, games[i].source);
 
 			if (i % 20 == 0) Video_WaitIcon (TEX_HGL);
-			
-			if (!(config.gameMode == GM_DML && config.dmlVersion == GCMODE_DM22 && games[i].slot == 0))
-				{
-				ReadGameConfig (i);
-
-				i ++;
-				}
 			}
 		else
 			break;
@@ -1055,7 +778,7 @@ static int FindSpot (void)
 			strcat (info, "(");
 			strcat (info, games[gamesSelected].asciiId);
 			strcat (info, ")");
-			if (config.gameMode == GM_DML)
+			if (config.gameMode == GM_GCN)
 				{
 				char b[256];
 
@@ -1331,22 +1054,6 @@ static void ShowAppMenu (int ai)
 						strcat(buff, "NIN: Video mode: "); strcat(buff, modes[gameConf.dmlVideoMode]); strcat(buff, "##108|");
 						}
 					}
-
-				if (config.dmlVersion == GCMODE_DM22 || config.dmlVersion == GCMODE_DMAUTO)
-					   {
-					   grlib_menuAddItem (buff, 8, "DM(L): Force WideScreen (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
-					   grlib_menuAddItem (buff, 9, "DM(L): Full NoDisc Patching (%s)", gameConf.dmlFullNoDisc ? "Yes" : "No");
-					   }
-
-				if (config.dmlVersion == GCMODE_DML1x)
-					grlib_menuAddItem (buff, 8, "DM(L): Patch NODISC (%s)", gameConf.dmlNoDisc ? "Yes" : "No" );
-
-				if (config.dmlVersion == GCMODE_DML1x || config.dmlVersion == GCMODE_DM22 || config.dmlVersion == GCMODE_DMAUTO)
-					{
-				   grlib_menuAddItem (buff,10, "DM(L): Patch PADHOOK (%s)", gameConf.dmlPadHook ? "Yes" : "No" );
-				   grlib_menuAddItem (buff,11, "DM(L): Patch NMM (%s)", gameConf.dmlNMM ? "Yes" : "No" );
-				   grlib_menuAddItem (buff,12, "DM(L): Enable Cheats (%s)", gameConf.ocarina ? "Yes" : "No" );
-					}
 					
 				if (config.dmlVersion == GCMODE_DEVO)
 					{
@@ -1373,36 +1080,6 @@ static void ShowAppMenu (int ai)
 					}
 				}
 			}
-		/*
-		else
-			{
-			grlib_menuAddCheckItem (buff, 108, 1 - gameConf.dmlvideomode, "NTSC mode");
-			grlib_menuAddCheckItem (buff, 109, gameConf.dmlvideomode, "PAL 576i mode");
-			}
-		*/
-		/*
-
-		if (config.chnBrowser.nand != NAND_REAL)
-			{
-			
-			if (gameConf.ios != MICROSNEEK_IOS)
-				{
-				strcat (buff, "Video: "); strcat (buff, videooptions[gameConf.vmode]); strcat (buff, "##101|");
-				strcat (buff, "Video Patch: "); strcat (buff, videopatchoptions[gameConf.vpatch]); strcat (buff, "##102|");
-				strcat (buff, "Language: "); strcat (buff, languageoptions[gameConf.language]); strcat (buff, "##103|");
-				strcat (buff, "Hook type: "); strcat (buff, hooktypeoptions[gameConf.hook]); strcat (buff, "##104|");
-				strcat (buff, "Ocarina: "); strcat (buff, ocarinaoptions[gameConf.ocarina]); strcat (buff, "##105|");
-				}
-			else
-				{
-				strcat (buff, "Video: n/a##200|");
-				strcat (buff, "Video Patch: n/a##200|");
-				strcat (buff, "Language: n/a##200|");
-				strcat (buff, "Hook type: n/a##200|");
-				strcat (buff, "Ocarina: n/a##200|");
-				}
-			}
-		*/
 		
 		Video_SetFontMenu(TTFSMALL);
 		item = grlib_menu (200, games[ai].name, buff);
@@ -1674,23 +1351,10 @@ start:
 			}
 		else
 			{
-			if (config.dmlVersion == GCMODE_DML0x)
-				grlib_menuAddItem (buff, 12, "GameCube mode: DML v0.x");
-			if (config.dmlVersion == GCMODE_DML1x)
-				grlib_menuAddItem (buff, 12, "GameCube mode: DML v1.x");
-			if (config.dmlVersion == GCMODE_DM22)
-				grlib_menuAddItem (buff, 12, "GameCube mode: DM v2.2+ USB");
-			if (config.dmlVersion == GCMODE_DMAUTO)
-				grlib_menuAddItem (buff, 12, "GameCube mode: DM AUTO");
 			if (config.dmlVersion == GCMODE_DEVO)
 				grlib_menuAddItem (buff, 12, "GameCube mode: Devolution");
 			if (config.dmlVersion == GCMODE_NIN)
 				grlib_menuAddItem(buff, 12, "GameCube mode: Nintendont");
-			if (config.dmlVersion != GCMODE_DEVO && config.dmlVersion != GCMODE_NIN)
-				grlib_menuAddItem (buff, 3, "Set default videomode...");
-
-			if (vars.neek == NEEK_NONE && config.dmlVersion != GCMODE_DEVO && config.dmlVersion != GCMODE_NIN) 
-				grlib_menuAddItem (buff, 7, "Manual MIOS installation...");
 			}
 		
 		if (showHidden)
@@ -1750,7 +1414,7 @@ start:
 		
 	if (item == 7)
 		{
-		ShowMIOSMenu ();
+		// ShowMIOSMenu ();
 		}
 		
 	if (item == 8)
@@ -1782,11 +1446,8 @@ start:
 		{
 		config.dmlVersion++;
 		if (config.dmlVersion >= GCMODE_MAX)
-			config.dmlVersion = GCMODE_DML0x;
+			config.dmlVersion = GCMODE_DEVO;
 		
-		if (config.dmlVersion == GCMODE_DMAUTO)
-			config.currentDmlWad = 0;
-
 		rebrowse = 1;
 		goto start;
 		}
@@ -1838,9 +1499,9 @@ static void RedrawIcons (int xoff, int yoff)
 			else
 				gui.spots[gui.spotsIdx].ico.title[0] = '\0';
 
-			if (config.gameMode == GM_DML)
+			if (config.gameMode == GM_GCN)
 				{
-				if (config.dmlVersion < GCMODE_DM22 && config.dmlVersion != GCMODE_DMAUTO && games[ai].slot)
+				if (games[ai].slot)
 					gui.spots[gui.spotsIdx].ico.transparency = 128;
 				else
 					gui.spots[gui.spotsIdx].ico.transparency = 255;
@@ -1880,24 +1541,8 @@ static void Redraw (void)
 		grlib_printf ( 25, 26, GRLIB_ALIGNLEFT, 0, "postLoader::WII Games");
 	else
 		{
-		char buff[32];
+		char buff[32] = { 0 };
 		
-		if (config.dmlVersion == GCMODE_DML0x) strcpy (buff, "DML 0.X");
-		if (config.dmlVersion == GCMODE_DML1x) strcpy (buff, "DML 1.X");
-		if (config.dmlVersion == GCMODE_DM22) strcpy (buff, "DM 2.2+");
-		if (config.dmlVersion == GCMODE_DMAUTO)
-			{
-			char mode[32];
-
-			if (config.currentDmlWad == DMLWAD_UNKNOWN) strcpy (mode, "?");
-			if (config.currentDmlWad == DMLWAD_QFSD) strcpy (mode, "QFSD");
-			if (config.currentDmlWad == DMLWAD_QFUSB) strcpy (mode, "QFUSB");
-			if (config.currentDmlWad == DMLWAD_DML) strcpy (mode, "DML");
-			if (config.currentDmlWad == DMLWAD_DM) strcpy (mode, "DM");
-
-			
-			sprintf (buff, "(AUTO:%s)", mode);
-			}
 		if (config.dmlVersion == GCMODE_DEVO) strcpy (buff, "Devolution");
 		if (config.dmlVersion == GCMODE_NIN) strcpy(buff, "Nintendont");
 		
@@ -1998,66 +1643,6 @@ static int ChangePage (int next)
 	GRRLIB_SetFBMode (0); // Enable double fbmode
 	
 	return page;
-	}
-
-static void cb_filecopy (void)
-	{
-	u32 mb = (u32)(fsop.multy.bytes/1000000);
-	u32 sizemb = (u32)(fsop.multy.size/1000000);
-	u32 perc = (mb * 100)/sizemb;
-	
-	Video_WaitPanel (TEX_HGL, 0, "Please wait: %u%% done|Copying %u of %u Mb (%u Kb/sec)", perc, mb, sizemb, (u32)(fsop.multy.bytes/fsop.multy.elapsed));
-	
-	if (grlib_GetUserInput() & WPAD_BUTTON_B)
-		{
-		int ret = grlib_menu (0, "This will interrupt the copy process... Are you sure", "   Yes   ##0~No##-1");
-		if (ret == 0) fsop.breakop = 1;
-		}
-	}
-
-static size_t GetGCGameUsbKb (int ai)
-	{
-	//char path[300];
-	
-	//sprintf (path, "%s://ngc/%s",  devices_Get (games[ai].slot), games[ai].asciiId);
-	
-	Debug ("GetGCGameUsbKb %s", games[ai].source);
-	return fsop_GetFolderKb (games[ai].source, NULL);
-	}
-
-static bool MoveGCGame (int ai)
-	{
-	char source[300];
-	char target[300];
-	
-	snd_Pause ();
-	DMLResetCache ();
-
-	Debug ("MoveGCGame (%s %s '%s'): Started", games[ai].name, games[ai].asciiId, games[ai].source);
-
-	//sprintf (source, "%s://ngc/%s", devices_Get (games[ai].slot), games[ai].asciiId);
-	sprintf (source, "%s", games[ai].source);
-	
-	//sprintf (target, "sd://games/%s", games[ai].asciiId);
-	char *p;
-	p = games[ai].source + strlen(games[ai].source) - 1;
-	while (*p != '/') p--;
-	p++;
-	sprintf (target, "%s://games/%s", devices_Get (DEV_SD), p);
-	
-	Debug ("MoveGCGame: '%s' -> '%s'", source, target);
-
-	bool ret = fsop_CopyFolder (source, target, cb_filecopy);
-	
-	if (!ret || fsop.breakop)
-		{
-		Debug ("MoveGCGame: interrupted... removing partial folder");
-		fsop_KillFolderTree (target, NULL);
-		}
-		
-	snd_Resume ();
-	
-	return ret;
 	}
 
 static bool QuerySelection (int ai)
@@ -2258,7 +1843,7 @@ int GameBrowser (void)
 			
 			if (btn & WPAD_BUTTON_A && gamesSelected != -1) 
 				{
-				if (!QuerySelection (gamesSelected) || !SelectDMLWad (gamesSelected))
+				if (!QuerySelection (gamesSelected))
 					{
 					redraw = 1;
 					continue;
@@ -2280,22 +1865,7 @@ int GameBrowser (void)
 					{
 					bool err = false;
 					
-					Debug ("gamebrowser: requested dml");
-
-					if (config.dmlVersion < GCMODE_DM22 && games[gamesSelected].slot)
-						{
-						int ret = DMLInstall (games[gamesSelected].name, GetGCGameUsbKb(gamesSelected));
-
-						Redraw();
-						grlib_PushScreen();
-
-						if (ret)
-							err = !MoveGCGame (gamesSelected);
-						else
-							err = true;
-						}
-					
-					Debug ("gamebrowser: requested dml (err = %d)", err);
+					Debug ("gamebrowser: requested Gamecube mode");
 
 					if (!err)
 						{
@@ -2322,27 +1892,6 @@ int GameBrowser (void)
 						char errorReason[128] = { 0 };
 						switch (config.dmlVersion)
 							{
-							case GCMODE_DML0x:
-								{
-								// Retrive the folder name
-								char *p = games[gamesSelected].source + strlen(games[gamesSelected].source) - 1;
-								while (*p != '/') p--;
-								p++;
-								sprintf (dmlVersionStr, "DML 0.X");
-								DMLRun (p, games[gamesSelected].asciiId, gameConf.dmlVideoMode);
-								}
-								break;
-							
-							case GCMODE_DMAUTO:
-							case GCMODE_DML1x:
-							case GCMODE_DM22:
-								{
-								char *p = strstr (games[gamesSelected].source, "//")+1;
-								sprintf (dmlVersionStr, "DML Auto/1.X/2.2");
-								DMLRunNew (p, games[gamesSelected].asciiId, &gameConf, games[gamesSelected].slot);
-								}
-								break;
-								
 							case GCMODE_DEVO:
 								{
 								sprintf (dmlVersionStr, "Devolution");
