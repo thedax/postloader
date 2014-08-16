@@ -962,7 +962,6 @@ static void ShowFilterMenu (void)
 #define CHOPT_OCA 4
 #define CHOPT_NAND 5
 #define CHOPT_LOADER 4
-#define CHOPT_DMLVIDEOMODE 6
 
 static void ShowAppMenu (int ai)
 	{
@@ -970,19 +969,12 @@ static void ShowAppMenu (int ai)
 	char b[64];
 	int item;
 	
-	int opt[9] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_NAND, CHOPT_LOADER,CHOPT_DMLVIDEOMODE};
+	int opt[9] = {CHOPT_IOS, CHOPT_VID, CHOPT_VIDP, CHOPT_LANG, CHOPT_HOOK, CHOPT_OCA, CHOPT_NAND, CHOPT_LOADER};
 
 	char *ios[CHOPT_IOS] = { "249", "250" , "222", "223", "248", "251", "252"};
 	char *nand[CHOPT_NAND] = { "Default", "USA" , "EURO", "JAP", "Korean"};
 	char *loader[CHOPT_LOADER] = { "CFG", "GX", "WiiFlow", "neek2o (FAT32)"};
-	char *dmlvideomode[CHOPT_DMLVIDEOMODE] = { "Auto", "Game", "WII", "NTSC", "PAL50", "PAL60"};
-	/*
-	char *videooptions[CHOPT_VID] = { "Default Video Mode", "Force NTSC480i", "Force NTSC480p", "Force PAL480i", "Force PAL480p", "Force PAL576i", "Force MPAL480i", "Force MPAL480p" };
-	char *videopatchoptions[CHOPT_VIDP] = { "No Video patches", "Smart Video patching", "More Video patching", "Full Video patching" };
-	char *languageoptions[CHOPT_LANG] = { "Default Language", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
-	char *hooktypeoptions[CHOPT_HOOK] = { "No Ocarina&debugger", "Hooktype: VBI", "Hooktype: KPAD", "Hooktype: Joypad", "Hooktype: GXDraw", "Hooktype: GXFlush", "Hooktype: OSSleepThread", "Hooktype: AXNextFrame" };
-	char *ocarinaoptions[CHOPT_OCA] = { "No Ocarina", "Ocarina from NAND", "Ocarina from SD", "Ocarina from USB" };
-	*/
+
 	ReadGameConfig (ai);
 
 	start:
@@ -1042,17 +1034,10 @@ static void ShowAppMenu (int ai)
 					
 				if (config.dmlVersion != GCMODE_DEVO)
 					{
-					if (config.dmlVersion != GCMODE_NIN)
-						{
-						strcat(buff, "DM(L): Video mode: "); strcat(buff, dmlvideomode[gameConf.dmlVideoMode]); strcat(buff, "##108|");
-						}
-					else
-						{
 						char *modes[5] = { "Auto", "NTSC", "MPAL", "PAL50", "PAL60" };
 						if (gameConf.dmlVideoMode > 4)
 							gameConf.dmlVideoMode = 0;
 						strcat(buff, "NIN: Video mode: "); strcat(buff, modes[gameConf.dmlVideoMode]); strcat(buff, "##108|");
-						}
 					}
 					
 				if (config.dmlVersion == GCMODE_DEVO)

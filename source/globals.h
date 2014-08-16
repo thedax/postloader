@@ -609,13 +609,7 @@ void RunLoader(void);
 // Themes
 int ThemeSelect (void);
 
-// DML/Gamecube support
-void DMLResetCache (void);
-int DMLSelect (void);
-char * DMLScanner  (bool reset);
-int DMLRun (char *folder, char *id, u32 videomode);
-int DMLRunNew (char *folder, char *id, s_gameConfig *gameconf, u32 slot); //u8 videomode, u8 dmlNoDisc, u8 dmlPadHook, u8 dmlNMM);
-int DMLInstall (char *gamename, size_t reqKb);
+// Gamecube support
 bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bool wifi);
 bool NIN_Boot (s_game *game, s_gameConfig *gameConf, char *error_string, int error_strlen);
 char *NIN_GetLanguage (int language);
