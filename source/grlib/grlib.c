@@ -724,8 +724,8 @@ int grlib_GetUserInput (void)
 
 	if (wupcdata != NULL)
 	{
-		if (abs(wupcX) > 100) { grlib_irPos.x += (wupcX / 128); grlibSettings.cursorActivity++; }
-		if (abs(wupcY) > 100) { grlib_irPos.y += (-wupcY / 128); grlibSettings.cursorActivity++; }
+		if (abs(wupcX) > 165) { grlib_irPos.x += (wupcX / 128); grlibSettings.cursorActivity++; }
+		if (abs(wupcY) > 165) { grlib_irPos.y += (-wupcY / 128); grlibSettings.cursorActivity++; }
 	}
 	// Check limits
 	if (grlib_irPos.x < 0) grlib_irPos.x = 0;
