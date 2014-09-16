@@ -82,7 +82,7 @@ void ShowCreditsMenu (void)
 	"coding:\n"
 	"WiiFlow, NeoGamma,GRRLIB,TriiForce,Priiloader,CFG Loader,WiiMC,USBLoaderGX\nNintendont, libsicksaxis\n"
 	"people:\n"
-	"FIX94(wiiflow/dmlbooter),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\nXerpi (libsicksaxis), Crediar & The Nintendont Team\n"
+	"FIX94(wiiflow/dmlbooter/libwupc),JoostinOnline(S.E.),obcd (neek2o/uneekfs),XFlak (modmii)\nXerpi (libsicksaxis), Crediar & The Nintendont Team\n"
 	"and all active testers:\n"
 	"Wever,daxtsu,ZFA,AbdallahTerro... and sorry if I forgot you ;)\n\n"
 	"Official support thread on http://gbatemp.net/\n");
