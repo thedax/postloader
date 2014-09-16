@@ -835,6 +835,7 @@ int grlib_GetUserInput (void)
         if (cbtn & CLASSIC_CTRL_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
 		}
 
+	// Dualshock 3 (PS3)
 	if (ds3btn)
 		{
 		grlibSettings.buttonActivity ++;
@@ -867,6 +868,8 @@ int grlib_GetUserInput (void)
 		if (ds3btn & DS3_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
 		}
 
+	// Wii U Pro Controller (yes, they sync properly with the original Wii, but not in commercial games,
+	// simply sync it at the Wii System Menu)
 	if (wupcbtn)
 	{
 		grlibSettings.buttonActivity++;

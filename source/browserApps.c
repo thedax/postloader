@@ -1294,7 +1294,7 @@ void DrawInfo (void)
 	Video_SetFont(TTFSMALL);
 	if (!grlib_irPos.valid)
 		{
-		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point at an icon with the wiimote or use a GC controller!");		
+		if (appsSelected == -1) grlib_printf (XMIDLEINFO, theme.line2Y, GRLIB_ALIGNCENTER, 0, "Point at an icon with the Wiimote or use a controller!");		
 		}
 	else
 		{
