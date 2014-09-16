@@ -40,7 +40,7 @@ CXXFLAGS	=	$(CFLAGS)
 # move loader to another location - THANKS CREDIAR - 0x81330000 for HBC
 #---------------------------------------------------------------------------------
 //LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
-LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80A00000
+LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--section-start,.init=0x80A00000,-wrap,wiiuse_register
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
@@ -51,6 +51,7 @@ LIBS	+= -lpng
 LIBS	+= -ljpeg 
 LIBS	+= -lfreetype
 LIBS	+= -lz -lfat -lntfs
+LIBS  += -lwupc
 #LIBS	+= -lz -lcustomfat -lcustomntfs
 LIBS	+= -lwiiuse
 LIBS	+= -lmad -lasnd

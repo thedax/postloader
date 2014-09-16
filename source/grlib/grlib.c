@@ -6,6 +6,8 @@
 #include <ogc/lwp_watchdog.h>
 #include "grlib.h"
 #include "../sicksaxis-wrapper/sicksaxis-wrapper.h"
+#include "../libwupc-helper/libwupc-helper.h"
+#include <wupc/wupc.h>
 
 void Debug (const char *text, ...);
 
@@ -38,6 +40,7 @@ void grlib_Controllers (bool enable)
 	if (enable)
 		{
 		PAD_Init(); 
+		WUPC_Init();
 		WPAD_Init();
 		DS3_Init();
 		WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS_ACC_IR);
@@ -55,7 +58,7 @@ void grlib_Controllers (bool enable)
 			WPAD_Flush(i);
 			WPAD_Disconnect(i);
 			}
-
+		WUPC_Shutdown();
 		WPAD_Shutdown();
 		PAD_Reset(0xf0000000);
 		DS3_Cleanup();
@@ -70,6 +73,7 @@ void grlib_Init (void)
 	
     // Initialise the Wiimotes, Gamecube & Dualshock 3 controllers
 	PAD_Init(); 
+	WUPC_Init();
     WPAD_Init();
 	DS3_Init();
 	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS_ACC_IR);
@@ -602,11 +606,12 @@ void grlib_DrawIRCursor (void)
 #define MAXG 6
 int grlib_GetUserInput (void)
 	{
-	u32  wbtn, gcbtn, cbtn, ds3btn;
+	u32  wbtn = 0, gcbtn = 0, cbtn = 0, ds3btn = 0, wupcbtn = 0;
 	s8  gcX, gcY;
 	int nX, nY;
 	int cX, cY;
 	int ds3X, ds3Y;
+	s16 wupcX, wupcY;
 
 	static float g[MAXG];
 	static int gidx = -1;
@@ -617,6 +622,7 @@ int grlib_GetUserInput (void)
 		
 	struct expansion_t e; //nunchuk
 
+	WUPC_UpdateButtonStats();
 	WPAD_ScanPads();  // Scan the Wiimotes
 
 	wbtn = WPAD_ButtonsDown(0);
@@ -693,6 +699,16 @@ int grlib_GetUserInput (void)
 	ds3btn = DS3_ButtonsDown();
 	ds3X = DS3_StickX();
 	ds3Y = DS3_StickY();
+
+	struct WUPCData *wupcdata = WUPC_Data(0);
+	if (wupcdata != NULL) 
+	{
+		wupcbtn = wupcdata->button;
+		wupcX = WUPC_lStickX(0);
+		wupcY = WUPC_lStickY(0);
+	}
+
+
 	// sticks
 	if (abs (nX) > 10) {grlib_irPos.x += (nX / 16); grlibSettings.cursorActivity++;}
 	if (abs (nY) > 10) {grlib_irPos.y -= (nY / 16); grlibSettings.cursorActivity++;}
@@ -705,6 +721,12 @@ int grlib_GetUserInput (void)
 
 	if (abs (ds3X) > 10) { grlib_irPos.x += (ds3X / 16); grlibSettings.cursorActivity++; }
 	if (abs (ds3Y) > 10) { grlib_irPos.y += (ds3Y / 16); grlibSettings.cursorActivity++; }
+
+	if (wupcdata != NULL)
+	{
+		if (abs(wupcX) > 100) { grlib_irPos.x += (wupcX / 128); grlibSettings.cursorActivity++; }
+		if (abs(wupcY) > 100) { grlib_irPos.y += (-wupcY / 128); grlibSettings.cursorActivity++; }
+	}
 	// Check limits
 	if (grlib_irPos.x < 0) grlib_irPos.x = 0;
 	if (grlib_irPos.x > 640) grlib_irPos.x = 640;
@@ -712,7 +734,7 @@ int grlib_GetUserInput (void)
 	if (grlib_irPos.y < 0) grlib_irPos.y = 0;
 	if (grlib_irPos.y > 480) grlib_irPos.y = 480;
 	
-	if (!wbtn && !gcbtn && !cbtn && !ds3btn)
+	if (!wbtn && !gcbtn && !cbtn && !ds3btn && !wupcbtn)
 		repeatms = 0;
 	
 	// As usual wiimotes will have priority
@@ -844,6 +866,40 @@ int grlib_GetUserInput (void)
 		if (ds3btn & DS3_BUTTON_LEFT) return WPAD_BUTTON_LEFT;
 		if (ds3btn & DS3_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
 		}
+
+	if (wupcbtn)
+	{
+		grlibSettings.buttonActivity++;
+
+		if (repeatms == 0)
+		{
+			repeatms = ticks_to_millisecs(gettime()) + 1000;
+		}
+		else
+		{
+			// Wait until button is released
+			if (ticks_to_millisecs(gettime()) < repeatms)
+				return 0;
+		}
+
+		// Convert to wiimote values
+		if (wupcbtn & PRO_CTRL_BUTTON_ZR) return WPAD_BUTTON_PLUS;
+		if (wupcbtn & PRO_CTRL_BUTTON_ZL) return WPAD_BUTTON_MINUS;
+
+		if (wupcbtn & PRO_CTRL_BUTTON_START) return WPAD_BUTTON_PLUS;
+		if (wupcbtn & PRO_CTRL_BUTTON_SELECT) return WPAD_BUTTON_MINUS;
+
+		if (wupcbtn & PRO_CTRL_BUTTON_A) return WPAD_BUTTON_A;
+		if (wupcbtn & PRO_CTRL_BUTTON_B) return WPAD_BUTTON_B;
+		if (wupcbtn & PRO_CTRL_BUTTON_X) return WPAD_BUTTON_1;
+		if (wupcbtn & PRO_CTRL_BUTTON_Y) return WPAD_BUTTON_2;
+		if (wupcbtn & PRO_CTRL_BUTTON_HOME) return WPAD_BUTTON_HOME;
+
+		if (wupcbtn & PRO_CTRL_BUTTON_UP) return WPAD_BUTTON_UP;
+		if (wupcbtn & PRO_CTRL_BUTTON_DOWN) return WPAD_BUTTON_DOWN;
+		if (wupcbtn & PRO_CTRL_BUTTON_LEFT) return WPAD_BUTTON_LEFT;
+		if (wupcbtn & PRO_CTRL_BUTTON_RIGHT) return WPAD_BUTTON_RIGHT;
+	}
 
 	return 0;
 	}
