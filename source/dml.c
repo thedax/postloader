@@ -1057,8 +1057,7 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 			nin_config.Config |= NIN_CFG_LED;
 			}
 
-		// On Wii U, we have to force this, because there are no GC controllers.
-		if (RunningOnWiiU() || gameConf->hidController)
+		if (gameConf->hidController)
 			{
 			Debug ("NIN_Boot: HID controllers will be used.");
 			nin_config.Config |= NIN_CFG_HID;
