@@ -1,3 +1,12 @@
+postLoader 4.7.96
+* postLoader now supports booting Nintendont via argsboot.
+* postLoader will no longer boot Nintendont versions lower than 1.98.
+* postLoader will now print Nintendont version information in the debug log, if Nintendont 3.324 or newer is found.
+* PostLoader's autoupdate server has moved, and has been updated accordingly (my unofficial builds are still not on there, though).
+
+postLoader 4.7.95
+*UI: Support Wii U Pro Controllers, thanks to FIX94's libwupc.
+
 postLoader 4.7.94
 * Nintendont: Fix auto video mode (it was broken, forcing NTSC all the time).
 * UI: Fix the "restart postLoader" option for USB. It wasn't even attempting to restart the application.

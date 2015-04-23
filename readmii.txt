@@ -1,4 +1,4 @@
-postLoader 4.4.8 (readmii.txt 1.10)
+postLoader 4.7.96 (readmii.txt 1.10)
 
 ========================================
 What postLoader is:
@@ -49,7 +49,7 @@ DM(L) / Devolution / Nintendont Gamecube games
 * Support covers
 * Support title vote
 * Support ios selection
-* Can copy games from USB to SD before execute them
+* Can copy games from USB to SD before executing them
 
 Homebrew:
 * HB Channel replacement: It can be used to browse homebrew application, with it own interface. 
