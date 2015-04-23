@@ -190,7 +190,7 @@ int DolBootPrepare (s_run *run)
 	return 1;
 	}
 	
-void DolBoot (void)
+void DolBoot (bool useArgs)
 	{
 	u32 level;
 	
@@ -198,8 +198,13 @@ void DolBoot (void)
 
 	Shutdown ();
 
-	memmove(ARGS_ADDR, &arg, sizeof(arg));
-	DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
+	/* This is useful, because some dols have odd arg requirements that postLoader can't fulfill on its own
+	with generic handling.*/
+	if (useArgs)
+	{
+		memmove(ARGS_ADDR, &arg, sizeof(arg));
+		DCFlushRange(ARGS_ADDR, sizeof(arg) + arg.length);
+	}
 	
 	if (config.runHBwithForwarder && vars.neek == NEEK_NONE)
 		{
@@ -283,7 +288,7 @@ bool DirectDolBoot (char *fn, char *arguments, int addpl)
 		}
 
 	if (!DolBootPrepare (&run)) return false;
-	DolBoot();
+	DolBoot(true);
 	
 	return true;
 	}

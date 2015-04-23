@@ -562,7 +562,7 @@ void DumpFolders (char *folder);
 #define LOADER_ADDR    ((u8 *) ARGS_ADDR - LOADER_SIZE)
 
 u32 load_dol(const void *dolstart, struct __argv *argv);
-void DolBoot (void);
+void DolBoot (bool useArgs);
 int DolBootPrepare (s_run *run);
 int BootWiiload (void);
 bool DirectDolBoot (char *fn, char *arguments, int addpl);

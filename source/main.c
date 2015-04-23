@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 		if (DolBootPrepare (&config.run))
 			{
 			// NOTE: Shutdown() is called inside dolboot
-			DolBoot ();
+			DolBoot (true);
 			}
 		}
 	if (ret == INTERACTIVE_RET_CHANSEL) // boot a channel
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
 		if (DolBootPrepare (&config.autoboot))
 			{
 			// NOTE: Shutdown() is called inside dolboot
-			DolBoot ();
+			DolBoot (true);
 			}
 		}
 
