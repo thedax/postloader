@@ -1218,11 +1218,8 @@ bool DEVO_Boot (char *path, u8 memcardId, bool widescreen, bool activity_led, bo
 			nin_config.Config |= NIN_CFG_LED;
 		}
 
-		if (gameConf->hidController)
-		{
-			Debug ("NIN_Boot: HID controllers will be used.");
-			nin_config.Config |= NIN_CFG_HID;
-		}
+		// On newer versions of Nintendont, this is always enabled.
+		nin_config.Config |= NIN_CFG_HID;
 
 		const bool progressive = (CONF_GetProgressiveScan() > 0) && VIDEO_HaveComponentCable();
 		if (progressive) //important to prevent blackscreens
